@@ -15,7 +15,3 @@ rustc_version = "0.1"
 rustc-serialize = "0.3"
 heapsize = "0.3"
 rand = "0.3.12"
-
-[features]
-x64asm_arithmetic=[]
-rust_arithmetic=[]
