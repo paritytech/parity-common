@@ -2287,4 +2287,11 @@ mod tests {
 		let x1septima_right: U256 = "00022cca1da3f6e5722b7d3cc5bbfb486465ebc5a708dd293042f932d7eee119".into();
 		assert_eq!(x1septima_right, x1septima);
 	}
+
+	#[test]
+	fn example() {
+		let mut val: U256 = 1023.into();
+		for _ in 0..200 { val = val * 2.into() }
+		assert_eq!(&format!("{}", val), "1643897619276947051879427220465009342380213662639797070513307648");
+	}
 }
