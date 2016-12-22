@@ -1,5 +1,5 @@
 [package]
-description = "Large fixed-size integers and hash function outputs"
+description = "Large fixed-size integers arithmetics"
 homepage = "http://parity.io"
 repository = "https://github.com/ethcore/parity"
 license = "GPL-3.0"
