@@ -522,6 +522,8 @@ pub trait Uint: Sized + Default + FromStr + From<u64> + fmt::Debug + fmt::Displa
 	fn byte(&self, index: usize) -> u8;
 	/// Convert to the sequence of bytes with a big endian
 	fn to_big_endian(&self, bytes: &mut[u8]);
+	/// Convert to the sequence of bytes with a little endian
+	fn to_little_endian(&self, result: &mut [u8]);
 	/// Convert to a non-zero-prefixed hex representation (not prefixed by `0x`). 
 	fn to_hex(&self) -> String;
 	/// Create `Uint(10**n)`
@@ -683,6 +685,17 @@ macro_rules! construct_uint {
  					let rev = bytes.len() - 1 - i;
  					let pos = rev / 8;
  					bytes[i] = (arr[pos] >> ((rev % 8) * 8)) as u8;
+				}
+			}
+
+			#[inline]
+			fn to_little_endian(&self, bytes: &mut [u8]) {
+				debug_assert!($n_words * 8 == bytes.len());
+
+				let &$name(ref arr) = self;
+				for i in 0..bytes.len() {
+ 					let pos = i / 8;
+ 					bytes[i] = (arr[pos] >> ((i % 8) * 8)) as u8;
 				}
 			}
 
@@ -2293,5 +2306,23 @@ mod tests {
 		let mut val: U256 = 1023.into();
 		for _ in 0..200 { val = val * 2.into() }
 		assert_eq!(&format!("{}", val), "1643897619276947051879427220465009342380213662639797070513307648");
+	}
+
+	#[test]
+	fn little_endian() {
+		let number: U256 = "00022cca1da3f6e5722b7d3cc5bbfb486465ebc5a708dd293042f932d7eee119".into();
+		let expected = [
+			0x19, 0xe1, 0xee, 0xd7,
+			0x32, 0xf9, 0x42, 0x30,
+			0x29, 0xdd, 0x08, 0xa7,
+			0xc5, 0xeb, 0x65, 0x64,
+			0x48, 0xfb, 0xbb, 0xc5,
+			0x3c, 0x7d, 0x2b, 0x72,
+			0xe5, 0xf6, 0xa3, 0x1d,
+			0xca, 0x2c, 0x02, 0x00
+		];
+		let mut result = [0u8; 32];
+		number.to_little_endian(&mut result);
+		assert_eq!(expected, result);
 	}
 }
