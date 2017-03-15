@@ -42,6 +42,7 @@ use std::str::{FromStr};
 use std::hash::Hash;
 use std::ops::{Shr, Shl, BitAnd, BitOr, BitXor, Not, Div, Rem, Mul, Add, Sub};
 use std::cmp::Ordering;
+use byteorder::{ByteOrder, BigEndian, LittleEndian};
 use rustc_serialize::hex::{ToHex, FromHex, FromHexError};
 
 /// Conversion from decimal string error
@@ -647,55 +648,19 @@ macro_rules! construct_uint {
 				(arr[index / 8] >> (((index % 8)) * 8)) as u8
 			}
 
-			#[cfg(any(
-				target_arch = "arm",
-				target_arch = "mips",
-				target_arch = "powerpc",
-				target_arch = "x86",
-				target_arch = "x86_64",
-				target_arch = "aarch64",
-				target_arch = "powerpc64"))]
 			#[inline]
 			fn to_big_endian(&self, bytes: &mut[u8]) {
 				debug_assert!($n_words * 8 == bytes.len());
-				let &$name(ref arr) = self;
-				unsafe {
-					let mut out: *mut u64 = mem::transmute(bytes.as_mut_ptr());
-					out = out.offset($n_words);
-					for i in 0..$n_words {
-						out = out.offset(-1);
-						*out = arr[i].swap_bytes();
-					}
-				}
-			}
-
-			#[cfg(not(any(
-				target_arch = "arm",
-				target_arch = "mips",
-				target_arch = "powerpc",
-				target_arch = "x86",
-				target_arch = "x86_64",
-				target_arch = "aarch64",
-				target_arch = "powerpc64")))]
-			#[inline]
-			fn to_big_endian(&self, bytes: &mut[u8]) {
-				debug_assert!($n_words * 8 == bytes.len());
-				let &$name(ref arr) = self;
-				for i in 0..bytes.len() {
- 					let rev = bytes.len() - 1 - i;
- 					let pos = rev / 8;
- 					bytes[i] = (arr[pos] >> ((rev % 8) * 8)) as u8;
+				for i in 0..$n_words {
+					BigEndian::write_u64(&mut bytes[8 * i..], self.0[$n_words - i - 1]);
 				}
 			}
 
 			#[inline]
 			fn to_little_endian(&self, bytes: &mut [u8]) {
 				debug_assert!($n_words * 8 == bytes.len());
-
-				let &$name(ref arr) = self;
-				for i in 0..bytes.len() {
- 					let pos = i / 8;
- 					bytes[i] = (arr[pos] >> ((i % 8) * 8)) as u8;
+				for i in 0..$n_words {
+					LittleEndian::write_u64(&mut bytes[8 * i..], self.0[i]);
 				}
 			}
 
