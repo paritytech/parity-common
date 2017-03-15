@@ -42,7 +42,7 @@ use std::str::{FromStr};
 use std::hash::Hash;
 use std::ops::{Shr, Shl, BitAnd, BitOr, BitXor, Not, Div, Rem, Mul, Add, Sub};
 use std::cmp::Ordering;
-use byteorder::{WriteBytesExt, BigEndian, LittleEndian};
+use byteorder::{ByteOrder, BigEndian, LittleEndian};
 use rustc_serialize::hex::{ToHex, FromHex, FromHexError};
 
 /// Conversion from decimal string error
@@ -652,7 +652,7 @@ macro_rules! construct_uint {
 			fn to_big_endian(&self, bytes: &mut[u8]) {
 				debug_assert!($n_words * 8 == bytes.len());
 				for i in 0..$n_words {
-					(&mut bytes[8 * i..] as &mut [u8]).write_u64::<BigEndian>(self.0[$n_words - i - 1]).expect("assert above; qed");
+					BigEndian::write_u64(&mut bytes[8 * i..], self.0[$n_words - i - 1]);
 				}
 			}
 
@@ -660,7 +660,7 @@ macro_rules! construct_uint {
 			fn to_little_endian(&self, bytes: &mut [u8]) {
 				debug_assert!($n_words * 8 == bytes.len());
 				for i in 0..$n_words {
-					(&mut bytes[8 * i..] as &mut [u8]).write_u64::<LittleEndian>(self.0[i]).expect("assert above; qed");
+					LittleEndian::write_u64(&mut bytes[8 * i..], self.0[i]);
 				}
 			}
 
