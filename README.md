@@ -1,5 +1,7 @@
 # bigint
 
+![travis status][https://travis-ci.org/ethcore/bigint.svg?branch=master]
+
 Fixed-sized integers arithmetic
 
 ```rust
