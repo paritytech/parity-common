@@ -490,72 +490,6 @@ fn split(a: u64) -> (u64, u64) {
 	(a >> 32, a & 0xFFFFFFFF)
 }
 
-/// Large, fixed-length unsigned integer type.
-pub trait Uint: Sized + Default + FromStr + From<u64> + fmt::Debug + fmt::Display + PartialOrd + Ord + PartialEq + Eq + Hash {
-
-	/// Returns new instance equalling zero.
-	fn zero() -> Self;
-	/// Returns new instance equalling one.
-	fn one() -> Self;
-	/// Returns the largest value that can be represented by this integer type.
-	fn max_value() -> Self;
-
-	/// Convert from a decimal string.
-	fn from_dec_str(value: &str) -> Result<Self, FromDecStrErr>;
-
-	/// Conversion to u32
-	fn low_u32(&self) -> u32;
-
-	/// Conversion to u64
-	fn low_u64(&self) -> u64;
-
-	/// Conversion to u32 with overflow checking
-	fn as_u32(&self) -> u32;
-
-	/// Conversion to u64 with overflow checking
-	fn as_u64(&self) -> u64;
-
-	/// Return the least number of bits needed to represent the number
-	fn bits(&self) -> usize;
-	/// Return if specific bit is set
-	fn bit(&self, index: usize) -> bool;
-	/// Return single byte
-	fn byte(&self, index: usize) -> u8;
-	/// Convert to the sequence of bytes with a big endian
-	fn to_big_endian(&self, bytes: &mut[u8]);
-	/// Convert to the sequence of bytes with a little endian
-	fn to_little_endian(&self, result: &mut [u8]);
-	/// Convert to a non-zero-prefixed hex representation (not prefixed by `0x`). 
-	fn to_hex(&self) -> String;
-	/// Create `Uint(10**n)`
-	fn exp10(n: usize) -> Self;
-	/// Return eponentation `self**other`. Panic on overflow.
-	fn pow(self, other: Self) -> Self;
-	/// Return wrapped eponentation `self**other` and flag if there was an overflow
-	fn overflowing_pow(self, other: Self) -> (Self, bool);
-
-	/// Add this `Uint` to other returning result and possible overflow
-	fn overflowing_add(self, other: Self) -> (Self, bool);
-
-	/// Subtract another `Uint` from this returning result and possible overflow
-	fn overflowing_sub(self, other: Self) -> (Self, bool);
-
-	/// Multiple this `Uint` with other returning result and possible overflow
-	fn overflowing_mul(self, other: Self) -> (Self, bool);
-
-	/// Divide this `Uint` by other returning result and possible overflow
-	fn overflowing_div(self, other: Self) -> (Self, bool);
-
-	/// Returns reminder of division of this `Uint` by other and possible overflow
-	fn overflowing_rem(self, other: Self) -> (Self, bool);
-
-	/// Returns negation of this `Uint` and overflow (always true)
-	fn overflowing_neg(self) -> (Self, bool);
-
-	/// Returns
-	fn is_zero(&self) -> bool;
-}
-
 macro_rules! construct_uint {
 	($name:ident, $n_words:expr) => (
 		/// Little-endian large integer type
@@ -563,9 +497,9 @@ macro_rules! construct_uint {
 		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 		pub struct $name(pub [u64; $n_words]);
 
-		impl Uint for $name {
-
-			fn from_dec_str(value: &str) -> Result<Self, FromDecStrErr> {
+		impl $name {
+			/// Convert from a decimal string.
+			pub fn from_dec_str(value: &str) -> Result<Self, FromDecStrErr> {
 				if !value.bytes().all(|b| b >= 48 && b <= 57) {
 					return Err(FromDecStrErr::InvalidCharacter)
 				}
@@ -585,21 +519,23 @@ macro_rules! construct_uint {
 				Ok(res)
 			}
 
+			/// Conversion to u32
 			#[inline]
-			fn low_u32(&self) -> u32 {
+			pub fn low_u32(&self) -> u32 {
 				let &$name(ref arr) = self;
 				arr[0] as u32
 			}
 
+			/// Conversion to u64
 			#[inline]
-			fn low_u64(&self) -> u64 {
+			pub fn low_u64(&self) -> u64 {
 				let &$name(ref arr) = self;
 				arr[0]
 			}
 
 			/// Conversion to u32 with overflow checking
 			#[inline]
-			fn as_u32(&self) -> u32 {
+			pub fn as_u32(&self) -> u32 {
 				let &$name(ref arr) = self;
 				if (arr[0] & (0xffffffffu64 << 32)) != 0 {
 					panic!("Integer overflow when casting U256")
@@ -609,7 +545,7 @@ macro_rules! construct_uint {
 
 			/// Conversion to u64 with overflow checking
 			#[inline]
-			fn as_u64(&self) -> u64 {
+			pub fn as_u64(&self) -> u64 {
 				let &$name(ref arr) = self;
 				for i in 1..$n_words {
 					if arr[i] != 0 {
@@ -619,8 +555,9 @@ macro_rules! construct_uint {
 				arr[0]
 			}
 
+			/// Whether this is zero.
 			#[inline]
-			fn is_zero(&self) -> bool {
+			pub fn is_zero(&self) -> bool {
 				let &$name(ref arr) = self;
 				for i in 0..$n_words { if arr[i] != 0 { return false; } }
 				return true;
@@ -628,7 +565,7 @@ macro_rules! construct_uint {
 
 			/// Return the least number of bits needed to represent the number
 			#[inline]
-			fn bits(&self) -> usize {
+			pub fn bits(&self) -> usize {
 				let &$name(ref arr) = self;
 				for i in 1..$n_words {
 					if arr[$n_words - i] > 0 { return (0x40 * ($n_words - i + 1)) - arr[$n_words - i].leading_zeros() as usize; }
@@ -636,36 +573,41 @@ macro_rules! construct_uint {
 				0x40 - arr[0].leading_zeros() as usize
 			}
 
+			/// Return if specific bit is set.
 			#[inline]
-			fn bit(&self, index: usize) -> bool {
+			pub fn bit(&self, index: usize) -> bool {
 				let &$name(ref arr) = self;
 				arr[index / 64] & (1 << (index % 64)) != 0
 			}
 
+			/// Return specific byte.
 			#[inline]
-			fn byte(&self, index: usize) -> u8 {
+			pub fn byte(&self, index: usize) -> u8 {
 				let &$name(ref arr) = self;
 				(arr[index / 8] >> (((index % 8)) * 8)) as u8
 			}
 
+			/// Write to the slice in big-endian format.
 			#[inline]
-			fn to_big_endian(&self, bytes: &mut[u8]) {
+			pub fn to_big_endian(&self, bytes: &mut [u8]) {
 				debug_assert!($n_words * 8 == bytes.len());
 				for i in 0..$n_words {
 					BigEndian::write_u64(&mut bytes[8 * i..], self.0[$n_words - i - 1]);
 				}
 			}
 
+			/// Write to the slice in little-endian format.
 			#[inline]
-			fn to_little_endian(&self, bytes: &mut [u8]) {
+			pub fn to_little_endian(&self, bytes: &mut [u8]) {
 				debug_assert!($n_words * 8 == bytes.len());
 				for i in 0..$n_words {
 					LittleEndian::write_u64(&mut bytes[8 * i..], self.0[i]);
 				}
 			}
 
+			/// Convert to hex string.
 			#[inline]
-			fn to_hex(&self) -> String {
+			pub fn to_hex(&self) -> String {
 				if self.is_zero() { return "0".to_owned(); }	// special case.
 				let mut bytes = [0u8; 8 * $n_words];
 				self.to_big_endian(&mut bytes);
@@ -675,26 +617,30 @@ macro_rules! construct_uint {
 				(&bytes_hex[1 - bp7 % 8 / 4..]).to_owned()
 			}
 
+			/// Create `10**n` as this type.
 			#[inline]
-			fn exp10(n: usize) -> Self {
+			pub fn exp10(n: usize) -> Self {
 				match n {
 					0 => Self::from(1u64),
 					_ => Self::exp10(n - 1).mul_u32(10)
 				}
 			}
 
+			/// Zero (additive identity) of this type.
 			#[inline]
-			fn zero() -> Self {
+			pub fn zero() -> Self {
 				From::from(0u64)
 			}
 
+			/// One (multiplicative identity) of this type.
 			#[inline]
-			fn one() -> Self {
+			pub fn one() -> Self {
 				From::from(1u64)
 			}
 
+			/// The maximum value which can be inhabited by this type.
 			#[inline]
-			fn max_value() -> Self {
+			pub fn max_value() -> Self {
 				let mut result = [0; $n_words];
 				for i in 0..$n_words {
 					result[i] = u64::max_value();
@@ -704,7 +650,7 @@ macro_rules! construct_uint {
 
 			/// Fast exponentation by squaring
 			/// https://en.wikipedia.org/wiki/Exponentiation_by_squaring
-			fn pow(self, expon: Self) -> Self {
+			pub fn pow(self, expon: Self) -> Self {
 				if expon.is_zero() {
 					return Self::one()
 				}
@@ -731,7 +677,7 @@ macro_rules! construct_uint {
 
 			/// Fast exponentation by squaring
 			/// https://en.wikipedia.org/wiki/Exponentiation_by_squaring
-			fn overflowing_pow(self, expon: Self) -> (Self, bool) {
+			pub fn overflowing_pow(self, expon: Self) -> (Self, bool) {
 				if expon.is_zero() { return (Self::one(), false) }
 
 				let is_even = |x : &Self| x.low_u64() & 1 == 0;
@@ -758,29 +704,58 @@ macro_rules! construct_uint {
 
 			/// Optimized instructions
 			#[inline(always)]
-			fn overflowing_add(self, other: $name) -> ($name, bool) {
+			pub fn overflowing_add(self, other: $name) -> ($name, bool) {
 				uint_overflowing_add!($name, $n_words, self, other)
 			}
 
+			/// Addition which saturates at the maximum value.
+			pub fn saturating_add(self, other: $name) -> $name {
+				match self.overflowing_add(other) {
+					(_, true) => $name::max_value(),
+					(val, false) => val,
+				}
+			}
+
+			/// Subtraction which underflows and returns a flag if it does.
 			#[inline(always)]
-			fn overflowing_sub(self, other: $name) -> ($name, bool) {
+			pub fn overflowing_sub(self, other: $name) -> ($name, bool) {
 				uint_overflowing_sub!($name, $n_words, self, other)
 			}
 
+			/// Subtraction which saturates at zero.
+			pub fn saturating_sub(self, other: $name) -> $name {
+				match self.overflowing_sub(other) {
+					(_, true) => $name::zero(),
+					(val, false) => val,
+				}
+			}
+
+			/// Multiply with overflow, returning a flag if it does.
 			#[inline(always)]
-			fn overflowing_mul(self, other: $name) -> ($name, bool) {
+			pub fn overflowing_mul(self, other: $name) -> ($name, bool) {
 				uint_overflowing_mul!($name, $n_words, self, other)
 			}
 
-			fn overflowing_div(self, other: $name) -> ($name, bool) {
+			/// Multiplication which saturates at the maximum value..
+			pub fn saturating_mul(self, other: $name) -> $name {
+				match self.overflowing_mul(other) {
+					(_, true) => $name::max_value(),
+					(val, false) => val,
+				}
+			}
+
+			/// Division with overflow 
+			pub fn overflowing_div(self, other: $name) -> ($name, bool) {
 				(self / other, false)
 			}
 
-			fn overflowing_rem(self, other: $name) -> ($name, bool) {
+			/// Modulus with overflow.
+			pub fn overflowing_rem(self, other: $name) -> ($name, bool) {
 				(self % other, false)
 			}
 
-			fn overflowing_neg(self) -> ($name, bool) {
+			/// Negation with overflow.
+			pub fn overflowing_neg(self) -> ($name, bool) {
 				(!self, true)
 			}
 		}
@@ -1433,7 +1408,7 @@ known_heap_size!(0, U128, U256);
 
 #[cfg(test)]
 mod tests {
-	use uint::{Uint, U128, U256, U512};
+	use uint::{U128, U256, U512};
 	use std::str::FromStr;
 	use super::FromDecStrErr;
 
