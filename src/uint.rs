@@ -1428,14 +1428,21 @@ mod tests {
 		assert_eq!(U256([0x12f0, 0, 0, 0]), U256::from(&[0, 0x12u8, 0xf0][..]));
 		assert_eq!(U256([0x12f0, 0 , 0, 0]), U256::from(&[0, 0, 0, 0, 0, 0, 0, 0x12u8, 0xf0][..]));
 		assert_eq!(U256([0x12f0, 1 , 0, 0]), U256::from(&[1, 0, 0, 0, 0, 0, 0, 0x12u8, 0xf0][..]));
-		assert_eq!(U256([0x12f0, 1 , 0x0910203040506077, 0x8090a0b0c0d0e0f0]), U256::from(&[
-																						  0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0,
-																						  0x09, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x77,
-																						  0, 0, 0, 0, 0, 0, 0, 1,
-																						  0, 0, 0, 0, 0, 0, 0x12u8, 0xf0][..]));
-		assert_eq!(U256([0x00192437100019fa, 0x243710, 0, 0]), U256::from(&[
-																		  0x24u8, 0x37, 0x10,
-																		  0, 0x19, 0x24, 0x37, 0x10, 0, 0x19, 0xfa][..]));
+		assert_eq!(
+			U256([0x12f0, 1 , 0x0910203040506077, 0x8090a0b0c0d0e0f0]), 
+			U256::from(&
+				[
+					0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0,
+					0x09, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x77,
+					0, 0, 0, 0, 0, 0, 0, 1,
+					0, 0, 0, 0, 0, 0, 0x12u8, 0xf0
+				][..]
+			)
+		);
+		assert_eq!(
+			U256([0x00192437100019fa, 0x243710, 0, 0]), 
+			U256::from(&[0x24u8, 0x37, 0x10,0, 0x19, 0x24, 0x37, 0x10, 0, 0x19, 0xfa][..])
+		);
 
 		// test initializtion from string
 		let sa = U256::from_str("0a").unwrap();
@@ -1445,7 +1452,10 @@ mod tests {
 		assert_eq!(U256([0x12f0, 0, 0, 0]), U256::from_str("12f0").unwrap());
 		assert_eq!(U256([0x12f0, 0 , 0, 0]), U256::from_str("0000000012f0").unwrap());
 		assert_eq!(U256([0x12f0, 1 , 0, 0]), U256::from_str("0100000000000012f0").unwrap());
-		assert_eq!(U256([0x12f0, 1 , 0x0910203040506077, 0x8090a0b0c0d0e0f0]), U256::from_str("8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0").unwrap());
+		assert_eq!(
+			U256([0x12f0, 1 , 0x0910203040506077, 0x8090a0b0c0d0e0f0]), 
+			U256::from_str("8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0").unwrap()
+		);
 	}
 
 	#[test]
@@ -1870,8 +1880,10 @@ mod tests {
 		let (_, overflow) = U256([0, 0, 2, 1]).overflowing_sub(U256([0, 0, 3, 1]));
 		assert!(overflow);
 
-		let (result, overflow) = U256([::std::u64::MAX, ::std::u64::MAX, ::std::u64::MAX, ::std::u64::MAX])
-								.overflowing_sub(U256([::std::u64::MAX/2, ::std::u64::MAX/2, ::std::u64::MAX/2, ::std::u64::MAX/2]));
+		let (result, overflow) = 
+			U256([::std::u64::MAX, ::std::u64::MAX, ::std::u64::MAX, ::std::u64::MAX])
+				.overflowing_sub(U256([::std::u64::MAX/2, ::std::u64::MAX/2, ::std::u64::MAX/2, ::std::u64::MAX/2]));
+				
 		assert!(!overflow);
 		assert_eq!(U256([::std::u64::MAX/2+1, ::std::u64::MAX/2+1, ::std::u64::MAX/2+1, ::std::u64::MAX/2+1]), result);
 
