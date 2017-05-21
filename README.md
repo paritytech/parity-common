@@ -6,7 +6,7 @@ Fixed-sized integers arithmetic
 
 ```rust
 extern crate bigint;
-use bigint::{U256, Uint};
+use bigint::U256;
 
 fn main() {
 	let mut val: U256 = 1023.into();
