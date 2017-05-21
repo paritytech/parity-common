@@ -6,7 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-
 // Code derived from original work by Andrew Poelstra <apoelstra@wpsoftware.net>
 
 // Rust Bitcoin Library
@@ -1883,7 +1882,7 @@ mod tests {
 		let (result, overflow) = 
 			U256([::std::u64::MAX, ::std::u64::MAX, ::std::u64::MAX, ::std::u64::MAX])
 				.overflowing_sub(U256([::std::u64::MAX/2, ::std::u64::MAX/2, ::std::u64::MAX/2, ::std::u64::MAX/2]));
-				
+
 		assert!(!overflow);
 		assert_eq!(U256([::std::u64::MAX/2+1, ::std::u64::MAX/2+1, ::std::u64::MAX/2+1, ::std::u64::MAX/2+1]), result);
 
