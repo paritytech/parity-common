@@ -24,30 +24,29 @@ fn main() {
 	// (p-1) + (p+1) = 0
 
 	// (p - 1) mod p
-	let (p_minus_1, _) = (p - 1u64.into()).overflowing_rem(p);
+	let p_minus_1 = (p - 1u64.into()) % p;
 	// (p + 1) mod p
-	let (p_plus_1, _) = (p + 1u64.into()).overflowing_rem(p);
+	let p_plus_1 = (p + 1u64.into()) % p;
 	// ((p - 1) mod p + (p + 1) mod p) mod p
-	let (sum, _) = (p_minus_1 + p_plus_1).overflowing_rem(p);
+	let sum = (p_minus_1 + p_plus_1) % p;
 	assert_eq!(sum, 0.into());
 
 	// on this field,
 	// (p-1) + (p-1) = p-2
-	let (p_minus_1, _) = (p - 1u64.into()).overflowing_rem(p);
-	let (sum, _) = 	(p_minus_1 + p_minus_1).overflowing_rem(p);
+	let p_minus_1 = (p - 1u64.into()) % p;
+	let sum = (p_minus_1 + p_minus_1) % p;
 	assert_eq!(sum, p - 2.into());
 
 	// on this field,
 	// (p-1) * 3 = p-3
-	let (p_minus_1, _) = (p - 1u64.into()).overflowing_rem(p);
+	let p_minus_1 = (p - 1u64.into()) % p;
 
 	// multiplication is a series of additions
 	let multiplicator = 3;
 	let mul = {
 		let mut result = p_minus_1;
 		for _ in 0..multiplicator-1 { 
-			let (s, _) = (p_minus_1 + result).overflowing_rem(p);
-			result = s;
+			result = (p_minus_1 + result) % p;
 		}
 		result
 	};
