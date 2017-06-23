@@ -525,6 +525,10 @@ macro_rules! construct_uint {
 			}
 
 			/// Conversion to u32 with overflow checking
+			///
+			/// # Panics
+			///
+			/// Panics if the number is larger than 2^32.
 			#[inline]
 			pub fn as_u32(&self) -> u32 {
 				let &$name(ref arr) = self;
@@ -535,6 +539,10 @@ macro_rules! construct_uint {
 			}
 
 			/// Conversion to u64 with overflow checking
+			///
+			/// # Panics
+			///
+			/// Panics if the number is larger than 2^64.
 			#[inline]
 			pub fn as_u64(&self) -> u64 {
 				let &$name(ref arr) = self;
@@ -565,6 +573,10 @@ macro_rules! construct_uint {
 			}
 
 			/// Return if specific bit is set.
+			///
+			/// # Panics
+			///
+			/// Panics if `index` exceeds the bit width of the number.
 			#[inline]
 			pub fn bit(&self, index: usize) -> bool {
 				let &$name(ref arr) = self;
@@ -572,6 +584,10 @@ macro_rules! construct_uint {
 			}
 
 			/// Return specific byte.
+			///
+			/// # Panics
+			///
+			/// Panics if `index` exceeds the byte width of the number.
 			#[inline]
 			pub fn byte(&self, index: usize) -> u8 {
 				let &$name(ref arr) = self;
@@ -609,6 +625,10 @@ macro_rules! construct_uint {
 			}
 
 			/// Create `10**n` as this type.
+			///
+			/// # Panics
+			///
+			/// Panics if the result overflows the type.
 			#[inline]
 			pub fn exp10(n: usize) -> Self {
 				match n {
@@ -641,6 +661,10 @@ macro_rules! construct_uint {
 
 			/// Fast exponentation by squaring
 			/// https://en.wikipedia.org/wiki/Exponentiation_by_squaring
+			///
+			/// # Panics
+			///
+			/// Panics if the result overflows the type.
 			pub fn pow(self, expon: Self) -> Self {
 				if expon.is_zero() {
 					return Self::one()
