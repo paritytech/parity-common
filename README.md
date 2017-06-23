@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/paritytech/bigint.svg?branch=master)](https://travis-ci.org/paritytech/bigint)
 
+[API Documentation](https://docs.rs/bigint/)
+
 Fixed-sized integers arithmetic
 
 ```rust
