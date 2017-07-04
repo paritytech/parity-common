@@ -29,12 +29,11 @@
 //! implementations for even more speed, hidden behind the `x64_arithmetic`
 //! feature flag.
 
-use std::{fmt, cmp};
-use std::str::{FromStr};
+use std::{fmt, cmp, str};
 use std::ops::{Shr, Shl, BitAnd, BitOr, BitXor, Not, Div, Rem, Mul, Add, Sub};
 use std::cmp::Ordering;
 use byteorder::{ByteOrder, BigEndian, LittleEndian};
-use rustc_serialize::hex::{ToHex, FromHex, FromHexError};
+use rustc_hex::{ToHex, FromHex, FromHexError};
 
 /// Conversion from decimal string error
 #[derive(Debug, PartialEq)]
@@ -850,7 +849,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl FromStr for $name {
+		impl str::FromStr for $name {
 			type Err = FromHexError;
 
 			fn from_str(value: &str) -> Result<$name, Self::Err> {
@@ -1419,6 +1418,7 @@ impl From<U256> for u32 {
 	}
 }
 
+#[cfg(feature="heapsizeof")]
 known_heap_size!(0, U128, U256);
 
 #[cfg(test)]
