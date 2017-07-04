@@ -11,9 +11,11 @@
 #![cfg_attr(asm_available, feature(asm))]
 
 extern crate byteorder;
-extern crate rand;
-extern crate rustc_serialize;
-#[macro_use] extern crate heapsize;
+extern crate rustc_hex;
+
+#[cfg(feature="heapsizeof")]
+#[macro_use] 
+extern crate heapsize;
 
 pub mod uint;
 pub use ::uint::*;
