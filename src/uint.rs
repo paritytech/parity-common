@@ -29,11 +29,11 @@
 //! implementations for even more speed, hidden behind the `x64_arithmetic`
 //! feature flag.
 
-use std::{fmt, cmp, str};
-use std::ops::{Shr, Shl, BitAnd, BitOr, BitXor, Not, Div, Rem, Mul, Add, Sub};
-use std::cmp::Ordering;
+use core::{str};
+use core::ops::{Shr, Shl, BitAnd, BitOr, BitXor, Not, Div, Rem, Mul, Add, Sub};
+
 use byteorder::{ByteOrder, BigEndian, LittleEndian};
-use rustc_hex::{ToHex, FromHex, FromHexError};
+//use rustc_hex::{ToHex, FromHex, FromHexError};
 
 /// Conversion from decimal string error
 #[derive(Debug, PartialEq)]
@@ -84,7 +84,7 @@ macro_rules! uint_overflowing_add_reg {
 #[cfg(all(asm_available, target_arch="x86_64"))]
 macro_rules! uint_overflowing_add {
 	(U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
+		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
 
@@ -107,7 +107,7 @@ macro_rules! uint_overflowing_add {
 		(U256(result), overflow != 0)
 	});
 	(U512, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
+		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
 
@@ -188,7 +188,7 @@ macro_rules! uint_overflowing_sub_reg {
 #[cfg(all(asm_available, target_arch="x86_64"))]
 macro_rules! uint_overflowing_sub {
 	(U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
+		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
 
@@ -210,7 +210,7 @@ macro_rules! uint_overflowing_sub {
 		(U256(result), overflow != 0)
 	});
 	(U512, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
+		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
 
@@ -262,7 +262,7 @@ macro_rules! uint_overflowing_sub {
 #[cfg(all(asm_available, target_arch="x86_64"))]
 macro_rules! uint_overflowing_mul {
 	(U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_words] = unsafe { ::std::mem::uninitialized() };
+		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
 
@@ -612,8 +612,12 @@ macro_rules! construct_uint {
 			}
 
 			/// Convert to hex string.
+			#[cfg(feature="std")]
 			#[inline]
 			pub fn to_hex(&self) -> String {
+				use core::cmp;
+				use rustc_hex::ToHex;;
+
 				if self.is_zero() { return "0".to_owned(); }	// special case.
 				let mut bytes = [0u8; 8 * $n_words];
 				self.to_big_endian(&mut bytes);
@@ -758,7 +762,7 @@ macro_rules! construct_uint {
 				}
 			}
 
-			/// Division with overflow 
+			/// Division with overflow
 			pub fn overflowing_div(self, other: $name) -> ($name, bool) {
 				(self / other, false)
 			}
@@ -849,10 +853,13 @@ macro_rules! construct_uint {
 			}
 		}
 
+		#[cfg(feature="std")]
 		impl str::FromStr for $name {
-			type Err = FromHexError;
+			type Err = ::rustc_hex::FromHexError;
 
 			fn from_str(value: &str) -> Result<$name, Self::Err> {
+				use rustc_hex::FromHex;
+
 				let bytes: Vec<u8> = match value.len() % 2 == 0 {
 					true => try!(value.from_hex()),
 					false => try!(("0".to_owned() + value).from_hex())
@@ -1047,33 +1054,35 @@ macro_rules! construct_uint {
 		}
 
 		impl Ord for $name {
-			fn cmp(&self, other: &$name) -> Ordering {
+			fn cmp(&self, other: &$name) -> ::core::cmp::Ordering {
 				let &$name(ref me) = self;
 				let &$name(ref you) = other;
 				let mut i = $n_words;
 				while i > 0 {
 					i -= 1;
-					if me[i] < you[i] { return Ordering::Less; }
-					if me[i] > you[i] { return Ordering::Greater; }
+					if me[i] < you[i] { return ::core::cmp::Ordering::Less; }
+					if me[i] > you[i] { return ::core::cmp::Ordering::Greater; }
 				}
-				Ordering::Equal
+				::core::cmp::Ordering::Equal
 			}
 		}
 
 		impl PartialOrd for $name {
-			fn partial_cmp(&self, other: &$name) -> Option<Ordering> {
+			fn partial_cmp(&self, other: &$name) -> Option<::core::cmp::Ordering> {
 				Some(self.cmp(other))
 			}
 		}
 
-		impl fmt::Debug for $name {
-			fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-				fmt::Display::fmt(self, f)
+		#[cfg(feature="std")]
+		impl ::core::fmt::Debug for $name {
+			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+				::core::fmt::Display::fmt(self, f)
 			}
 		}
 
-		impl fmt::Display for $name {
-			fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		#[cfg(feature="std")]
+		impl ::core::fmt::Display for $name {
+			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				if self.is_zero() {
 					return write!(f, "0");
 				}
@@ -1091,8 +1100,9 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl fmt::LowerHex for $name {
-			fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		#[cfg(feature="std")]
+		impl ::core::fmt::LowerHex for $name {
+			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				let &$name(ref data) = self;
 				try!(write!(f, "0x"));
 				let mut latch = false;
@@ -1109,6 +1119,7 @@ macro_rules! construct_uint {
 			}
 		}
 
+		#[cfg(feature="std")]
 		impl From<&'static str> for $name {
 			fn from(s: &'static str) -> Self {
 				s.parse().unwrap()
@@ -1128,7 +1139,7 @@ impl U256 {
 	pub fn full_mul(self, other: U256) -> U512 {
 		let self_t: &[u64; 4] = &self.0;
 		let other_t: &[u64; 4] = &other.0;
-		let mut result: [u64; 8] = unsafe { ::std::mem::uninitialized() };
+		let mut result: [u64; 8] = unsafe { ::core::mem::uninitialized() };
 		unsafe {
 			asm!("
 				mov $8, %rax
@@ -1452,7 +1463,7 @@ mod tests {
 		assert_eq!(U256([0x12f0, 0 , 0, 0]), U256::from(&[0, 0, 0, 0, 0, 0, 0, 0x12u8, 0xf0][..]));
 		assert_eq!(U256([0x12f0, 1 , 0, 0]), U256::from(&[1, 0, 0, 0, 0, 0, 0, 0x12u8, 0xf0][..]));
 		assert_eq!(
-			U256([0x12f0, 1 , 0x0910203040506077, 0x8090a0b0c0d0e0f0]), 
+			U256([0x12f0, 1 , 0x0910203040506077, 0x8090a0b0c0d0e0f0]),
 			U256::from(&
 				[
 					0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0,
@@ -1463,7 +1474,7 @@ mod tests {
 			)
 		);
 		assert_eq!(
-			U256([0x00192437100019fa, 0x243710, 0, 0]), 
+			U256([0x00192437100019fa, 0x243710, 0, 0]),
 			U256::from(&[0x24u8, 0x37, 0x10,0, 0x19, 0x24, 0x37, 0x10, 0, 0x19, 0xfa][..])
 		);
 
@@ -1476,7 +1487,7 @@ mod tests {
 		assert_eq!(U256([0x12f0, 0 , 0, 0]), U256::from_str("0000000012f0").unwrap());
 		assert_eq!(U256([0x12f0, 1 , 0, 0]), U256::from_str("0100000000000012f0").unwrap());
 		assert_eq!(
-			U256([0x12f0, 1 , 0x0910203040506077, 0x8090a0b0c0d0e0f0]), 
+			U256([0x12f0, 1 , 0x0910203040506077, 0x8090a0b0c0d0e0f0]),
 			U256::from_str("8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0").unwrap()
 		);
 	}
@@ -1903,7 +1914,7 @@ mod tests {
 		let (_, overflow) = U256([0, 0, 2, 1]).overflowing_sub(U256([0, 0, 3, 1]));
 		assert!(overflow);
 
-		let (result, overflow) = 
+		let (result, overflow) =
 			U256([::std::u64::MAX, ::std::u64::MAX, ::std::u64::MAX, ::std::u64::MAX])
 				.overflowing_sub(U256([::std::u64::MAX/2, ::std::u64::MAX/2, ::std::u64::MAX/2, ::std::u64::MAX/2]));
 

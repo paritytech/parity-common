@@ -17,4 +17,5 @@ byteorder = "1.0"
 heapsize = { version = "0.4", optional = true }
 
 [features]
-heapsizeof = ["heapsize"]
+heapsizeof = ["heapsize", "std"]
+std = []
