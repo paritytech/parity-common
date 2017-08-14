@@ -13,8 +13,8 @@ rustc_version = "0.2"
 
 [dependencies]
 rustc-hex = "1.0"
-byteorder = "1.0"
 heapsize = { version = "0.4", optional = true }
+byteorder = { version = "1", default-features = false }
 
 [features]
 heapsizeof = ["heapsize", "std"]
