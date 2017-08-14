@@ -29,7 +29,7 @@
 //! implementations for even more speed, hidden behind the `x64_arithmetic`
 //! feature flag.
 
-use core::{str};
+use core::str;
 use core::ops::{Shr, Shl, BitAnd, BitOr, BitXor, Not, Div, Rem, Mul, Add, Sub};
 
 use byteorder::{ByteOrder, BigEndian, LittleEndian};
