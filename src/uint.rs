@@ -1447,6 +1447,42 @@ impl From<U256> for u32 {
 	}
 }
 
+impl<'a> From<&'a [u8; 32]> for U256 {
+	fn from(bytes: &[u8; 32]) -> Self {
+		bytes[..].into()
+	}
+}
+
+impl<'a> From<[u8; 32]> for U256 {
+	fn from(bytes: [u8; 32]) -> Self {
+		bytes[..].as_ref().into()
+	}
+}
+
+impl<'a> From<&'a [u8; 16]> for U128 {
+	fn from(bytes: &[u8; 16]) -> Self {
+		bytes[..].into()
+	}
+}
+
+impl<'a> From<[u8; 16]> for U128 {
+	fn from(bytes: [u8; 16]) -> Self {
+		bytes[..].as_ref().into()
+	}
+}
+
+impl<'a> From<&'a [u8; 64]> for U512 {
+	fn from(bytes: &[u8; 64]) -> Self {
+		bytes[..].into()
+	}
+}
+
+impl<'a> From<[u8; 64]> for U512 {
+	fn from(bytes: [u8; 64]) -> Self {
+		bytes[..].as_ref().into()
+	}
+}
+
 #[cfg(feature="heapsizeof")]
 known_heap_size!(0, U128, U256);
 
