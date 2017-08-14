@@ -776,9 +776,7 @@ macro_rules! construct_uint {
 			pub fn overflowing_neg(self) -> ($name, bool) {
 				(!self, true)
 			}
-		}
 
-		impl $name {
 			/// Multiplication by u32
 			#[allow(dead_code)] // not used when multiplied with inline assembly
 			fn mul_u32(self, other: u32) -> Self {
@@ -802,6 +800,33 @@ macro_rules! construct_uint {
 				}
 
 				($name(ret), carry > 0)
+			}
+
+			/// Converts from big endian representation bytes in memory
+			/// Can also be used as (&slice).into(), as it is default `From`
+			/// slice implementation for U256
+			pub fn from_big_endian(slice: &[u8]) -> Self {
+				assert!($n_words * 8 >= slice.len());
+
+				let mut ret = [0; $n_words];
+				for i in 0..slice.len() {
+					let rev = slice.len() - 1 - i;
+					let pos = rev / 8;
+					ret[pos] += (slice[i] as u64) << ((rev % 8) * 8);
+				}
+				$name(ret)
+			}
+
+			/// Converts from little endian representation bytes in memory
+			pub fn from_little_endian(slice: &[u8]) -> Self {
+				assert!($n_words * 8 >= slice.len());
+
+				let mut ret = [0; $n_words];
+				for i in 0..slice.len() {
+					let pos = i / 8;
+					ret[pos] += (slice[i] as u64) << ((i % 8) * 8);
+				}
+				$name(ret)
 			}
 		}
 
@@ -839,17 +864,10 @@ macro_rules! construct_uint {
 		impl_map_from!($name, i32, i64);
 		impl_map_from!($name, isize, i64);
 
+		// Converts from big endian representation of U256
 		impl<'a> From<&'a [u8]> for $name {
 			fn from(bytes: &[u8]) -> $name {
-				assert!($n_words * 8 >= bytes.len());
-
-				let mut ret = [0; $n_words];
-				for i in 0..bytes.len() {
-					let rev = bytes.len() - 1 - i;
-					let pos = rev / 8;
-					ret[pos] += (bytes[i] as u64) << ((rev % 8) * 8);
-				}
-				$name(ret)
+				Self::from_big_endian(bytes)
 			}
 		}
 
@@ -2303,5 +2321,42 @@ mod tests {
 		let mut result = [0u8; 32];
 		number.to_little_endian(&mut result);
 		assert_eq!(expected, result);
+	}
+
+	#[test]
+	fn slice_roundtrip() {
+		let raw = [
+			1u8, 2, 3, 5, 7, 11, 13, 17,
+			19, 23, 29, 31, 37, 41, 43, 47,
+			53, 59, 61, 67, 71, 73, 79, 83,
+			89, 97, 101, 103, 107, 109, 113, 127
+		];
+
+		let u256: U256 = (&raw[..]).into();
+
+		let mut new_raw = [0u8; 32];
+
+		u256.to_big_endian(&mut new_raw);
+
+		assert_eq!(&raw, &new_raw);
+	}
+
+
+	#[test]
+	fn slice_roundtrip_le() {
+		let raw = [
+			1u8, 2, 3, 5, 7, 11, 13, 17,
+			19, 23, 29, 31, 37, 41, 43, 47,
+			53, 59, 61, 67, 71, 73, 79, 83,
+			89, 97, 101, 103, 107, 109, 113, 127
+		];
+
+		let u256 = U256::from_little_endian(&raw[..]);
+
+		let mut new_raw = [0u8; 32];
+
+		u256.to_little_endian(&mut new_raw);
+
+		assert_eq!(&raw, &new_raw);
 	}
 }
