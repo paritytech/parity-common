@@ -7,5 +7,5 @@ matrix:
   allow_failures:
     - rust: nightly
 script:
-  - cargo build --features "heapsizeof"
-  - cargo test --features "heapsizeof"
+  - cargo build --features=heapsizeof,std
+  - cargo test --features=heapsizeof,std

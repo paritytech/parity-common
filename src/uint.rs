@@ -1433,7 +1433,7 @@ impl From<U256> for u32 {
 known_heap_size!(0, U128, U256);
 
 #[cfg(test)]
-#[cfg(std)]
+#[cfg(feature="std")]
 mod tests {
 	use uint::{U128, U256, U512};
 	use std::str::FromStr;
