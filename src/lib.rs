@@ -10,12 +10,19 @@
 
 #![cfg_attr(asm_available, feature(asm))]
 
+#![cfg_attr(not(feature="std"), no_std)]
+
 extern crate byteorder;
+
+#[cfg(feature="std")]
 extern crate rustc_hex;
 
 #[cfg(feature="heapsizeof")]
-#[macro_use] 
+#[macro_use]
 extern crate heapsize;
+
+#[cfg(feature="std")]
+extern crate core;
 
 pub mod uint;
 pub use ::uint::*;
