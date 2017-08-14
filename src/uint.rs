@@ -1453,9 +1453,17 @@ impl<'a> From<&'a [u8; 32]> for U256 {
 	}
 }
 
-impl<'a> From<[u8; 32]> for U256 {
+impl From<[u8; 32]> for U256 {
 	fn from(bytes: [u8; 32]) -> Self {
 		bytes[..].as_ref().into()
+	}
+}
+
+impl From<U256> for [u8; 32] {
+	fn from(number: U256) -> Self {
+		let mut arr = [0u8; 32];
+		number.to_big_endian(&mut arr);
+		arr
 	}
 }
 
@@ -1465,9 +1473,17 @@ impl<'a> From<&'a [u8; 16]> for U128 {
 	}
 }
 
-impl<'a> From<[u8; 16]> for U128 {
+impl From<[u8; 16]> for U128 {
 	fn from(bytes: [u8; 16]) -> Self {
 		bytes[..].as_ref().into()
+	}
+}
+
+impl From<U128> for [u8; 16] {
+	fn from(number: U128) -> Self {
+		let mut arr = [0u8; 16];
+		number.to_big_endian(&mut arr);
+		arr
 	}
 }
 
@@ -1477,9 +1493,17 @@ impl<'a> From<&'a [u8; 64]> for U512 {
 	}
 }
 
-impl<'a> From<[u8; 64]> for U512 {
+impl From<[u8; 64]> for U512 {
 	fn from(bytes: [u8; 64]) -> Self {
 		bytes[..].as_ref().into()
+	}
+}
+
+impl From<U512> for [u8; 64] {
+	fn from(number: U512) -> Self {
+		let mut arr = [0u8; 64];
+		number.to_big_endian(&mut arr);
+		arr
 	}
 }
 
@@ -2377,7 +2401,6 @@ mod tests {
 		assert_eq!(&raw, &new_raw);
 	}
 
-
 	#[test]
 	fn slice_roundtrip_le() {
 		let raw = [
@@ -2395,4 +2418,13 @@ mod tests {
 
 		assert_eq!(&raw, &new_raw);
 	}
-}
+
+	#[test]
+	fn fixed_arrays_roundtrip() {
+		let raw: U256 = "7094875209347850239487502394881".into();
+		let array: [u8; 32] = raw.into();
+		let new_raw = array.into();
+
+		assert_eq!(raw, new_raw);
+	}
+ }
