@@ -2460,4 +2460,32 @@ mod tests {
 
 		assert_eq!(raw, new_raw);
 	}
+
+	#[test]
+	fn from_little_endian() {
+		let source: [u8; 32] = [
+			1, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0,
+		];
+
+		let number = U256::from_little_endian(&source[..]);
+
+		assert_eq!(U256::from(1), number);
+	}
+
+	#[test]
+	fn from_big_endian() {
+		let source: [u8; 32] = [
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 1,
+		];
+
+		let number = U256::from_big_endian(&source[..]);
+
+		assert_eq!(U256::from(1), number);
+	}
  }
