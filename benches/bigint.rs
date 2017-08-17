@@ -101,3 +101,28 @@ fn u128_mul(b: &mut Bencher) {
 	});
 }
 
+#[bench]
+fn u256_from_le(b: &mut Bencher) {
+	b.iter(|| {
+		let raw = black_box([
+			1u8, 2, 3, 5, 7, 11, 13, 17,
+			19, 23, 29, 31, 37, 41, 43, 47,
+			53, 59, 61, 67, 71, 73, 79, 83,
+			89, 97, 101, 103, 107, 109, 113, 127
+		]);
+		let _ = U256::from_little_endian(&raw[..]);
+	});
+}
+
+#[bench]
+fn u256_from_be(b: &mut Bencher) {
+	b.iter(|| {
+		let raw = black_box([
+			1u8, 2, 3, 5, 7, 11, 13, 17,
+			19, 23, 29, 31, 37, 41, 43, 47,
+			53, 59, 61, 67, 71, 73, 79, 83,
+			89, 97, 101, 103, 107, 109, 113, 127
+		]);
+		let _ = U256::from_big_endian(&raw[..]);
+	});
+}
