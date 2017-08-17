@@ -29,7 +29,7 @@
 //! implementations for even more speed, hidden behind the `x64_arithmetic`
 //! feature flag.
 
-use core::str;
+use core::{str, mem};
 use core::ops::{Shr, Shl, BitAnd, BitOr, BitXor, Not, Div, Rem, Mul, Add, Sub};
 
 use byteorder::{ByteOrder, BigEndian, LittleEndian};
@@ -392,16 +392,20 @@ macro_rules! uint_overflowing_mul_reg {
 		let $name(ref you) = $other;
 		let mut ret = [0u64; 2*$n_words];
 
-		for i in 0..$n_words {
+		let mut i = 0;
+		for _ in 0..$n_words {
 			if you[i] == 0 {
+				i += 1;
 				continue;
 			}
 
 			let mut carry2 = 0u64;
 			let (b_u, b_l) = split(you[i]);
 
-			for j in 0..$n_words {
+			let mut j = 0;
+			for _ in 0..$n_words {
 				if me[j] == 0 && carry2 == 0 {
+					j += 1;
 					continue;
 				}
 
@@ -422,17 +426,21 @@ macro_rules! uint_overflowing_mul_reg {
 
 				// Only single overflow possible there
 				carry2 = (o1 | o2 | o3) as u64;
+				j += 1;
 			}
+			i += 1;
 		}
 
 		let mut res = [0u64; $n_words];
 		let mut overflow = false;
-		for i in 0..$n_words {
-			res[i] = ret[i];
-		}
+		res.copy_from_slice(&ret[0..$n_words]);
 
-		for i in $n_words..2*$n_words {
-			overflow |= ret[i] != 0;
+		unsafe {
+			let mut ret_ptr = ret.as_ptr().offset($n_words);
+			for _ in $n_words..2*$n_words {
+				overflow |= *ret_ptr != 0;
+				ret_ptr = ret_ptr.offset(1);
+			}
 		}
 
 		($name(res), overflow)
@@ -809,11 +817,17 @@ macro_rules! construct_uint {
 				assert!($n_words * 8 >= slice.len());
 
 				let mut ret = [0; $n_words];
-				for i in 0..slice.len() {
-					let rev = slice.len() - 1 - i;
-					let pos = rev / 8;
-					ret[pos] += (slice[i] as u64) << ((rev % 8) * 8);
+				unsafe {
+					let ret_u8: &mut [u8; $n_words * 8] = mem::transmute(&mut ret);
+					let mut ret_ptr = ret_u8.as_mut_ptr();
+					let mut slice_ptr = slice.as_ptr().offset(slice.len() as isize - 1);
+					for _ in 0..slice.len() {
+						*ret_ptr = *slice_ptr;
+						ret_ptr = ret_ptr.offset(1);
+						slice_ptr = slice_ptr.offset(-1);
+					}
 				}
+
 				$name(ret)
 			}
 
@@ -822,10 +836,11 @@ macro_rules! construct_uint {
 				assert!($n_words * 8 >= slice.len());
 
 				let mut ret = [0; $n_words];
-				for i in 0..slice.len() {
-					let pos = i / 8;
-					ret[pos] += (slice[i] as u64) << ((i % 8) * 8);
+				unsafe {
+					let ret_u8: &mut [u8; $n_words * 8] = mem::transmute(&mut ret);
+					ret_u8[0..slice.len()].copy_from_slice(&slice);
 				}
+
 				$name(ret)
 			}
 		}
@@ -2417,6 +2432,24 @@ mod tests {
 		u256.to_little_endian(&mut new_raw);
 
 		assert_eq!(&raw, &new_raw);
+	}
+
+	#[test]
+	fn slice_roundtrip_le2() {
+		let raw = [
+			2, 3, 5, 7, 11, 13, 17,
+			19, 23, 29, 31, 37, 41, 43, 47,
+			53, 59, 61, 67, 71, 73, 79, 83,
+			89, 97, 101, 103, 107, 109, 113, 127
+		];
+
+		let u256 = U256::from_little_endian(&raw[..]);
+
+		let mut new_raw = [0u8; 32];
+
+		u256.to_little_endian(&mut new_raw);
+
+		assert_eq!(&raw, &new_raw[..31]);
 	}
 
 	#[test]
