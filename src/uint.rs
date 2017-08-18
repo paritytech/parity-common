@@ -56,34 +56,26 @@ macro_rules! impl_map_from {
 
 #[cfg(not(all(asm_available, target_arch="x86_64")))]
 macro_rules! uint_overflowing_add {
-	($name:ident, $n_words:expr, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_add_reg!($name, $n_words, $self_expr, $other)
 	})
 }
 
 macro_rules! uint_overflowing_add_reg {
-	($name:ident, $n_words:expr, $self_expr: expr, $other: expr) => ({
-		let $name(ref me) = $self_expr;
-		let $name(ref you) = $other;
-
-		let mut ret = [0u64; $n_words];
-		let mut carry = 0u64;
-
-		for i in 0..$n_words {
-			let (res1, overflow1) = me[i].overflowing_add(you[i]);
-			let (res2, overflow2) = res1.overflowing_add(carry);
-
-			ret[i] = res2;
-			carry = overflow1 as u64 + overflow2 as u64;
-		}
-
-		($name(ret), carry > 0)
+	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
+		uint_overflowing_binop!(
+			$name,
+			$n_words,
+			$self_expr,
+			$other,
+			u64::overflowing_add
+		)
 	})
 }
 
 #[cfg(all(asm_available, target_arch="x86_64"))]
 macro_rules! uint_overflowing_add {
-	(U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
+	(U256, $n_words:tt, $self_expr: expr, $other: expr) => ({
 		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
@@ -106,7 +98,7 @@ macro_rules! uint_overflowing_add {
 		}
 		(U256(result), overflow != 0)
 	});
-	(U512, $n_words: expr, $self_expr: expr, $other: expr) => ({
+	(U512, $n_words:tt, $self_expr: expr, $other: expr) => ({
 		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
@@ -152,42 +144,76 @@ macro_rules! uint_overflowing_add {
 		(U512(result), overflow != 0)
 	});
 
-	($name:ident, $n_words:expr, $self_expr: expr, $other: expr) => (
+	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => (
 		uint_overflowing_add_reg!($name, $n_words, $self_expr, $other)
 	)
 }
 
 #[cfg(not(all(asm_available, target_arch="x86_64")))]
 macro_rules! uint_overflowing_sub {
-	($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_sub_reg!($name, $n_words, $self_expr, $other)
 	})
 }
 
-macro_rules! uint_overflowing_sub_reg {
-	($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
+macro_rules! uint_overflowing_binop {
+	($name:ident, $n_words:tt, $self_expr: expr, $other: expr, $fn:expr) => ({
 		let $name(ref me) = $self_expr;
 		let $name(ref you) = $other;
 
-		let mut ret = [0u64; $n_words];
+		let mut ret = unsafe { ::core::mem::uninitialized() };
+		let ret_ptr = &mut ret as *mut [u64; $n_words] as *mut u64;
 		let mut carry = 0u64;
 
-		for i in 0..$n_words {
-			let (res1, overflow1) = me[i].overflowing_sub(you[i]);
-			let (res2, overflow2) = res1.overflowing_sub(carry);
+		unroll! {
+			for i in 0..$n_words {
+				use ::core::ptr;
 
-			ret[i] = res2;
-			carry = overflow1 as u64 + overflow2 as u64;
+				if carry != 0 {
+					let (res1, overflow1) = ($fn)(me[i], you[i]);
+					let (res2, overflow2) = ($fn)(res1, carry);
+
+					unsafe {
+						ptr::write(
+							ret_ptr.offset(i as _),
+							res2
+						);
+					}
+					carry = (overflow1 as u8 + overflow2 as u8) as u64;
+				} else {
+					let (res, overflow) = ($fn)(me[i], you[i]);
+
+					unsafe {
+						ptr::write(
+							ret_ptr.offset(i as _),
+							res
+						);
+					}
+
+					carry = overflow as u64;
+				}
+			}
 		}
 
 		($name(ret), carry > 0)
+	})
+}
 
+macro_rules! uint_overflowing_sub_reg {
+	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
+		uint_overflowing_binop!(
+			$name,
+			$n_words,
+			$self_expr,
+			$other,
+			u64::overflowing_sub
+		)
 	})
 }
 
 #[cfg(all(asm_available, target_arch="x86_64"))]
 macro_rules! uint_overflowing_sub {
-	(U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
+	(U256, $n_words:tt, $self_expr: expr, $other: expr) => ({
 		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
@@ -374,76 +400,84 @@ macro_rules! uint_overflowing_mul {
 		}
 		(U256(result), overflow > 0)
 	});
-	($name:ident, $n_words:expr, $self_expr: expr, $other: expr) => (
+	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => (
 		uint_overflowing_mul_reg!($name, $n_words, $self_expr, $other)
 	)
 }
 
 #[cfg(not(all(asm_available, target_arch="x86_64")))]
 macro_rules! uint_overflowing_mul {
-	($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_mul_reg!($name, $n_words, $self_expr, $other)
 	})
 }
 
-macro_rules! uint_overflowing_mul_reg {
-	($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
+macro_rules! uint_full_mul_reg {
+	($name:ident, $n_words:tt, $self_expr:expr, $other:expr) => ({{
+		#![allow(unused_assignments)]
+
 		let $name(ref me) = $self_expr;
 		let $name(ref you) = $other;
 		let mut ret = [0u64; 2*$n_words];
 
-		let mut i = 0;
-		for _ in 0..$n_words {
-			if you[i] == 0 {
-				i += 1;
-				continue;
-			}
+		unroll! {
+			for i in 0..$n_words {
+				let mut carry = 0u64;
+				let (b_u, b_l) = split(you[i]);
 
-			let mut carry2 = 0u64;
-			let (b_u, b_l) = split(you[i]);
+				unroll! {
+					for j in 0..$n_words {
+						if me[j] != 0 || carry != 0 {
+							let a = split(me[j]);
 
-			let mut j = 0;
-			for _ in 0..$n_words {
-				if me[j] == 0 && carry2 == 0 {
-					j += 1;
-					continue;
+							// multiply parts
+							let (c_l, overflow_l) = mul_u32(a, b_l, ret[i + j]);
+							let (c_u, overflow_u) = mul_u32(a, b_u, c_l >> 32);
+							ret[i + j] = (c_l & 0xFFFFFFFF) + (c_u << 32);
+
+							// No overflow here
+							let res = (c_u >> 32) + (overflow_u << 32);
+							// possible overflows
+							let (res, o1) = res.overflowing_add(overflow_l + carry);
+							let (res, o2) = res.overflowing_add(ret[i + j + 1]);
+							ret[i + j + 1] = res;
+
+							// Only single overflow possible there
+							carry = (o1 | o2) as u64;
+						}
+					}
 				}
-
-				let a = split(me[j]);
-
-				// multiply parts
-				let (c_l, overflow_l) = mul_u32(a, b_l, ret[i + j]);
-				let (c_u, overflow_u) = mul_u32(a, b_u, c_l >> 32);
-				ret[i + j] = (c_l & 0xFFFFFFFF) + (c_u << 32);
-
-				// No overflow here
-				let res = (c_u >> 32) + (overflow_u << 32);
-				// possible overflows
-				let (res, o1) = res.overflowing_add(overflow_l);
-				let (res, o2) = res.overflowing_add(carry2);
-				let (res, o3) = res.overflowing_add(ret[i + j + 1]);
-				ret[i + j + 1] = res;
-
-				// Only single overflow possible there
-				carry2 = (o1 | o2 | o3) as u64;
-				j += 1;
-			}
-			i += 1;
-		}
-
-		let mut res = [0u64; $n_words];
-		let mut overflow = false;
-		res.copy_from_slice(&ret[0..$n_words]);
-
-		unsafe {
-			let mut ret_ptr = ret.as_ptr().offset($n_words);
-			for _ in $n_words..2*$n_words {
-				overflow |= *ret_ptr != 0;
-				ret_ptr = ret_ptr.offset(1);
 			}
 		}
 
-		($name(res), overflow)
+		ret
+	}})
+}
+
+macro_rules! uint_overflowing_mul_reg {
+	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
+		#![allow(unused_assignments)]
+
+		let ret: [u64; $n_words * 2] = uint_full_mul_reg!($name, $n_words, $self_expr, $other);
+
+		// The safety of this is enforced by the compiler
+		let ret: [[u64; $n_words]; 2] = unsafe { mem::transmute(ret) };
+
+		// The compiler WILL NOT inline this if you remove this annotation.
+		#[inline(always)]
+		fn any_nonzero(arr: &[u64; $n_words]) -> bool {
+			unroll! {
+				for i in 0..$n_words {
+					if arr[i] != 0 {
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		($name(ret[0]), any_nonzero(&ret[1]))
 	})
 }
 
@@ -489,7 +523,7 @@ fn split(a: u64) -> (u64, u64) {
 }
 
 macro_rules! construct_uint {
-	($name:ident, $n_words:expr) => (
+	($name:ident, $n_words:tt) => (
 		/// Little-endian large integer type
 		#[repr(C)]
 		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
@@ -1161,9 +1195,9 @@ macro_rules! construct_uint {
 	);
 }
 
-construct_uint!(U512, 8);
-construct_uint!(U256, 4);
 construct_uint!(U128, 2);
+construct_uint!(U256, 4);
+construct_uint!(U512, 8);
 
 impl U256 {
 	/// Multiplies two 256-bit integers to produce full 512-bit integer
@@ -1307,46 +1341,10 @@ impl U256 {
 
 	/// Multiplies two 256-bit integers to produce full 512-bit integer
 	/// No overflow possible
+	#[inline(always)]
 	#[cfg(not(all(asm_available, target_arch="x86_64")))]
 	pub fn full_mul(self, other: U256) -> U512 {
-		let U256(ref me) = self;
-		let U256(ref you) = other;
-		let mut ret = [0u64; 8];
-
-		for i in 0..4 {
-			if you[i] == 0 {
-				continue;
-			}
-
-			let mut carry2 = 0u64;
-			let (b_u, b_l) = split(you[i]);
-
-			for j in 0..4 {
-				if me[j] == 0 && carry2 == 0 {
-					continue;
-				}
-
-				let a = split(me[j]);
-
-				// multiply parts
-				let (c_l, overflow_l) = mul_u32(a, b_l, ret[i + j]);
-				let (c_u, overflow_u) = mul_u32(a, b_u, c_l >> 32);
-				ret[i + j] = (c_l & 0xFFFFFFFF) + (c_u << 32);
-
-				// No overflow here
-				let res = (c_u >> 32) + (overflow_u << 32);
-				// possible overflows
-				let (res, o1) = res.overflowing_add(overflow_l);
-				let (res, o2) = res.overflowing_add(carry2);
-				let (res, o3) = res.overflowing_add(ret[i + j + 1]);
-				ret[i + j + 1] = res;
-
-				// Only single overflow possible there
-				carry2 = (o1 | o2 | o3) as u64;
-			}
-		}
-
-		U512(ret)
+		U512(uint_full_mul_reg!(U256, 4, self, other))
 	}
 }
 
