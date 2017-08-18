@@ -456,8 +456,6 @@ macro_rules! uint_full_mul_reg {
 
 macro_rules! uint_overflowing_mul_reg {
 	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
-		#![allow(unused_assignments)]
-
 		let ret: [u64; $n_words * 2] = uint_full_mul_reg!($name, $n_words, $self_expr, $other);
 
 		// The safety of this is enforced by the compiler
