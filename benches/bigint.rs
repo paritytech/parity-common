@@ -69,21 +69,29 @@ fn u512_add(b: &mut Bencher) {
 }
 
 #[bench]
+fn u512_mul(b: &mut Bencher) {
+	b.iter(|| {
+		let n = black_box(10000);
+		let one = black_box(U512::one());
+		(1..n).fold(one, |old, new| { old.overflowing_mul(U512::from(black_box(new))).0 })
+	});
+}
+
+#[bench]
 fn u256_mul(b: &mut Bencher) {
 	b.iter(|| {
 		let n = black_box(10000);
 		let one = black_box(U256::one());
-		(0..n).fold(one, |old, new| { old.overflowing_mul(U256::from(black_box(new))).0 })
+		(1..n).fold(one, |old, new| { old.overflowing_mul(U256::from(black_box(new))).0 })
 	});
 }
-
 
 #[bench]
 fn u256_full_mul(b: &mut Bencher) {
 	b.iter(|| {
 		let n = black_box(10000);
 		let one = black_box(U256::one());
-		(0..n).fold(one,
+		(1..n).fold(one,
 			|old, new| {
 				let new = black_box(new);
 				let U512(ref u512words) = old.full_mul(U256([new, new, new, new]));
@@ -97,7 +105,7 @@ fn u256_full_mul(b: &mut Bencher) {
 fn u128_mul(b: &mut Bencher) {
 	b.iter(|| {
 		let n = black_box(10000);
-		(0..n).fold(U128([12345u64, 0u64]), |old, new| { old.overflowing_mul(U128::from(new)).0 })
+		(1..n).fold(U128([12345u64, 0u64]), |old, new| { old.overflowing_mul(U128::from(new)).0 })
 	});
 }
 

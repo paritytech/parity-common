@@ -17,6 +17,9 @@ extern crate byteorder;
 #[cfg(feature="std")]
 extern crate rustc_hex;
 
+#[macro_use]
+extern crate crunchy;
+
 #[cfg(feature="heapsizeof")]
 #[macro_use]
 extern crate heapsize;
