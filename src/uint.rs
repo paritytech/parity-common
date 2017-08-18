@@ -235,7 +235,7 @@ macro_rules! uint_overflowing_sub {
 		}
 		(U256(result), overflow != 0)
 	});
-	(U512, $n_words: expr, $self_expr: expr, $other: expr) => ({
+	(U512, $n_words:tt, $self_expr: expr, $other: expr) => ({
 		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
@@ -280,7 +280,7 @@ macro_rules! uint_overflowing_sub {
 		}
 		(U512(result), overflow != 0)
 	});
-	($name:ident, $n_words: expr, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_sub_reg!($name, $n_words, $self_expr, $other)
 	})
 }
@@ -474,7 +474,7 @@ macro_rules! uint_overflowing_mul_reg {
 				}
 			}
 
-			return false;
+			false
 		}
 
 		($name(ret[0]), any_nonzero(&ret[1]))
