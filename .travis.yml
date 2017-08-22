@@ -9,3 +9,5 @@ matrix:
 script:
   - cargo build --features=heapsizeof,std
   - cargo test --features=heapsizeof,std
+  - rustup default nightly
+  - cargo bench
