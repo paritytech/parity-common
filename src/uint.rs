@@ -622,6 +622,36 @@ macro_rules! construct_uint {
 				arr[index / 64] & (1 << (index % 64)) != 0
 			}
 
+			/// Returns the number of leading zeros in the binary representation of self.
+			pub fn leading_zeros(&self) -> u32 {
+				let mut r = 0;
+				for i in 0..$n_words {
+					let w = self.0[$n_words - i - 1];
+					if w == 0 {
+						r += 64;
+					} else {
+						r += w.leading_zeros();
+						break;
+					}
+				}
+				r
+			}
+
+			/// Returns the number of leading zeros in the binary representation of self.
+			pub fn trailing_zeros(&self) -> u32 {
+				let mut r = 0;
+				for i in 0..$n_words {
+					let w = self.0[i];
+					if w == 0 {
+						r += 64;
+					} else {
+						r += w.trailing_zeros();
+						break;
+					}
+				}
+				r
+			}
+
 			/// Return specific byte.
 			///
 			/// # Panics
@@ -2483,5 +2513,21 @@ mod tests {
 		let number = U256::from_big_endian(&source[..]);
 
 		assert_eq!(U256::from(1), number);
+	}
+
+	#[test]
+	fn leading_zeros() {
+		assert_eq!(U256::from("000000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1").leading_zeros(), 95);
+		assert_eq!(U256::from("f00000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1").leading_zeros(), 0);
+		assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000001").leading_zeros(), 255);
+		assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").leading_zeros(), 256);
+	}
+
+	#[test]
+	fn trailing_zeros() {
+		assert_eq!(U256::from("1adbdd6bd6ff027485484b97f8a6a4c7129756dd100000000000000000000000").trailing_zeros(), 92);
+		assert_eq!(U256::from("1adbdd6bd6ff027485484b97f8a6a4c7129756dd10000000000000000000000f").trailing_zeros(), 0);
+		assert_eq!(U256::from("8000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 255);
+		assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 256);
 	}
  }
