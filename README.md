@@ -6,6 +6,13 @@
 
 Fixed-sized integers arithmetic
 
+Add a dependency
+
+[dependencies]
+bigint = "4"
+
+Little example
+
 ```rust
 extern crate bigint;
 use bigint::U256;
