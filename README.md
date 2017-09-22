@@ -6,10 +6,12 @@
 
 Fixed-sized integers arithmetic
 
-Add a dependency
+To specify a dependency, add to `Cargo.toml`
 
+```toml
 [dependencies]
 bigint = "4"
+```
 
 Little example
 
