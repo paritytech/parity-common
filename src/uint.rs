@@ -1566,7 +1566,7 @@ mod tests {
 		// test unsigned initialization
 		let ua = U256::from(10u8);
 		let ub = U256::from(10u16);
-		let uc =  U256::from(10u32);
+		let uc = U256::from(10u32);
 		let ud = U256::from(10u64);
 		assert_eq!(e, ua);
 		assert_eq!(e, ub);
@@ -2530,4 +2530,183 @@ mod tests {
 		assert_eq!(U256::from("8000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 255);
 		assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 256);
 	}
- }
+
+	mod laws {
+		use quickcheck::{Arbitrary, Gen, TestResult};
+		use uint::U128;
+
+		impl Arbitrary for U128 {
+			fn arbitrary<G: Gen>(g: &mut G) -> U128 {
+				let mut res = [0u8; 16];
+				g.fill_bytes(&mut res);
+				U128::from(res)
+			}
+		}
+
+		quickcheck! {
+			fn associative_add(x: U128, y: U128, z: U128) -> TestResult {
+				if x.saturating_add(y).overflowing_add(z).1 {
+					return TestResult::discard();
+				}
+
+				TestResult::from_bool(
+					(x + y) + z == x + (y + z)
+				)
+			}
+		}
+
+		quickcheck! {
+			fn associative_mul(x: u64, y: u64, z: u64) -> TestResult {
+				let (x, y, z) = (U128::from(x), U128::from(y), U128::from(z));
+
+				if x.saturating_mul(y).overflowing_mul(z).1 {
+					return TestResult::discard();
+				}
+
+				TestResult::from_bool(
+					(x * y) * z == x * (y * z)
+				)
+			}
+		}
+
+		quickcheck! {
+			fn commutative_add(x: U128, y: U128) -> TestResult {
+				if x.overflowing_add(y).1 {
+					return TestResult::discard();
+				}
+
+				TestResult::from_bool(
+					x + y == y + x
+				)
+			}
+		}
+
+		quickcheck! {
+			fn commutative_mul(x: u64, y: u64) -> TestResult {
+				let (x, y) = (U128::from(x), U128::from(y));
+
+				if x.overflowing_mul(y).1 {
+					return TestResult::discard();
+				}
+
+				TestResult::from_bool(
+					x * y == y * x
+				)
+			}
+		}
+
+		quickcheck! {
+			fn identity_add(x: U128) -> bool {
+				x + U128::zero() == x
+			}
+		}
+
+		quickcheck! {
+			fn identity_mul(x: U128) -> bool {
+				x * U128::one() == x
+			}
+		}
+
+		quickcheck! {
+			fn identity_div(x: U128) -> bool {
+				x / U128::one() == x
+			}
+		}
+
+		quickcheck! {
+			fn absorbing_rem(x: U128) -> bool {
+				x % U128::one() == U128::zero()
+			}
+		}
+
+		quickcheck! {
+			fn absorbing_sub(x: U128) -> bool {
+				x - x == U128::zero()
+			}
+		}
+
+		quickcheck! {
+			fn absorbing_mul(x: U128) -> bool {
+				x * U128::zero() == U128::zero()
+			}
+		}
+
+		quickcheck! {
+			fn distributive_mul_over_add(x: u64, y: u64, z: u64) -> TestResult {
+				let (x, y, z) = (U128::from(x), U128::from(y), U128::from(z));
+
+				if x.overflowing_mul(y.saturating_add(z)).1 || x.saturating_add(y).overflowing_mul(x).1 {
+					return TestResult::discard();
+				}
+
+				TestResult::from_bool(
+					(x * (y + z) == (x * y + x * z)) && (((x + y) * z) == (x * z + y * z))
+				)
+			}
+		}
+
+		quickcheck! {
+			fn pow_mul(x: u64) -> TestResult {
+				let x = U128::from(x);
+
+				if x.overflowing_pow(U128::from(2)).1 || x.overflowing_pow(U128::from(3)).1 {
+					return TestResult::discard();
+				}
+
+				TestResult::from_bool(
+					x.pow(U128::from(2)) == x * x && x.pow(U128::from(3)) == x * x * x
+				)
+			}
+		}
+
+		quickcheck! {
+			fn add_increases(x: U128, y: U128) -> TestResult {
+				if y.is_zero() || x.overflowing_add(U128::from(y)).1 {
+					return TestResult::discard();
+				}
+
+				TestResult::from_bool(
+					x + y > x
+				)
+			}
+		}
+
+		quickcheck! {
+			fn mul_increases(x: u64, y: u64) -> TestResult {
+				let (x, y) = (U128::from(x), U128::from(y));
+
+				if y.is_zero() || x.overflowing_mul(U128::from(y)).1 {
+					return TestResult::discard();
+				}
+
+				TestResult::from_bool(
+					x * y >= x
+				)
+			}
+		}
+
+		quickcheck! {
+			fn div_decreases_dividend(x: U128, y: U128) -> TestResult {
+				if y.is_zero() {
+					return TestResult::discard();
+				}
+
+				TestResult::from_bool(
+					x / y <= x
+				)
+			}
+		}
+
+		quickcheck! {
+			fn rem_decreases_divisor(x: U128, y: U128) -> TestResult {
+				if y.is_zero() {
+					return TestResult::discard();
+				}
+
+				TestResult::from_bool(
+					x % y < y
+				)
+			}
+		}
+	}
+}
