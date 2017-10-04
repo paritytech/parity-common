@@ -27,5 +27,9 @@ extern crate heapsize;
 #[cfg(feature="std")]
 extern crate core;
 
+#[cfg(test)]
+#[macro_use]
+extern crate quickcheck;
+
 pub mod uint;
 pub use ::uint::*;

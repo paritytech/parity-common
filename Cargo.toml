@@ -17,6 +17,9 @@ heapsize = { version = "0.4", optional = true }
 byteorder = { version = "1", default-features = false }
 crunchy = "0.1.5"
 
+[dev-dependencies]
+quickcheck = "0.3"
+
 [features]
 heapsizeof = ["heapsize", "std"]
 std = ["rustc-hex"]
