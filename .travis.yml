@@ -11,3 +11,5 @@ script:
   - cargo test --features=heapsizeof,std
   - rustup default nightly
   - cargo bench
+env:
+  - RUST_LOG=quickcheck
