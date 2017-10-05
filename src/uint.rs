@@ -2539,11 +2539,23 @@ mod tests {
 				impl ::quickcheck::Arbitrary for $uint {
 					fn arbitrary<G: ::quickcheck::Gen>(g: &mut G) -> Self {
 						let mut res = [0u8; $n_bytes];
-						let size = g.gen_range(0, $n_bytes);
+
+						let p = g.next_f64();
+						let range =
+							if p < 0.1 {
+								$n_bytes
+							} else if p < 0.2 {
+								$n_bytes / 2
+							} else {
+								$n_bytes / 5
+							};
+
+						let size = g.gen_range(0, range);
 						g.fill_bytes(&mut res[..size]);
+
 						Self::from(res)
 					}
- 				}
+				}
 			}
 		}
 
