@@ -2538,7 +2538,8 @@ mod tests {
 		impl Arbitrary for U128 {
 			fn arbitrary<G: Gen>(g: &mut G) -> U128 {
 				let mut res = [0u8; 16];
-				g.fill_bytes(&mut res);
+				let size = g.gen_range(0, 16);
+				g.fill_bytes(&mut res[..size]);
 				U128::from(res)
 			}
 		}
