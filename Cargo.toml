@@ -18,7 +18,7 @@ byteorder = { version = "1", default-features = false }
 crunchy = "0.1.5"
 
 [dev-dependencies]
-quickcheck = "0.3"
+quickcheck = "0.4"
 
 [features]
 heapsizeof = ["heapsize", "std"]
