@@ -2546,7 +2546,7 @@ mod tests {
 
 		quickcheck! {
 			fn associative_add(x: U128, y: U128, z: U128) -> TestResult {
-				if x.saturating_add(y).overflowing_add(z).1 {
+				if x.overflowing_add(y).1 || y.overflowing_add(z).1 || (x + y).overflowing_add(z).1 {
 					return TestResult::discard();
 				}
 
@@ -2557,10 +2557,8 @@ mod tests {
 		}
 
 		quickcheck! {
-			fn associative_mul(x: u64, y: u64, z: u64) -> TestResult {
-				let (x, y, z) = (U128::from(x), U128::from(y), U128::from(z));
-
-				if x.saturating_mul(y).overflowing_mul(z).1 {
+			fn associative_mul(x: U128, y: U128, z: U128) -> TestResult {
+				if x.overflowing_mul(y).1 || y.overflowing_mul(z).1 || (x * y).overflowing_mul(z).1 {
 					return TestResult::discard();
 				}
 
@@ -2583,9 +2581,7 @@ mod tests {
 		}
 
 		quickcheck! {
-			fn commutative_mul(x: u64, y: u64) -> TestResult {
-				let (x, y) = (U128::from(x), U128::from(y));
-
+			fn commutative_mul(x: U128, y: U128) -> TestResult {
 				if x.overflowing_mul(y).1 {
 					return TestResult::discard();
 				}
@@ -2633,10 +2629,8 @@ mod tests {
 		}
 
 		quickcheck! {
-			fn distributive_mul_over_add(x: u64, y: u64, z: u64) -> TestResult {
-				let (x, y, z) = (U128::from(x), U128::from(y), U128::from(z));
-
-				if x.overflowing_mul(y.saturating_add(z)).1 || x.saturating_add(y).overflowing_mul(x).1 {
+			fn distributive_mul_over_add(x: U128, y: U128, z: U128) -> TestResult {
+				if y.overflowing_add(z).1 || x.overflowing_mul(y + z).1 || x.overflowing_add(y).1 || (x + y).overflowing_mul(z).1 {
 					return TestResult::discard();
 				}
 
@@ -2647,9 +2641,7 @@ mod tests {
 		}
 
 		quickcheck! {
-			fn pow_mul(x: u64) -> TestResult {
-				let x = U128::from(x);
-
+			fn pow_mul(x: U128) -> TestResult {
 				if x.overflowing_pow(U128::from(2)).1 || x.overflowing_pow(U128::from(3)).1 {
 					return TestResult::discard();
 				}
@@ -2662,7 +2654,7 @@ mod tests {
 
 		quickcheck! {
 			fn add_increases(x: U128, y: U128) -> TestResult {
-				if y.is_zero() || x.overflowing_add(U128::from(y)).1 {
+				if y.is_zero() || x.overflowing_add(y).1 {
 					return TestResult::discard();
 				}
 
@@ -2673,10 +2665,8 @@ mod tests {
 		}
 
 		quickcheck! {
-			fn mul_increases(x: u64, y: u64) -> TestResult {
-				let (x, y) = (U128::from(x), U128::from(y));
-
-				if y.is_zero() || x.overflowing_mul(U128::from(y)).1 {
+			fn mul_increases(x: U128, y: U128) -> TestResult {
+				if y.is_zero() || x.overflowing_mul(y).1 {
 					return TestResult::discard();
 				}
 
