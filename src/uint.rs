@@ -2533,16 +2533,24 @@ mod tests {
 
 	mod laws {
 		use quickcheck::{Arbitrary, Gen, TestResult};
-		use uint::U128;
+		use uint::{U128, U256, U512};
 
-		impl Arbitrary for U128 {
-			fn arbitrary<G: Gen>(g: &mut G) -> U128 {
-				let mut res = [0u8; 16];
-				let size = g.gen_range(0, 16);
-				g.fill_bytes(&mut res[..size]);
-				U128::from(res)
+		macro_rules! uint_arbitrary {
+			($uint:ty, $n_bytes:tt) => {
+				impl Arbitrary for $uint {
+					fn arbitrary<G: Gen>(g: &mut G) -> Self {
+						let mut res = [0u8; $n_bytes];
+						let size = g.gen_range(0, $n_bytes);
+						g.fill_bytes(&mut res[..size]);
+						Self::from(res)
+					}
+ 				}
 			}
 		}
+
+		uint_arbitrary!(U128, 16);
+		uint_arbitrary!(U256, 32);
+		uint_arbitrary!(U512, 64);
 
 		quickcheck! {
 			fn associative_add(x: U128, y: U128, z: U128) -> TestResult {
