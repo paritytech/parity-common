@@ -8,7 +8,7 @@ matrix:
     - rust: nightly
 script:
   - cargo build --features=heapsizeof,std
-  - cargo test --features=heapsizeof,std
+  - cargo test --release --features=heapsizeof,std
   - rustup default nightly
   - cargo bench
 env:

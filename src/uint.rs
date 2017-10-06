@@ -2532,181 +2532,204 @@ mod tests {
 	}
 
 	mod laws {
-		use quickcheck::{Arbitrary, Gen, TestResult};
-		use uint::U128;
+		use uint::{U128, U256, U512};
 
-		impl Arbitrary for U128 {
-			fn arbitrary<G: Gen>(g: &mut G) -> U128 {
-				let mut res = [0u8; 16];
-				g.fill_bytes(&mut res);
-				U128::from(res)
-			}
-		}
+		macro_rules! uint_arbitrary {
+			($uint:ty, $n_bytes:tt) => {
+				impl ::quickcheck::Arbitrary for $uint {
+					fn arbitrary<G: ::quickcheck::Gen>(g: &mut G) -> Self {
+						let mut res = [0u8; $n_bytes];
 
-		quickcheck! {
-			fn associative_add(x: U128, y: U128, z: U128) -> TestResult {
-				if x.saturating_add(y).overflowing_add(z).1 {
-					return TestResult::discard();
+						let p = g.next_f64();
+						let range =
+							if p < 0.1 {
+								$n_bytes
+							} else if p < 0.2 {
+								$n_bytes / 2
+							} else {
+								$n_bytes / 5
+							};
+
+						let size = g.gen_range(0, range);
+						g.fill_bytes(&mut res[..size]);
+
+						Self::from(res)
+					}
 				}
-
-				TestResult::from_bool(
-					(x + y) + z == x + (y + z)
-				)
 			}
 		}
 
-		quickcheck! {
-			fn associative_mul(x: u64, y: u64, z: u64) -> TestResult {
-				let (x, y, z) = (U128::from(x), U128::from(y), U128::from(z));
+		uint_arbitrary!(U128, 16);
+		uint_arbitrary!(U256, 32);
+		uint_arbitrary!(U512, 64);
 
-				if x.saturating_mul(y).overflowing_mul(z).1 {
-					return TestResult::discard();
+		macro_rules! uint_laws {
+			($mod_name:ident, $uint_ty:ident) => {
+				mod $mod_name {
+					use quickcheck::TestResult;
+					use uint::*;
+
+					quickcheck! {
+						fn associative_add(x: $uint_ty, y: $uint_ty, z: $uint_ty) -> TestResult {
+							if x.overflowing_add(y).1 || y.overflowing_add(z).1 || (x + y).overflowing_add(z).1 {
+								return TestResult::discard();
+							}
+
+							TestResult::from_bool(
+								(x + y) + z == x + (y + z)
+							)
+						}
+					}
+
+					quickcheck! {
+						fn associative_mul(x: $uint_ty, y: $uint_ty, z: $uint_ty) -> TestResult {
+							if x.overflowing_mul(y).1 || y.overflowing_mul(z).1 || (x * y).overflowing_mul(z).1 {
+								return TestResult::discard();
+							}
+
+							TestResult::from_bool(
+								(x * y) * z == x * (y * z)
+							)
+						}
+					}
+
+					quickcheck! {
+						fn commutative_add(x: $uint_ty, y: $uint_ty) -> TestResult {
+							if x.overflowing_add(y).1 {
+								return TestResult::discard();
+							}
+
+							TestResult::from_bool(
+								x + y == y + x
+							)
+						}
+					}
+
+					quickcheck! {
+						fn commutative_mul(x: $uint_ty, y: $uint_ty) -> TestResult {
+							if x.overflowing_mul(y).1 {
+								return TestResult::discard();
+							}
+
+							TestResult::from_bool(
+								x * y == y * x
+							)
+						}
+					}
+
+					quickcheck! {
+						fn identity_add(x: $uint_ty) -> bool {
+							x + $uint_ty::zero() == x
+						}
+					}
+
+					quickcheck! {
+						fn identity_mul(x: $uint_ty) -> bool {
+							x * $uint_ty::one() == x
+						}
+					}
+
+					quickcheck! {
+						fn identity_div(x: $uint_ty) -> bool {
+							x / $uint_ty::one() == x
+						}
+					}
+
+					quickcheck! {
+						fn absorbing_rem(x: $uint_ty) -> bool {
+							x % $uint_ty::one() == $uint_ty::zero()
+						}
+					}
+
+					quickcheck! {
+						fn absorbing_sub(x: $uint_ty) -> bool {
+							x - x == $uint_ty::zero()
+						}
+					}
+
+					quickcheck! {
+						fn absorbing_mul(x: $uint_ty) -> bool {
+							x * $uint_ty::zero() == $uint_ty::zero()
+						}
+					}
+
+					quickcheck! {
+						fn distributive_mul_over_add(x: $uint_ty, y: $uint_ty, z: $uint_ty) -> TestResult {
+							if y.overflowing_add(z).1 || x.overflowing_mul(y + z).1 || x.overflowing_add(y).1 || (x + y).overflowing_mul(z).1 {
+								return TestResult::discard();
+							}
+
+							TestResult::from_bool(
+								(x * (y + z) == (x * y + x * z)) && (((x + y) * z) == (x * z + y * z))
+							)
+						}
+					}
+
+					quickcheck! {
+						fn pow_mul(x: $uint_ty) -> TestResult {
+							if x.overflowing_pow($uint_ty::from(2)).1 || x.overflowing_pow($uint_ty::from(3)).1 {
+								return TestResult::discard();
+							}
+
+							TestResult::from_bool(
+								x.pow($uint_ty::from(2)) == x * x && x.pow($uint_ty::from(3)) == x * x * x
+							)
+						}
+					}
+
+					quickcheck! {
+						fn add_increases(x: $uint_ty, y: $uint_ty) -> TestResult {
+							if y.is_zero() || x.overflowing_add(y).1 {
+								return TestResult::discard();
+							}
+
+							TestResult::from_bool(
+								x + y > x
+							)
+						}
+					}
+
+					quickcheck! {
+						fn mul_increases(x: $uint_ty, y: $uint_ty) -> TestResult {
+							if y.is_zero() || x.overflowing_mul(y).1 {
+								return TestResult::discard();
+							}
+
+							TestResult::from_bool(
+								x * y >= x
+							)
+						}
+					}
+
+					quickcheck! {
+						fn div_decreases_dividend(x: $uint_ty, y: $uint_ty) -> TestResult {
+							if y.is_zero() {
+								return TestResult::discard();
+							}
+
+							TestResult::from_bool(
+								x / y <= x
+							)
+						}
+					}
+
+					quickcheck! {
+						fn rem_decreases_divisor(x: $uint_ty, y: $uint_ty) -> TestResult {
+							if y.is_zero() {
+								return TestResult::discard();
+							}
+
+							TestResult::from_bool(
+								x % y < y
+							)
+						}
+					}
 				}
-
-				TestResult::from_bool(
-					(x * y) * z == x * (y * z)
-				)
 			}
 		}
 
-		quickcheck! {
-			fn commutative_add(x: U128, y: U128) -> TestResult {
-				if x.overflowing_add(y).1 {
-					return TestResult::discard();
-				}
-
-				TestResult::from_bool(
-					x + y == y + x
-				)
-			}
-		}
-
-		quickcheck! {
-			fn commutative_mul(x: u64, y: u64) -> TestResult {
-				let (x, y) = (U128::from(x), U128::from(y));
-
-				if x.overflowing_mul(y).1 {
-					return TestResult::discard();
-				}
-
-				TestResult::from_bool(
-					x * y == y * x
-				)
-			}
-		}
-
-		quickcheck! {
-			fn identity_add(x: U128) -> bool {
-				x + U128::zero() == x
-			}
-		}
-
-		quickcheck! {
-			fn identity_mul(x: U128) -> bool {
-				x * U128::one() == x
-			}
-		}
-
-		quickcheck! {
-			fn identity_div(x: U128) -> bool {
-				x / U128::one() == x
-			}
-		}
-
-		quickcheck! {
-			fn absorbing_rem(x: U128) -> bool {
-				x % U128::one() == U128::zero()
-			}
-		}
-
-		quickcheck! {
-			fn absorbing_sub(x: U128) -> bool {
-				x - x == U128::zero()
-			}
-		}
-
-		quickcheck! {
-			fn absorbing_mul(x: U128) -> bool {
-				x * U128::zero() == U128::zero()
-			}
-		}
-
-		quickcheck! {
-			fn distributive_mul_over_add(x: u64, y: u64, z: u64) -> TestResult {
-				let (x, y, z) = (U128::from(x), U128::from(y), U128::from(z));
-
-				if x.overflowing_mul(y.saturating_add(z)).1 || x.saturating_add(y).overflowing_mul(x).1 {
-					return TestResult::discard();
-				}
-
-				TestResult::from_bool(
-					(x * (y + z) == (x * y + x * z)) && (((x + y) * z) == (x * z + y * z))
-				)
-			}
-		}
-
-		quickcheck! {
-			fn pow_mul(x: u64) -> TestResult {
-				let x = U128::from(x);
-
-				if x.overflowing_pow(U128::from(2)).1 || x.overflowing_pow(U128::from(3)).1 {
-					return TestResult::discard();
-				}
-
-				TestResult::from_bool(
-					x.pow(U128::from(2)) == x * x && x.pow(U128::from(3)) == x * x * x
-				)
-			}
-		}
-
-		quickcheck! {
-			fn add_increases(x: U128, y: U128) -> TestResult {
-				if y.is_zero() || x.overflowing_add(U128::from(y)).1 {
-					return TestResult::discard();
-				}
-
-				TestResult::from_bool(
-					x + y > x
-				)
-			}
-		}
-
-		quickcheck! {
-			fn mul_increases(x: u64, y: u64) -> TestResult {
-				let (x, y) = (U128::from(x), U128::from(y));
-
-				if y.is_zero() || x.overflowing_mul(U128::from(y)).1 {
-					return TestResult::discard();
-				}
-
-				TestResult::from_bool(
-					x * y >= x
-				)
-			}
-		}
-
-		quickcheck! {
-			fn div_decreases_dividend(x: U128, y: U128) -> TestResult {
-				if y.is_zero() {
-					return TestResult::discard();
-				}
-
-				TestResult::from_bool(
-					x / y <= x
-				)
-			}
-		}
-
-		quickcheck! {
-			fn rem_decreases_divisor(x: U128, y: U128) -> TestResult {
-				if y.is_zero() {
-					return TestResult::discard();
-				}
-
-				TestResult::from_bool(
-					x % y < y
-				)
-			}
-		}
+		uint_laws!(u128, U128);
+		uint_laws!(u256, U256);
+		uint_laws!(u512, U512);
 	}
 }
