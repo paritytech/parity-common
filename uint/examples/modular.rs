@@ -6,9 +6,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate bigint;
+extern crate uint;
 
-use bigint::U256;
+use uint::U256;
 
 fn main() {
 	// Example modular arithmetic using bigint U256 primitives

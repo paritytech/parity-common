@@ -10,26 +10,20 @@
 
 #![cfg_attr(asm_available, feature(asm))]
 
-#![cfg_attr(not(feature="std"), no_std)]
-
-extern crate byteorder;
-
-#[cfg(feature="std")]
-extern crate rustc_hex;
-
-#[macro_use]
-extern crate crunchy;
+#[doc(hidden)]
+pub extern crate byteorder;
 
 #[cfg(feature="heapsizeof")]
-#[macro_use]
-extern crate heapsize;
+#[doc(hidden)]
+pub extern crate heapsize;
 
 #[cfg(feature="std")]
-extern crate core;
+#[doc(hidden)]
+pub extern crate core;
 
-#[cfg(test)]
-#[macro_use]
-extern crate quickcheck;
+#[cfg(feature = "std")]
+#[doc(hidden)]
+pub extern crate rustc_hex;
 
-pub mod uint;
-pub use ::uint::*;
+mod uint;
+pub use uint::*;
