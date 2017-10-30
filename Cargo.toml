@@ -1,2 +1,2 @@
 [workspace]
-members = ["uint", "ethereum-types", "tests"]
+members = ["uint", "fixed-hash", "ethereum-types", "tests"]
