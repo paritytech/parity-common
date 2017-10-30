@@ -1,14 +1,14 @@
 extern crate core;
+#[cfg(test)]
 #[macro_use]
 extern crate uint;
 extern crate ethereum_types;
+#[cfg(test)]
 #[macro_use]
 extern crate crunchy;
+#[cfg(test)]
 #[macro_use]
 extern crate quickcheck;
-//#[macro_use]
-//extern crate uint;
 
-//extern crate rustc_hex;
-
-mod uint_tests;
+#[cfg(test)]
+pub mod uint_tests;

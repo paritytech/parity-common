@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["debris <marek.kotewicz@gmail.com>"]
 
 [dependencies]
-uint = { path = "../uint" }
-ethereum-types = { path ="../ethereum-types", features = ["std", "heapsizeof"] }
 crunchy = "0.1.5"
+ethereum-types = { path ="../ethereum-types", features = ["std", "heapsizeof"] }
 quickcheck = "0.4"
+uint = { path = "../uint" }

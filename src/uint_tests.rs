@@ -975,7 +975,7 @@ fn trailing_zeros() {
 	assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 256);
 }
 
-mod laws {
+pub mod laws {
 	construct_uint!(U128, 2);
 	construct_uint!(U256, 4);
 	construct_uint!(U512, 8);
@@ -1013,7 +1013,7 @@ mod laws {
 		($mod_name:ident, $uint_ty:ident) => {
 			mod $mod_name {
 				use quickcheck::TestResult;
-				use super::{U128, U256, U512};
+				use super::{$uint_ty};
 
 				quickcheck! {
 					fn associative_add(x: $uint_ty, y: $uint_ty, z: $uint_ty) -> TestResult {
