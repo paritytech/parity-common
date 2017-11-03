@@ -8,7 +8,7 @@ To specify a dependency, add to `Cargo.toml`
 
 ```toml
 [dependencies]
-bigint = "4"
+ethereum-types = "0.1"
 ```
 
 Little example
