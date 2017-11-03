@@ -1,8 +1,6 @@
 # bigint
 
-[![Build Status](https://travis-ci.org/paritytech/bigint.svg?branch=master)](https://travis-ci.org/paritytech/bigint)
-
-[API Documentation](https://docs.rs/bigint/)
+[![Build Status](https://travis-ci.org/paritytech/primitives.svg?branch=master)](https://travis-ci.org/paritytech/primitives)
 
 Fixed-sized integers arithmetic
 
@@ -16,8 +14,8 @@ bigint = "4"
 Little example
 
 ```rust
-extern crate bigint;
-use bigint::U256;
+extern crate ethereum_types;
+use ethereum_types::U256;
 
 fn main() {
 	let mut val: U256 = 1023.into();
@@ -36,5 +34,5 @@ in a `no_std` context, add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bigint = { version = "4", default-features = false }
+ethereum-types = { version = "4", default-features = false }
 ```

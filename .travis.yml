@@ -7,9 +7,7 @@ matrix:
   allow_failures:
     - rust: nightly
 script:
-  - cargo build --features=heapsizeof,std
-  - cargo test --release --features=heapsizeof,std
-  - rustup default nightly
-  - cargo bench
+  - cargo test -p ethereum-types --no-default-futures
+  - cargo test -p tests
 env:
   - RUST_LOG=quickcheck

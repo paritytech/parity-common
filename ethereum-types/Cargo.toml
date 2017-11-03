@@ -9,5 +9,6 @@ fixed-hash = { path = "../fixed-hash", version = "0.1" }
 crunchy = "0.1.5"
 
 [features]
+default = ["std", "heapsizeof"]
 std = ["uint/std", "fixed-hash/std"]
 heapsizeof = ["uint/heapsizeof", "fixed-hash/heapsizeof"]
