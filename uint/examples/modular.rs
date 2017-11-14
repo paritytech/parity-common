@@ -6,9 +6,16 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#[cfg(feature="std")]
+extern crate core;
+
+#[macro_use]
+extern crate crunchy;
+
+#[macro_use]
 extern crate uint;
 
-use uint::U256;
+construct_uint!(U256, 32);
 
 fn main() {
 	// Example modular arithmetic using bigint U256 primitives

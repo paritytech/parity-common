@@ -16,7 +16,7 @@ pub fn clean_0x(s: &str) -> &str {
 }
 
 #[macro_export]
-macro_rules! impl_hash {
+macro_rules! construct_hash {
 	($from: ident, $size: expr) => {
 		#[repr(C)]
 		/// Unformatted binary data of fixed length.
