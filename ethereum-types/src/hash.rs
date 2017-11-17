@@ -1,15 +1,15 @@
 use U256;
 
-impl_hash!(H32, 4);
-impl_hash!(H64, 8);
-impl_hash!(H128, 16);
-impl_hash!(H160, 20);
-impl_hash!(H256, 32);
-impl_hash!(H264, 33);
-impl_hash!(H512, 64);
-impl_hash!(H520, 65);
-impl_hash!(H1024, 128);
-impl_hash!(H2048, 256);
+construct_hash!(H32, 4);
+construct_hash!(H64, 8);
+construct_hash!(H128, 16);
+construct_hash!(H160, 20);
+construct_hash!(H256, 32);
+construct_hash!(H264, 33);
+construct_hash!(H512, 64);
+construct_hash!(H520, 65);
+construct_hash!(H1024, 128);
+construct_hash!(H2048, 256);
 
 impl From<U256> for H256 {
 	fn from(value: U256) -> H256 {
