@@ -3,6 +3,9 @@ name = "tests"
 version = "0.1.0"
 authors = ["debris <marek.kotewicz@gmail.com>"]
 
+[build-dependencies]
+rustc_version = "0.2"
+
 [dependencies]
 crunchy = "0.1.5"
 ethereum-types = { path ="../ethereum-types", features = ["std", "heapsizeof"] }
