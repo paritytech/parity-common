@@ -7,7 +7,6 @@ impl U256 {
 	/// No overflow possible
 	#[cfg(all(asm_available, target_arch="x86_64"))]
 	pub fn full_mul(self, other: U256) -> U512 {
-		#![feature(asm)]
 		let self_t: &[u64; 4] = &self.0;
 		let other_t: &[u64; 4] = &other.0;
 		let mut result: [u64; 8] = unsafe { ::core::mem::uninitialized() };

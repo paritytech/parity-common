@@ -1,3 +1,5 @@
+#![cfg_attr(asm_available, feature(asm))]
+
 extern crate core;
 #[cfg(test)]
 #[macro_use]
