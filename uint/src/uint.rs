@@ -77,6 +77,7 @@ macro_rules! uint_overflowing_add_reg {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_overflowing_add {
+	#![feature(asm)]
 	(U256, $n_words:tt, $self_expr: expr, $other: expr) => ({
 		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
@@ -223,6 +224,7 @@ macro_rules! uint_overflowing_sub_reg {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_overflowing_sub {
+	#![feature(asm)]
 	(U256, $n_words:tt, $self_expr: expr, $other: expr) => ({
 		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
@@ -277,7 +279,7 @@ macro_rules! uint_overflowing_sub {
 			  "={al}"(overflow) /* $0 - $4 */
 
 			: "{rdi}"(&result[4] as *const u64) /* $5 */
-		 	 "{rsi}"(&self_t[4] as *const u64) /* $6 */
+			 "{rsi}"(&self_t[4] as *const u64) /* $6 */
 			  "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]),
 			  "m"(self_t[4]), "m"(self_t[5]), "m"(self_t[6]), "m"(self_t[7]),
 			  /* $7 - $14 */
@@ -298,6 +300,7 @@ macro_rules! uint_overflowing_sub {
 #[cfg(all(asm_available, target_arch="x86_64"))]
 #[macro_export]
 macro_rules! uint_overflowing_mul {
+	#![feature(asm)]
 	(U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
 		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;

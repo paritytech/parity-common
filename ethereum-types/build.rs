@@ -6,22 +6,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Efficient large, fixed-size big integers and hashes.
+extern crate rustc_version;
 
-#[doc(hidden)]
-pub extern crate byteorder;
+use rustc_version::{version_meta, Channel};
 
-#[cfg(feature="heapsizeof")]
-#[doc(hidden)]
-pub extern crate heapsize;
-
-#[cfg(feature="std")]
-#[doc(hidden)]
-pub extern crate core;
-
-#[cfg(feature = "std")]
-#[doc(hidden)]
-pub extern crate rustc_hex;
-
-mod uint;
-pub use uint::*;
+fn main() {
+	if let Channel::Nightly = version_meta().unwrap().channel {
+		println!("cargo:rustc-cfg=asm_available");
+	}
+}

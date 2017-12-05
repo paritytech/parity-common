@@ -3,6 +3,9 @@ name = "ethereum-types"
 version = "0.1.0"
 authors = ["debris <marek.kotewicz@gmail.com>"]
 
+[build-dependencies]
+rustc_version = "0.2"
+
 [dependencies]
 uint = { path = "../uint", version = "0.1" }
 fixed-hash = { path = "../fixed-hash", version = "0.1" }
