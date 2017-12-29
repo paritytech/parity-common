@@ -1,7 +1,7 @@
 [package]
 description = "Large fixed-size integers arithmetics"
 homepage = "http://parity.io"
-repository = "https://github.com/ethcore/bigint"
+repository = "https://github.com/paritytech/primitives"
 license = "MIT/Apache-2.0"
 name = "uint"
 version = "0.1.0"
