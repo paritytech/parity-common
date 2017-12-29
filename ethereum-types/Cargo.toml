@@ -2,6 +2,9 @@
 name = "ethereum-types"
 version = "0.1.0"
 authors = ["debris <marek.kotewicz@gmail.com>"]
+license = "MIT"
+homepage = "https://github.com/paritytech/primitives"
+description = "Ethereum types"
 
 [build-dependencies]
 rustc_version = "0.2"
