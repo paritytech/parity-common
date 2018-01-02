@@ -306,7 +306,28 @@ macro_rules! construct_hash {
 		}
 
 		impl_std_for_hash!($from, $size);
+		impl_heapsize_for_hash!($from);
 	}
+}
+
+#[cfg(feature="heapsizeof")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_heapsize_for_hash {
+	($name: ident) => {
+		impl $crate::heapsize::HeapSizeOf for $name {
+			fn heap_size_of_children(&self) -> usize {
+				0
+			}
+		}
+	}
+}
+
+#[cfg(not(feature="heapsizeof"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_heapsize_for_hash {
+	($name: ident) => {}
 }
 
 #[cfg(feature="std")]
