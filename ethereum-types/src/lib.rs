@@ -19,5 +19,6 @@ pub use hash::{H32, H64, H128, H160, H256, H264, H512, H520, H1024, H2048};
 
 pub type Address = H160;
 pub type Secret = H256;
+pub type Public = H512;
 pub type Signature = H520;
 pub type LogBloom = H2048;
