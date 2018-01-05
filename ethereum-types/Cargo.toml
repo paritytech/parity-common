@@ -1,6 +1,6 @@
 [package]
 name = "ethereum-types"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["debris <marek.kotewicz@gmail.com>"]
 license = "MIT"
 homepage = "https://github.com/paritytech/primitives"
@@ -12,9 +12,10 @@ rustc_version = "0.2"
 [dependencies]
 uint = { path = "../uint", version = "0.1" }
 fixed-hash = { path = "../fixed-hash", version = "0.1.1" }
+ethbloom = { path = "../ethbloom", version = "0.3" }
 crunchy = "0.1.5"
 
 [features]
 default = ["std", "heapsizeof"]
-std = ["uint/std", "fixed-hash/std"]
-heapsizeof = ["uint/heapsizeof", "fixed-hash/heapsizeof"]
+std = ["uint/std", "fixed-hash/std", "ethbloom/std"]
+heapsizeof = ["uint/heapsizeof", "fixed-hash/heapsizeof", "ethbloom/heapsizeof"]

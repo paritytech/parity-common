@@ -9,7 +9,6 @@ construct_hash!(H264, 33);
 construct_hash!(H512, 64);
 construct_hash!(H520, 65);
 construct_hash!(H1024, 128);
-construct_hash!(H2048, 256);
 
 impl From<U256> for H256 {
 	fn from(value: U256) -> H256 {

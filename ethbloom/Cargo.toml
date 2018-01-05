@@ -1,0 +1,23 @@
+[package]
+name = "ethbloom"
+version = "0.3.0"
+authors = ["debris <marek.kotewicz@gmail.com>"]
+description = "Ethereum bloom filter"
+license = "MIT"
+documentation = "https://docs.rs/ethbloom"
+homepage = "https://github.com/debris/ethbloom"
+repository = "https://github.com/debris/ethbloom"
+
+[dependencies]
+tiny-keccak = "1.4"
+crunchy = { version = "0.1.6", features = ["limit_256"] }
+fixed-hash = { version = "0.1.1", path = "../fixed-hash" }
+
+[dev-dependencies]
+rand = "0.4"
+rustc-hex = "1.0"
+
+[features]
+default = ["std", "heapsizeof"]
+std = ["fixed-hash/std"]
+heapsizeof = ["fixed-hash/heapsizeof"]
