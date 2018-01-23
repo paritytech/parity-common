@@ -1,3 +1,9 @@
+#[cfg(feature="serialize")]
+use serde::{Serialize, Serializer, Deserialize, Deserializer};
+
+#[cfg(feature="serialize")]
+use ethereum_types_serialize;
+
 construct_uint!(U128, 2);
 construct_uint!(U256, 4);
 construct_uint!(U512, 8);
@@ -322,3 +328,28 @@ impl From<U512> for [u8; 64] {
 		arr
 	}
 }
+
+macro_rules! impl_serde {
+	($name: ident, $len: expr) => {
+		#[cfg(feature="serialize")]
+		impl Serialize for $name {
+			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+				let mut bytes = [0u8; $len * 8];
+				self.to_big_endian(&mut bytes);
+				ethereum_types_serialize::serialize_uint(&bytes, serializer)
+			}
+		}
+
+		#[cfg(feature="serialize")]
+		impl<'de> Deserialize<'de> for $name {
+			fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+				ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Between(0, $len * 8))
+					.map(|x| (&*x).into())
+			}
+		}
+	}
+}
+
+impl_serde!(U128, 2);
+impl_serde!(U256, 4);
+impl_serde!(U512, 8);
