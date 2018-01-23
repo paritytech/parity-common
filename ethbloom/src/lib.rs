@@ -233,12 +233,14 @@ impl<'a> From<&'a Bloom> for BloomRef<'a> {
 	}
 }
 
+#[cfg(feature="serialize")]
 impl Serialize for Bloom {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
 		ethereum_types_serialize::serialize(&self.0, serializer)
 	}
 }
 
+#[cfg(feature="serialize")]
 impl<'de> Deserialize<'de> for Bloom {
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
 		ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Exact(256))
