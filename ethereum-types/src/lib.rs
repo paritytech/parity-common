@@ -12,6 +12,11 @@ extern crate uint as uint_crate;
 extern crate fixed_hash;
 extern crate ethbloom;
 
+#[cfg(feature="serialize")]
+extern crate ethereum_types_serialize;
+#[cfg(feature="serialize")]
+extern crate serde;
+
 mod hash;
 mod uint;
 

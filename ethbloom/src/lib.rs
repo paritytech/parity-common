@@ -40,6 +40,15 @@ extern crate crunchy;
 #[macro_use]
 extern crate fixed_hash;
 
+#[cfg(feature="serialize")]
+extern crate ethereum_types_serialize;
+
+#[cfg(feature="serialize")]
+extern crate serde;
+
+#[cfg(feature="serialize")]
+use serde::{Serialize, Serializer, Deserialize, Deserializer};
+
 use core::{ops, mem, str};
 use tiny_keccak::keccak256;
 
@@ -221,6 +230,21 @@ impl<'a> From<&'a [u8; 256]> for BloomRef<'a> {
 impl<'a> From<&'a Bloom> for BloomRef<'a> {
 	fn from(bloom: &'a Bloom) -> Self {
 		BloomRef(&bloom.0)
+	}
+}
+
+#[cfg(feature="serialize")]
+impl Serialize for Bloom {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+		ethereum_types_serialize::serialize(&self.0, serializer)
+	}
+}
+
+#[cfg(feature="serialize")]
+impl<'de> Deserialize<'de> for Bloom {
+	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+		ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Exact(256))
+			.map(|x| (&*x).into())
 	}
 }
 

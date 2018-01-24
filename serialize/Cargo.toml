@@ -1,0 +1,8 @@
+[package]
+name = "ethereum-types-serialize"
+version = "0.1.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+
+[dependencies]
+serde = "1.0"
+rustc-hex = "1.0"

@@ -1,5 +1,11 @@
 use U256;
 
+#[cfg(feature="serialize")]
+use serde::{Serialize, Serializer, Deserialize, Deserializer};
+
+#[cfg(feature="serialize")]
+use ethereum_types_serialize;
+
 construct_hash!(H32, 4);
 construct_hash!(H64, 8);
 construct_hash!(H128, 16);
@@ -70,3 +76,31 @@ impl<'a> From<&'a H160> for H256 {
 	}
 }
 
+macro_rules! impl_serde {
+	($name: ident, $len: expr) => {
+		#[cfg(feature="serialize")]
+		impl Serialize for $name {
+			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+				ethereum_types_serialize::serialize(&self.0, serializer)
+			}
+		}
+
+		#[cfg(feature="serialize")]
+		impl<'de> Deserialize<'de> for $name {
+			fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+				ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Exact($len))
+					.map(|x| (&*x).into())
+			}
+		}
+	}
+}
+
+impl_serde!(H32, 4);
+impl_serde!(H64, 8);
+impl_serde!(H128, 16);
+impl_serde!(H160, 20);
+impl_serde!(H256, 32);
+impl_serde!(H264, 33);
+impl_serde!(H512, 64);
+impl_serde!(H520, 65);
+impl_serde!(H1024, 128);
