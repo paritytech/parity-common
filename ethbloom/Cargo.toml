@@ -1,6 +1,6 @@
 [package]
 name = "ethbloom"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "Ethereum bloom filter"
 license = "MIT"
@@ -12,7 +12,7 @@ repository = "https://github.com/debris/ethbloom"
 tiny-keccak = "1.4"
 crunchy = { version = "0.1.6", features = ["limit_256"] }
 fixed-hash = { version = "0.1.1", path = "../fixed-hash" }
-ethereum-types-serialize = { version = "0.1", path = "../serialize", optional = true }
+ethereum-types-serialize = { version = "0.2", path = "../serialize", optional = true }
 serde = { version = "1.0", optional = true }
 
 [dev-dependencies]

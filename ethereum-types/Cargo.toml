@@ -1,6 +1,6 @@
 [package]
 name = "ethereum-types"
-version = "0.1.4"
+version = "0.2.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 homepage = "https://github.com/paritytech/primitives"
@@ -12,9 +12,9 @@ rustc_version = "0.2"
 [dependencies]
 uint = { path = "../uint", version = "0.1" }
 fixed-hash = { path = "../fixed-hash", version = "0.1.1" }
-ethbloom = { path = "../ethbloom", version = "0.3" }
+ethbloom = { path = "../ethbloom", version = "0.4" }
 crunchy = "0.1.5"
-ethereum-types-serialize = { version = "0.1", path = "../serialize", optional = true }
+ethereum-types-serialize = { version = "0.2", path = "../serialize", optional = true }
 serde = { version = "1.0", optional = true }
 
 [features]
