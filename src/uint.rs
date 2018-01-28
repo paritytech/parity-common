@@ -93,7 +93,7 @@ macro_rules! uint_overflowing_add {
 				"
 			: "=r"(result[0]), "=r"(result[1]), "=r"(result[2]), "=r"(result[3]), "={al}"(overflow)
 			: "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]),
-			  "mr"(other_t[0]), "mr"(other_t[1]), "mr"(other_t[2]), "mr"(other_t[3])
+				"mr"(other_t[0]), "mr"(other_t[1]), "mr"(other_t[2]), "mr"(other_t[3])
 			:
 			:
 			);
@@ -129,16 +129,16 @@ macro_rules! uint_overflowing_add {
 
 				": "=r"(result[0]), "=r"(result[1]), "=r"(result[2]), "=r"(result[3]),
 
-			  "={al}"(overflow) /* $0 - $4 */
+				"={al}"(overflow) /* $0 - $4 */
 
-            : "{rdi}"(&result[4] as *const u64) /* $5 */
-			  "{rsi}"(&other_t[4] as *const u64) /* $6 */
-			  "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]),
-		  	  "m"(self_t[4]), "m"(self_t[5]), "m"(self_t[6]), "m"(self_t[7]),
-			  /* $7 - $14 */
+						: "{rdi}"(&result[4] as *const u64) /* $5 */
+				"{rsi}"(&other_t[4] as *const u64) /* $6 */
+				"0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]),
+					"m"(self_t[4]), "m"(self_t[5]), "m"(self_t[6]), "m"(self_t[7]),
+				/* $7 - $14 */
 
-			  "mr"(other_t[0]), "mr"(other_t[1]), "mr"(other_t[2]), "mr"(other_t[3]),
-              "m"(other_t[4]), "m"(other_t[5]), "m"(other_t[6]), "m"(other_t[7]) /* $15 - $22 */
+				"mr"(other_t[0]), "mr"(other_t[1]), "mr"(other_t[2]), "mr"(other_t[3]),
+							"m"(other_t[4]), "m"(other_t[5]), "m"(other_t[6]), "m"(other_t[7]) /* $15 - $22 */
 			: "rdi", "rsi"
 			:
 			);
@@ -274,16 +274,16 @@ macro_rules! uint_overflowing_sub {
 				"
 			: "=r"(result[0]), "=r"(result[1]), "=r"(result[2]), "=r"(result[3]),
 
-			  "={al}"(overflow) /* $0 - $4 */
+				"={al}"(overflow) /* $0 - $4 */
 
 			: "{rdi}"(&result[4] as *const u64) /* $5 */
 			 "{rsi}"(&self_t[4] as *const u64) /* $6 */
-			  "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]),
-			  "m"(self_t[4]), "m"(self_t[5]), "m"(self_t[6]), "m"(self_t[7]),
-			  /* $7 - $14 */
+				"0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]),
+				"m"(self_t[4]), "m"(self_t[5]), "m"(self_t[6]), "m"(self_t[7]),
+				/* $7 - $14 */
 
-			  "m"(other_t[0]), "m"(other_t[1]), "m"(other_t[2]), "m"(other_t[3]),
-			  "m"(other_t[4]), "m"(other_t[5]), "m"(other_t[6]), "m"(other_t[7]) /* $15 - $22 */
+				"m"(other_t[0]), "m"(other_t[1]), "m"(other_t[2]), "m"(other_t[3]),
+				"m"(other_t[4]), "m"(other_t[5]), "m"(other_t[6]), "m"(other_t[7]) /* $15 - $22 */
 			: "rdi", "rsi"
 			:
 			);
@@ -399,12 +399,12 @@ macro_rules! uint_overflowing_mul {
 				2:
 				"
 				: /* $0 */ "={r8}"(result[0]), /* $1 */ "={r9}"(result[1]), /* $2 */ "={r10}"(result[2]),
-				  /* $3 */ "={r11}"(result[3]), /* $4 */  "={rcx}"(overflow)
+					/* $3 */ "={r11}"(result[3]), /* $4 */  "={rcx}"(overflow)
 
 				: /* $5 */ "m"(self_t[0]), /* $6 */ "m"(self_t[1]), /* $7 */  "m"(self_t[2]),
-				  /* $8 */ "m"(self_t[3]), /* $9 */ "m"(other_t[0]), /* $10 */ "m"(other_t[1]),
-				  /* $11 */ "m"(other_t[2]), /* $12 */ "m"(other_t[3])
-           		: "rax", "rdx"
+					/* $8 */ "m"(self_t[3]), /* $9 */ "m"(other_t[0]), /* $10 */ "m"(other_t[1]),
+					/* $11 */ "m"(other_t[2]), /* $12 */ "m"(other_t[3])
+							: "rax", "rdx"
 				:
 
 			);
@@ -1218,11 +1218,11 @@ macro_rules! impl_std_for_uint {
 
 		impl ::core::fmt::LowerHex for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-                let &$name(ref data) = self;
-                // special case.
-                if self.is_zero() { 
-                    return write!(f, "0x0"); 
-                }
+				let &$name(ref data) = self;
+				// special case.
+				if self.is_zero() { 
+					return write!(f, "0x0"); 
+				}
 
 				write!(f, "0x")?;
 				let mut latch = false;
@@ -1230,8 +1230,8 @@ macro_rules! impl_std_for_uint {
 					for x in 0..16 {
 						let nibble = (ch & (15u64 << ((15 - x) * 4) as u64)) >> (((15 - x) * 4) as u64);
 						if !latch {
-                            latch = nibble != 0;
-                        }
+							latch = nibble != 0;
+						}
 
 						if latch {
 							write!(f, "{:x}", nibble)?;
