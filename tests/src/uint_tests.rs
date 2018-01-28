@@ -5,27 +5,27 @@ use ethereum_types::{U128, U256, U512};
 
 #[test]
 fn uint256_checked_ops() {
-    let z = U256::from(0);
-    let a = U256::from(10);
-    let b = !U256::from(1);
-    
-    assert_eq!(a.checked_add(b), None);
-    assert_eq!(a.checked_add(a), Some(20.into()));
+	let z = U256::from(0);
+	let a = U256::from(10);
+	let b = !U256::from(1);
 
-    assert_eq!(a.checked_sub(b), None);
-    assert_eq!(a.checked_sub(a), Some(0.into()));
+	assert_eq!(a.checked_add(b), None);
+	assert_eq!(a.checked_add(a), Some(20.into()));
 
-    assert_eq!(a.checked_mul(b), None);
-    assert_eq!(a.checked_mul(a), Some(100.into()));
+	assert_eq!(a.checked_sub(b), None);
+	assert_eq!(a.checked_sub(a), Some(0.into()));
 
-    assert_eq!(a.checked_div(z), None);
-    assert_eq!(a.checked_div(a), Some(1.into()));
+	assert_eq!(a.checked_mul(b), None);
+	assert_eq!(a.checked_mul(a), Some(100.into()));
 
-    assert_eq!(a.checked_rem(z), None);
-    assert_eq!(a.checked_rem(a), Some(0.into()));
+	assert_eq!(a.checked_div(z), None);
+	assert_eq!(a.checked_div(a), Some(1.into()));
 
-    assert_eq!(a.checked_neg(), None);
-    assert_eq!(z.checked_neg(), Some(z));
+	assert_eq!(a.checked_rem(z), None);
+	assert_eq!(a.checked_rem(a), Some(0.into()));
+
+	assert_eq!(a.checked_neg(), None);
+	assert_eq!(z.checked_neg(), Some(z));
 }
 
 #[test]
