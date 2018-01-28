@@ -141,7 +141,7 @@ pub fn uint256_arithmetic_test() {
 	let sub = overflowing!(incr.overflowing_sub(init));
 	assert_eq!(sub, U256([0x9F30411021524112u64, 0x0001BD5B7DDFBD5A, 0, 0]));
 	// Multiplication
-	let mult = sub.mul_u32(300);
+	let mult = sub * 300u32;
 	assert_eq!(mult, U256([0x8C8C3EE70C644118u64, 0x0209E7378231E632, 0, 0]));
 	// Division
 	assert_eq!(U256::from(105u8) / U256::from(5u8), U256::from(21u8));
@@ -196,11 +196,11 @@ pub fn uint256_exp10() {
 
 #[test]
 pub fn uint256_mul32() {
-	assert_eq!(U256::from(0u64).mul_u32(2), U256::from(0u64));
-	assert_eq!(U256::from(1u64).mul_u32(2), U256::from(2u64));
-	assert_eq!(U256::from(10u64).mul_u32(2), U256::from(20u64));
-	assert_eq!(U256::from(10u64).mul_u32(5), U256::from(50u64));
-	assert_eq!(U256::from(1000u64).mul_u32(50), U256::from(50000u64));
+	assert_eq!(U256::from(0u64) * 2u32, U256::from(0u64));
+	assert_eq!(U256::from(1u64) * 2u32, U256::from(2u64));
+	assert_eq!(U256::from(10u64) * 2u32, U256::from(20u64));
+	assert_eq!(U256::from(10u64) * 5u32, U256::from(50u64));
+	assert_eq!(U256::from(1000u64) * 50u32, U256::from(50000u64));
 }
 
 #[test]
@@ -219,23 +219,27 @@ fn uint256_pow_overflow_panic() {
 }
 
 #[test]
-fn should_format_hex_correctly() {
-	assert_eq!(&U256::from(0).to_hex(), &"0");
-	assert_eq!(&U256::from(0x1).to_hex(), &"1");
-	assert_eq!(&U256::from(0xf).to_hex(), &"f");
-	assert_eq!(&U256::from(0x10).to_hex(), &"10");
-	assert_eq!(&U256::from(0xff).to_hex(), &"ff");
-	assert_eq!(&U256::from(0x100).to_hex(), &"100");
-	assert_eq!(&U256::from(0xfff).to_hex(), &"fff");
-	assert_eq!(&U256::from(0x1000).to_hex(), &"1000");
+fn should_format_and_debug_correctly() {
+    let test = |x: usize, hex: &'static str, dbg: &'static str| {
+        assert_eq!(format!("{:?}", U256::from(x)), dbg);
+        assert_eq!(format!("{:x}", U256::from(x)), hex);
+    };
+
+    test(0x1, "0x1", "1");
+    test(0xf, "0xf", "15");
+    test(0x10, "0x10", "16");
+    test(0xff, "0xff", "255");
+    test(0x100, "0x100", "256");
+    test(0xfff, "0xfff", "4095");
+    test(0x1000, "0x1000", "4096");
 }
 
 #[test]
 fn uint256_overflowing_pow() {
-	// assert_eq!(
-	// 	U256::from(2).overflowing_pow(U256::from(0xff)),
-	// 	(U256::from_str("8000000000000000000000000000000000000000000000000000000000000000").unwrap(), false)
-	// );
+	assert_eq!(
+		U256::from(2).overflowing_pow(U256::from(0xff)),
+		(U256::from_str("8000000000000000000000000000000000000000000000000000000000000000").unwrap(), false)
+	);
 	assert_eq!(
 		U256::from(2).overflowing_pow(U256::from(0x100)),
 		(U256::zero(), true)
@@ -846,7 +850,7 @@ fn u256_multi_muls2() {
 #[test]
 fn example() {
 	let mut val: U256 = 1023.into();
-	for _ in 0..200 { val = val * 2.into() }
+	for _ in 0..200 { val = val * U256::from(2) }
 	assert_eq!(&format!("{}", val), "1643897619276947051879427220465009342380213662639797070513307648");
 }
 
