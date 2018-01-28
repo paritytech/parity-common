@@ -1220,11 +1220,10 @@ macro_rules! impl_std_for_uint {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				let &$name(ref data) = self;
 				// special case.
-				if self.is_zero() { 
-					return write!(f, "0x0"); 
+				if self.is_zero() {
+					return write!(f, "0");
 				}
 
-				write!(f, "0x")?;
 				let mut latch = false;
 				for ch in data.iter().rev() {
 					for x in 0..16 {

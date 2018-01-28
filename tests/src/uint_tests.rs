@@ -225,13 +225,13 @@ fn should_format_and_debug_correctly() {
         assert_eq!(format!("{:x}", U256::from(x)), hex);
     };
 
-    test(0x1, "0x1", "1");
-    test(0xf, "0xf", "15");
-    test(0x10, "0x10", "16");
-    test(0xff, "0xff", "255");
-    test(0x100, "0x100", "256");
-    test(0xfff, "0xfff", "4095");
-    test(0x1000, "0x1000", "4096");
+    test(0x1, "1", "1");
+    test(0xf, "f", "15");
+    test(0x10, "10", "16");
+    test(0xff, "ff", "255");
+    test(0x100, "100", "256");
+    test(0xfff, "fff", "4095");
+    test(0x1000, "1000", "4096");
 }
 
 #[test]
