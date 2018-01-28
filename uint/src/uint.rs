@@ -717,7 +717,7 @@ macro_rules! construct_uint {
 			pub fn exp10(n: usize) -> Self {
 				match n {
 					0 => Self::from(1u64),
-					_ => Self::exp10(n - 1).mul_u32(10)
+					_ => Self::exp10(n - 1) * 10u32
 				}
 			}
 
@@ -858,13 +858,6 @@ macro_rules! construct_uint {
 				(!self, true)
 			}
 
-			/// Multiplication by u32
-			pub fn mul_u32(self, other: u32) -> Self {
-				let (ret, overflow) = self.overflowing_mul_u32(other);
-				panic_on_overflow!(overflow);
-				ret
-			}
-
 			/// Overflowing multiplication by u32
 			#[allow(dead_code)] // not used when multiplied with inline assembly
 			fn overflowing_mul_u32(self, other: u32) -> (Self, bool) {
@@ -915,8 +908,6 @@ macro_rules! construct_uint {
 
 				$name(ret)
 			}
-
-			impl_std_for_uint_internals!($name, $n_words);
 		}
 
 		impl Default for $name {
@@ -979,6 +970,16 @@ macro_rules! construct_uint {
 				let (result, overflow) = self.overflowing_sub(other);
 				panic_on_overflow!(overflow);
 				result
+			}
+		}
+
+		impl ::core::ops::Mul<u32> for $name {
+			type Output = $name;
+
+			fn mul(self, other: u32) -> $name {
+				let (ret, overflow) = self.overflowing_mul_u32(other);
+				panic_on_overflow!(overflow);
+				ret
 			}
 		}
 
@@ -1172,28 +1173,6 @@ macro_rules! construct_uint {
 #[cfg(feature="std")]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_std_for_uint_internals {
-	($name: ident, $n_words: tt) => {
-		/// Convert to hex string.
-		#[inline]
-		pub fn to_hex(&self) -> String {
-			use core::cmp;
-			use $crate::rustc_hex::ToHex;;
-
-			if self.is_zero() { return "0".to_owned(); }	// special case.
-			let mut bytes = [0u8; 8 * $n_words];
-			self.to_big_endian(&mut bytes);
-			let bp7 = self.bits() + 7;
-			let len = cmp::max(bp7 / 8, 1);
-			let bytes_hex = bytes[bytes.len() - len..].to_hex();
-			(&bytes_hex[1 - bp7 % 8 / 4..]).to_owned()
-		}
-	}
-}
-
-#[cfg(feature="std")]
-#[macro_export]
-#[doc(hidden)]
 macro_rules! impl_std_for_uint {
 	($name: ident, $n_words: tt) => {
 		impl ::core::fmt::Debug for $name {
@@ -1239,15 +1218,23 @@ macro_rules! impl_std_for_uint {
 
 		impl ::core::fmt::LowerHex for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-				let &$name(ref data) = self;
-				try!(write!(f, "0x"));
+                let &$name(ref data) = self;
+                // special case.
+                if self.is_zero() { 
+                    return write!(f, "0x0"); 
+                }
+
+				write!(f, "0x")?;
 				let mut latch = false;
 				for ch in data.iter().rev() {
 					for x in 0..16 {
 						let nibble = (ch & (15u64 << ((15 - x) * 4) as u64)) >> (((15 - x) * 4) as u64);
-						if !latch { latch = nibble != 0 }
+						if !latch {
+                            latch = nibble != 0;
+                        }
+
 						if latch {
-							try!(write!(f, "{:x}", nibble));
+							write!(f, "{:x}", nibble)?;
 						}
 					}
 				}
@@ -1261,13 +1248,6 @@ macro_rules! impl_std_for_uint {
 			}
 		}
 	}
-}
-
-#[cfg(not(feature="std"))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_std_for_uint_internals {
-	($name: ident, $n_words: tt) => {}
 }
 
 #[cfg(not(feature="std"))]
