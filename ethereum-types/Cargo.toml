@@ -5,6 +5,7 @@ authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 homepage = "https://github.com/paritytech/primitives"
 description = "Ethereum types"
+build = "build.rs"
 
 [build-dependencies]
 rustc_version = "0.2"
