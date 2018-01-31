@@ -11,3 +11,6 @@ crunchy = "0.1.5"
 ethereum-types = { path ="../ethereum-types", features = ["std", "heapsizeof"] }
 quickcheck = "0.6"
 uint = { path = "../uint" }
+
+[features]
+use_asm = ["uint/use_asm", "ethereum-types/use_asm"]
