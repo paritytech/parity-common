@@ -1,6 +1,6 @@
 [package]
 name = "ethereum-types"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 homepage = "https://github.com/paritytech/primitives"
@@ -22,3 +22,4 @@ default = ["std", "heapsizeof", "serialize"]
 std = ["uint/std", "fixed-hash/std", "ethbloom/std"]
 heapsizeof = ["uint/heapsizeof", "fixed-hash/heapsizeof", "ethbloom/heapsizeof"]
 serialize = ["std", "ethereum-types-serialize", "serde", "ethbloom/serialize"]
+use_asm = ["uint/use_asm"]

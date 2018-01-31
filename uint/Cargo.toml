@@ -4,7 +4,7 @@ homepage = "http://parity.io"
 repository = "https://github.com/paritytech/primitives"
 license = "MIT/Apache-2.0"
 name = "uint"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 build = "build.rs"
 
@@ -22,6 +22,7 @@ crunchy = "0.1.5"
 [features]
 std = ["rustc-hex"]
 heapsizeof = ["heapsize"]
+use_asm = []
 
 [[example]]
 name = "modular"
