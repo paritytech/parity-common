@@ -815,6 +815,14 @@ macro_rules! construct_uint {
 				}
 			}
 
+			/// Checked addition. Returns `None` if overflow occurred.
+			pub fn checked_add(self, other: $name) -> Option<$name> {
+				match self.overflowing_add(other) {
+					(_, true) => None,
+					(val, _) => Some(val),
+				}
+			}
+
 			/// Subtraction which underflows and returns a flag if it does.
 			#[inline(always)]
 			pub fn overflowing_sub(self, other: $name) -> ($name, bool) {
@@ -826,6 +834,14 @@ macro_rules! construct_uint {
 				match self.overflowing_sub(other) {
 					(_, true) => $name::zero(),
 					(val, false) => val,
+				}
+			}
+
+			/// Checked subtraction. Returns `None` if overflow occurred.
+			pub fn checked_sub(self, other: $name) -> Option<$name> {
+				match self.overflowing_sub(other) {
+					(_, true) => None,
+					(val, _) => Some(val),
 				}
 			}
 
@@ -843,9 +859,26 @@ macro_rules! construct_uint {
 				}
 			}
 
+			/// Checked multiplication. Returns `None` if overflow occurred.
+			pub fn checked_mul(self, other: $name) -> Option<$name> {
+				match self.overflowing_mul(other) {
+					(_, true) => None,
+					(val, _) => Some(val),
+				}
+			}
+
 			/// Division with overflow
 			pub fn overflowing_div(self, other: $name) -> ($name, bool) {
 				(self / other, false)
+			}
+
+			/// Checked division. Returns `None` if `other == 0`.
+			pub fn checked_div(self, other: $name) -> Option<$name> {
+				if other.is_zero() {
+					None
+				} else {
+					Some(self / other)
+				}
 			}
 
 			/// Modulus with overflow.
@@ -853,9 +886,30 @@ macro_rules! construct_uint {
 				(self % other, false)
 			}
 
+			/// Checked modulus. Returns `None` if `other == 0`.
+			pub fn checked_rem(self, other: $name) -> Option<$name> {
+				if other.is_zero() {
+					None
+				} else {
+					Some(self % other)
+				}
+			}
+
 			/// Negation with overflow.
 			pub fn overflowing_neg(self) -> ($name, bool) {
-				(!self, true)
+                if self.is_zero() {
+                    (self, false)
+                } else {
+                    (!self, true)
+                }
+			}
+
+			/// Checked negation. Returns `None` unless `self == 0`.
+			pub fn checked_neg(self) -> Option<$name> {
+				match self.overflowing_neg() {
+					(_, true) => None,
+					(zero, false) => Some(zero),
+				}
 			}
 
 			/// Multiplication by u32
