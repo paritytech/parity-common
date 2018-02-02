@@ -341,6 +341,14 @@ macro_rules! impl_heapsize_for_hash {
 #[doc(hidden)]
 macro_rules! impl_std_for_hash {
 	($from: ident, $size: tt) => {
+		impl $from {
+			/// Get a hex representation.
+			#[deprecated(note="Use LowerHex or Debug formatting instead.")]
+			pub fn hex(&self) -> String {
+				format!("{:?}", self)
+			}
+		}
+
 		impl $crate::rand::Rand for $from {
 			fn rand<R: $crate::rand::Rng>(r: &mut R) -> Self {
 				let mut hash = $from::new();
