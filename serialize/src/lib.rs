@@ -33,8 +33,6 @@ fn to_hex<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a str
 pub fn serialize<S>(slice: &mut [u8], bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where
 	S: Serializer,
 {
-	let mut v = Vec::with_capacity(2 + bytes.len() * 2);
-	v.resize(2 + bytes.len() * 2, 0);
 	serializer.serialize_str(to_hex(slice, bytes, false))
 }
 
@@ -66,7 +64,7 @@ impl<'a> fmt::Display for ExpectedLen<'a> {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
 			ExpectedLen::Exact(ref v) => write!(fmt, "length of {}", v.len() * 2),
-			ExpectedLen::Between(min, ref v) => write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
+            ExpectedLen::Between(min, ref v) => write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
 		}
 	}
 }
@@ -103,38 +101,38 @@ pub fn deserialize_check_len<'a, 'de, D>(deserializer: D, len: ExpectedLen<'a>) 
 
 			let bytes = match self.len {
 				ExpectedLen::Exact(slice) => slice,
-					ExpectedLen::Between(_, slice) => slice,
-				};
+				ExpectedLen::Between(_, slice) => slice,
+			};
 
-				let mut modulus = v.len() % 2;
-				let mut buf = 0;
-				let mut pos = 0;
-				for (idx, byte) in v.bytes().enumerate().skip(2) {
-					buf <<= 4;
+			let mut modulus = v.len() % 2;
+			let mut buf = 0;
+			let mut pos = 0;
+			for (idx, byte) in v.bytes().enumerate().skip(2) {
+				buf <<= 4;
 
-					match byte {
-						b'A'...b'F' => buf |= byte - b'A' + 10,
-						b'a'...b'f' => buf |= byte - b'a' + 10,
-						b'0'...b'9' => buf |= byte - b'0',
-						b' '|b'\r'|b'\n'|b'\t' => {
-							buf >>= 4;
-							continue
-						}
-						_ => {
-							let ch = v[idx..].chars().next().unwrap();
-							return Err(E::custom(&format!("invalid hex character: {}, at {}", ch, idx)))
-						}
+				match byte {
+					b'A'...b'F' => buf |= byte - b'A' + 10,
+					b'a'...b'f' => buf |= byte - b'a' + 10,
+					b'0'...b'9' => buf |= byte - b'0',
+					b' '|b'\r'|b'\n'|b'\t' => {
+						buf >>= 4;
+						continue
 					}
-
-					modulus += 1;
-					if modulus == 2 {
-						modulus = 0;
-						bytes[pos] = buf;
-						pos += 1;
+					_ => {
+						let ch = v[idx..].chars().next().unwrap();
+						return Err(E::custom(&format!("invalid hex character: {}, at {}", ch, idx)))
 					}
 				}
 
-				Ok(pos)
+				modulus += 1;
+				if modulus == 2 {
+					modulus = 0;
+					bytes[pos] = buf;
+					pos += 1;
+				}
+			}
+
+			Ok(pos)
 		}
 
 		fn visit_string<E: de::Error>(self, v: String) -> Result<Self::Value, E> {
