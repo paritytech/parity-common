@@ -52,8 +52,9 @@ use tiny_keccak::keccak256;
 
 // 3 according to yellowpaper
 const BLOOM_BITS: u32 = 3;
+const BLOOM_SIZE: usize = 256;
 
-construct_hash!(Bloom, 256);
+construct_hash!(Bloom, BLOOM_SIZE);
 
 /// Returns log2.
 fn log2(x: usize) -> u32 {
@@ -175,20 +176,20 @@ impl Bloom {
 
 	pub fn accrue_bloom<'a, B>(&mut self, bloom: B) where BloomRef<'a>: From<B> {
 		let bloom_ref: BloomRef = bloom.into();
-		assert_eq!(self.0.len(), 256);
-		assert_eq!(bloom_ref.0.len(), 256);
-		for i in 0..256 {
+		assert_eq!(self.0.len(), BLOOM_SIZE);
+		assert_eq!(bloom_ref.0.len(), BLOOM_SIZE);
+		for i in 0..BLOOM_SIZE {
 			self.0[i] |= bloom_ref.0[i];
 		}
 	}
 
-	pub fn data(&self) -> &[u8; 256] {
+	pub fn data(&self) -> &[u8; BLOOM_SIZE] {
 		&self.0
 	}
 }
 
 #[derive(Clone, Copy)]
-pub struct BloomRef<'a>(&'a [u8; 256]);
+pub struct BloomRef<'a>(&'a [u8; BLOOM_SIZE]);
 
 impl<'a> BloomRef<'a> {
 	pub fn is_empty(&self) -> bool {
@@ -202,9 +203,9 @@ impl<'a> BloomRef<'a> {
 	
 	pub fn contains_bloom<'b, B>(&self, bloom: B) -> bool where BloomRef<'b>: From<B> {
 		let bloom_ref: BloomRef = bloom.into();
-		assert_eq!(self.0.len(), 256);
-		assert_eq!(bloom_ref.0.len(), 256);
-		for i in 0..256 {
+		assert_eq!(self.0.len(), BLOOM_SIZE);
+		assert_eq!(bloom_ref.0.len(), BLOOM_SIZE);
+		for i in 0..BLOOM_SIZE {
 			let a = self.0[i];
 			let b = bloom_ref.0[i];
 			if (a & b) != b {
@@ -214,13 +215,13 @@ impl<'a> BloomRef<'a> {
 		true
 	}
 
-	pub fn data(&self) -> &'a [u8; 256] {
+	pub fn data(&self) -> &'a [u8; BLOOM_SIZE] {
 		self.0
 	}
 }
 
-impl<'a> From<&'a [u8; 256]> for BloomRef<'a> {
-	fn from(data: &'a [u8; 256]) -> Self {
+impl<'a> From<&'a [u8; BLOOM_SIZE]> for BloomRef<'a> {
+	fn from(data: &'a [u8; BLOOM_SIZE]) -> Self {
 		BloomRef(data)
 	}
 }
@@ -234,14 +235,15 @@ impl<'a> From<&'a Bloom> for BloomRef<'a> {
 #[cfg(feature="serialize")]
 impl Serialize for Bloom {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-		ethereum_types_serialize::serialize(&self.0, serializer)
+        let mut slice = [0u8; 2 + 2 * BLOOM_SIZE];
+		ethereum_types_serialize::serialize(&mut slice, &self.0, serializer)
 	}
 }
 
 #[cfg(feature="serialize")]
 impl<'de> Deserialize<'de> for Bloom {
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-        let mut bytes = [0; 256];
+        let mut bytes = [0; BLOOM_SIZE];
 		ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Exact(&mut bytes))?;
         Ok(Bloom(bytes))
 	}

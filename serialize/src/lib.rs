@@ -5,38 +5,43 @@ use serde::{de, Serializer, Deserializer};
 
 static CHARS: &'static[u8] = b"0123456789abcdef";
 
-fn to_hex(bytes: &[u8], skip_leading_zero: bool) -> String {
-    let mut v = Vec::with_capacity(2 + bytes.len() * 2);
-    v.push('0' as u8);
-    v.push('x' as u8);
+fn to_hex<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a str {
+    assert!(v.len() > 1 + bytes.len() * 2);
 
+    v[0] = '0' as u8;
+    v[1] = 'x' as u8;
+
+    let mut idx = 2;
     let first_nibble = bytes[0] >> 4;
     if first_nibble != 0 || !skip_leading_zero {
-        v.push(CHARS[first_nibble as usize]);
+        v[idx] = CHARS[first_nibble as usize];
+        idx += 1;
     }
-    v.push(CHARS[(bytes[0] & 0xf) as usize]);
+    v[idx] = CHARS[(bytes[0] & 0xf) as usize];
+    idx += 1;
 
     for &byte in bytes.iter().skip(1) {
-        v.push(CHARS[(byte >> 4) as usize]);
-        v.push(CHARS[(byte & 0xf) as usize]);
+        v[idx] = CHARS[(byte >> 4) as usize];
+        v[idx + 1] = CHARS[(byte & 0xf) as usize];
+        idx += 2;
     }
 
-    unsafe {
-        String::from_utf8_unchecked(v)
-    }
+    ::std::str::from_utf8(&v[0..idx]).expect("All characters are coming from CHARS")
 }
 
 /// Serializes a slice of bytes.
-pub fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where
+pub fn serialize<S>(slice: &mut [u8], bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where
 	S: Serializer,
 {
-	serializer.serialize_str(&to_hex(bytes, false))
+    let mut v = Vec::with_capacity(2 + bytes.len() * 2);
+    v.resize(2 + bytes.len() * 2, 0);
+	serializer.serialize_str(to_hex(slice, bytes, false))
 }
 
 /// Serialize a slice of bytes as uint.
 ///
 /// The representation will have all leading zeros trimmed.
-pub fn serialize_uint<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where
+pub fn serialize_uint<S>(slice: &mut [u8], bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where
 	S: Serializer,
 {
 	let non_zero = bytes.iter().take_while(|b| **b == 0).count();
@@ -45,8 +50,7 @@ pub fn serialize_uint<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
 		return serializer.serialize_str("0x0");
 	}
 
-    let string = to_hex(bytes, true);
-	serializer.serialize_str(&*string)
+	serializer.serialize_str(to_hex(slice, bytes, true))
 }
 
 /// Expected length of bytes vector.

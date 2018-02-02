@@ -334,9 +334,10 @@ macro_rules! impl_serde {
 		#[cfg(feature="serialize")]
 		impl Serialize for $name {
 			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+                let mut slice = [0u8; 2 + 2 * $len * 8];
 				let mut bytes = [0u8; $len * 8];
 				self.to_big_endian(&mut bytes);
-				ethereum_types_serialize::serialize_uint(&bytes, serializer)
+				ethereum_types_serialize::serialize_uint(&mut slice, &bytes, serializer)
 			}
 		}
 

@@ -81,7 +81,8 @@ macro_rules! impl_serde {
 		#[cfg(feature="serialize")]
 		impl Serialize for $name {
 			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-				ethereum_types_serialize::serialize(&self.0, serializer)
+                let mut slice = [0u8; 2 + 2 * $len];
+				ethereum_types_serialize::serialize(&mut slice, &self.0, serializer)
 			}
 		}
 
