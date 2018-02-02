@@ -241,8 +241,9 @@ impl Serialize for Bloom {
 #[cfg(feature="serialize")]
 impl<'de> Deserialize<'de> for Bloom {
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-		ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Exact(256))
-			.map(|x| (&*x).into())
+        let mut bytes = [0; 256];
+		ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Exact(&mut bytes))?;
+        Ok(Bloom(bytes))
 	}
 }
 

@@ -88,8 +88,9 @@ macro_rules! impl_serde {
 		#[cfg(feature="serialize")]
 		impl<'de> Deserialize<'de> for $name {
 			fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-				ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Exact($len))
-					.map(|x| (&*x).into())
+                let mut bytes = [0u8; $len];
+				ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Exact(&mut bytes))?;
+                Ok($name(bytes))
 			}
 		}
 	}
