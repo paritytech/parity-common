@@ -81,7 +81,7 @@ macro_rules! impl_serde {
 		#[cfg(feature="serialize")]
 		impl Serialize for $name {
 			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-                let mut slice = [0u8; 2 + 2 * $len];
+				let mut slice = [0u8; 2 + 2 * $len];
 				ethereum_types_serialize::serialize(&mut slice, &self.0, serializer)
 			}
 		}
@@ -89,9 +89,9 @@ macro_rules! impl_serde {
 		#[cfg(feature="serialize")]
 		impl<'de> Deserialize<'de> for $name {
 			fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-                let mut bytes = [0u8; $len];
+				let mut bytes = [0u8; $len];
 				ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Exact(&mut bytes))?;
-                Ok($name(bytes))
+				Ok($name(bytes))
 			}
 		}
 	}

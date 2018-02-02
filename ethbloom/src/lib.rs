@@ -235,7 +235,7 @@ impl<'a> From<&'a Bloom> for BloomRef<'a> {
 #[cfg(feature="serialize")]
 impl Serialize for Bloom {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        let mut slice = [0u8; 2 + 2 * BLOOM_SIZE];
+		let mut slice = [0u8; 2 + 2 * BLOOM_SIZE];
 		ethereum_types_serialize::serialize(&mut slice, &self.0, serializer)
 	}
 }
@@ -243,9 +243,9 @@ impl Serialize for Bloom {
 #[cfg(feature="serialize")]
 impl<'de> Deserialize<'de> for Bloom {
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-        let mut bytes = [0; BLOOM_SIZE];
+		let mut bytes = [0; BLOOM_SIZE];
 		ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Exact(&mut bytes))?;
-        Ok(Bloom(bytes))
+		Ok(Bloom(bytes))
 	}
 }
 
