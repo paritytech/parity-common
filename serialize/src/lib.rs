@@ -1,17 +1,36 @@
 extern crate serde;
-extern crate rustc_hex;
 
 use std::fmt;
-
 use serde::{de, Serializer, Deserializer};
-use rustc_hex::{ToHex};
+
+static CHARS: &'static[u8] = b"0123456789abcdef";
+
+fn to_hex(bytes: &[u8], skip_leading_zero: bool) -> String {
+    let mut v = Vec::with_capacity(2 + bytes.len() * 2);
+    v.push('0' as u8);
+    v.push('x' as u8);
+
+    let first_nibble = bytes[0] >> 4;
+    if first_nibble != 0 || !skip_leading_zero {
+        v.push(CHARS[first_nibble as usize]);
+    }
+    v.push(CHARS[(bytes[0] & 0xf) as usize]);
+
+    for &byte in bytes.iter().skip(1) {
+        v.push(CHARS[(byte >> 4) as usize]);
+        v.push(CHARS[(byte & 0xf) as usize]);
+    }
+
+    unsafe {
+        String::from_utf8_unchecked(v)
+    }
+}
 
 /// Serializes a slice of bytes.
 pub fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where
 	S: Serializer,
 {
-	let hex = ToHex::to_hex(bytes);
-	serializer.serialize_str(&format!("0x{}", hex))
+	serializer.serialize_str(&to_hex(bytes, false))
 }
 
 /// Serialize a slice of bytes as uint.
@@ -26,11 +45,8 @@ pub fn serialize_uint<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
 		return serializer.serialize_str("0x0");
 	}
 
-	let hex = ToHex::to_hex(bytes);
-	let has_leading_zero = !hex.is_empty() && &hex[0..1] == "0";
-	serializer.serialize_str(
-		&format!("0x{}", if has_leading_zero { &hex[1..] } else { &hex })
-	)
+    let string = to_hex(bytes, true);
+	serializer.serialize_str(&*string)
 }
 
 /// Expected length of bytes vector.
