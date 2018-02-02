@@ -4,7 +4,32 @@ use uint::FromDecStrErr;
 use ethereum_types::{U128, U256, U512};
 
 #[test]
-pub fn uint256_from() {
+fn uint256_checked_ops() {
+	let z = U256::from(0);
+	let a = U256::from(10);
+	let b = !U256::from(1);
+
+	assert_eq!(a.checked_add(b), None);
+	assert_eq!(a.checked_add(a), Some(20.into()));
+
+	assert_eq!(a.checked_sub(b), None);
+	assert_eq!(a.checked_sub(a), Some(0.into()));
+
+	assert_eq!(a.checked_mul(b), None);
+	assert_eq!(a.checked_mul(a), Some(100.into()));
+
+	assert_eq!(a.checked_div(z), None);
+	assert_eq!(a.checked_div(a), Some(1.into()));
+
+	assert_eq!(a.checked_rem(z), None);
+	assert_eq!(a.checked_rem(a), Some(0.into()));
+
+	assert_eq!(a.checked_neg(), None);
+	assert_eq!(z.checked_neg(), Some(z));
+}
+
+#[test]
+fn uint256_from() {
 	let e = U256([10, 0, 0, 0]);
 
 	// test unsigned initialization
@@ -58,7 +83,7 @@ pub fn uint256_from() {
 }
 
 #[test]
-pub fn uint256_to() {
+fn uint256_to() {
 	let hex = "8090a0b0c0d0e0f00910203040506077583a2cf8264910e1436bda32571012f0";
 	let uint = U256::from_str(hex).unwrap();
 	let mut bytes = [0u8; 32];
@@ -68,7 +93,7 @@ pub fn uint256_to() {
 }
 
 #[test]
-pub fn uint256_bits_test() {
+fn uint256_bits_test() {
 	assert_eq!(U256::from(0u64).bits(), 0);
 	assert_eq!(U256::from(255u64).bits(), 8);
 	assert_eq!(U256::from(256u64).bits(), 9);
@@ -106,7 +131,7 @@ pub fn uint256_bits_test() {
 
 #[test]
 #[cfg_attr(feature="dev", allow(eq_op))]
-pub fn uint256_comp_test() {
+fn uint256_comp_test() {
 	let small = U256([10u64, 0, 0, 0]);
 	let big = U256([0x8C8C3EE70C644118u64, 0x0209E7378231E632, 0, 0]);
 	let bigger = U256([0x9C8C3EE70C644118u64, 0x0209E7378231E632, 0, 0]);
@@ -123,7 +148,7 @@ pub fn uint256_comp_test() {
 }
 
 #[test]
-pub fn uint256_arithmetic_test() {
+fn uint256_arithmetic_test() {
 	let init = U256::from(0xDEADBEEFDEADBEEFu64);
 	let copy = init;
 
@@ -157,7 +182,7 @@ pub fn uint256_arithmetic_test() {
 }
 
 #[test]
-pub fn uint256_simple_mul() {
+fn uint256_simple_mul() {
 	let a = U256::from_str("10000000000000000").unwrap();
 	let b = U256::from_str("10000000000000000").unwrap();
 
@@ -169,7 +194,7 @@ pub fn uint256_simple_mul() {
 }
 
 #[test]
-pub fn uint256_extreme_bitshift_test() {
+fn uint256_extreme_bitshift_test() {
 	//// Shifting a u64 by 64 bits gives an undefined value, so make sure that
 	//// we're doing the Right Thing here
 	let init = U256::from(0xDEADBEEFDEADBEEFu64);
@@ -184,7 +209,7 @@ pub fn uint256_extreme_bitshift_test() {
 }
 
 #[test]
-pub fn uint256_exp10() {
+fn uint256_exp10() {
 	assert_eq!(U256::exp10(0), U256::from(1u64));
 	println!("\none: {:?}", U256::from(1u64));
 	println!("ten: {:?}", U256::from(10u64));
@@ -195,12 +220,21 @@ pub fn uint256_exp10() {
 }
 
 #[test]
-pub fn uint256_mul32() {
+fn uint256_mul32() {
 	assert_eq!(U256::from(0u64) * 2u32, U256::from(0u64));
 	assert_eq!(U256::from(1u64) * 2u32, U256::from(2u64));
 	assert_eq!(U256::from(10u64) * 2u32, U256::from(20u64));
 	assert_eq!(U256::from(10u64) * 5u32, U256::from(50u64));
 	assert_eq!(U256::from(1000u64) * 50u32, U256::from(50000u64));
+}
+
+#[test]
+fn uint256_mul32_old() {
+	assert_eq!(U256::from(0u64).mul_u32(2), U256::from(0u64));
+	assert_eq!(U256::from(1u64).mul_u32(2), U256::from(2u64));
+	assert_eq!(U256::from(10u64).mul_u32(2), U256::from(20u64));
+	assert_eq!(U256::from(10u64).mul_u32(5), U256::from(50u64));
+	assert_eq!(U256::from(1000u64).mul_u32(50), U256::from(50000u64));
 }
 
 #[test]
@@ -247,12 +281,12 @@ fn uint256_overflowing_pow() {
 }
 
 #[test]
-pub fn uint256_mul1() {
+fn uint256_mul1() {
 	assert_eq!(U256::from(1u64) * U256::from(10u64), U256::from(10u64));
 }
 
 #[test]
-pub fn uint256_mul2() {
+fn uint256_mul2() {
 	let a = U512::from_str("10000000000000000fffffffffffffffe").unwrap();
 	let b = U512::from_str("ffffffffffffffffffffffffffffffff").unwrap();
 
@@ -260,7 +294,7 @@ pub fn uint256_mul2() {
 }
 
 #[test]
-pub fn uint256_overflowing_mul() {
+fn uint256_overflowing_mul() {
 	assert_eq!(
 		U256::from_str("100000000000000000000000000000000").unwrap().overflowing_mul(
 			U256::from_str("100000000000000000000000000000000").unwrap()
@@ -270,7 +304,7 @@ pub fn uint256_overflowing_mul() {
 }
 
 #[test]
-pub fn uint128_add() {
+fn uint128_add() {
 	assert_eq!(
 		U128::from_str("fffffffffffffffff").unwrap() + U128::from_str("fffffffffffffffff").unwrap(),
 		U128::from_str("1ffffffffffffffffe").unwrap()
@@ -278,7 +312,7 @@ pub fn uint128_add() {
 }
 
 #[test]
-pub fn uint128_add_overflow() {
+fn uint128_add_overflow() {
 	assert_eq!(
 		U128::from_str("ffffffffffffffffffffffffffffffff").unwrap()
 		.overflowing_add(
@@ -291,21 +325,21 @@ pub fn uint128_add_overflow() {
 #[test]
 #[should_panic]
 #[cfg(debug_assertions)]
-pub fn uint128_add_overflow_panic() {
+fn uint128_add_overflow_panic() {
 	U128::from_str("ffffffffffffffffffffffffffffffff").unwrap()
 	+
 	U128::from_str("ffffffffffffffffffffffffffffffff").unwrap();
 }
 
 #[test]
-pub fn uint128_mul() {
+fn uint128_mul() {
 	assert_eq!(
 		U128::from_str("fffffffff").unwrap() * U128::from_str("fffffffff").unwrap(),
 		U128::from_str("ffffffffe000000001").unwrap());
 }
 
 #[test]
-pub fn uint512_mul() {
+fn uint512_mul() {
 	assert_eq!(
 		U512::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
 		*
@@ -315,7 +349,7 @@ pub fn uint512_mul() {
 }
 
 #[test]
-pub fn uint256_mul_overflow() {
+fn uint256_mul_overflow() {
 	assert_eq!(
 		U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
 		.overflowing_mul(
@@ -327,14 +361,14 @@ pub fn uint256_mul_overflow() {
 
 #[test]
 #[should_panic]
-pub fn uint256_mul_overflow_panic() {
+fn uint256_mul_overflow_panic() {
 	U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
 	*
 	U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap();
 }
 
 #[test]
-pub fn uint256_sub_overflow() {
+fn uint256_sub_overflow() {
 	assert_eq!(
 		U256::from_str("0").unwrap()
 		.overflowing_sub(
@@ -346,14 +380,14 @@ pub fn uint256_sub_overflow() {
 
 #[test]
 #[should_panic]
-pub fn uint256_sub_overflow_panic() {
+fn uint256_sub_overflow_panic() {
 	U256::from_str("0").unwrap()
 	-
 	U256::from_str("1").unwrap();
 }
 
 #[test]
-pub fn uint256_shl() {
+fn uint256_shl() {
 	assert_eq!(
 		U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
 		<< 4,
@@ -362,7 +396,7 @@ pub fn uint256_shl() {
 }
 
 #[test]
-pub fn uint256_shl_words() {
+fn uint256_shl_words() {
 	assert_eq!(
 		U256::from_str("0000000000000001ffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
 		<< 64,
@@ -376,7 +410,7 @@ pub fn uint256_shl_words() {
 }
 
 #[test]
-pub fn uint256_mul() {
+fn uint256_mul() {
 	assert_eq!(
 		U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
 		*
