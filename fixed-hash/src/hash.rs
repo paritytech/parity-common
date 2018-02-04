@@ -139,6 +139,12 @@ macro_rules! construct_hash {
 			}
 		}
 
+		impl ::core::fmt::LowerHex for $from {
+			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+				::core::fmt::Debug::fmt(self, f)
+			}
+		}
+
 		impl Copy for $from {}
 		#[cfg_attr(feature="dev", allow(expl_impl_clone_on_copy))]
 		impl Clone for $from {
@@ -337,6 +343,7 @@ macro_rules! impl_std_for_hash {
 	($from: ident, $size: tt) => {
 		impl $from {
 			/// Get a hex representation.
+			#[deprecated(note="Use LowerHex or Debug formatting instead.")]
 			pub fn hex(&self) -> String {
 				format!("{:?}", self)
 			}
