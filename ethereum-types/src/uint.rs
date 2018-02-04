@@ -334,17 +334,19 @@ macro_rules! impl_serde {
 		#[cfg(feature="serialize")]
 		impl Serialize for $name {
 			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+				let mut slice = [0u8; 2 + 2 * $len * 8];
 				let mut bytes = [0u8; $len * 8];
 				self.to_big_endian(&mut bytes);
-				ethereum_types_serialize::serialize_uint(&bytes, serializer)
+				ethereum_types_serialize::serialize_uint(&mut slice, &bytes, serializer)
 			}
 		}
 
 		#[cfg(feature="serialize")]
 		impl<'de> Deserialize<'de> for $name {
 			fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-				ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Between(0, $len * 8))
-					.map(|x| (&*x).into())
+				let mut bytes = [0u8; $len * 8];
+				let wrote = ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Between(0, &mut bytes))?;
+				Ok(bytes[0..wrote].into())
 			}
 		}
 	}
