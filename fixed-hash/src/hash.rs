@@ -157,21 +157,6 @@ macro_rules! construct_hash {
 
 		impl Eq for $from {}
 
-		impl PartialEq for $from {
-			fn eq(&self, other: &Self) -> bool {
-				unsafe { $crate::libc::memcmp(self.0.as_ptr() as *const $crate::libc::c_void, other.0.as_ptr() as *const $crate::libc::c_void, $size) == 0 }
-			}
-		}
-
-		impl Ord for $from {
-			fn cmp(&self, other: &Self) -> ::core::cmp::Ordering {
-				let r = unsafe { $crate::libc::memcmp(self.0.as_ptr() as *const $crate::libc::c_void, other.0.as_ptr() as *const $crate::libc::c_void, $size) };
-				if r < 0 { return ::core::cmp::Ordering::Less }
-				if r > 0 { return ::core::cmp::Ordering::Greater }
-				return ::core::cmp::Ordering::Equal;
-			}
-		}
-
 		impl PartialOrd for $from {
 			fn partial_cmp(&self, other: &Self) -> Option<::core::cmp::Ordering> {
 				Some(self.cmp(other))
@@ -313,6 +298,7 @@ macro_rules! construct_hash {
 
 		impl_std_for_hash!($from, $size);
 		impl_heapsize_for_hash!($from);
+		impl_libc_for_hash!($from, $size);
 	}
 }
 
@@ -420,4 +406,58 @@ macro_rules! impl_std_for_hash_internals {
 #[doc(hidden)]
 macro_rules! impl_std_for_hash_internals {
 	($from: ident, $size: tt) => {}
+}
+
+#[cfg(feature="libc")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_heapsize_for_hash {
+	($name: ident) => {
+		impl $crate::heapsize::HeapSizeOf for $name {
+			fn heap_size_of_children(&self) -> usize {
+				0
+			}
+		}
+	}
+}
+
+#[cfg(feature="libc")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_libc_for_hash {
+	($from: ident, $size: expr) => {
+		impl PartialEq for $from {
+			fn eq(&self, other: &Self) -> bool {
+				unsafe { $crate::libc::memcmp(self.0.as_ptr() as *const $crate::libc::c_void, other.0.as_ptr() as *const $crate::libc::c_void, $size) == 0 }
+			}
+		}
+
+		impl Ord for $from {
+			fn cmp(&self, other: &Self) -> ::core::cmp::Ordering {
+				let r = unsafe { $crate::libc::memcmp(self.0.as_ptr() as *const $crate::libc::c_void, other.0.as_ptr() as *const $crate::libc::c_void, $size) };
+				if r < 0 { return ::core::cmp::Ordering::Less }
+				if r > 0 { return ::core::cmp::Ordering::Greater }
+				return ::core::cmp::Ordering::Equal;
+			}
+		}
+	}
+}
+
+#[cfg(not(feature="libc"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_libc_for_hash {
+	($from: ident, $size: expr) => {
+		impl PartialEq for $from {
+			fn eq(&self, other: &Self) -> bool {
+				&self.0[..] == &other.0[..]
+			}
+		}
+
+		impl Ord for $from {
+			fn cmp(&self, other: &Self) -> ::core::cmp::Ordering {
+				self.0[..].cmp(&other.0[..])
+			}
+		}
+	}
 }
