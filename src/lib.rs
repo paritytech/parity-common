@@ -6,8 +6,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#[cfg(feature="libc")]
 #[doc(hidden)]
 pub extern crate libc;
+
+#[cfg(not(feature="libc"))]
+#[doc(hidden)]
+pub mod libc { }
 
 #[cfg(feature="heapsizeof")]
 #[doc(hidden)]
