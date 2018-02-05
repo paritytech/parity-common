@@ -8,7 +8,7 @@ To specify a dependency, add to `Cargo.toml`
 
 ```toml
 [dependencies]
-ethereum-types = "0.1"
+ethereum-types = "0.2"
 ```
 
 Little example
@@ -21,7 +21,7 @@ fn main() {
 	let mut val: U256 = 1023.into();
 	for _ in 0..200 { val = val * 2.into() }
 	assert_eq!(
-		&format!("{}", val), 
+		&format!("{}", val),
 		"1643897619276947051879427220465009342380213662639797070513307648"
 	);
 }
