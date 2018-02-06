@@ -14,6 +14,8 @@ extern crate quickcheck;
 extern crate serde_json;
 
 #[cfg(test)]
+pub mod hash_tests;
+#[cfg(test)]
 pub mod uint_tests;
 #[cfg(test)]
 pub mod serialization;

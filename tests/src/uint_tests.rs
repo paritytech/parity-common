@@ -254,8 +254,9 @@ fn uint256_pow_overflow_panic() {
 
 #[test]
 fn should_format_and_debug_correctly() {
-    let test = |x: usize, hex: &'static str, dbg: &'static str| {
-        assert_eq!(format!("{:?}", U256::from(x)), dbg);
+    let test = |x: usize, hex: &'static str, display: &'static str| {
+        assert_eq!(format!("{}", U256::from(x)), display);
+        assert_eq!(format!("{:?}", U256::from(x)), format!("0x{}", hex));
         assert_eq!(format!("{:x}", U256::from(x)), hex);
     };
 

@@ -1,4 +1,4 @@
-use U256;
+use {U128, U256, U512};
 
 #[cfg(feature="serialize")]
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
@@ -16,34 +16,7 @@ construct_hash!(H512, 64);
 construct_hash!(H520, 65);
 construct_hash!(H1024, 128);
 
-impl From<U256> for H256 {
-	fn from(value: U256) -> H256 {
-		let mut ret = H256::new();
-		value.to_big_endian(&mut ret);
-		ret
-	}
-}
-
-impl<'a> From<&'a U256> for H256 {
-	fn from(value: &'a U256) -> H256 {
-		let mut ret: H256 = H256::new();
-		value.to_big_endian(&mut ret);
-		ret
-	}
-}
-
-impl From<H256> for U256 {
-	fn from(value: H256) -> U256 {
-		U256::from(&value)
-	}
-}
-
-impl<'a> From<&'a H256> for U256 {
-	fn from(value: &'a H256) -> U256 {
-		U256::from(value.as_ref() as &[u8])
-	}
-}
-
+#[deprecated]
 impl From<H256> for H160 {
 	fn from(value: H256) -> H160 {
 		let mut ret = H160::new();
@@ -52,6 +25,7 @@ impl From<H256> for H160 {
 	}
 }
 
+#[deprecated]
 impl From<H256> for H64 {
 	fn from(value: H256) -> H64 {
 		let mut ret = H64::new();
@@ -75,6 +49,42 @@ impl<'a> From<&'a H160> for H256 {
 		ret
 	}
 }
+
+macro_rules! impl_uint_conversions {
+	($hash: ident, $uint: ident) => {
+		impl From<$uint> for $hash {
+			fn from(value: $uint) -> Self {
+				let mut ret = $hash::new();
+				value.to_big_endian(&mut ret);
+				ret
+			}
+		}
+
+		impl<'a> From<&'a $uint> for $hash {
+			fn from(value: &'a $uint) -> Self {
+				let mut ret = $hash::new();
+				value.to_big_endian(&mut ret);
+				ret
+			}
+		}
+
+		impl From<$hash> for $uint {
+			fn from(value: $hash) -> Self {
+				Self::from(&value)
+			}
+		}
+
+		impl<'a> From<&'a $hash> for $uint {
+			fn from(value: &'a $hash) -> Self {
+				Self::from(value.as_ref() as &[u8])
+			}
+		}
+	}
+}
+
+impl_uint_conversions!(H128, U128);
+impl_uint_conversions!(H256, U256);
+impl_uint_conversions!(H512, U512);
 
 macro_rules! impl_serde {
 	($name: ident, $len: expr) => {
