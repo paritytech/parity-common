@@ -20,7 +20,7 @@ rustc-hex = { version = "1.0", optional = true }
 crunchy = "0.1.5"
 
 [features]
-std = ["rustc-hex"]
+std = ["rustc-hex", "byteorder/std"]
 heapsizeof = ["heapsize"]
 use_asm = []
 
