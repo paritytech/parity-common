@@ -20,7 +20,7 @@ extern crate serde;
 mod hash;
 mod uint;
 
-pub use uint::{U128, U256, U512};
+pub use uint::{U64, U128, U256, U512, U1024};
 pub use hash::{H32, H64, H128, H160, H256, H264, H512, H520, H1024};
 pub use ethbloom::{Bloom, BloomRef, Input as BloomInput};
 pub use fixed_hash::clean_0x;

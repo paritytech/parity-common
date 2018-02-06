@@ -4,9 +4,11 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 #[cfg(feature="serialize")]
 use ethereum_types_serialize;
 
+construct_uint!(U64, 1);
 construct_uint!(U128, 2);
 construct_uint!(U256, 4);
 construct_uint!(U512, 8);
+construct_uint!(U1024, 16);
 
 impl U256 {
 	/// Multiplies two 256-bit integers to produce full 512-bit integer

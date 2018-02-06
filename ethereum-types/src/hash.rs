@@ -1,4 +1,4 @@
-use {U128, U256, U512};
+use {U64, U128, U256, U512, U1024};
 
 #[cfg(feature="serialize")]
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
@@ -82,9 +82,11 @@ macro_rules! impl_uint_conversions {
 	}
 }
 
+impl_uint_conversions!(H64, U64);
 impl_uint_conversions!(H128, U128);
 impl_uint_conversions!(H256, U256);
 impl_uint_conversions!(H512, U512);
+impl_uint_conversions!(H1024, U1024);
 
 macro_rules! impl_serde {
 	($name: ident, $len: expr) => {
