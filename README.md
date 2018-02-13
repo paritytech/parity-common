@@ -19,7 +19,7 @@ use ethereum_types::U256;
 
 fn main() {
 	let mut val: U256 = 1023.into();
-	for _ in 0..200 { val = val * 2.into() }
+	for _ in 0..200 { val = val * 2u32 }
 	assert_eq!(
 		&format!("{}", val),
 		"1643897619276947051879427220465009342380213662639797070513307648"
