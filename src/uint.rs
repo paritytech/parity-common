@@ -1229,6 +1229,9 @@ macro_rules! construct_uint {
 
 		impl_std_for_uint!($name, $n_words);
 		impl_heapsize_for_uint!($name);
+		// `$n_words * 8` because macro expects bytes and
+		// uints use 64 bit (8 byte) words
+		impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
 	);
 }
 
@@ -1357,4 +1360,39 @@ macro_rules! impl_heapsize_for_uint {
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_uint {
 	($name: ident) => {}
+}
+
+#[cfg(feature="impl_quickcheck_arbitrary")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_quickcheck_arbitrary_for_uint {
+	($uint: ty, $n_bytes: tt) => {
+		impl $crate::quickcheck::Arbitrary for $uint {
+			fn arbitrary<G: $crate::quickcheck::Gen>(g: &mut G) -> Self {
+				let mut res = [0u8; $n_bytes];
+
+				let p = g.next_f64();
+				let range =
+					if p < 0.1 {
+						$n_bytes
+					} else if p < 0.2 {
+						$n_bytes / 2
+					} else {
+						$n_bytes / 5
+					};
+
+				let size = g.gen_range(0, range);
+				g.fill_bytes(&mut res[..size]);
+
+				res.as_ref().into()
+			}
+		}
+	}
+}
+
+#[cfg(not(feature="impl_quickcheck_arbitrary"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_quickcheck_arbitrary_for_uint {
+	($uint: ty, $n_bytes: tt) => {}
 }
