@@ -1378,10 +1378,10 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 					// 10% chance to generate number that uses up to $n_bytes
 					if p < 0.1 {
 						$n_bytes
-					// 20% chance to generate number that uses up to $n_bytes / 2
+					// 10% chance to generate number that uses up to $n_bytes / 2
 					} else if p < 0.2 {
 						$n_bytes / 2
-					// 70% chance to generate number that uses up to $n_bytes / 5
+					// 80% chance to generate number that uses up to $n_bytes / 5
 					} else {
 						$n_bytes / 5
 					};
