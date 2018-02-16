@@ -254,19 +254,19 @@ fn uint256_pow_overflow_panic() {
 
 #[test]
 fn should_format_and_debug_correctly() {
-    let test = |x: usize, hex: &'static str, display: &'static str| {
-        assert_eq!(format!("{}", U256::from(x)), display);
-        assert_eq!(format!("{:?}", U256::from(x)), format!("0x{}", hex));
-        assert_eq!(format!("{:x}", U256::from(x)), hex);
-    };
+	let test = |x: usize, hex: &'static str, display: &'static str| {
+		assert_eq!(format!("{}", U256::from(x)), display);
+		assert_eq!(format!("{:?}", U256::from(x)), format!("0x{}", hex));
+		assert_eq!(format!("{:x}", U256::from(x)), hex);
+	};
 
-    test(0x1, "1", "1");
-    test(0xf, "f", "15");
-    test(0x10, "10", "16");
-    test(0xff, "ff", "255");
-    test(0x100, "100", "256");
-    test(0xfff, "fff", "4095");
-    test(0x1000, "1000", "4096");
+	test(0x1, "1", "1");
+	test(0xf, "f", "15");
+	test(0x10, "10", "16");
+	test(0xff, "ff", "255");
+	test(0x100, "100", "256");
+	test(0xfff, "fff", "4095");
+	test(0x1000, "1000", "4096");
 }
 
 #[test]
@@ -422,9 +422,9 @@ fn uint256_mul() {
 
 #[test]
 fn uint256_div() {
-	assert_eq!(U256::from(10u64) /  U256::from(1u64), U256::from(10u64));
-	assert_eq!(U256::from(10u64) /  U256::from(2u64), U256::from(5u64));
-	assert_eq!(U256::from(10u64) /  U256::from(3u64), U256::from(3u64));
+	assert_eq!(U256::from(10u64) /	U256::from(1u64), U256::from(10u64));
+	assert_eq!(U256::from(10u64) /	U256::from(2u64), U256::from(5u64));
+	assert_eq!(U256::from(10u64) /	U256::from(3u64), U256::from(3u64));
 }
 
 #[test]
@@ -797,10 +797,10 @@ fn u256_multi_full_mul() {
 	assert_eq!(U512([1, 0, 0, MAX-1, MAX, MAX, 0, 0]), result);
 
 	let result = U256([MAX, MAX, MAX, 0]).full_mul(U256([MAX, MAX, MAX, MAX]));
-	assert_eq!(U512([1, 0, 0, MAX,  MAX-1, MAX, MAX, 0]), result);
+	assert_eq!(U512([1, 0, 0, MAX,	MAX-1, MAX, MAX, 0]), result);
 
 	let result = U256([MAX, MAX, MAX, MAX]).full_mul(U256([MAX, MAX, MAX, 0]));
-	assert_eq!(U512([1, 0, 0, MAX,  MAX-1, MAX, MAX, 0]), result);
+	assert_eq!(U512([1, 0, 0, MAX,	MAX-1, MAX, MAX, 0]), result);
 
 	let result = U256([MAX, MAX, MAX, MAX]).full_mul(U256([MAX, MAX, MAX, MAX]));
 	assert_eq!(U512([1, 0, 0, 0, MAX-1, MAX, MAX, MAX]), result);
