@@ -254,19 +254,19 @@ fn uint256_pow_overflow_panic() {
 
 #[test]
 fn should_format_and_debug_correctly() {
-    let test = |x: usize, hex: &'static str, display: &'static str| {
-        assert_eq!(format!("{}", U256::from(x)), display);
-        assert_eq!(format!("{:?}", U256::from(x)), format!("0x{}", hex));
-        assert_eq!(format!("{:x}", U256::from(x)), hex);
-    };
+	let test = |x: usize, hex: &'static str, display: &'static str| {
+		assert_eq!(format!("{}", U256::from(x)), display);
+		assert_eq!(format!("{:?}", U256::from(x)), format!("0x{}", hex));
+		assert_eq!(format!("{:x}", U256::from(x)), hex);
+	};
 
-    test(0x1, "1", "1");
-    test(0xf, "f", "15");
-    test(0x10, "10", "16");
-    test(0xff, "ff", "255");
-    test(0x100, "100", "256");
-    test(0xfff, "fff", "4095");
-    test(0x1000, "1000", "4096");
+	test(0x1, "1", "1");
+	test(0xf, "f", "15");
+	test(0x10, "10", "16");
+	test(0xff, "ff", "255");
+	test(0x100, "100", "256");
+	test(0xfff, "fff", "4095");
+	test(0x1000, "1000", "4096");
 }
 
 #[test]
@@ -422,9 +422,9 @@ fn uint256_mul() {
 
 #[test]
 fn uint256_div() {
-	assert_eq!(U256::from(10u64) /  U256::from(1u64), U256::from(10u64));
-	assert_eq!(U256::from(10u64) /  U256::from(2u64), U256::from(5u64));
-	assert_eq!(U256::from(10u64) /  U256::from(3u64), U256::from(3u64));
+	assert_eq!(U256::from(10u64) /	U256::from(1u64), U256::from(10u64));
+	assert_eq!(U256::from(10u64) /	U256::from(2u64), U256::from(5u64));
+	assert_eq!(U256::from(10u64) /	U256::from(3u64), U256::from(3u64));
 }
 
 #[test]
@@ -797,10 +797,10 @@ fn u256_multi_full_mul() {
 	assert_eq!(U512([1, 0, 0, MAX-1, MAX, MAX, 0, 0]), result);
 
 	let result = U256([MAX, MAX, MAX, 0]).full_mul(U256([MAX, MAX, MAX, MAX]));
-	assert_eq!(U512([1, 0, 0, MAX,  MAX-1, MAX, MAX, 0]), result);
+	assert_eq!(U512([1, 0, 0, MAX,	MAX-1, MAX, MAX, 0]), result);
 
 	let result = U256([MAX, MAX, MAX, MAX]).full_mul(U256([MAX, MAX, MAX, 0]));
-	assert_eq!(U512([1, 0, 0, MAX,  MAX-1, MAX, MAX, 0]), result);
+	assert_eq!(U512([1, 0, 0, MAX,	MAX-1, MAX, MAX, 0]), result);
 
 	let result = U256([MAX, MAX, MAX, MAX]).full_mul(U256([MAX, MAX, MAX, MAX]));
 	assert_eq!(U512([1, 0, 0, 0, MAX-1, MAX, MAX, MAX]), result);
@@ -1015,39 +1015,6 @@ fn trailing_zeros() {
 }
 
 pub mod laws {
-	construct_uint!(U128, 2);
-	construct_uint!(U256, 4);
-	construct_uint!(U512, 8);
-
-	macro_rules! uint_arbitrary {
-		($uint:ty, $n_bytes:tt) => {
-			impl ::quickcheck::Arbitrary for $uint {
-				fn arbitrary<G: ::quickcheck::Gen>(g: &mut G) -> Self {
-					let mut res = [0u8; $n_bytes];
-
-					let p = g.next_f64();
-					let range =
-						if p < 0.1 {
-							$n_bytes
-						} else if p < 0.2 {
-							$n_bytes / 2
-						} else {
-							$n_bytes / 5
-						};
-
-					let size = g.gen_range(0, range);
-					g.fill_bytes(&mut res[..size]);
-
-					res.as_ref().into()
-				}
-			}
-		}
-	}
-
-	uint_arbitrary!(U128, 16);
-	uint_arbitrary!(U256, 32);
-	uint_arbitrary!(U512, 64);
-
 	macro_rules! uint_laws {
 		($mod_name:ident, $uint_ty:ident) => {
 			mod $mod_name {
@@ -1213,7 +1180,15 @@ pub mod laws {
 		}
 	}
 
+	construct_uint!(U64, 1);
+	construct_uint!(U128, 2);
+	construct_uint!(U256, 4);
+	construct_uint!(U512, 8);
+	construct_uint!(U1024, 16);
+
+	uint_laws!(u64, U64);
 	uint_laws!(u128, U128);
 	uint_laws!(u256, U256);
 	uint_laws!(u512, U512);
+	uint_laws!(u1024, U1024);
 }

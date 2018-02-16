@@ -301,6 +301,7 @@ macro_rules! construct_hash {
 		impl_std_for_hash!($from, $size);
 		impl_heapsize_for_hash!($from);
 		impl_libc_for_hash!($from, $size);
+		impl_quickcheck_arbitrary_for_hash!($from, $size);
 	}
 }
 
@@ -462,4 +463,26 @@ macro_rules! impl_libc_for_hash {
 			}
 		}
 	}
+}
+
+#[cfg(feature="impl_quickcheck_arbitrary")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_quickcheck_arbitrary_for_hash {
+	($name: ty, $n_bytes: tt) => {
+		impl $crate::quickcheck::Arbitrary for $name {
+			fn arbitrary<G: $crate::quickcheck::Gen>(g: &mut G) -> Self {
+				let mut res = [0u8; $n_bytes];
+				g.fill_bytes(&mut res[..$n_bytes]);
+				res.as_ref().into()
+			}
+		}
+	}
+}
+
+#[cfg(not(feature="impl_quickcheck_arbitrary"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_quickcheck_arbitrary_for_hash {
+	($name: ty, $n_bytes: tt) => {}
 }

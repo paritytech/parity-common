@@ -10,7 +10,7 @@
 
 // Rust Bitcoin Library
 // Written in 2014 by
-//     Andrew Poelstra <apoelstra@wpsoftware.net>
+//	   Andrew Poelstra <apoelstra@wpsoftware.net>
 //
 // To the extent possible under law, the author(s) have dedicated all
 // copyright and related and neighboring rights to this software to
@@ -399,7 +399,7 @@ macro_rules! uint_overflowing_mul {
 				2:
 				"
 				: /* $0 */ "={r8}"(result[0]), /* $1 */ "={r9}"(result[1]), /* $2 */ "={r10}"(result[2]),
-					/* $3 */ "={r11}"(result[3]), /* $4 */  "={rcx}"(overflow)
+					/* $3 */ "={r11}"(result[3]), /* $4 */	"={rcx}"(overflow)
 
 				: /* $5 */ "m"(self_t[0]), /* $6 */ "m"(self_t[1]), /* $7 */  "m"(self_t[2]),
 					/* $8 */ "m"(self_t[3]), /* $9 */ "m"(other_t[0]), /* $10 */ "m"(other_t[1]),
@@ -897,11 +897,11 @@ macro_rules! construct_uint {
 
 			/// Negation with overflow.
 			pub fn overflowing_neg(self) -> ($name, bool) {
-                if self.is_zero() {
-                    (self, false)
-                } else {
-                    (!self, true)
-                }
+				if self.is_zero() {
+					(self, false)
+				} else {
+					(!self, true)
+				}
 			}
 
 			/// Checked negation. Returns `None` unless `self == 0`.
@@ -914,9 +914,9 @@ macro_rules! construct_uint {
 
 			/// Multiplication by u32
 			#[deprecated(note = "Use Mul<u32> instead.")]
- 			pub fn mul_u32(self, other: u32) -> Self {
+			pub fn mul_u32(self, other: u32) -> Self {
 				self * other
- 			}
+			}
 
 			/// Overflowing multiplication by u32
 			#[allow(dead_code)] // not used when multiplied with inline assembly
@@ -1229,6 +1229,9 @@ macro_rules! construct_uint {
 
 		impl_std_for_uint!($name, $n_words);
 		impl_heapsize_for_uint!($name);
+		// `$n_words * 8` because macro expects bytes and
+		// uints use 64 bit (8 byte) words
+		impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
 	);
 }
 
@@ -1357,4 +1360,44 @@ macro_rules! impl_heapsize_for_uint {
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_uint {
 	($name: ident) => {}
+}
+
+#[cfg(feature="impl_quickcheck_arbitrary")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_quickcheck_arbitrary_for_uint {
+	($uint: ty, $n_bytes: tt) => {
+		impl $crate::quickcheck::Arbitrary for $uint {
+			fn arbitrary<G: $crate::quickcheck::Gen>(g: &mut G) -> Self {
+				let mut res = [0u8; $n_bytes];
+
+				let p = g.next_f64();
+				// make it more likely to generate smaller numbers that
+				// don't use up the full $n_bytes
+				let range =
+					// 10% chance to generate number that uses up to $n_bytes
+					if p < 0.1 {
+						$n_bytes
+					// 10% chance to generate number that uses up to $n_bytes / 2
+					} else if p < 0.2 {
+						$n_bytes / 2
+					// 80% chance to generate number that uses up to $n_bytes / 5
+					} else {
+						$n_bytes / 5
+					};
+
+				let size = g.gen_range(0, range);
+				g.fill_bytes(&mut res[..size]);
+
+				res.as_ref().into()
+			}
+		}
+	}
+}
+
+#[cfg(not(feature="impl_quickcheck_arbitrary"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_quickcheck_arbitrary_for_uint {
+	($uint: ty, $n_bytes: tt) => {}
 }
