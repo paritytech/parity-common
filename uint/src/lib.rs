@@ -26,5 +26,9 @@ pub extern crate core;
 #[doc(hidden)]
 pub extern crate rustc_hex;
 
+#[cfg(feature="impl_quickcheck_arbitrary")]
+#[doc(hidden)]
+pub extern crate quickcheck;
+
 mod uint;
 pub use uint::*;
