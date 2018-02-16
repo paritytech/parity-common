@@ -1015,39 +1015,6 @@ fn trailing_zeros() {
 }
 
 pub mod laws {
-	construct_uint!(U128, 2);
-	construct_uint!(U256, 4);
-	construct_uint!(U512, 8);
-
-	macro_rules! uint_arbitrary {
-		($uint:ty, $n_bytes:tt) => {
-			impl ::quickcheck::Arbitrary for $uint {
-				fn arbitrary<G: ::quickcheck::Gen>(g: &mut G) -> Self {
-					let mut res = [0u8; $n_bytes];
-
-					let p = g.next_f64();
-					let range =
-						if p < 0.1 {
-							$n_bytes
-						} else if p < 0.2 {
-							$n_bytes / 2
-						} else {
-							$n_bytes / 5
-						};
-
-					let size = g.gen_range(0, range);
-					g.fill_bytes(&mut res[..size]);
-
-					res.as_ref().into()
-				}
-			}
-		}
-	}
-
-	uint_arbitrary!(U128, 16);
-	uint_arbitrary!(U256, 32);
-	uint_arbitrary!(U512, 64);
-
 	macro_rules! uint_laws {
 		($mod_name:ident, $uint_ty:ident) => {
 			mod $mod_name {
@@ -1213,7 +1180,15 @@ pub mod laws {
 		}
 	}
 
+	construct_uint!(U64, 1);
+	construct_uint!(U128, 2);
+	construct_uint!(U256, 4);
+	construct_uint!(U512, 8);
+	construct_uint!(U1024, 16);
+
+	uint_laws!(u64, U64);
 	uint_laws!(u128, U128);
 	uint_laws!(u256, U256);
 	uint_laws!(u512, U512);
+	uint_laws!(u1024, U1024);
 }
