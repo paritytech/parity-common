@@ -10,7 +10,7 @@
 
 // Rust Bitcoin Library
 // Written in 2014 by
-//     Andrew Poelstra <apoelstra@wpsoftware.net>
+//	   Andrew Poelstra <apoelstra@wpsoftware.net>
 //
 // To the extent possible under law, the author(s) have dedicated all
 // copyright and related and neighboring rights to this software to
@@ -399,7 +399,7 @@ macro_rules! uint_overflowing_mul {
 				2:
 				"
 				: /* $0 */ "={r8}"(result[0]), /* $1 */ "={r9}"(result[1]), /* $2 */ "={r10}"(result[2]),
-					/* $3 */ "={r11}"(result[3]), /* $4 */  "={rcx}"(overflow)
+					/* $3 */ "={r11}"(result[3]), /* $4 */	"={rcx}"(overflow)
 
 				: /* $5 */ "m"(self_t[0]), /* $6 */ "m"(self_t[1]), /* $7 */  "m"(self_t[2]),
 					/* $8 */ "m"(self_t[3]), /* $9 */ "m"(other_t[0]), /* $10 */ "m"(other_t[1]),
@@ -897,11 +897,11 @@ macro_rules! construct_uint {
 
 			/// Negation with overflow.
 			pub fn overflowing_neg(self) -> ($name, bool) {
-                if self.is_zero() {
-                    (self, false)
-                } else {
-                    (!self, true)
-                }
+				if self.is_zero() {
+					(self, false)
+				} else {
+					(!self, true)
+				}
 			}
 
 			/// Checked negation. Returns `None` unless `self == 0`.
@@ -914,9 +914,9 @@ macro_rules! construct_uint {
 
 			/// Multiplication by u32
 			#[deprecated(note = "Use Mul<u32> instead.")]
- 			pub fn mul_u32(self, other: u32) -> Self {
+			pub fn mul_u32(self, other: u32) -> Self {
 				self * other
- 			}
+			}
 
 			/// Overflowing multiplication by u32
 			#[allow(dead_code)] // not used when multiplied with inline assembly
