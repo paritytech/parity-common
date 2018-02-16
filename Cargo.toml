@@ -11,8 +11,10 @@ heapsize = { version = "0.4", optional = true }
 libc = { version = "0.2", optional = true, default-features = false }
 rand = { version = "0.4", optional = true }
 rustc-hex = { version = "1.0", optional = true }
+quickcheck = { version = "0.6", optional = true }
 
 [features]
 default = ["libc"]
 std = ["rustc-hex", "rand"]
 heapsizeof = ["heapsize"]
+impl_quickcheck_arbitrary = ["quickcheck"]
