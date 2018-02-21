@@ -51,6 +51,13 @@ macro_rules! construct_hash {
 			}
 		}
 
+		impl AsRef<$from> for $from {
+			#[inline]
+			fn as_ref(&self) -> &$from {
+				&self
+			}
+		}
+
 		impl ::core::ops::DerefMut for $from {
 			#[inline]
 			fn deref_mut(&mut self) -> &mut [u8] {
