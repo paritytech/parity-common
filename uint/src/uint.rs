@@ -551,6 +551,12 @@ macro_rules! construct_uint {
 		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 		pub struct $name(pub [u64; $n_words]);
 
+		impl AsRef<$name> for $name {
+			fn as_ref(&self) -> &$name {
+				&self
+			}
+		}
+
 		impl $name {
 			/// Convert from a decimal string.
 			pub fn from_dec_str(value: &str) -> Result<Self, $crate::FromDecStrErr> {
