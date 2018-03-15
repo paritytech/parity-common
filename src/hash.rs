@@ -418,7 +418,7 @@ macro_rules! impl_std_for_hash_internals {
 	($from: ident, $size: tt) => {}
 }
 
-#[cfg(feature="libc")]
+#[cfg(all(feature="libc", not(target_os = "unknown")))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_hash {
@@ -431,7 +431,7 @@ macro_rules! impl_heapsize_for_hash {
 	}
 }
 
-#[cfg(feature="libc")]
+#[cfg(all(feature="libc", not(target_os = "unknown")))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_libc_for_hash {
@@ -453,7 +453,7 @@ macro_rules! impl_libc_for_hash {
 	}
 }
 
-#[cfg(not(feature="libc"))]
+#[cfg(any(not(feature="libc"), target_os = "unknown"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_libc_for_hash {

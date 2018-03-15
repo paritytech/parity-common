@@ -8,7 +8,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature="libc")]
+#[cfg(all(feature="libc", not(target_os = "unknown")))]
 #[doc(hidden)]
 pub extern crate libc;
 
