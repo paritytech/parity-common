@@ -5,8 +5,8 @@ authors = ["Parity Technologies <admin@parity.io>"]
 description = "Ethereum bloom filter"
 license = "MIT"
 documentation = "https://docs.rs/ethbloom"
-homepage = "https://github.com/debris/ethbloom"
-repository = "https://github.com/debris/ethbloom"
+homepage = "https://github.com/paritytech/primitives"
+repository = "https://github.com/paritytech/primitives"
 
 [dependencies]
 tiny-keccak = "1.4"
