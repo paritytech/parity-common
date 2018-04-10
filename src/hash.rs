@@ -51,6 +51,13 @@ macro_rules! construct_hash {
 			}
 		}
 
+		impl AsMut<[u8]> for $from {
+			#[inline]
+			fn as_mut(&mut self) -> &mut [u8] {
+				&mut self.0
+			}
+		}
+
 		impl AsRef<$from> for $from {
 			#[inline]
 			fn as_ref(&self) -> &$from {
