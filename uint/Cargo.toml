@@ -4,7 +4,7 @@ homepage = "http://parity.io"
 repository = "https://github.com/paritytech/primitives"
 license = "MIT/Apache-2.0"
 name = "uint"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 build = "build.rs"
 
