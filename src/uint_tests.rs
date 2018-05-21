@@ -258,6 +258,7 @@ fn should_format_and_debug_correctly() {
 		assert_eq!(format!("{}", U256::from(x)), display);
 		assert_eq!(format!("{:?}", U256::from(x)), format!("0x{}", hex));
 		assert_eq!(format!("{:x}", U256::from(x)), hex);
+		assert_eq!(format!("{:#x}", U256::from(x)), format!("0x{}", hex));
 	};
 
 	test(0x1, "1", "1");
