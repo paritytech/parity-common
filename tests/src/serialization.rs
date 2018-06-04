@@ -16,7 +16,7 @@ macro_rules! test {
 				($name::from(1_000), "0x3e8"),
 				($name::from(100_000), "0x186a0"),
 				($name::from(u64::max_value()), "0xffffffffffffffff"),
-				($name::from(u64::max_value()) + 1.into(), "0x10000000000000000"),
+				($name::from(u64::max_value()) + 1, "0x10000000000000000"),
 			];
 
 			for (number, expected) in tests {
