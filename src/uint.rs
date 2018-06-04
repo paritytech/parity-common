@@ -54,7 +54,7 @@ macro_rules! impl_map_from {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_overflowing_add {
-	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_add_reg!($name, $n_words, $self_expr, $other)
 	})
 }
@@ -62,7 +62,7 @@ macro_rules! uint_overflowing_add {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_overflowing_add_reg {
-	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_binop!(
 			$name,
 			$n_words,
@@ -77,7 +77,7 @@ macro_rules! uint_overflowing_add_reg {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_overflowing_add {
-	(U256, $n_words:tt, $self_expr: expr, $other: expr) => ({
+	(U256, $n_words: tt, $self_expr: expr, $other: expr) => ({
 		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
@@ -100,7 +100,7 @@ macro_rules! uint_overflowing_add {
 		}
 		(U256(result), overflow != 0)
 	});
-	(U512, $n_words:tt, $self_expr: expr, $other: expr) => ({
+	(U512, $n_words: tt, $self_expr: expr, $other: expr) => ({
 		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
@@ -146,7 +146,7 @@ macro_rules! uint_overflowing_add {
 		(U512(result), overflow != 0)
 	});
 
-	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => (
+	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => (
 		uint_overflowing_add_reg!($name, $n_words, $self_expr, $other)
 	)
 }
@@ -155,7 +155,7 @@ macro_rules! uint_overflowing_add {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_overflowing_sub {
-	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_sub_reg!($name, $n_words, $self_expr, $other)
 	})
 }
@@ -163,7 +163,7 @@ macro_rules! uint_overflowing_sub {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_overflowing_binop {
-	($name:ident, $n_words:tt, $self_expr: expr, $other: expr, $fn:expr) => ({
+	($name:ident, $n_words: tt, $self_expr: expr, $other: expr, $fn:expr) => ({
 		let $name(ref me) = $self_expr;
 		let $name(ref you) = $other;
 
@@ -208,7 +208,7 @@ macro_rules! uint_overflowing_binop {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_overflowing_sub_reg {
-	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_binop!(
 			$name,
 			$n_words,
@@ -223,7 +223,7 @@ macro_rules! uint_overflowing_sub_reg {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_overflowing_sub {
-	(U256, $n_words:tt, $self_expr: expr, $other: expr) => ({
+	(U256, $n_words: tt, $self_expr: expr, $other: expr) => ({
 		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
@@ -245,7 +245,7 @@ macro_rules! uint_overflowing_sub {
 		}
 		(U256(result), overflow != 0)
 	});
-	(U512, $n_words:tt, $self_expr: expr, $other: expr) => ({
+	(U512, $n_words: tt, $self_expr: expr, $other: expr) => ({
 		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
@@ -290,7 +290,7 @@ macro_rules! uint_overflowing_sub {
 		}
 		(U512(result), overflow != 0)
 	});
-	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_sub_reg!($name, $n_words, $self_expr, $other)
 	})
 }
@@ -298,7 +298,7 @@ macro_rules! uint_overflowing_sub {
 #[cfg(all(asm_available, target_arch="x86_64"))]
 #[macro_export]
 macro_rules! uint_overflowing_mul {
-	(U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
+	(U256, $n_words: tt, $self_expr: expr, $other: expr) => ({
 		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
 		let self_t: &[u64; $n_words] = &$self_expr.0;
 		let other_t: &[u64; $n_words] = &$other.0;
@@ -411,7 +411,7 @@ macro_rules! uint_overflowing_mul {
 		}
 		(U256(result), overflow > 0)
 	});
-	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => (
+	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => (
 		uint_overflowing_mul_reg!($name, $n_words, $self_expr, $other)
 	)
 }
@@ -420,7 +420,7 @@ macro_rules! uint_overflowing_mul {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_overflowing_mul {
-	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_mul_reg!($name, $n_words, $self_expr, $other)
 	})
 }
@@ -428,7 +428,7 @@ macro_rules! uint_overflowing_mul {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_full_mul_reg {
-	($name:ident, $n_words:tt, $self_expr:expr, $other:expr) => ({{
+	($name:ident, $n_words: tt, $self_expr:expr, $other:expr) => ({{
 		#![allow(unused_assignments)]
 
 		let $name(ref me) = $self_expr;
@@ -472,7 +472,7 @@ macro_rules! uint_full_mul_reg {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_overflowing_mul_reg {
-	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
 		let ret: [u64; $n_words * 2] = uint_full_mul_reg!($name, $n_words, $self_expr, $other);
 
 		// The safety of this is enforced by the compiler
@@ -524,6 +524,69 @@ macro_rules! panic_on_overflow {
 	}
 }
 
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_mul_from {
+	($name: ty, $other: ident) => {
+		impl ::core::ops::Mul<$other> for $name {
+			type Output = $name;
+
+			fn mul(self, other: $other) -> $name {
+				let bignum: $name = other.into();
+				let (result, overflow) = self.overflowing_mul(bignum);
+				panic_on_overflow!(overflow);
+				result
+			}
+		}
+
+		impl<'a> ::core::ops::Mul<&'a $other> for $name {
+			type Output = $name;
+
+			fn mul(self, other: &'a $other) -> $name {
+				let bignum: $name = (*other).into();
+				let (result, overflow) = self.overflowing_mul(bignum);
+				panic_on_overflow!(overflow);
+				result
+			}
+		}
+
+		impl<'a> ::core::ops::Mul<&'a $other> for &'a $name {
+			type Output = $name;
+
+			fn mul(self, other: &'a $other) -> $name {
+				let bignum: $name = (*other).into();
+				let (result, overflow) = self.overflowing_mul(bignum);
+				panic_on_overflow!(overflow);
+				result
+			}
+		}
+
+		impl<'a> ::core::ops::Mul<$other> for &'a $name {
+			type Output = $name;
+
+			fn mul(self, other: $other) -> $name {
+				let bignum: $name = other.into();
+				let (result, overflow) = self.overflowing_mul(bignum);
+				panic_on_overflow!(overflow);
+				result
+			}
+		}
+	}
+}
+
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_mulassign_from {
+	($name: ident, $other: ident) => {
+		impl::core::ops::MulAssign<$other> for $name {
+			fn mul_assign(&mut self, other: $other) {
+				let result = *self * other;
+				*self = result
+			}
+		}
+	}
+}
+
 #[inline(always)]
 #[doc(hidden)]
 pub fn mul_u32(a: (u64, u64), b: u64, carry: u64) -> (u64, u64) {
@@ -545,7 +608,7 @@ pub fn split(a: u64) -> (u64, u64) {
 
 #[macro_export]
 macro_rules! construct_uint {
-	($name:ident, $n_words:tt) => (
+	($name:ident, $n_words: tt) => (
 		/// Little-endian large integer type
 		#[repr(C)]
 		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
@@ -554,6 +617,12 @@ macro_rules! construct_uint {
 		impl AsRef<$name> for $name {
 			fn as_ref(&self) -> &$name {
 				&self
+			}
+		}
+
+		impl<'a> From<&'a $name> for $name {
+			fn from(x: &'a $name) -> $name {
+				*x
 			}
 		}
 
@@ -621,6 +690,25 @@ macro_rules! construct_uint {
 					}
 				}
 				arr[0]
+			}
+
+			/// Conversion to usize with overflow checking
+			///
+			/// # Panics
+			///
+			/// Panics if the number is larger than usize::max_value().
+			#[inline]
+			pub fn as_usize(&self) -> usize {
+				let &$name(ref arr) = self;
+				for i in 1..$n_words {
+					if arr[i] != 0 {
+						panic!("Integer overflow when casting U256")
+					}
+				}
+				if arr[0] > usize::max_value() as u64 {
+					panic!("Integer overflow when casting U256")
+				}
+				arr[0] as usize
 			}
 
 			/// Whether this is zero.
@@ -768,13 +856,13 @@ macro_rules! construct_uint {
 				while n > u_one {
 					if is_even(&n) {
 						x = x * x;
-						n = n >> 1;
+						n = n >> 1usize;
 					} else {
 						y = x * y;
 						x = x * x;
 						// to reduce odd number by 1 we should just clear the last bit
 						n.0[$n_words-1] = n.0[$n_words-1] & ((!0u64)>>1);
-						n = n >> 1;
+						n = n >> 1usize;
 					}
 				}
 				x * y
@@ -796,11 +884,11 @@ macro_rules! construct_uint {
 				while n > u_one {
 					if is_even(&n) {
 						x = overflowing!(x.overflowing_mul(x), overflow);
-						n = n >> 1;
+						n = n >> 1usize;
 					} else {
 						y = overflowing!(x.overflowing_mul(y), overflow);
 						x = overflowing!(x.overflowing_mul(x), overflow);
-						n = (n - u_one) >> 1;
+						n = (n - u_one) >> 1usize;
 					}
 				}
 				let res = overflowing!(x.overflowing_mul(y), overflow);
@@ -1019,28 +1107,60 @@ macro_rules! construct_uint {
 			}
 		}
 
-
-		impl ::core::ops::Add<$name> for $name {
+		impl<T> ::core::ops::Add<T> for $name where T: Into<$name> {
 			type Output = $name;
 
-			fn add(self, other: $name) -> $name {
-				let (result, overflow) = self.overflowing_add(other);
+			fn add(self, other: T) -> $name {
+				let (result, overflow) = self.overflowing_add(other.into());
 				panic_on_overflow!(overflow);
 				result
 			}
 		}
 
-		impl ::core::ops::Sub<$name> for $name {
+		impl<'a, T> ::core::ops::Add<T> for &'a $name where T: Into<$name> {
+			type Output = $name;
+
+			fn add(self, other: T) -> $name {
+				*self + other
+			}
+		}
+
+		impl ::core::ops::AddAssign<$name> for $name {
+			fn add_assign(&mut self, other: $name) {
+				let (result, overflow) = self.overflowing_add(other);
+				panic_on_overflow!(overflow);
+				*self = result
+			}
+		}
+
+		impl<T> ::core::ops::Sub<T> for $name where T: Into<$name> {
 			type Output = $name;
 
 			#[inline]
-			fn sub(self, other: $name) -> $name {
-				let (result, overflow) = self.overflowing_sub(other);
+			fn sub(self, other: T) -> $name {
+				let (result, overflow) = self.overflowing_sub(other.into());
 				panic_on_overflow!(overflow);
 				result
 			}
 		}
 
+		impl<'a, T> ::core::ops::Sub<T> for &'a $name where T: Into<$name> {
+			type Output = $name;
+
+			fn sub(self, other: T) -> $name {
+				*self - other
+			}
+		}
+
+		impl ::core::ops::SubAssign<$name> for $name {
+			fn sub_assign(&mut self, other: $name) {
+				let (result, overflow) = self.overflowing_sub(other);
+				panic_on_overflow!(overflow);
+				*self = result
+			}
+		}
+
+		// specialization for u32
 		impl ::core::ops::Mul<u32> for $name {
 			type Output = $name;
 
@@ -1051,20 +1171,51 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl ::core::ops::Mul<$name> for $name {
+		impl<'a> ::core::ops::Mul<u32> for &'a $name {
 			type Output = $name;
 
-			fn mul(self, other: $name) -> $name {
-				let (result, overflow) = self.overflowing_mul(other);
-				panic_on_overflow!(overflow);
-				result
+			fn mul(self, other: u32) -> $name {
+				*self * other
 			}
 		}
 
-		impl ::core::ops::Div<$name> for $name {
+		impl ::core::ops::MulAssign<u32> for $name {
+			fn mul_assign(&mut self, other: u32) {
+				let result = *self * other;
+				*self = result
+			}
+		}
+
+		// all other impls
+		impl_mul_from!($name, u8);
+		impl_mul_from!($name, u16);
+		impl_mul_from!($name, u64);
+		impl_mul_from!($name, usize);
+
+		impl_mul_from!($name, i8);
+		impl_mul_from!($name, i16);
+		impl_mul_from!($name, i64);
+		impl_mul_from!($name, isize);
+
+		impl_mul_from!($name, $name);
+
+		impl_mulassign_from!($name, u8);
+		impl_mulassign_from!($name, u16);
+		impl_mulassign_from!($name, u64);
+		impl_mulassign_from!($name, usize);
+
+		impl_mulassign_from!($name, i8);
+		impl_mulassign_from!($name, i16);
+		impl_mulassign_from!($name, i64);
+		impl_mulassign_from!($name, isize);
+
+		impl_mulassign_from!($name, $name);
+
+		impl<T> ::core::ops::Div<T> for $name where T: Into<$name> {
 			type Output = $name;
 
-			fn div(self, other: $name) -> $name {
+			fn div(self, other: T) -> $name {
+				let other: Self = other.into();
 				let mut sub_copy = self;
 				let mut shift_copy = other;
 				let mut ret = [0u64; $n_words];
@@ -1088,7 +1239,7 @@ macro_rules! construct_uint {
 						ret[shift / 64] |= 1 << (shift % 64);
 						sub_copy = overflowing!(sub_copy.overflowing_sub(shift_copy));
 					}
-					shift_copy = shift_copy >> 1;
+					shift_copy = shift_copy >> 1usize;
 					if shift == 0 { break; }
 					shift -= 1;
 				}
@@ -1097,12 +1248,43 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl ::core::ops::Rem<$name> for $name {
+		impl<'a, T> ::core::ops::Div<T> for &'a $name where T: Into<$name> {
 			type Output = $name;
 
-			fn rem(self, other: $name) -> $name {
+			fn div(self, other: T) -> $name {
+				*self / other
+			}
+		}
+
+		impl<T> ::core::ops::DivAssign<T> for $name where T: Into<$name> {
+			fn div_assign(&mut self, other: T) {
+				let (result, overflow) = self.overflowing_div(other.into());
+				panic_on_overflow!(overflow);
+				*self = result
+			}
+		}
+
+		impl<T> ::core::ops::Rem<T> for $name where T: Into<$name> + Copy {
+			type Output = $name;
+
+			fn rem(self, other: T) -> $name {
 				let times = self / other;
-				self - (times * other)
+				self - (times * other.into())
+			}
+		}
+
+		impl<'a, T> ::core::ops::Rem<T> for &'a $name where T: Into<$name>  + Copy {
+			type Output = $name;
+
+			fn rem(self, other: T) -> $name {
+				*self % other
+			}
+		}
+
+		impl<T> ::core::ops::RemAssign<T> for $name where T: Into<$name> + Copy {
+			fn rem_assign(&mut self, other: T) {
+				let times = *self / other;
+				*self -= times * other.into()
 			}
 		}
 
@@ -1165,10 +1347,11 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl ::core::ops::Shl<usize> for $name {
+		impl<T> ::core::ops::Shl<T> for $name where T: Into<$name> {
 			type Output = $name;
 
-			fn shl(self, shift: usize) -> $name {
+			fn shl(self, shift: T) -> $name {
+				let shift = shift.into().as_usize();
 				let $name(ref original) = self;
 				let mut ret = [0u64; $n_words];
 				let word_shift = shift / 64;
@@ -1188,10 +1371,24 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl ::core::ops::Shr<usize> for $name {
+		impl<'a, T> ::core::ops::Shl<T> for &'a $name where T: Into<$name> {
+			type Output = $name;
+			fn shl(self, shift: T) -> $name {
+				*self << shift
+			}
+		}
+
+		impl<T> ::core::ops::ShlAssign<T> for $name where T: Into<$name> {
+			fn shl_assign(&mut self, shift: T) {
+				*self = *self << shift;
+			}
+		}
+
+		impl<T> ::core::ops::Shr<T> for $name where T: Into<$name> {
 			type Output = $name;
 
-			fn shr(self, shift: usize) -> $name {
+			fn shr(self, shift: T) -> $name {
+				let shift = shift.into().as_usize();
 				let $name(ref original) = self;
 				let mut ret = [0u64; $n_words];
 				let word_shift = shift / 64;
@@ -1210,6 +1407,19 @@ macro_rules! construct_uint {
 				}
 
 				$name(ret)
+			}
+		}
+
+		impl<'a, T> ::core::ops::Shr<T> for &'a $name where T: Into<$name> {
+			type Output = $name;
+			fn shr(self, shift: T) -> $name {
+				*self >> shift
+			}
+		}
+
+		impl<T> ::core::ops::ShrAssign<T> for $name where T: Into<$name> {
+			fn shr_assign(&mut self, shift: T) {
+				*self = *self >> shift;
 			}
 		}
 

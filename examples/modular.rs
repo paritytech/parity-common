@@ -31,22 +31,22 @@ fn main() {
 	// (p-1) + (p+1) = 0
 
 	// (p - 1) mod p
-	let p_minus_1 = (p - 1u64.into()) % p;
+	let p_minus_1 = (p - 1) % p;
 	// (p + 1) mod p
-	let p_plus_1 = (p + 1u64.into()) % p;
+	let p_plus_1 = (p + 1) % p;
 	// ((p - 1) mod p + (p + 1) mod p) mod p
 	let sum = (p_minus_1 + p_plus_1) % p;
 	assert_eq!(sum, 0.into());
 
 	// on this field,
 	// (p-1) + (p-1) = p-2
-	let p_minus_1 = (p - 1u64.into()) % p;
+	let p_minus_1 = (p - 1) % p;
 	let sum = (p_minus_1 + p_minus_1) % p;
-	assert_eq!(sum, p - 2.into());
+	assert_eq!(sum, p - 2);
 
 	// on this field,
 	// (p-1) * 3 = p-3
-	let p_minus_1 = (p - 1u64.into()) % p;
+	let p_minus_1 = (p - 1) % p;
 
 	// multiplication is a series of additions
 	let multiplicator = 3;
@@ -58,5 +58,5 @@ fn main() {
 		result
 	};
 
-	assert_eq!(mul, p - 3.into());
+	assert_eq!(mul, p - 3);
 }
