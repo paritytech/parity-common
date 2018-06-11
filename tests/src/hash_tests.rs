@@ -7,6 +7,7 @@ fn should_format_and_debug_correctly() {
         assert_eq!(format!("{}", hash), format!("0x{}", display));
         assert_eq!(format!("{:?}", hash), format!("0x{}", hex));
         assert_eq!(format!("{:x}", hash), hex);
+        assert_eq!(format!("{:#x}", hash), format!("0x{}", hex));
     };
 
     test(0x1, "00000000000000000000000000000001", "0000…0001");

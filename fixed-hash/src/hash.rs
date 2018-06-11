@@ -133,8 +133,7 @@ macro_rules! construct_hash {
 
 		impl ::core::fmt::Debug for $from {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-				write!(f, "0x")?;
-				::core::fmt::LowerHex::fmt(self, f)
+				write!(f, "{:#x}", self)
 			}
 		}
 
@@ -154,6 +153,9 @@ macro_rules! construct_hash {
 
 		impl ::core::fmt::LowerHex for $from {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+				if f.alternate() {
+					write!(f, "0x");
+				}
 				for i in &self.0[..] {
 					write!(f, "{:02x}", i)?;
 				}
