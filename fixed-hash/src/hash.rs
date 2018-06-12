@@ -319,7 +319,7 @@ macro_rules! construct_hash {
 	}
 }
 
-#[cfg(feature="heapsizeof")]
+#[cfg(all(feature="heapsizeof", feature="libc", not(target_os = "unknown")))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_hash {
@@ -332,7 +332,7 @@ macro_rules! impl_heapsize_for_hash {
 	}
 }
 
-#[cfg(not(feature="heapsizeof"))]
+#[cfg(any(not(feature="heapsizeof"), not(feature="libc"), target_os = "unknown"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_hash {
@@ -423,19 +423,6 @@ macro_rules! impl_std_for_hash_internals {
 #[doc(hidden)]
 macro_rules! impl_std_for_hash_internals {
 	($from: ident, $size: tt) => {}
-}
-
-#[cfg(all(feature="libc", not(target_os = "unknown")))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_heapsize_for_hash {
-	($name: ident) => {
-		impl $crate::heapsize::HeapSizeOf for $name {
-			fn heap_size_of_children(&self) -> usize {
-				0
-			}
-		}
-	}
 }
 
 #[cfg(all(feature="libc", not(target_os = "unknown")))]
