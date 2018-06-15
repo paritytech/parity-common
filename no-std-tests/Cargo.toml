@@ -1,0 +1,12 @@
+[package]
+name = "no-std-tests"
+version = "0.0.1"
+authors = ["Parity Technologies <admin@parity.io>"]
+description = "Tests for no-std environments"
+license = "MIT"
+
+[dependencies]
+libc = { version = "0.2", default-features = false }
+ethereum-types = { git = "https://github.com/niklasad1/primitives", default-features = false, branch = "ethereum-types/no-std" }
+ethbloom = { git = "https://github.com/niklasad1/primitives", default-features = false, branch = "ethereum-types/no-std" }
+fixed-hash = { git = "https://github.com/niklasad1/primitives", default-features = false, branch = "ethereum-types/no-std" }
