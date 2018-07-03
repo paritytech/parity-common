@@ -2,4 +2,5 @@
 members = [
 	"parity-bytes",
 	"kvdb",
+	"triehash"
 ]
