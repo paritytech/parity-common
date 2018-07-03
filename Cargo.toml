@@ -1,7 +1,10 @@
 [workspace]
 members = [
-	"parity-bytes",
+	"hashdb",
+	"keccak-hash",
 	"kvdb",
-	"triehash",
+	"parity-bytes",
+	"rlp",
 	"trie-standardmap",
+	"triehash",
 ]
