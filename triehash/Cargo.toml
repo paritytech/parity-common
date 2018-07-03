@@ -9,7 +9,7 @@ license = "GPL-3.0"
 elastic-array = "0.10"
 ethereum-types = "0.3"
 rlp = { path = "../rlp" }
-keccak-hash = { path = "../keccak_hash" }
+keccak-hash = { path = "../keccak-hash" }
 
 [dev-dependencies]
 trie-standardmap = { path = "../trie-standardmap" }

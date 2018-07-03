@@ -6,6 +6,6 @@ description = "Standard test map for profiling tries"
 
 [dependencies]
 ethereum-types = "0.3"
-keccak-hash = { path = "../keccak_hash" }
+keccak-hash = { path = "../keccak-hash" }
 parity-bytes = { path = "../parity-bytes" }
 rlp = { path = "../rlp" }
