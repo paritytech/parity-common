@@ -2,5 +2,6 @@
 members = [
 	"parity-bytes",
 	"kvdb",
-	"triehash"
+	"triehash",
+	"trie-standardmap",
 ]
