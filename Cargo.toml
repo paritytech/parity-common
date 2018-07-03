@@ -4,6 +4,7 @@ members = [
 	"keccak-hash",
 	"kvdb",
 	"parity-bytes",
+	"plain_hasher",
 	"rlp",
 	"trie-standardmap",
 	"triehash",
