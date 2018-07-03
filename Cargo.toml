@@ -3,6 +3,7 @@ members = [
 	"hashdb",
 	"keccak-hash",
 	"kvdb",
+	"kvdb-rocksdb",
 	"path",
 	"parity-bytes",
 	"plain_hasher",
