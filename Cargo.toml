@@ -6,6 +6,7 @@ members = [
 	"kvdb-rocksdb",
 	"path",
 	"parity-bytes",
+	"parity-crypto",
 	"plain_hasher",
 	"rlp",
 	"trie-standardmap",

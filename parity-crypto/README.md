@@ -1,4 +1,4 @@
-# Ethcrypto
+# parity-crypto
 
 General cryptographic utilities for Ethereum.
 
