@@ -15,5 +15,5 @@ rlp = { version = "0.2.1", path = "../rlp" }
 [dev-dependencies]
 tiny-keccak = "1.4.2"
 ethereum-types = "0.3"
-keccak-hasher = { path = "../keccak-hasher" }
-keccak-hash = { path = "../hash" }
+# TODO: use crates.io keccak-hasher = { path = "../keccak-hasher" }
+keccak-hash = { path = "../keccak-hash" }
