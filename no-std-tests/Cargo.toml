@@ -7,6 +7,6 @@ license = "MIT"
 
 [dependencies]
 libc = { version = "0.2", default-features = false }
-ethereum-types = { git = "https://github.com/niklasad1/primitives", default-features = false, branch = "ethereum-types/no-std" }
-ethbloom = { git = "https://github.com/niklasad1/primitives", default-features = false, branch = "ethereum-types/no-std" }
-fixed-hash = { git = "https://github.com/niklasad1/primitives", default-features = false, branch = "ethereum-types/no-std" }
+ethereum-types = { path = "../ethereum-types", default-features = false }
+ethbloom = { path = "../ethbloom", default-features = false }
+fixed-hash = { version = "0.2", default-features = false }
