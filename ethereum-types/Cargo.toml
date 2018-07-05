@@ -11,12 +11,12 @@ build = "build.rs"
 rustc_version = "0.2"
 
 [dependencies]
-uint = { path = "../uint", version = "0.2.1" }
-fixed-hash = { path = "../fixed-hash", version = "0.2" }
-ethbloom = { path = "../ethbloom", version = "0.5.0" }
 crunchy = "0.1.5"
+ethbloom = { path = "../ethbloom", version = "0.5.0", default-features = false }
 ethereum-types-serialize = { version = "0.2.1", path = "../serialize", optional = true }
+fixed-hash = { path = "../fixed-hash", version = "0.2" }
 serde = { version = "1.0", optional = true }
+uint = { path = "../uint", version = "0.2.1", default-features = false }
 
 [features]
 default = ["std", "heapsizeof", "serialize"]

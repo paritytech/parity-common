@@ -47,8 +47,11 @@ extern crate serde;
 #[cfg(feature="serialize")]
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
-use core::{ops, mem, str};
+use core::{ops, mem};
 use tiny_keccak::keccak256;
+
+#[cfg(feature="std")]
+use core::str;
 
 // 3 according to yellowpaper
 const BLOOM_BITS: u32 = 3;
