@@ -16,7 +16,7 @@
 
 //! Trie interface and implementation.
 extern crate elastic_array;
-extern crate ethcore_bytes as bytes;
+extern crate parity_bytes as bytes; // TODO: name changed; update upstream when `parity-common` is available
 extern crate hashdb;
 extern crate rand;
 #[macro_use]

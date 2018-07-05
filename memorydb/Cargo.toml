@@ -8,14 +8,12 @@ license = "GPL-3.0"
 [dependencies]
 elastic-array = "0.10"
 heapsize = "0.4"
-# REVIEW: For tests I need to `keccak-hasher` which depends on `hashdb` but pulls `hashdb` off of crates, which means `memorydb` builds two (identical) versions of `hashdb`, one from crates.io and one in-tree. How can I force cargo to use the in-tree version even if a dependency states it wants the crates.io version?
-# hashdb = { version = "0.2.0", path = "../hashdb" }
-hashdb = "0.2"
+hashdb = { version = "0.2.0", path = "../hashdb" }
 plain_hasher = { path = "../plain_hasher" }
 rlp = { version = "0.2.1", path = "../rlp" }
 
 [dev-dependencies]
 tiny-keccak = "1.4.2"
 ethereum-types = "0.3"
-keccak-hasher = "0.1"
+keccak-hasher = { path = "../test-support/keccak-hasher" }
 keccak-hash = { path = "../keccak-hash" }
