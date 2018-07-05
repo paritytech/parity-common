@@ -8,8 +8,8 @@ static CHARS: &'static[u8] = b"0123456789abcdef";
 fn to_hex<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a str {
 	assert!(v.len() > 1 + bytes.len() * 2);
 
-	v[0] = '0' as u8;
-	v[1] = 'x' as u8;
+	v[0] = b'0';
+	v[1] = b'x';
 
 	let mut idx = 2;
 	let first_nibble = bytes[0] >> 4;

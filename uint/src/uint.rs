@@ -603,7 +603,7 @@ pub fn mul_u32(a: (u64, u64), b: u64, carry: u64) -> (u64, u64) {
 #[inline(always)]
 #[doc(hidden)]
 pub fn split(a: u64) -> (u64, u64) {
-	(a >> 32, a & 0xFFFFFFFF)
+	(a >> 32, a & 0xFFFF_FFFF)
 }
 
 #[macro_export]
