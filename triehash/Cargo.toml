@@ -9,8 +9,9 @@ license = "GPL-3.0"
 [dependencies]
 elastic-array = "0.10"
 ethereum-types = "0.3"
-hashdb = { version = "0.2", "path = "../hashdb" }
+hashdb = { version = "0.2", path = "../hashdb" }
 rlp = { version = "0.2.1", path = "../rlp" }
 
 [dev-dependencies]
 trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
+keccak-hasher = { path = "../test-support/keccak-hasher" }
