@@ -21,13 +21,16 @@
 extern crate elastic_array;
 extern crate ethereum_types;
 extern crate keccak_hash as hash;
+extern crate hashdb;
 extern crate rlp;
+#[cfg(test)] extern crate keccak_hasher;
 
 use std::collections::BTreeMap;
 use std::cmp;
 use elastic_array::{ElasticArray4, ElasticArray8};
-use ethereum_types::H256;
+// use ethereum_types::H256;
 use hash::keccak;
+use hashdb::Hasher;
 use rlp::RlpStream;
 
 fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
@@ -39,17 +42,20 @@ fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
 ///
 /// ```rust
 /// extern crate triehash;
+/// extern crate keccak_hasher;
 /// use triehash::ordered_trie_root;
+/// use keccak_hasher::KeccakHasher;
 ///
 /// fn main() {
 /// 	let v = &["doe", "reindeer"];
 /// 	let root = "e766d5d51b89dc39d981b41bda63248d7abce4f0225eefd023792a540bcffee3";
-/// 	assert_eq!(ordered_trie_root(v), root.into());
+/// 	assert_eq!(ordered_trie_root::<_, _, KeccakHasher>(v), root.into());
 /// }
 /// ```
-pub fn ordered_trie_root<I, A>(input: I) -> H256 // TODO: return value here
+pub fn ordered_trie_root<I, A, H>(input: I) -> H::Out // TODO: return value here
 	where I: IntoIterator<Item = A>,
 		  A: AsRef<[u8]>,
+		  H: Hasher,
 {
 	let gen_input: Vec<_> = input
 		// first put elements into btree to sort them by nibbles (key'd by index)
@@ -63,15 +69,18 @@ pub fn ordered_trie_root<I, A>(input: I) -> H256 // TODO: return value here
 		.map(|(k, v)| (as_nibbles(&k), v) )
 		.collect();
 
-	gen_trie_root(&gen_input)
+	// gen_trie_root::<H,_, _>(&gen_input) // TODO: should be able to infer this
+	gen_trie_root::<_, _, H>(&gen_input) // TODO: should be able to infer this
 }
 
 /// Generates a trie root hash for a vector of key-value tuples
 ///
 /// ```rust
 /// extern crate triehash;
+/// extern crate keccak_hasher;
 /// use triehash::trie_root;
-///
+/// use keccak_hasher::KeccakHasher;
+/// 
 /// fn main() {
 /// 	let v = vec![
 /// 		("doe", "reindeer"),
@@ -80,13 +89,14 @@ pub fn ordered_trie_root<I, A>(input: I) -> H256 // TODO: return value here
 /// 	];
 ///
 /// 	let root = "8aad789dff2f538bca5d8ea56e8abe10f4c7ba3a5dea95fea4cd6e7c3a1168d3";
-/// 	assert_eq!(trie_root(v), root.into());
+/// 	assert_eq!(trie_root::<_, _, _, KeccakHasher>(v), root.into());
 /// }
 /// ```
-pub fn trie_root<I, A, B>(input: I) -> H256
+pub fn trie_root<I, A, B, H>(input: I) -> H::Out
 	where I: IntoIterator<Item = (A, B)>,
 		  A: AsRef<[u8]> + Ord,
 		  B: AsRef<[u8]>,
+		  H: Hasher,
 {
 	let gen_input: Vec<_> = input
 		// first put elements into btree to sort them and to remove duplicates
@@ -97,15 +107,18 @@ pub fn trie_root<I, A, B>(input: I) -> H256
 		.map(|(k, v)| (as_nibbles(k.as_ref()), v) )
 		.collect();
 
-	gen_trie_root(&gen_input)
+	// gen_trie_root::<H, _, _>(&gen_input)
+	gen_trie_root::<_, _, H>(&gen_input)
 }
 
 /// Generates a key-hashed (secure) trie root hash for a vector of key-value tuples.
 ///
 /// ```rust
 /// extern crate triehash;
+/// extern crate keccak_hasher;
 /// use triehash::sec_trie_root;
-///
+/// use keccak_hasher::KeccakHasher;
+/// 
 /// fn main() {
 /// 	let v = vec![
 /// 		("doe", "reindeer"),
@@ -114,31 +127,43 @@ pub fn trie_root<I, A, B>(input: I) -> H256
 /// 	];
 ///
 /// 	let root = "d4cd937e4a4368d7931a9cf51686b7e10abb3dce38a39000fd7902a092b64585";
-/// 	assert_eq!(sec_trie_root(v), root.into());
+/// 	assert_eq!(sec_trie_root::<_, _, _, KeccakHasher>(v), root.into());
 /// }
 /// ```
-pub fn sec_trie_root<I, A, B>(input: I) -> H256
+pub fn sec_trie_root<I, A, B, H>(input: I) -> H::Out
 	where I: IntoIterator<Item = (A, B)>,
 		  A: AsRef<[u8]>,
 		  B: AsRef<[u8]>,
+		  H: Hasher,
+		//   <H as hashdb::Hasher>::Out: std::cmp::Ord,
 {
 	let gen_input: Vec<_> = input
 		// first put elements into btree to sort them and to remove duplicates
 		.into_iter()
 		.map(|(k, v)| (keccak(k), v)) // TODO: here
+		// .map(|(k, v)| (H::hash(&k), v))
 		.collect::<BTreeMap<_, _>>()
 		// then move them to a vector
 		.into_iter()
-		.map(|(k, v)| (as_nibbles(&k), v) )
+		.map(|(k, v)| (as_nibbles(&k), v) ) // maybe enough to .as_ref() here
 		.collect();
 
-	gen_trie_root(&gen_input)
+	// gen_trie_root::<H, _, _>(&gen_input)
+	gen_trie_root::<_, _, H>(&gen_input)
 }
 
-fn gen_trie_root<A: AsRef<[u8]>, B: AsRef<[u8]>>(input: &[(A, B)]) -> H256 { // TODO: here
+// fn gen_trie_root<A: AsRef<[u8]>, B: AsRef<[u8]>>(input: &[(A, B)]) -> H256 { // TODO: here
+fn gen_trie_root<A, B, H>(input: &[(A, B)]) -> H::Out
+	where
+		A: AsRef<[u8]>,
+		B: AsRef<[u8]>,
+		H: Hasher,
+{
 	let mut stream = RlpStream::new(); // TODO: here
 	hash256rlp(input, 0, &mut stream); // TODO: here
-	keccak(stream.out()) // TODO: here
+	// keccak(stream.out()) // TODO: here
+	// <H as Hasher>::hash(&stream.out())
+	H::hash(&stream.out())
 }
 
 /// Hex-prefix Notation. First nibble has flags: oddness = 2^0 & termination = 2^1.
@@ -298,6 +323,7 @@ fn test_nibbles() {
 #[cfg(test)]
 mod tests {
 	use super::{trie_root, shared_prefix_len, hex_prefix_encode};
+	use keccak_hasher::KeccakHasher;
 
 	#[test]
 	fn test_hex_prefix_encode() {
@@ -334,19 +360,19 @@ mod tests {
 
 	#[test]
 	fn simple_test() {
-		assert_eq!(trie_root(vec![
+		assert_eq!(trie_root::<_, _, _, KeccakHasher>(vec![
 			(b"A", b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as &[u8])
 		]), "d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab".into());
 	}
 
 	#[test]
 	fn test_triehash_out_of_order() {
-		assert!(trie_root(vec![
+		assert!(trie_root::<_, _, _, KeccakHasher>(vec![
 			(vec![0x01u8, 0x23], vec![0x01u8, 0x23]),
 			(vec![0x81u8, 0x23], vec![0x81u8, 0x23]),
 			(vec![0xf1u8, 0x23], vec![0xf1u8, 0x23]),
 		]) ==
-		trie_root(vec![
+		trie_root::<_, _, _, KeccakHasher>(vec![
 			(vec![0x01u8, 0x23], vec![0x01u8, 0x23]),
 			(vec![0xf1u8, 0x23], vec![0xf1u8, 0x23]), // last two tuples are swapped
 			(vec![0x81u8, 0x23], vec![0x81u8, 0x23]),
