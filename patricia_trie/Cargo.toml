@@ -16,10 +16,10 @@ parity-bytes = { version = "0.1.0", path = "../parity-bytes" }
 [dev-dependencies]
 env_logger = "0.5"
 ethereum-types = "0.3"
-keccak-hash = { path = "../keccak-hash" }
+keccak-hash = { version = "0.1", path = "../keccak-hash" }
 memorydb = { version = "0.2", path = "../memorydb" }
 rlp = { version = "0.2.1", path = "../rlp" }
-trie-standardmap = { path = "../trie-standardmap" }
+trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
 triehash = { version = "0.2", path = "../triehash" }
 
 # REVIEW: what's a better way to deal with this? The tests here in
