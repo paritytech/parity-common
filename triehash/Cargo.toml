@@ -9,7 +9,6 @@ license = "GPL-3.0"
 elastic-array = "0.10"
 ethereum-types = "0.3"
 hashdb = { path = "../hashdb" }
-keccak-hash = { path = "../keccak-hash" }
 rlp = { path = "../rlp" }
 
 [dev-dependencies]
