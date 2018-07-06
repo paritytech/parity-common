@@ -1,2 +1,2 @@
 # parity-common
-Umbrella for common crates used in Parity projects
+Collection of crates used in Parity projects
