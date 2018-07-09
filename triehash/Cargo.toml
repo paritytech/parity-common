@@ -1,6 +1,6 @@
 [package]
 name = "triehash"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "in memory patricia trie operations"
 repository = "https://github.com/paritytech/parity-common"
@@ -9,8 +9,9 @@ license = "GPL-3.0"
 [dependencies]
 elastic-array = "0.10"
 ethereum-types = "0.3"
+hashdb = { version = "0.2", path = "../hashdb" }
 rlp = { version = "0.2.1", path = "../rlp" }
-keccak-hash = { version = "0.1", path = "../keccak-hash" }
 
 [dev-dependencies]
 trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
+keccak-hasher = { path = "../test-support/keccak-hasher" }

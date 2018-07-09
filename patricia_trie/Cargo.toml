@@ -1,6 +1,6 @@
 [package]
 name = "patricia-trie"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "Merkle-Patricia Trie generic over key hasher and node encoding"
 license = "GPL-3.0"
@@ -20,7 +20,7 @@ keccak-hash = { version = "0.1", path = "../keccak-hash" }
 memorydb = { version = "0.2", path = "../memorydb" }
 rlp = { version = "0.2.1", path = "../rlp" }
 trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
-triehash = { version = "0.1.0", path = "../triehash" }
+triehash = { version = "0.2", path = "../triehash" }
 
 # REVIEW: what's a better way to deal with this? The tests here in
 # `patricia_trie` use `keccak-hasher` and `patricia-trie-ethereum` to
