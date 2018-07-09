@@ -77,7 +77,7 @@ pub fn ordered_trie_root<H, I, A>(input: I) -> H::Out
 /// extern crate keccak_hasher;
 /// use triehash::trie_root;
 /// use keccak_hasher::KeccakHasher;
-/// 
+///
 /// fn main() {
 /// 	let v = vec![
 /// 		("doe", "reindeer"),
@@ -115,7 +115,7 @@ pub fn trie_root<H, I, A, B>(input: I) -> H::Out
 /// extern crate keccak_hasher;
 /// use triehash::sec_trie_root;
 /// use keccak_hasher::KeccakHasher;
-/// 
+///
 /// fn main() {
 /// 	let v = vec![
 /// 		("doe", "reindeer"),
@@ -137,11 +137,11 @@ pub fn sec_trie_root<H, I, A, B>(input: I) -> H::Out
 	let gen_input: Vec<_> = input
 		// first put elements into btree to sort them and to remove duplicates
 		.into_iter()
-		.map(|(k, v)| (H::hash(&k.as_ref()), v))
+		.map(|(k, v)| (H::hash(k.as_ref()), v))
 		.collect::<BTreeMap<_, _>>()
 		// then move them to a vector
 		.into_iter()
-		.map(|(k, v)| (as_nibbles(&k.as_ref()), v) )
+		.map(|(k, v)| (as_nibbles(k.as_ref()), v) )
 		.collect();
 
 	gen_trie_root::<H, _, _>(&gen_input)
@@ -214,7 +214,7 @@ fn as_nibbles(bytes: &[u8]) -> ElasticArray8<u8> {
 	res
 }
 
-fn hash256rlp<H, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut RlpStream) 
+fn hash256rlp<H, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut RlpStream)
 	where
 		A: AsRef<[u8]>,
 		B: AsRef<[u8]>,
@@ -297,7 +297,7 @@ fn hash256rlp<H, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut RlpStream)
 	};
 }
 
-fn hash256aux<H, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut RlpStream) 
+fn hash256aux<H, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut RlpStream)
 	where
 		A: AsRef<[u8]>,
 		B: AsRef<[u8]>,
