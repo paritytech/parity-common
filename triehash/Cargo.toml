@@ -14,4 +14,4 @@ rlp = { version = "0.2.1", path = "../rlp" }
 
 [dev-dependencies]
 trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
-keccak-hasher = { path = "../test-support/keccak-hasher" }
+keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
