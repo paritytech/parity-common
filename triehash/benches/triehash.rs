@@ -17,20 +17,22 @@
 #![feature(test)]
 
 extern crate ethereum_types;
-extern crate keccak_hash;
+extern crate keccak_hasher;
 extern crate test;
+extern crate tiny_keccak;
 extern crate trie_standardmap;
 extern crate triehash;
 
 use ethereum_types::H256;
-use keccak_hash::keccak;
+use keccak_hasher::KeccakHasher;
 use test::Bencher;
+use tiny_keccak::keccak256;
 use trie_standardmap::{Alphabet, ValueMode, StandardMap};
 use triehash::trie_root;
 
 fn random_word(alphabet: &[u8], min_count: usize, diff_count: usize, seed: &mut H256) -> Vec<u8> {
 	assert!(min_count + diff_count <= 32);
-	*seed = keccak(&seed);
+	*seed = H256(keccak256(&seed));
 	let r = min_count + (seed[31] as usize % (diff_count + 1));
 	let mut ret: Vec<u8> = Vec::with_capacity(r);
 	for i in 0..r {
@@ -41,13 +43,13 @@ fn random_word(alphabet: &[u8], min_count: usize, diff_count: usize, seed: &mut 
 
 fn random_bytes(min_count: usize, diff_count: usize, seed: &mut H256) -> Vec<u8> {
 	assert!(min_count + diff_count <= 32);
-	*seed = keccak(&seed);
+	*seed = H256(keccak256(&seed));
 	let r = min_count + (seed[31] as usize % (diff_count + 1));
 	seed[0..r].to_vec()
 }
 
 fn random_value(seed: &mut H256) -> Vec<u8> {
-	*seed = keccak(&seed);
+	*seed = H256(keccak256(&seed));
 	match seed[0] % 2 {
 		1 => vec![seed[31];1],
 		_ => seed.to_vec(),
@@ -65,7 +67,7 @@ fn triehash_insertions_32_mir_1k(b: &mut Bencher) {
 	};
 	let d = st.make();
 	b.iter(&mut ||{
-		trie_root(d.clone()).clone();
+		let _ = trie_root::<KeccakHasher, _, _, _>(d.clone()).clone();
 	});
 }
 
@@ -80,7 +82,7 @@ fn triehash_insertions_32_ran_1k(b: &mut Bencher) {
 	};
 	let d = st.make();
 	b.iter(&mut ||{
-		trie_root(d.clone()).clone();
+		let _ = trie_root::<KeccakHasher, _, _, _>(d.clone()).clone();
 	});
 }
 
@@ -95,7 +97,7 @@ fn triehash_insertions_six_high(b: &mut Bencher) {
 	}
 
 	b.iter(&||{
-		trie_root(d.clone());
+		let _ = trie_root::<KeccakHasher, _, _, _>(d.clone());
 	})
 }
 
@@ -110,7 +112,7 @@ fn triehash_insertions_six_mid(b: &mut Bencher) {
 		d.push((k, v))
 	}
 	b.iter(||{
-		trie_root(d.clone());
+		let _ = trie_root::<KeccakHasher, _, _, _>(d.clone());
 	})
 }
 
@@ -126,7 +128,7 @@ fn triehash_insertions_random_mid(b: &mut Bencher) {
 	}
 
 	b.iter(||{
-		trie_root(d.clone());
+		let _ = trie_root::<KeccakHasher, _, _, _>(d.clone());
 	})
 }
 
@@ -142,6 +144,6 @@ fn triehash_insertions_six_low(b: &mut Bencher) {
 	}
 
 	b.iter(||{
-		trie_root(d.clone());
+		let _ = trie_root::<KeccakHasher, _, _, _>(d.clone());
 	})
 }
