@@ -46,7 +46,7 @@ type FastMap<H, T> = HashMap<<H as KeyHasher>::Out, T, hash::BuildHasherDefault<
 /// extern crate hashdb;
 /// extern crate keccak_hasher;
 /// extern crate memorydb;
-/// 
+///
 /// use hashdb::*;
 /// use keccak_hasher::KeccakHasher;
 /// use memorydb::*;
@@ -81,10 +81,14 @@ type FastMap<H, T> = HashMap<<H as KeyHasher>::Out, T, hash::BuildHasherDefault<
 ///   assert!(!m.contains(&k));
 /// }
 /// ```
-#[derive(Default, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct MemoryDB<H: KeyHasher> {
 	data: FastMap<H, (DBValue, i32)>,
 	hashed_null_node: H::Out,
+}
+
+impl<H: KeyHasher> Default for MemoryDB<H> {
+	fn default() -> Self { Self::new() }
 }
 
 impl<H: KeyHasher> MemoryDB<H> {
@@ -103,11 +107,11 @@ impl<H: KeyHasher> MemoryDB<H> {
 	/// extern crate hashdb;
 	/// extern crate keccak_hasher;
 	/// extern crate memorydb;
-	/// 
+	///
 	/// use hashdb::*;
 	/// use keccak_hasher::KeccakHasher;
 	/// use memorydb::*;
-	/// 
+	///
 	/// fn main() {
 	///   let mut m = MemoryDB::<KeccakHasher>::new();
 	///   let hello_bytes = "Hello world!".as_bytes();
@@ -340,5 +344,12 @@ mod tests {
 		assert_eq!(overlay.get(&remove_key).unwrap(), &(DBValue::from_slice(b"doggo"), 0));
 		assert_eq!(overlay.get(&insert_key).unwrap(), &(DBValue::from_slice(b"arf"), 2));
 		assert_eq!(overlay.get(&negative_remove_key).unwrap(), &(DBValue::from_slice(b"negative"), -2));
+	}
+
+	#[test]
+	fn default_works() {
+		let mut db = MemoryDB::<KeccakHasher>::default();
+		let hashed_null_node = KeccakHasher::hash(&NULL_RLP);
+		assert_eq!(db.insert(&NULL_RLP), hashed_null_node);
 	}
 }
