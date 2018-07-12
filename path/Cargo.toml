@@ -5,4 +5,3 @@ authors = ["Parity Technologies <admin@parity.io>"]
 license = "GPL3"
 
 [dependencies]
-dirs = "1.0.2"
