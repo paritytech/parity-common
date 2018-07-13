@@ -1,12 +1,9 @@
 extern crate core;
 
-#[cfg(test)]
 #[macro_use]
 extern crate uint;
-#[cfg(test)]
 #[macro_use]
 extern crate crunchy;
-#[cfg(test)]
 #[macro_use]
 extern crate quickcheck;
 
