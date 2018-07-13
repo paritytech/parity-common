@@ -1,9 +1,9 @@
 [package]
 name = "fixed-hash"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
-homepage = "https://github.com/paritytech/primitives"
+homepage = "https://github.com/paritytech/parity-common"
 description = "Fixed-size hashes"
 
 [dependencies]

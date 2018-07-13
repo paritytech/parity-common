@@ -154,7 +154,7 @@ macro_rules! construct_hash {
 		impl ::core::fmt::LowerHex for $from {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				if f.alternate() {
-					write!(f, "0x");
+					write!(f, "0x")?;
 				}
 				for i in &self.0[..] {
 					write!(f, "{:02x}", i)?;
@@ -488,4 +488,23 @@ macro_rules! impl_quickcheck_arbitrary_for_hash {
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_hash {
 	($name: ty, $n_bytes: tt) => {}
+}
+
+#[cfg(test)]
+mod tests {
+	construct_hash!(H10, 10);
+	#[test]
+	fn test_construct_hash() {
+		assert_eq!(H10::default(), H10::new());
+		assert_eq!(H10::new(), H10::zero());
+		assert_eq!(H10::len(), 10);
+	}
+
+	#[cfg(feature="heapsizeof")]
+	#[test]
+	fn test_heapsizeof() {
+		use heapsize::HeapSizeOf;
+		let h = H10::zero();
+		assert_eq!(h.heap_size_of_children(),0);
+	}
 }

@@ -1,5 +1,6 @@
 [workspace]
 members = [
+	"fixed-hash",
 	"hashdb",
 	"keccak-hash",
 	"kvdb",
