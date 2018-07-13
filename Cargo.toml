@@ -1,2 +1,2 @@
 [workspace]
-members = ["ethereum-types", "ethbloom","tests"]
+members = ["ethereum-types", "ethbloom"]
