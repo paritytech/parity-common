@@ -17,7 +17,8 @@ ethereum-types-serialize = { version = "0.2.1", path = "../serialize", optional 
 # TODO: remove `branch` when https://github.com/paritytech/parity-common/pull/12 lands
 fixed-hash = { git = "https://github.com/paritytech/parity-common", branch = "add-fixed-hash", default_features = false }
 serde = { version = "1.0", optional = true }
-uint = { path = "../uint", version = "0.2.1", default-features = false }
+# TODO: remove `branch` when https://github.com/paritytech/parity-common/pull/12 lands
+uint = { git = "https://github.com/paritytech/parity-common", branch = "add-fixed-hash", default_features = false }
 
 [features]
 default = ["std", "heapsizeof", "serialize"]
