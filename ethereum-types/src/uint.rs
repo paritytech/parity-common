@@ -359,3 +359,123 @@ impl From<U512> for [u8; 64] {
 		arr
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::{U256, U512};
+	use std::u64::MAX;
+
+	#[test]
+	fn fixed_arrays_roundtrip() {
+		let raw: U256 = "7094875209347850239487502394881".into();
+		let array: [u8; 32] = raw.into();
+		let new_raw = array.into();
+
+		assert_eq!(raw, new_raw);
+	}
+
+	#[test]
+	fn u256_multi_full_mul() {
+		let result = U256([0, 0, 0, 0]).full_mul(U256([0, 0, 0, 0]));
+		assert_eq!(U512([0, 0, 0, 0, 0, 0, 0, 0]), result);
+
+		let result = U256([1, 0, 0, 0]).full_mul(U256([1, 0, 0, 0]));
+		assert_eq!(U512([1, 0, 0, 0, 0, 0, 0, 0]), result);
+
+		let result = U256([5, 0, 0, 0]).full_mul(U256([5, 0, 0, 0]));
+		assert_eq!(U512([25, 0, 0, 0, 0, 0, 0, 0]), result);
+
+		let result = U256([0, 5, 0, 0]).full_mul(U256([0, 5, 0, 0]));
+		assert_eq!(U512([0, 0, 25, 0, 0, 0, 0, 0]), result);
+
+		let result = U256([0, 0, 0, 4]).full_mul(U256([4, 0, 0, 0]));
+		assert_eq!(U512([0, 0, 0, 16, 0, 0, 0, 0]), result);
+
+		let result = U256([0, 0, 0, 5]).full_mul(U256([2, 0, 0, 0]));
+		assert_eq!(U512([0, 0, 0, 10, 0, 0, 0, 0]), result);
+
+		let result = U256([0, 0, 2, 0]).full_mul(U256([0, 5, 0, 0]));
+		assert_eq!(U512([0, 0, 0, 10, 0, 0, 0, 0]), result);
+
+		let result = U256([0, 3, 0, 0]).full_mul(U256([0, 0, 3, 0]));
+		assert_eq!(U512([0, 0, 0, 9, 0, 0, 0, 0]), result);
+
+		let result = U256([0, 0, 8, 0]).full_mul(U256([0, 0, 6, 0]));
+		assert_eq!(U512([0, 0, 0, 0, 48, 0, 0, 0]), result);
+
+		let result = U256([9, 0, 0, 0]).full_mul(U256([0, 3, 0, 0]));
+		assert_eq!(U512([0, 27, 0, 0, 0, 0, 0, 0]), result);
+
+		let result = U256([MAX, 0, 0, 0]).full_mul(U256([MAX, 0, 0, 0]));
+		assert_eq!(U512([1, MAX-1, 0, 0, 0, 0, 0, 0]), result);
+
+		let result = U256([0, MAX, 0, 0]).full_mul(U256([MAX, 0, 0, 0]));
+		assert_eq!(U512([0, 1, MAX-1, 0, 0, 0, 0, 0]), result);
+
+		let result = U256([MAX, MAX, 0, 0]).full_mul(U256([MAX, 0, 0, 0]));
+		assert_eq!(U512([1, MAX, MAX-1, 0, 0, 0, 0, 0]), result);
+
+		let result = U256([MAX, 0, 0, 0]).full_mul(U256([MAX, MAX, 0, 0]));
+		assert_eq!(U512([1, MAX, MAX-1, 0, 0, 0, 0, 0]), result);
+
+		let result = U256([MAX, MAX, 0, 0]).full_mul(U256([MAX, MAX, 0, 0]));
+		assert_eq!(U512([1, 0, MAX-1, MAX, 0, 0, 0, 0]), result);
+
+		let result = U256([MAX, 0, 0, 0]).full_mul(U256([MAX, MAX, MAX, 0]));
+		assert_eq!(U512([1, MAX, MAX, MAX-1, 0, 0, 0, 0]), result);
+
+		let result = U256([MAX, MAX, MAX, 0]).full_mul(U256([MAX, 0, 0, 0]));
+		assert_eq!(U512([1, MAX, MAX, MAX-1, 0, 0, 0, 0]), result);
+
+		let result = U256([MAX, 0, 0, 0]).full_mul(U256([MAX, MAX, MAX, MAX]));
+		assert_eq!(U512([1, MAX, MAX, MAX, MAX-1, 0, 0, 0]), result);
+
+		let result = U256([MAX, MAX, MAX, MAX]).full_mul(U256([MAX, 0, 0, 0]));
+		assert_eq!(U512([1, MAX, MAX, MAX, MAX-1, 0, 0, 0]), result);
+
+		let result = U256([MAX, MAX, MAX, 0]).full_mul(U256([MAX, MAX, 0, 0]));
+		assert_eq!(U512([1, 0, MAX, MAX-1, MAX, 0, 0, 0]), result);
+
+		let result = U256([MAX, MAX, 0, 0]).full_mul(U256([MAX, MAX, MAX, 0]));
+		assert_eq!(U512([1, 0, MAX, MAX-1, MAX, 0, 0, 0]), result);
+
+		let result = U256([MAX, MAX, MAX, MAX]).full_mul(U256([MAX, MAX, 0, 0]));
+		assert_eq!(U512([1, 0, MAX, MAX, MAX-1, MAX, 0, 0]), result);
+
+		let result = U256([MAX, MAX, 0, 0]).full_mul(U256([MAX, MAX, MAX, MAX]));
+		assert_eq!(U512([1, 0, MAX, MAX, MAX-1, MAX, 0, 0]), result);
+
+		let result = U256([MAX, MAX, MAX, 0]).full_mul(U256([MAX, MAX, MAX, 0]));
+		assert_eq!(U512([1, 0, 0, MAX-1, MAX, MAX, 0, 0]), result);
+
+		let result = U256([MAX, MAX, MAX, 0]).full_mul(U256([MAX, MAX, MAX, MAX]));
+		assert_eq!(U512([1, 0, 0, MAX,	MAX-1, MAX, MAX, 0]), result);
+
+		let result = U256([MAX, MAX, MAX, MAX]).full_mul(U256([MAX, MAX, MAX, 0]));
+		assert_eq!(U512([1, 0, 0, MAX,	MAX-1, MAX, MAX, 0]), result);
+
+		let result = U256([MAX, MAX, MAX, MAX]).full_mul(U256([MAX, MAX, MAX, MAX]));
+		assert_eq!(U512([1, 0, 0, 0, MAX-1, MAX, MAX, MAX]), result);
+
+		let result = U256([0, 0, 0, MAX]).full_mul(U256([0, 0, 0, MAX]));
+		assert_eq!(U512([0, 0, 0, 0, 0, 0, 1, MAX-1]), result);
+
+		let result = U256([1, 0, 0, 0]).full_mul(U256([0, 0, 0, MAX]));
+		assert_eq!(U512([0, 0, 0, MAX, 0, 0, 0, 0]), result);
+
+		let result = U256([1, 2, 3, 4]).full_mul(U256([5, 0, 0, 0]));
+		assert_eq!(U512([5, 10, 15, 20, 0, 0, 0, 0]), result);
+
+		let result = U256([1, 2, 3, 4]).full_mul(U256([0, 6, 0, 0]));
+		assert_eq!(U512([0, 6, 12, 18, 24, 0, 0, 0]), result);
+
+		let result = U256([1, 2, 3, 4]).full_mul(U256([0, 0, 7, 0]));
+		assert_eq!(U512([0, 0, 7, 14, 21, 28, 0, 0]), result);
+
+		let result = U256([1, 2, 3, 4]).full_mul(U256([0, 0, 0, 8]));
+		assert_eq!(U512([0, 0, 0, 8, 16, 24, 32, 0]), result);
+
+		let result = U256([1, 2, 3, 4]).full_mul(U256([5, 6, 7, 8]));
+		assert_eq!(U512([5, 16, 34, 60, 61, 52, 32, 0]), result);
+	}
+}
