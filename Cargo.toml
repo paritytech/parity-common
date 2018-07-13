@@ -15,4 +15,5 @@ members = [
 	"rlp",
 	"trie-standardmap",
 	"triehash",
+	"uint"
 ]

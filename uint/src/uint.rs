@@ -1514,7 +1514,7 @@ macro_rules! impl_std_for_uint {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				let &$name(ref data) = self;
 				if f.alternate() {
-					write!(f, "0x");
+					write!(f, "0x")?;
 				}
 				// special case.
 				if self.is_zero() {
