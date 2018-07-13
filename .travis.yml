@@ -8,6 +8,5 @@ matrix:
     - rust: nightly
 script:
   - cargo test -p ethereum-types --no-default-features --release
-  - cargo test -p tests --release
 env:
   - RUST_LOG=quickcheck
