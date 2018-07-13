@@ -492,19 +492,40 @@ macro_rules! impl_quickcheck_arbitrary_for_hash {
 
 #[cfg(test)]
 mod tests {
-	construct_hash!(H10, 10);
+	construct_hash!(H128, 16);
+
 	#[test]
 	fn test_construct_hash() {
-		assert_eq!(H10::default(), H10::new());
-		assert_eq!(H10::new(), H10::zero());
-		assert_eq!(H10::len(), 10);
+		assert_eq!(H128::default(), H128::new());
+		assert_eq!(H128::new(), H128::zero());
+		assert_eq!(H128::len(), 16);
 	}
 
 	#[cfg(feature="heapsizeof")]
 	#[test]
 	fn test_heapsizeof() {
 		use heapsize::HeapSizeOf;
-		let h = H10::zero();
+		let h = H128::zero();
 		assert_eq!(h.heap_size_of_children(),0);
+	}
+
+	#[cfg(feature="std")]
+	#[test]
+	fn should_format_and_debug_correctly() {
+		let test = |x: u64, hex: &'static str, display: &'static str| {
+			let hash = H128::from(x);
+			assert_eq!(format!("{}", hash), format!("0x{}", display));
+			assert_eq!(format!("{:?}", hash), format!("0x{}", hex));
+			assert_eq!(format!("{:x}", hash), hex);
+			assert_eq!(format!("{:#x}", hash), format!("0x{}", hex));
+		};
+
+		test(0x1, "00000000000000000000000000000001", "0000…0001");
+		test(0xf, "0000000000000000000000000000000f", "0000…000f");
+		test(0x10, "00000000000000000000000000000010", "0000…0010");
+		test(0xff, "000000000000000000000000000000ff", "0000…00ff");
+		test(0x100, "00000000000000000000000000000100", "0000…0100");
+		test(0xfff, "00000000000000000000000000000fff", "0000…0fff");
+		test(0x1000, "00000000000000000000000000001000", "0000…1000");
 	}
 }
