@@ -364,6 +364,43 @@ impl From<U512> for [u8; 64] {
 mod tests {
 	use super::{U256, U512};
 	use std::u64::MAX;
+	use serde_json as ser;
+
+	macro_rules! test {
+		($name: ident, $test_name: ident) => {
+			#[test]
+			fn $test_name() {
+				let tests = vec![
+					($name::from(0), "0x0"),
+					($name::from(1), "0x1"),
+					($name::from(2), "0x2"),
+					($name::from(10), "0xa"),
+					($name::from(15), "0xf"),
+					($name::from(15), "0xf"),
+					($name::from(16), "0x10"),
+					($name::from(1_000), "0x3e8"),
+					($name::from(100_000), "0x186a0"),
+					($name::from(u64::max_value()), "0xffffffffffffffff"),
+					($name::from(u64::max_value()) + 1, "0x10000000000000000"),
+				];
+
+				for (number, expected) in tests {
+					assert_eq!(format!("{:?}", expected), ser::to_string_pretty(&number).unwrap());
+					assert_eq!(number, ser::from_str(&format!("{:?}", expected)).unwrap());
+				}
+
+				// Invalid examples
+				assert!(ser::from_str::<$name>("\"0x\"").unwrap_err().is_data());
+				assert!(ser::from_str::<$name>("\"0xg\"").unwrap_err().is_data());
+				assert!(ser::from_str::<$name>("\"\"").unwrap_err().is_data());
+				assert!(ser::from_str::<$name>("\"10\"").unwrap_err().is_data());
+				assert!(ser::from_str::<$name>("\"0\"").unwrap_err().is_data());
+			}
+		}
+	}
+
+	test!(U256, test_u256);
+	test!(U512, test_u512);
 
 	#[test]
 	fn fixed_arrays_roundtrip() {
