@@ -15,7 +15,7 @@ extern crate crunchy;
 #[macro_use]
 extern crate uint;
 
-construct_uint!(U256, 32);
+construct_uint!(U256, 4);
 
 fn main() {
 	// Example modular arithmetic using bigint U256 primitives
@@ -52,7 +52,7 @@ fn main() {
 	let multiplicator = 3;
 	let mul = {
 		let mut result = p_minus_1;
-		for _ in 0..multiplicator-1 { 
+		for _ in 0..multiplicator-1 {
 			result = (p_minus_1 + result) % p;
 		}
 		result

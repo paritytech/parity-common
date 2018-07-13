@@ -19,6 +19,7 @@ quickcheck = { version = "0.6", optional = true }
 
 [dev-dependencies]
 crunchy = "0.1.5"
+quickcheck = "0.6"
 
 [features]
 std = ["rustc-hex", "byteorder/std"]
