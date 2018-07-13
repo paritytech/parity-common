@@ -366,7 +366,7 @@ mod tests {
 	use std::u64::MAX;
 	use serde_json as ser;
 
-	macro_rules! test {
+	macro_rules! test_serialize {
 		($name: ident, $test_name: ident) => {
 			#[test]
 			fn $test_name() {
@@ -399,8 +399,19 @@ mod tests {
 		}
 	}
 
-	test!(U256, test_u256);
-	test!(U512, test_u512);
+	test_serialize!(U256, test_u256);
+	test_serialize!(U512, test_u512);
+
+	#[test]
+	fn test_serialize_large_values() {
+		assert_eq!(
+			ser::to_string_pretty(&!U256::zero()).unwrap(),
+			"\"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\""
+		);
+		assert!(
+			ser::from_str::<U256>("\"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"").unwrap_err().is_data()
+		);
+	}
 
 	#[test]
 	fn fixed_arrays_roundtrip() {
