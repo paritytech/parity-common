@@ -202,7 +202,7 @@ pub trait TrieMut<H: Hasher, C: NodeCodec<H>> {
 
 /// A trie iterator that also supports random access (`seek()`).
 pub trait TrieIterator<H: Hasher, C: NodeCodec<H>>: Iterator {
-	/// Position the iterator on the first element with key > `key`
+	/// Position the iterator on the first element with key >= `key`
 	fn seek(&mut self, key: &[u8]) -> Result<(), H::Out, <C as NodeCodec<H>>::Error>;
 }
 
