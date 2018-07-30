@@ -319,7 +319,9 @@ fn uint256_mul32() {
 }
 
 #[test]
+#[allow(deprecated)]
 fn uint256_mul32_old() {
+	assert_eq!(U256::from(0u64).mul_u32(2), U256::from(0u64));
 	assert_eq!(U256::from(0u64).mul_u32(2), U256::from(0u64));
 	assert_eq!(U256::from(1u64).mul_u32(2), U256::from(2u64));
 	assert_eq!(U256::from(10u64).mul_u32(2), U256::from(20u64));
@@ -417,6 +419,7 @@ fn uint128_add_overflow() {
 #[test]
 #[should_panic]
 #[cfg(debug_assertions)]
+#[allow(unused_must_use)]
 fn uint128_add_overflow_panic() {
 	U128::from_str("ffffffffffffffffffffffffffffffff").unwrap()
 	+
@@ -453,6 +456,7 @@ fn uint256_mul_overflow() {
 
 #[test]
 #[should_panic]
+#[allow(unused_must_use)]
 fn uint256_mul_overflow_panic() {
 	U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
 	*
@@ -472,6 +476,7 @@ fn uint256_sub_overflow() {
 
 #[test]
 #[should_panic]
+#[allow(unused_must_use)]
 fn uint256_sub_overflow_panic() {
 	U256::from_str("0").unwrap()
 	-
