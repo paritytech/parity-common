@@ -244,9 +244,9 @@ impl<'a, H: Hasher, C: NodeCodec<H>> TrieDBIterator<'a, H, C> {
 				let node = C::decode(&node_data).expect("encoded data read from db; qed");
 				match node {
 					Node::Leaf(slice, _) => {
-						if slice == key {
+						if slice >= key {
 							self.trail.push(Crumb {
-								status: Status::At,
+								status: Status::Entering,
 								node: node.clone().into(),
 							});
 						} else {
@@ -276,7 +276,7 @@ impl<'a, H: Hasher, C: NodeCodec<H>> TrieDBIterator<'a, H, C> {
 					Node::Branch(ref nodes, _) => match key.is_empty() {
 						true => {
 							self.trail.push(Crumb {
-								status: Status::At,
+								status: Status::Entering,
 								node: node.clone().into(),
 							});
 							return Ok(())
@@ -458,22 +458,22 @@ mod tests {
 		assert_eq!(d, iter.map(|x| x.unwrap().1).collect::<Vec<_>>());
 		let mut iter = t.iter().unwrap();
 		iter.seek(b"A").unwrap();
-		assert_eq!(&d[1..], &iter.map(|x| x.unwrap().1).collect::<Vec<_>>()[..]);
+		assert_eq!(d, &iter.map(|x| x.unwrap().1).collect::<Vec<_>>()[..]);
 		let mut iter = t.iter().unwrap();
 		iter.seek(b"AA").unwrap();
-		assert_eq!(&d[2..], &iter.map(|x| x.unwrap().1).collect::<Vec<_>>()[..]);
+		assert_eq!(&d[1..], &iter.map(|x| x.unwrap().1).collect::<Vec<_>>()[..]);
 		let mut iter = t.iter().unwrap();
 		iter.seek(b"A!").unwrap();
 		assert_eq!(&d[1..], &iter.map(|x| x.unwrap().1).collect::<Vec<_>>()[..]);
 		let mut iter = t.iter().unwrap();
 		iter.seek(b"AB").unwrap();
-		assert_eq!(&d[3..], &iter.map(|x| x.unwrap().1).collect::<Vec<_>>()[..]);
+		assert_eq!(&d[2..], &iter.map(|x| x.unwrap().1).collect::<Vec<_>>()[..]);
 		let mut iter = t.iter().unwrap();
 		iter.seek(b"AB!").unwrap();
 		assert_eq!(&d[3..], &iter.map(|x| x.unwrap().1).collect::<Vec<_>>()[..]);
 		let mut iter = t.iter().unwrap();
 		iter.seek(b"B").unwrap();
-		assert_eq!(&d[4..], &iter.map(|x| x.unwrap().1).collect::<Vec<_>>()[..]);
+		assert_eq!(&d[3..], &iter.map(|x| x.unwrap().1).collect::<Vec<_>>()[..]);
 		let mut iter = t.iter().unwrap();
 		iter.seek(b"C").unwrap();
 		assert_eq!(&d[4..], &iter.map(|x| x.unwrap().1).collect::<Vec<_>>()[..]);
