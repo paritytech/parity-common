@@ -1,5 +1,6 @@
 [workspace]
 members = [
+	"fixed-hash",
 	"hashdb",
 	"keccak-hash",
 	"kvdb",
@@ -14,4 +15,5 @@ members = [
 	"rlp",
 	"trie-standardmap",
 	"triehash",
+	"uint"
 ]
