@@ -1,0 +1,12 @@
+[package]
+name = "no-std-tests"
+version = "0.0.1"
+authors = ["Parity Technologies <admin@parity.io>"]
+description = "Tests for no-std environments"
+license = "MIT"
+
+[dependencies]
+libc = { version = "0.2", default-features = false }
+ethereum-types = { path = "../ethereum-types", default-features = false }
+ethbloom = { path = "../ethbloom", default-features = false }
+fixed-hash = { version = "0.2", default-features = false }
