@@ -14,17 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use rcrypto::ripemd160;
+use rripemd160;
 use ring::digest::{self, Context, SHA256, SHA512};
 use std::marker::PhantomData;
 use std::ops::Deref;
+use rdigest::generic_array::GenericArray;
+use rdigest::generic_array::typenum::U20;
+
 
 /// The message digest.
 pub struct Digest<T>(InnerDigest, PhantomData<T>);
 
 enum InnerDigest {
 	Ring(digest::Digest),
-	Ripemd160([u8; 20]),
+	Ripemd160(GenericArray<u8, U20>),
 }
 
 impl<T> Deref for Digest<T> {
@@ -63,7 +66,7 @@ pub struct Hasher<T>(Inner, PhantomData<T>);
 
 enum Inner {
 	Ring(Context),
-	Ripemd160(ripemd160::Ripemd160)
+	Ripemd160(rripemd160::Ripemd160)
 }
 
 impl Hasher<Sha256> {
@@ -80,7 +83,7 @@ impl Hasher<Sha512> {
 
 impl Hasher<Ripemd160> {
 	pub fn ripemd160() -> Hasher<Ripemd160> {
-		Hasher(Inner::Ripemd160(ripemd160::Ripemd160::new()), PhantomData)
+		Hasher(Inner::Ripemd160(rripemd160::Ripemd160::default()), PhantomData)
 	}
 }
 
@@ -89,8 +92,8 @@ impl<T> Hasher<T> {
 		match self.0 {
 			Inner::Ring(ref mut ctx) => ctx.update(data),
 			Inner::Ripemd160(ref mut ctx) => {
-				use rcrypto::digest::Digest;
-				ctx.input(data)
+				use rdigest::Input;
+				ctx.process(data)
 			}
 		}
 	}
@@ -98,11 +101,9 @@ impl<T> Hasher<T> {
 	pub fn finish(self) -> Digest<T> {
 		match self.0 {
 			Inner::Ring(ctx) => Digest(InnerDigest::Ring(ctx.finish()), PhantomData),
-			Inner::Ripemd160(mut ctx) => {
-				use rcrypto::digest::Digest;
-				let mut d = [0; 20];
-				ctx.result(&mut d);
-				Digest(InnerDigest::Ripemd160(d), PhantomData)
+			Inner::Ripemd160(ctx) => {
+				use rdigest::Digest;
+				Digest(InnerDigest::Ripemd160(ctx.result()), PhantomData)
 			}
 		}
 	}

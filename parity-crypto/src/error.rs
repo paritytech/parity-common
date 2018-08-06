@@ -14,8 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use rcrypto;
 use ring;
+use rscrypt;
+use block_modes;
+use raes;
+use aes_ctr;
 
 quick_error! {
 	#[derive(Debug)]
@@ -42,16 +45,22 @@ quick_error! {
 		InvalidP {
 			display("Invalid p argument of the scrypt encryption")
 		}
+		ScryptParam(e: rscrypt::errors::InvalidParams) {
+			display("invalid params for scrypt: {}", e)
+			cause(e)
+			from()
+		}
+		ScryptLength(e: rscrypt::errors::InvalidOutputLen) {
+			display("invalid scrypt output length: {}", e)
+			cause(e)
+			from()
+		}
 	}
 }
 
 quick_error! {
 	#[derive(Debug)]
 	pub enum SymmError wraps PrivSymmErr {
-		RustCrypto(e: rcrypto::symmetriccipher::SymmetricCipherError) {
-			display("symmetric crypto error")
-			from()
-		}
 		Ring(e: ring::error::Unspecified) {
 			display("symmetric crypto error")
 			cause(e)
@@ -59,6 +68,18 @@ quick_error! {
 		}
 		Offset(x: usize) {
 			display("offset {} greater than slice length", x)
+		}
+		BlockMode(e: block_modes::BlockModeError) {
+			display("symmetric crypto error")
+			from()
+		}
+		KeyStream(e: aes_ctr::stream_cipher::LoopError) {
+			display("ctr key stream ended")
+			from()
+		}
+		InvalidKeyLength(e: raes::block_cipher_trait::InvalidKeyLength) {
+			display("Error with RustCrypto key length : {}", e)
+			from()
 		}
 	}
 }
@@ -75,8 +96,20 @@ impl From<ring::error::Unspecified> for SymmError {
 	}
 }
 
-impl From<rcrypto::symmetriccipher::SymmetricCipherError> for SymmError {
-	fn from(e: rcrypto::symmetriccipher::SymmetricCipherError) -> SymmError {
-		SymmError(PrivSymmErr::RustCrypto(e))
+impl From<block_modes::BlockModeError> for SymmError {
+	fn from(e: block_modes::BlockModeError) -> SymmError {
+		SymmError(PrivSymmErr::BlockMode(e))
+	}
+}
+
+impl From<raes::block_cipher_trait::InvalidKeyLength> for SymmError {
+	fn from(e: raes::block_cipher_trait::InvalidKeyLength) -> SymmError {
+		SymmError(PrivSymmErr::InvalidKeyLength(e))
+	}
+}
+
+impl From<aes_ctr::stream_cipher::LoopError> for SymmError {
+	fn from(e: aes_ctr::stream_cipher::LoopError) -> SymmError {
+		SymmError(PrivSymmErr::KeyStream(e))
 	}
 }
