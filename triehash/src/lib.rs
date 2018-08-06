@@ -19,7 +19,6 @@
 //! This module should be used to generate trie root hash.
 
 extern crate elastic_array;
-extern crate ethereum_types;
 extern crate hashdb;
 extern crate rlp;
 #[cfg(test)] extern crate keccak_hasher;
