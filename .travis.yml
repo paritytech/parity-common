@@ -7,4 +7,5 @@ matrix:
     - rust: nightly
 script:
   - cargo build
-  - cargo test
+  - cargo test --all --exclude uint
+  - cd uint/ && cargo test --features=std,impl_quickcheck_arbitrary
