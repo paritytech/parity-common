@@ -118,3 +118,55 @@ impl<'a> From<&'a H160> for H256 {
 		ret
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::{H160, H256};
+	use serde_json as ser;
+
+	#[test]
+	fn test_serialize_h160() {
+		let tests = vec![
+			(H160::from(0), "0x0000000000000000000000000000000000000000"),
+			(H160::from(2), "0x0000000000000000000000000000000000000002"),
+			(H160::from(15), "0x000000000000000000000000000000000000000f"),
+			(H160::from(16), "0x0000000000000000000000000000000000000010"),
+			(H160::from(1_000), "0x00000000000000000000000000000000000003e8"),
+			(H160::from(100_000), "0x00000000000000000000000000000000000186a0"),
+			(H160::from(u64::max_value()), "0x000000000000000000000000ffffffffffffffff"),
+		];
+
+		for (number, expected) in tests {
+			assert_eq!(format!("{:?}", expected), ser::to_string_pretty(&number).unwrap());
+			assert_eq!(number, ser::from_str(&format!("{:?}", expected)).unwrap());
+		}
+	}
+
+	#[test]
+	fn test_serialize_h256() {
+		let tests = vec![
+			(H256::from(0), "0x0000000000000000000000000000000000000000000000000000000000000000"),
+			(H256::from(2), "0x0000000000000000000000000000000000000000000000000000000000000002"),
+			(H256::from(15), "0x000000000000000000000000000000000000000000000000000000000000000f"),
+			(H256::from(16), "0x0000000000000000000000000000000000000000000000000000000000000010"),
+			(H256::from(1_000), "0x00000000000000000000000000000000000000000000000000000000000003e8"),
+			(H256::from(100_000), "0x00000000000000000000000000000000000000000000000000000000000186a0"),
+			(H256::from(u64::max_value()), "0x000000000000000000000000000000000000000000000000ffffffffffffffff"),
+		];
+
+		for (number, expected) in tests {
+			assert_eq!(format!("{:?}", expected), ser::to_string_pretty(&number).unwrap());
+			assert_eq!(number, ser::from_str(&format!("{:?}", expected)).unwrap());
+		}
+	}
+
+	#[test]
+	fn test_serialize_invalid() {
+		assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000\"").unwrap_err().is_data());
+		assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000g\"").unwrap_err().is_data());
+		assert!(ser::from_str::<H256>("\"0x00000000000000000000000000000000000000000000000000000000000000000\"").unwrap_err().is_data());
+		assert!(ser::from_str::<H256>("\"\"").unwrap_err().is_data());
+		assert!(ser::from_str::<H256>("\"0\"").unwrap_err().is_data());
+		assert!(ser::from_str::<H256>("\"10\"").unwrap_err().is_data());
+	}
+}

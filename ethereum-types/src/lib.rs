@@ -17,6 +17,9 @@ extern crate ethereum_types_serialize;
 #[cfg(feature="serialize")]
 extern crate serde;
 
+#[cfg(test)]
+extern crate serde_json;
+
 mod hash;
 mod uint;
 
