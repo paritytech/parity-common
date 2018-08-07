@@ -20,12 +20,14 @@
 
 #[cfg(feature = "std")]
 extern crate elastic_array;
+#[cfg(feature = "std")]
 extern crate heapsize;
 #[cfg(feature = "std")]
 extern crate core;
 
 #[cfg(feature = "std")]
 use elastic_array::ElasticArray128;
+#[cfg(feature = "std")]
 use heapsize::HeapSizeOf;
 #[cfg(feature = "std")]
 use std::collections::HashMap;
@@ -36,7 +38,10 @@ use core::{fmt::Debug, hash::Hash};
 /// `Out` associated type with the necessary bounds.
 pub trait Hasher: Sync + Send {
 	/// The output type of the `Hasher`
+	#[cfg(feature = "std")]
 	type Out: AsRef<[u8]> + AsMut<[u8]> + Default + HeapSizeOf + Debug + PartialEq + Eq + Hash + Send + Sync + Clone + Copy;
+	#[cfg(not(feature = "std"))]
+	type Out: AsRef<[u8]> + AsMut<[u8]> + Default + Debug + PartialEq + Eq + Hash + Send + Sync + Clone + Copy;
 	/// What to use to build `HashMap`s with this `Hasher`
 	type StdHasher: Sync + Send + Default + core::hash::Hasher;
 	/// The length in bytes of the `Hasher` output

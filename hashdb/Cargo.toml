@@ -7,8 +7,8 @@ license = "GPL-3.0"
 
 [dependencies]
 elastic-array = { version = "0.10", optional = true }
-heapsize = "0.4"
+heapsize = { version = "0.4", optional = true }
 
 [features]
 default = ["std"]
-std = ["elastic-array"]
+std = ["elastic-array", "heapsize"]
