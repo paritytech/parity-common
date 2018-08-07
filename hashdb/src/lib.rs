@@ -24,6 +24,7 @@ extern crate heapsize;
 #[cfg(feature = "std")]
 extern crate core;
 
+#[cfg(feature = "std")]
 use elastic_array::ElasticArray128;
 use heapsize::HeapSizeOf;
 #[cfg(feature = "std")]
