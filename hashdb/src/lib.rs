@@ -45,6 +45,7 @@ pub trait Hasher: Sync + Send {
 }
 
 /// `HashDB` value type.
+#[cfg(feature = "std")]
 pub type DBValue = ElasticArray128<u8>;
 
 /// Trait modelling datastore keyed by a hash defined by the `Hasher`.
