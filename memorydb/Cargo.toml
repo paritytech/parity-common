@@ -8,8 +8,8 @@ license = "GPL-3.0"
 [dependencies]
 elastic-array = "0.10"
 heapsize = "0.4"
-hashdb = { version = "0.2.0", path = "../hashdb", default-features = false }
-plain_hasher = { path = "../plain_hasher", default-features = false }
+hashdb = { version = "0.2.0", path = "../hashdb" }
+plain_hasher = { path = "../plain_hasher" }
 rlp = { version = "0.2.1", path = "../rlp" }
 
 [dev-dependencies]
