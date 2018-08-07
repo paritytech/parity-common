@@ -13,19 +13,27 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+#![cfg_attr(not(feature = "std"), no_std)]
 
 #[macro_use]
 extern crate crunchy;
+#[cfg(feature = "std")]
 extern crate ethereum_types;
-extern crate hashdb;
+#[cfg(feature = "std")]
+extern crate core;
 
+use core::hash;
+
+// TODO: this Fast{Map, Set} stuff should move elsewhere
+#[cfg(feature = "std")]
 use ethereum_types::H256;
-// use hashdb::Hasher;
-use std::hash;
+#[cfg(feature = "std")]
 use std::collections::{HashMap, HashSet};
 /// Specialized version of `HashMap` with H256 keys and fast hashing function.
+#[cfg(feature = "std")]
 pub type H256FastMap<T> = HashMap<H256, T, hash::BuildHasherDefault<PlainHasher>>;
 /// Specialized version of `HashSet` with H256 keys and fast hashing function.
+#[cfg(feature = "std")]
 pub type H256FastSet = HashSet<H256, hash::BuildHasherDefault<PlainHasher>>;
 
 /// Hasher that just takes 8 bytes of the provided value.
@@ -50,7 +58,7 @@ impl hash::Hasher for PlainHasher {
 
 		unroll! {
 			for _i in 0..8 {
-				unsafe { 
+				unsafe {
 					*prefix_ptr ^= (*bytes_ptr ^ *bytes_ptr.offset(8)) ^ (*bytes_ptr.offset(16) ^ *bytes_ptr.offset(24));
 					bytes_ptr = bytes_ptr.offset(1);
 					prefix_ptr = prefix_ptr.offset(1);
@@ -62,7 +70,7 @@ impl hash::Hasher for PlainHasher {
 
 #[cfg(test)]
 mod tests {
-	use std::hash::Hasher;
+	use core::hash::Hasher;
 	use super::PlainHasher;
 
 	#[test]

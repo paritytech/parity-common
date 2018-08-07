@@ -1,7 +1,7 @@
 [package]
 name = "plain_hasher"
 description = "Hasher for 32-bit keys."
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 keywords = ["hash", "hasher"]
@@ -9,5 +9,8 @@ homepage = "https://github.com/paritytech/plain_hasher"
 
 [dependencies]
 crunchy = "0.1.6"
-ethereum-types = "0.3"
-hashdb = { path = "../hashdb" }
+ethereum-types = { version = "0.3", optional = true }
+
+[features]
+default = ["std"]
+std = ["ethereum-types"]
