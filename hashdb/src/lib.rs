@@ -16,10 +16,8 @@
 
 //! Database of byte-slices keyed to their hash.
 extern crate elastic_array;
-extern crate heapsize;
 
 use elastic_array::ElasticArray128;
-use heapsize::HeapSizeOf;
 use std::collections::HashMap;
 use std::{fmt::Debug, hash::Hash};
 
@@ -28,7 +26,7 @@ use std::{fmt::Debug, hash::Hash};
 /// `Out` associated type with the necessary bounds.
 pub trait Hasher: Sync + Send {
 	/// The output type of the `Hasher`
-	type Out: AsRef<[u8]> + AsMut<[u8]> + Default + HeapSizeOf + Debug + PartialEq + Eq + Hash + Send + Sync + Clone + Copy;
+	type Out: AsRef<[u8]> + AsMut<[u8]> + Default + Debug + PartialEq + Eq + Hash + Send + Sync + Clone + Copy;
 	/// What to use to build `HashMap`s with this `Hasher`
 	type StdHasher: Sync + Send + Default + std::hash::Hasher;
 	/// The length in bytes of the `Hasher` output
