@@ -8,7 +8,6 @@ license = "GPL-3.0"
 
 [dependencies]
 elastic-array = "0.10"
-ethereum-types = "0.3"
 hashdb = { version = "0.2", path = "../hashdb" }
 rlp = { version = "0.2.1", path = "../rlp" }
 
