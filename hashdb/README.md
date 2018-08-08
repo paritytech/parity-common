@@ -1,0 +1,1 @@
+`HashDB` defines a common interface for databases of byte-slices keyed to their hash. It is generic over hash type through the `Hasher` trait.
