@@ -18,7 +18,6 @@
 extern crate elastic_array;
 extern crate parity_bytes as bytes; // TODO: name changed; update upstream when `parity-common` is available
 extern crate hashdb;
-extern crate heapsize;
 extern crate rand;
 #[macro_use]
 extern crate log;

@@ -87,11 +87,11 @@ pub struct MemoryDB<H: KeyHasher> {
 	hashed_null_node: H::Out,
 }
 
-impl<H: KeyHasher> Default for MemoryDB<H> {
+impl<H> Default for MemoryDB<H>  where H: KeyHasher, H::Out: HeapSizeOf {
 	fn default() -> Self { Self::new() }
 }
 
-impl<H: KeyHasher> MemoryDB<H> {
+impl<H> MemoryDB<H> where H: KeyHasher, H::Out: HeapSizeOf {
 	/// Create a new instance of the memory DB.
 	pub fn new() -> MemoryDB<H> {
 		MemoryDB {
