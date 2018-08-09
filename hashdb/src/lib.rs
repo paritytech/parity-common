@@ -15,11 +15,19 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Database of byte-slices keyed to their hash.
-extern crate elastic_array;
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(feature = "std")]
+extern crate elastic_array;
+#[cfg(feature = "std")]
+extern crate core;
+
+#[cfg(feature = "std")]
 use elastic_array::ElasticArray128;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
-use std::{fmt::Debug, hash::Hash};
+use core::{fmt::Debug, hash::Hash};
 
 /// Trait describing an object that can hash a slice of bytes. Used to abstract
 /// other types over the hashing algorithm. Defines a single `hash` method and an
@@ -28,7 +36,7 @@ pub trait Hasher: Sync + Send {
 	/// The output type of the `Hasher`
 	type Out: AsRef<[u8]> + AsMut<[u8]> + Default + Debug + PartialEq + Eq + Hash + Send + Sync + Clone + Copy;
 	/// What to use to build `HashMap`s with this `Hasher`
-	type StdHasher: Sync + Send + Default + std::hash::Hasher;
+	type StdHasher: Sync + Send + Default + core::hash::Hasher;
 	/// The length in bytes of the `Hasher` output
 	const LENGTH: usize;
 
@@ -37,9 +45,11 @@ pub trait Hasher: Sync + Send {
 }
 
 /// `HashDB` value type.
+#[cfg(feature = "std")]
 pub type DBValue = ElasticArray128<u8>;
 
 /// Trait modelling datastore keyed by a hash defined by the `Hasher`.
+#[cfg(feature = "std")]
 pub trait HashDB<H: Hasher>: Send + Sync + AsHashDB<H> {
 	/// Get the keys in the database together with number of underlying references.
 	fn keys(&self) -> HashMap<H::Out, i32>;
@@ -65,6 +75,7 @@ pub trait HashDB<H: Hasher>: Send + Sync + AsHashDB<H> {
 }
 
 /// Upcast trait.
+#[cfg(feature = "std")]
 pub trait AsHashDB<H: Hasher> {
 	/// Perform upcast to HashDB for anything that derives from HashDB.
 	fn as_hashdb(&self) -> &HashDB<H>;
@@ -74,6 +85,7 @@ pub trait AsHashDB<H: Hasher> {
 
 // NOTE: There used to be a `impl<T> AsHashDB for T` but that does not work with generics. See https://stackoverflow.com/questions/48432842/implementing-a-trait-for-reference-and-non-reference-types-causes-conflicting-im
 // This means we need concrete impls of AsHashDB in several places, which somewhat defeats the point of the trait.
+#[cfg(feature = "std")]
 impl<'a, H: Hasher> AsHashDB<H> for &'a mut HashDB<H> {
 	fn as_hashdb(&self) -> &HashDB<H> { &**self }
 	fn as_hashdb_mut(&mut self) -> &mut HashDB<H> { &mut **self }

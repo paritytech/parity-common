@@ -1,9 +1,13 @@
 [package]
 name = "hashdb"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "trait for hash-keyed databases."
 license = "GPL-3.0"
 
 [dependencies]
-elastic-array = "0.10"
+elastic-array = { version = "0.10", optional = true }
+
+[features]
+default = ["std"]
+std = ["elastic-array"]
