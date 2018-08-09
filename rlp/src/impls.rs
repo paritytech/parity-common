@@ -8,6 +8,7 @@
 
 use std::{cmp, mem, str};
 use byteorder::{ByteOrder, BigEndian};
+#[cfg(feature = "ethereum")]
 use bigint::{U128, U256, H64, H128, H160, H256, H512, H520, Bloom};
 use traits::{Encodable, Decodable};
 use stream::RlpStream;
@@ -207,20 +208,34 @@ macro_rules! impl_decodable_for_hash {
 	}
 }
 
+#[cfg(feature = "ethereum")]
 impl_encodable_for_hash!(H64);
+#[cfg(feature = "ethereum")]
 impl_encodable_for_hash!(H128);
+#[cfg(feature = "ethereum")]
 impl_encodable_for_hash!(H160);
+#[cfg(feature = "ethereum")]
 impl_encodable_for_hash!(H256);
+#[cfg(feature = "ethereum")]
 impl_encodable_for_hash!(H512);
+#[cfg(feature = "ethereum")]
 impl_encodable_for_hash!(H520);
+#[cfg(feature = "ethereum")]
 impl_encodable_for_hash!(Bloom);
 
+#[cfg(feature = "ethereum")]
 impl_decodable_for_hash!(H64, 8);
+#[cfg(feature = "ethereum")]
 impl_decodable_for_hash!(H128, 16);
+#[cfg(feature = "ethereum")]
 impl_decodable_for_hash!(H160, 20);
+#[cfg(feature = "ethereum")]
 impl_decodable_for_hash!(H256, 32);
+#[cfg(feature = "ethereum")]
 impl_decodable_for_hash!(H512, 64);
+#[cfg(feature = "ethereum")]
 impl_decodable_for_hash!(H520, 65);
+#[cfg(feature = "ethereum")]
 impl_decodable_for_hash!(Bloom, 256);
 
 macro_rules! impl_encodable_for_uint {
@@ -254,10 +269,14 @@ macro_rules! impl_decodable_for_uint {
 	}
 }
 
+#[cfg(feature = "ethereum")]
 impl_encodable_for_uint!(U256, 32);
+#[cfg(feature = "ethereum")]
 impl_encodable_for_uint!(U128, 16);
 
+#[cfg(feature = "ethereum")]
 impl_decodable_for_uint!(U256, 32);
+#[cfg(feature = "ethereum")]
 impl_decodable_for_uint!(U128, 16);
 
 impl<'a> Encodable for &'a str {

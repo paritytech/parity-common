@@ -33,6 +33,7 @@
 //! * You don't want to decode whole rlp at once.
 
 extern crate byteorder;
+#[cfg(feature = "ethereum")]
 extern crate ethereum_types as bigint;
 extern crate elastic_array;
 extern crate rustc_hex;
