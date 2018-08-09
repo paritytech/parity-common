@@ -12,6 +12,9 @@ elastic-array = "0.10"
 ethereum-types = { version = "0.3", optional = true }
 rustc-hex = "2.0"
 
+[dev-dependencies]
+hex-literal = "0.1"
+
 [features]
 default = ["ethereum"]
 ethereum = ["ethereum-types"]

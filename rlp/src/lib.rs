@@ -37,6 +37,9 @@ extern crate byteorder;
 extern crate ethereum_types as bigint;
 extern crate elastic_array;
 extern crate rustc_hex;
+#[cfg(test)]
+#[macro_use]
+extern crate hex_literal;
 
 mod traits;
 mod error;
