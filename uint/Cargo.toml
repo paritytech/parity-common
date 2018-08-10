@@ -4,12 +4,8 @@ homepage = "http://parity.io"
 repository = "https://github.com/paritytech/primitives"
 license = "MIT/Apache-2.0"
 name = "uint"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
-build = "build.rs"
-
-[build-dependencies]
-rustc_version = "0.2"
 
 [dependencies]
 byteorder = { version = "1", default-features = false }
@@ -24,7 +20,6 @@ quickcheck = "0.6"
 [features]
 std = ["rustc-hex", "byteorder/std"]
 heapsizeof = ["heapsize"]
-use_asm = []
 impl_quickcheck_arbitrary = ["quickcheck"]
 
 [[example]]

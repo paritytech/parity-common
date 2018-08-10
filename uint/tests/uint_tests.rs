@@ -11,7 +11,6 @@ use std::u64::MAX;
 use std::str::FromStr;
 use uint::FromDecStrErr;
 
-#[cfg(feature="std")]
 construct_uint!(U128, 2);
 construct_uint!(U256, 4);
 construct_uint!(U512, 8);
