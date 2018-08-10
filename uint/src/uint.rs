@@ -1183,6 +1183,39 @@ macro_rules! construct_uint {
 			}
 		}
 
+		impl_std_for_uint!($name, $n_words);
+		impl_heapsize_for_uint!($name);
+		// `$n_words * 8` because macro expects bytes and
+		// uints use 64 bit (8 byte) words
+		impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
+	);
+}
+
+#[cfg(feature="std")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_std_for_uint_internals {
+	($name: ident, $n_words: tt) => {
+		/// Convert to hex string.
+		#[deprecated(note = "Use LowerHex instead.")]
+		pub fn to_hex(&self) -> String {
+			format!("{:x}", self)
+		}
+	}
+}
+
+#[cfg(not(feature="std"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_std_for_uint_internals {
+	($name: ident, $n_words: tt) => {}
+}
+
+#[cfg(feature="std")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_std_for_uint {
+	($name: ident, $n_words: tt) => {
 		impl ::core::fmt::Debug for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				::core::fmt::Display::fmt(self, f)
@@ -1264,33 +1297,16 @@ macro_rules! construct_uint {
 				s.parse().unwrap()
 			}
 		}
-
-		impl_heapsize_for_uint!($name);
-		// `$n_words * 8` because macro expects bytes and
-		// uints use 64 bit (8 byte) words
-		impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
-	);
-}
-
-#[cfg(feature="std")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_std_for_uint_internals {
-	($name: ident, $n_words: tt) => {
-		/// Convert to hex string.
-		#[deprecated(note = "Use LowerHex instead.")]
-		pub fn to_hex(&self) -> String {
-			format!("{:x}", self)
-		}
 	}
 }
 
 #[cfg(not(feature="std"))]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_std_for_uint_internals {
+macro_rules! impl_std_for_uint {
 	($name: ident, $n_words: tt) => {}
 }
+
 
 #[cfg(feature="heapsizeof")]
 #[macro_export]
