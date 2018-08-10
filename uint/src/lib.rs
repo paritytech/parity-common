@@ -30,7 +30,6 @@ pub extern crate rustc_hex;
 pub extern crate quickcheck;
 
 #[cfg(all(not(feature = "std"), test))]
-#[macro_use]
 extern crate alloc;
 
 mod uint;

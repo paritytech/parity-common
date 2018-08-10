@@ -8,8 +8,8 @@ extern crate crunchy;
 #[macro_use]
 extern crate quickcheck;
 
-use std::u64::MAX;
-use std::str::FromStr;
+use core::u64::MAX;
+use core::str::FromStr;
 use uint::FromDecStrErr;
 
 construct_uint!(U128, 2);
