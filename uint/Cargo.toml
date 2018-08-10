@@ -10,7 +10,8 @@ authors = ["Parity Technologies <admin@parity.io>"]
 [dependencies]
 byteorder = { version = "1", default-features = false }
 heapsize = { version = "0.4.2", optional = true }
-rustc-hex = { version = "1.0", optional = true }
+# rustc-hex = { version = "2.0", optional = true }
+rustc-hex = "2.0"
 quickcheck = { version = "0.6", optional = true }
 
 [dev-dependencies]
@@ -18,7 +19,7 @@ crunchy = "0.1.5"
 quickcheck = "0.6"
 
 [features]
-std = ["rustc-hex", "byteorder/std"]
+std = ["byteorder/std"]
 heapsizeof = ["heapsize"]
 impl_quickcheck_arbitrary = ["quickcheck"]
 

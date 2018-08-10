@@ -350,6 +350,7 @@ macro_rules! construct_uint {
 		/// Little-endian large integer type
 		#[repr(C)]
 		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+		// TODO: serialize stuff? #[cfg_attr(feature="serialize", derive(Serialize, Deserialize))]
 		pub struct $name(pub [u64; $n_words]);
 
 		impl AsRef<$name> for $name {
@@ -365,6 +366,7 @@ macro_rules! construct_uint {
 		}
 
 		impl $name {
+			pub const MAX: $name = $name([u64::max_value(); $n_words]);
 			/// Convert from a decimal string.
 			pub fn from_dec_str(value: &str) -> Result<Self, $crate::FromDecStrErr> {
 				if !value.bytes().all(|b| b >= 48 && b <= 57) {
@@ -1181,35 +1183,9 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl_std_for_uint!($name, $n_words);
-		impl_heapsize_for_uint!($name);
-		// `$n_words * 8` because macro expects bytes and
-		// uints use 64 bit (8 byte) words
-		impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
-	);
-}
-
-#[cfg(feature="std")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_std_for_uint_internals {
-	($name: ident, $n_words: tt) => {
-		/// Convert to hex string.
-		#[deprecated(note = "Use LowerHex instead.")]
-		pub fn to_hex(&self) -> String {
-			format!("{:x}", self)
-		}
-	}
-}
-
-#[cfg(feature="std")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_std_for_uint {
-	($name: ident, $n_words: tt) => {
 		impl ::core::fmt::Debug for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-				write!(f, "{:#x}", self)
+				::core::fmt::Display::fmt(self, f)
 			}
 		}
 
@@ -1219,16 +1195,24 @@ macro_rules! impl_std_for_uint {
 					return write!(f, "0");
 				}
 
-				let mut s = String::new();
+				let mut buf = [0_u8; $n_words*20];
+				let mut i = buf.len() - 1;
 				let mut current = *self;
 				let ten = $name::from(10);
 
-				while !current.is_zero() {
-					s = format!("{}{}", (current % ten).low_u32(), s);
+				loop {
+					let digit = (current % ten).low_u64() as u8;
+					buf[i] = digit + b'0';
 					current = current / ten;
+					if current.is_zero() {
+						break;
+					}
+					i -= 1;
 				}
 
-				write!(f, "{}", s)
+				// sequence of `'0'..'9'` chars is guaranteed to be a valid UTF8 string
+				let s = unsafe {::core::str::from_utf8_unchecked(&buf[i..])};
+				f.write_str(s)
 			}
 		}
 
@@ -1237,10 +1221,9 @@ macro_rules! impl_std_for_uint {
 
 			fn from_str(value: &str) -> Result<$name, Self::Err> {
 				use $crate::rustc_hex::FromHex;
-
 				let bytes: Vec<u8> = match value.len() % 2 == 0 {
-					true => try!(value.from_hex()),
-					false => try!(("0".to_owned() + value).from_hex())
+					true => value.from_hex()?,
+					false => ("0".to_owned() + value).from_hex()?
 				};
 
 				let bytes_ref: &[u8] = &bytes;
@@ -1281,14 +1264,25 @@ macro_rules! impl_std_for_uint {
 				s.parse().unwrap()
 			}
 		}
-	}
+
+		impl_heapsize_for_uint!($name);
+		// `$n_words * 8` because macro expects bytes and
+		// uints use 64 bit (8 byte) words
+		impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
+	);
 }
 
-#[cfg(not(feature="std"))]
+#[cfg(feature="std")]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_std_for_uint {
-	($name: ident, $n_words: tt) => {}
+macro_rules! impl_std_for_uint_internals {
+	($name: ident, $n_words: tt) => {
+		/// Convert to hex string.
+		#[deprecated(note = "Use LowerHex instead.")]
+		pub fn to_hex(&self) -> String {
+			format!("{:x}", self)
+		}
+	}
 }
 
 #[cfg(not(feature="std"))]
