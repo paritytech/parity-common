@@ -9,5 +9,6 @@ script:
   - cargo build
   - cargo test --all --exclude uint
   - cd uint/ && cargo test --features=std,impl_quickcheck_arbitrary && cd ..
+  - cd uint/ && cargo test --no-default-features && cd ..
   - cd hashdb/ && cargo test --no-default-features && cd ..
   - cd plain_hasher/ && cargo test --no-default-features && cd ..
