@@ -806,6 +806,13 @@ macro_rules! construct_uint {
 			}
 		}
 
+		impl From<$name> for [u8; $n_words * 8] {
+			fn from(number: $name) -> Self {
+				let mut arr = [0u8; $n_words * 8];
+				number.to_big_endian(&mut arr);
+				arr
+			}
+		}
 		impl Default for $name {
 			fn default() -> Self {
 				$name::zero()
@@ -1370,11 +1377,3 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 
 construct_uint!(U256, 4);
 construct_uint!(U512, 8);
-
-impl From<U256> for [u8; 32] {
-	fn from(number: U256) -> Self {
-		let mut arr = [0u8; 32];
-		number.to_big_endian(&mut arr);
-		arr
-	}
-}

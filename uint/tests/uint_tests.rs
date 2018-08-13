@@ -1001,6 +1001,18 @@ fn from_big_endian() {
 }
 
 #[test]
+fn from_fixed_array() {
+	let expected: [u8; 32] = [
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 1,
+	];
+	let ary : [u8; 32] = U256::from(1).into();
+	assert_eq!(ary, expected);
+}
+
+#[test]
 fn leading_zeros() {
 	assert_eq!(U256::from("000000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1").leading_zeros(), 95);
 	assert_eq!(U256::from("f00000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1").leading_zeros(), 0);
