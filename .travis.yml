@@ -1,7 +1,13 @@
 language: rust
 rust:
+  - stable
   - nightly
 matrix:
-  - rust: nightly
+  allow_failures:
+    - rust: nightly
 script:
-  - cd uint/ && travis_wait 400 cargo test --features=std,impl_quickcheck_arbitrary && cd ..
+  - cargo build
+  - cargo test --all --exclude uint
+  - cd uint/ && cargo test --features=std,impl_quickcheck_arbitrary && cd ..
+  - cd hashdb/ && cargo test --no-default-features && cd ..
+  - cd plain_hasher/ && cargo test --no-default-features && cd ..
