@@ -4,4 +4,4 @@ rust:
 matrix:
   - rust: nightly
 script:
-  - cd uint/ && travis_wait cargo test --features=std,impl_quickcheck_arbitrary && cd ..
+  - cd uint/ && travis_wait 40 cargo test --features=std,impl_quickcheck_arbitrary && cd ..
