@@ -10,11 +10,9 @@ extern crate quickcheck;
 
 use core::u64::MAX;
 use core::str::FromStr;
-use uint::FromDecStrErr;
+use uint::{U256, U512, FromDecStrErr};
 
 construct_uint!(U128, 2);
-construct_uint!(U256, 4);
-construct_uint!(U512, 8);
 
 #[test]
 fn uint256_checked_ops() {

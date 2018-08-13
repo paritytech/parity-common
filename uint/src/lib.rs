@@ -32,5 +32,8 @@ pub extern crate quickcheck;
 #[cfg(all(not(feature = "std"), test))]
 extern crate alloc;
 
+#[macro_use]
+extern crate crunchy;
+
 mod uint;
 pub use uint::*;

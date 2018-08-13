@@ -1367,3 +1367,6 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 macro_rules! impl_quickcheck_arbitrary_for_uint {
 	($uint: ty, $n_bytes: tt) => {}
 }
+
+construct_uint!(U256, 4);
+construct_uint!(U512, 8);
