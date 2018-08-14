@@ -20,20 +20,13 @@ extern crate test;
 extern crate crunchy;
 #[macro_use]
 extern crate uint;
+
+use uint::{U256, U512};
+// NOTE: constructing the type inside the benchmark crate is much faster so the
+// numbers for `U128` are better than they'd normally be.
 construct_uint!(U128, 2);
-construct_uint!(U256, 4);
-construct_uint!(U512, 8);
 
 use test::{Bencher, black_box};
-
-impl U256 {
-	/// Multiplies two 256-bit integers to produce full 512-bit integer
-	/// No overflow possible
-	#[inline(always)]
-	pub fn full_mul(self, other: U256) -> U512 {
-		U512(uint_full_mul_reg!(U256, 4, self, other))
-	}
-}
 
 #[bench]
 fn u256_add(b: &mut Bencher) {
