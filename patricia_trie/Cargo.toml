@@ -16,10 +16,10 @@ parity-bytes = { version = "0.1", path = "../parity-bytes" }
 env_logger = "0.5"
 ethereum-types = "0.3"
 keccak-hash = { version = "0.1", path = "../keccak-hash" }
-memorydb = { path = "../memorydb", default-features = false }
-rlp = { path = "../rlp", default-features = false }
-trie-standardmap = { path = "../trie-standardmap", default-features = false }
-triehash = { path = "../triehash", default-features = false }
+memorydb = { version = "0.2", path = "../memorydb", default-features = false }
+rlp = { version = "0.2", path = "../rlp", default-features = false }
+trie-standardmap = { version = "0.1", path = "../trie-standardmap", default-features = false }
+triehash = { version = "0.2", path = "../triehash", default-features = false }
 
 # REVIEW: what's a better way to deal with this? The tests here in
 # `patricia_trie` use `keccak-hasher` and `patricia-trie-ethereum` to

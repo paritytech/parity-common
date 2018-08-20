@@ -8,8 +8,8 @@ license = "GPL-3.0"
 
 [dependencies]
 elastic-array = "0.10"
-hashdb = { path = "../hashdb", default-features = false }
-rlp = { path = "../rlp", default-features = false }
+hashdb = { version = "0.2", path = "../hashdb", default-features = false }
+rlp = { version = "0.2", path = "../rlp", default-features = false }
 
 [dev-dependencies]
 trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
