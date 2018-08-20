@@ -16,15 +16,9 @@
 
 extern crate core;
 extern crate test;
-#[macro_use]
-extern crate crunchy;
-#[macro_use]
 extern crate uint;
 
 use uint::{U256, U512};
-// NOTE: constructing the type inside the benchmark crate is much faster so the
-// numbers for `U128` are better than they'd normally be.
-construct_uint!(U128, 2);
 
 use test::{Bencher, black_box};
 
@@ -127,11 +121,13 @@ fn u256_full_mul(b: &mut Bencher) {
 
 
 #[bench]
+// NOTE: uses native `u128` and does not measure this crates performance,
+// but might be interesting as a comparison.
 fn u128_mul(b: &mut Bencher) {
     b.iter(|| {
         let n = black_box(10000);
-        (1..n).fold(U128([12345u64, 0u64]), |old, new| {
-            old.overflowing_mul(U128::from(new | 1)).0
+        (1..n).fold(12345u128, |old, new| {
+            old.overflowing_mul(u128::from(new | 1u32)).0
         })
     });
 }
