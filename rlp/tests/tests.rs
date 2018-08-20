@@ -7,12 +7,12 @@
 // except according to those terms.
 
 #[cfg(feature = "ethereum")]
-extern crate ethereum_types as bigint;
+extern crate ethereum_types;
 extern crate rlp;
 
 use std::{fmt, cmp};
 #[cfg(feature = "ethereum")]
-use bigint::{U256, H160};
+use ethereum_types::{U256, H160};
 use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
 
 #[test]

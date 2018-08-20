@@ -10,7 +10,7 @@ authors = ["Parity Technologies <admin@parity.io>"]
 byteorder = "1.0"
 elastic-array = "0.10"
 ethereum-types = { version = "0.3", optional = true }
-rustc-hex = "2.0"
+rustc-hex = {version = "2.0", default-features = false }
 
 [dev-dependencies]
 hex-literal = "0.1"

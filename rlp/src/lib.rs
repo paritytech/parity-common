@@ -34,7 +34,7 @@
 
 extern crate byteorder;
 #[cfg(feature = "ethereum")]
-extern crate ethereum_types as bigint;
+extern crate ethereum_types;
 extern crate elastic_array;
 extern crate rustc_hex;
 #[cfg(test)]
