@@ -6,11 +6,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate ethereum_types as bigint;
+#[cfg(feature = "ethereum")]
+extern crate ethereum_types;
 extern crate rlp;
 
 use std::{fmt, cmp};
-use bigint::{U256, H160};
+#[cfg(feature = "ethereum")]
+use ethereum_types::{U256, H160};
 use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
 
 #[test]
@@ -130,6 +132,7 @@ fn encode_u64() {
 	run_encode_tests(tests);
 }
 
+#[cfg(feature = "ethereum")]
 #[test]
 fn encode_u256() {
 	let tests = vec![ETestPair(U256::from(0u64), vec![0x80u8]),
@@ -162,6 +165,7 @@ fn encode_str() {
 	run_encode_tests(tests);
 }
 
+#[cfg(feature = "ethereum")]
 #[test]
 fn encode_address() {
 	let tests = vec![
@@ -272,6 +276,7 @@ fn decode_untrusted_u64() {
 	run_decode_tests(tests);
 }
 
+#[cfg(feature = "ethereum")]
 #[test]
 fn decode_untrusted_u256() {
 	let tests = vec![DTestPair(U256::from(0u64), vec![0x80u8]),
@@ -306,6 +311,7 @@ fn decode_untrusted_str() {
 	run_decode_tests(tests);
 }
 
+#[cfg(feature = "ethereum")]
 #[test]
 fn decode_untrusted_address() {
 	let tests = vec![
