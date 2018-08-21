@@ -75,14 +75,14 @@ impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
     fn empty_node() -> ElasticArray1024<u8> {
         let mut stream = RlpStream::new();
         stream.append_empty_data();
-        stream.drain()
+        ElasticArray1024::from_vec(stream.drain())
     }
 
     fn leaf_node(partial: &[u8], value: &[u8]) -> ElasticArray1024<u8> {
         let mut stream = RlpStream::new_list(2);
         stream.append(&partial);
         stream.append(&value);
-		stream.drain()
+        ElasticArray1024::from_vec(stream.drain())
     }
 
 	fn ext_node(partial: &[u8], child_ref: ChildReference<<KeccakHasher as Hasher>::Out>) -> ElasticArray1024<u8> {
@@ -95,7 +95,7 @@ impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
                 stream.append_raw(bytes, 1)
             },
         };
-        stream.drain()
+        ElasticArray1024::from_vec(stream.drain())
 	}
 
 	fn branch_node<I>(children: I, value: Option<ElasticArray128<u8>>) -> ElasticArray1024<u8>
@@ -119,6 +119,6 @@ impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
         } else {
             stream.append_empty_data();
         }
-        stream.drain()
+        ElasticArray1024::from_vec(stream.drain())
     }
 }
