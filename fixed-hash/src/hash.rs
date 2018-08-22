@@ -367,7 +367,7 @@ macro_rules! impl_std_for_hash {
 
 			fn from_str(s: &str) -> Result<$from, $crate::rustc_hex::FromHexError> {
 				use $crate::rustc_hex::FromHex;
-				let a : Vec<u8>= s.from_hex()?;
+				let a : Vec<u8> = s.from_hex()?;
 				if a.len() != $size {
 					return Err($crate::rustc_hex::FromHexError::InvalidHexLength);
 				}
