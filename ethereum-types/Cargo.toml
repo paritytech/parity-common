@@ -10,9 +10,9 @@ description = "Ethereum types"
 crunchy = "0.1"
 ethbloom = { path = "../ethbloom", version = "0.5.0", default-features = false }
 ethereum-types-serialize = { version = "0.2.1", path = "../serialize", optional = true }
-fixed-hash = { git = "https://github.com/paritytech/parity-common", default_features = false }
+fixed-hash = { version = "0.2", default_features = false }
 serde = { version = "1.0", optional = true }
-uint = { git = "https://github.com/paritytech/parity-common", default_features = false }
+uint = { version = "0.4", default_features = false }
 
 [dev-dependencies]
 serde_json = "1.0"
