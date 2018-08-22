@@ -1,17 +1,13 @@
 [package]
 name = "ethereum-types"
-version = "0.3.3"
+version = "0.4.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 homepage = "https://github.com/paritytech/primitives"
 description = "Ethereum types"
-build = "build.rs"
-
-[build-dependencies]
-rustc_version = "0.2"
 
 [dependencies]
-crunchy = "0.1.5"
+crunchy = "0.1"
 ethbloom = { path = "../ethbloom", version = "0.5.0", default-features = false }
 ethereum-types-serialize = { version = "0.2.1", path = "../serialize", optional = true }
 fixed-hash = { git = "https://github.com/paritytech/parity-common", default_features = false }
@@ -26,5 +22,3 @@ default = ["std", "heapsizeof", "serialize"]
 std = ["uint/std", "fixed-hash/std", "ethbloom/std"]
 heapsizeof = ["uint/heapsizeof", "fixed-hash/heapsizeof", "ethbloom/heapsizeof"]
 serialize = ["std", "ethereum-types-serialize", "serde", "ethbloom/serialize"]
-use_asm = ["uint/use_asm"]
-impl_quickcheck_arbitrary = ["uint/impl_quickcheck_arbitrary", "fixed-hash/impl_quickcheck_arbitrary"]
