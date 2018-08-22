@@ -816,14 +816,10 @@ macro_rules! construct_uint {
 
 		impl From<[u8; $n_words * 8]> for $name {
 			fn from(bytes: [u8; $n_words * 8]) -> Self {
-				let bytes : [u64; $n_words] = unsafe { ::core::mem::transmute(bytes) };
+				let mut bytes = bytes;
+				bytes[..].reverse();
+				let bytes : [u64; $n_words] = unsafe { ::core::mem::transmute(bytes)};
 				$name(bytes)
-			}
-		}
-
-		impl<'a> From<&'a [u8; $n_words * 8]> for $name {
-			fn from(bytes: &[u8; $n_words * 8]) -> Self {
-				bytes[..].into()
 			}
 		}
 

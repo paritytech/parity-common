@@ -1017,14 +1017,14 @@ fn test_u256_from_fixed_array() {
 	let ary = [
 		0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 123
+		0, 0, 0, 0, 0, 0, 0, 1,
+		0, 0, 0, 0, 0, 0, 0, 123,
 	];
 	let num : U256 = ary.into();
-	assert_eq!( num, U256::from(123) );
+	assert_eq!( num, U256::from(std::u64::MAX) + 1 + 123);
 
 	let a_ref : &U256 = &ary.into();
-	assert_eq!( a_ref, &U256::from(123) );
+	assert_eq!( a_ref, &(U256::from(std::u64::MAX) + 1 + 123));
 }
 
 #[test]
