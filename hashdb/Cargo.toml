@@ -6,8 +6,7 @@ description = "trait for hash-keyed databases."
 license = "GPL-3.0"
 
 [dependencies]
-elastic-array = { version = "0.10", optional = true }
 
 [features]
 default = ["std"]
-std = ["elastic-array"]
+std = []
