@@ -12,8 +12,6 @@ use core::u64::MAX;
 use core::str::FromStr;
 use uint::{U256, U512, FromDecStrErr};
 
-construct_uint!(U128, 2);
-
 #[test]
 fn uint256_checked_ops() {
 	let z = U256::from(0);
@@ -361,14 +359,6 @@ fn should_format_and_debug_correctly() {
 }
 
 #[test]
-pub fn display_u128() {
-	let expected = "340282366920938463463374607431768211455";
-	let value = U128::MAX;
-	assert_eq!(format!("{}", value), expected);
-	assert_eq!(format!("{:?}", value), expected);
-}
-
-#[test]
 pub fn display_u256() {
 	let expected = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
 	let value = U256::MAX;
@@ -417,42 +407,6 @@ fn uint256_overflowing_mul() {
 		),
 		(U256::zero(), true)
 	);
-}
-
-#[test]
-fn uint128_add() {
-	assert_eq!(
-		U128::from_str("fffffffffffffffff").unwrap() + U128::from_str("fffffffffffffffff").unwrap(),
-		U128::from_str("1ffffffffffffffffe").unwrap()
-	);
-}
-
-#[test]
-fn uint128_add_overflow() {
-	assert_eq!(
-		U128::from_str("ffffffffffffffffffffffffffffffff").unwrap()
-		.overflowing_add(
-			U128::from_str("ffffffffffffffffffffffffffffffff").unwrap()
-		),
-		(U128::from_str("fffffffffffffffffffffffffffffffe").unwrap(), true)
-	);
-}
-
-#[test]
-#[should_panic]
-#[cfg(debug_assertions)]
-#[allow(unused_must_use)]
-fn uint128_add_overflow_panic() {
-	U128::from_str("ffffffffffffffffffffffffffffffff").unwrap()
-	+
-	U128::from_str("ffffffffffffffffffffffffffffffff").unwrap();
-}
-
-#[test]
-fn uint128_mul() {
-	assert_eq!(
-		U128::from_str("fffffffff").unwrap() * U128::from_str("fffffffff").unwrap(),
-		U128::from_str("ffffffffe000000001").unwrap());
 }
 
 #[test]
@@ -1243,13 +1197,11 @@ pub mod laws {
 	}
 
 	construct_uint!(U64, 1);
-	construct_uint!(U128, 2);
 	construct_uint!(U256, 4);
 	construct_uint!(U512, 8);
 	construct_uint!(U1024, 16);
 
 	uint_laws!(u64, U64);
-	uint_laws!(u128, U128);
 	uint_laws!(u256, U256);
 	uint_laws!(u512, U512);
 	uint_laws!(u1024, U1024);
