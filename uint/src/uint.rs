@@ -1006,9 +1006,7 @@ macro_rules! construct_uint {
 
 		impl<T> ::core::ops::DivAssign<T> for $name where T: Into<$name> {
 			fn div_assign(&mut self, other: T) {
-				let (result, overflow) = self.overflowing_div(other.into());
-				panic_on_overflow!(overflow);
-				*self = result
+				*self = *self / other.into();
 			}
 		}
 
