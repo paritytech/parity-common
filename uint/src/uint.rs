@@ -823,6 +823,12 @@ macro_rules! construct_uint {
 			}
 		}
 
+		impl<'a> From<&'a [u8; $n_words * 8]> for $name {
+			fn from(bytes: &[u8; $n_words * 8]) -> Self {
+				bytes[..].into()
+			}
+		}
+
 		impl Default for $name {
 			fn default() -> Self {
 				$name::zero()
