@@ -20,13 +20,13 @@ use hashdb::{HashDB, Hasher};
 use nibbleslice::NibbleSlice;
 use node::Node;
 use node_codec::NodeCodec;
-use super::{Result, TrieError, Query};
+use super::{DBValue, Result, TrieError, Query};
 use std::marker::PhantomData;
 
 /// Trie lookup helper object.
 pub struct Lookup<'a, H: Hasher + 'a, C: NodeCodec<H>, Q: Query<H>> {
 	/// database to query from.
-	pub db: &'a HashDB<H>,
+	pub db: &'a HashDB<H, DBValue>,
 	/// Query object to record nodes and transform data.
 	pub query: Q,
 	/// Hash to start at

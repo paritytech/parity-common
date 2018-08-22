@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use hashdb::{HashDB, DBValue, Hasher};
-use super::{Result, TrieDBMut, TrieMut};
+use hashdb::{HashDB, Hasher};
+use super::{Result, DBValue, TrieDBMut, TrieMut};
 use node_codec::NodeCodec;
 
 /// A mutable `Trie` implementation which hashes keys and uses a generic `HashDB` backing database.
@@ -23,46 +23,46 @@ use node_codec::NodeCodec;
 ///
 /// Use it as a `Trie` or `TrieMut` trait object.
 pub struct FatDBMut<'db, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H>
 {
 	raw: TrieDBMut<'db, H, C>,
 }
 
 impl<'db, H, C> FatDBMut<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	/// Create a new trie with the backing database `db` and empty `root`
 	/// Initialise to the state entailed by the genesis block.
 	/// This guarantees the trie is built correctly.
-	pub fn new(db: &'db mut HashDB<H>, root: &'db mut H::Out) -> Self {
+	pub fn new(db: &'db mut HashDB<H, DBValue>, root: &'db mut H::Out) -> Self {
 		FatDBMut { raw: TrieDBMut::new(db, root) }
 	}
 
 	/// Create a new trie with the backing database `db` and `root`.
 	///
 	/// Returns an error if root does not exist.
-	pub fn from_existing(db: &'db mut HashDB<H>, root: &'db mut H::Out) -> Result<Self, H::Out, C::Error> {
+	pub fn from_existing(db: &'db mut HashDB<H, DBValue>, root: &'db mut H::Out) -> Result<Self, H::Out, C::Error> {
 		Ok(FatDBMut { raw: TrieDBMut::from_existing(db, root)? })
 	}
 
 	/// Get the backing database.
-	pub fn db(&self) -> &HashDB<H> {
+	pub fn db(&self) -> &HashDB<H, DBValue> {
 		self.raw.db()
 	}
 
 	/// Get the backing database.
-	pub fn db_mut(&mut self) -> &mut HashDB<H> {
+	pub fn db_mut(&mut self) -> &mut HashDB<H, DBValue> {
 		self.raw.db_mut()
 	}
 }
 
 impl<'db, H, C> TrieMut<H, C> for FatDBMut<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn root(&mut self) -> &H::Out { self.raw.root() }
@@ -108,7 +108,7 @@ where
 
 #[cfg(test)]
 mod test {
-	use hashdb::DBValue;
+	use DBValue;
 	use memorydb::MemoryDB;
 	use ethtrie::trie::{Trie, TrieMut};
 	use ethtrie::{TrieDB, FatDBMut};
@@ -118,14 +118,14 @@ mod test {
 
 	#[test]
 	fn fatdbmut_to_trie() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		{
 			let mut t = FatDBMut::new(&mut memdb, &mut root);
 			t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
 		}
 		let t = TrieDB::new(&memdb, &root).unwrap();
-		assert_eq!(t.get(&keccak::keccak(&[0x01u8, 0x23])).unwrap().unwrap(), DBValue::from_slice(&[0x01u8, 0x23]));
+		assert_eq!(t.get(&keccak::keccak(&[0x01u8, 0x23])), Ok(Some(DBValue::from_slice(&[0x01u8, 0x23]))));
 	}
 
 	#[test]
@@ -143,5 +143,4 @@ mod test {
 		t.remove(&key).unwrap();
 		assert_eq!(t.db().get(&aux_hash), None);
 	}
-
 }

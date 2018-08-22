@@ -20,10 +20,10 @@ use super::{Result, TrieError, TrieMut};
 use super::lookup::Lookup;
 use super::node::Node as EncodedNode;
 use node_codec::NodeCodec;
-use super::node::NodeKey;
+use super::{DBValue, node::NodeKey};
 
 use bytes::ToPretty;
-use hashdb::{HashDB, Hasher, DBValue};
+use hashdb::{HashDB, Hasher};
 use nibbleslice::NibbleSlice;
 
 use std::collections::{HashSet, VecDeque};
@@ -79,7 +79,7 @@ enum Node<H> {
 
 impl<O> Node<O> where O: AsRef<[u8]> + AsMut<[u8]> + Default + Debug + PartialEq + Eq + Hash + Send + Sync + Clone + Copy {
 	// load an inline node into memory or get the hash to do the lookup later.
-	fn inline_or_hash<C, H>(node: &[u8], db: &HashDB<H>, storage: &mut NodeStorage<H::Out>) -> NodeHandle<H::Out>
+	fn inline_or_hash<C, H>(node: &[u8], db: &HashDB<H, DBValue>, storage: &mut NodeStorage<H::Out>) -> NodeHandle<H::Out>
 	where C: NodeCodec<H>,
 		  H: Hasher<Out = O>,
 	{
@@ -92,7 +92,7 @@ impl<O> Node<O> where O: AsRef<[u8]> + AsMut<[u8]> + Default + Debug + PartialEq
 	}
 
 	// decode a node from encoded bytes without getting its children.
-	fn from_encoded<C, H>(data: &[u8], db: &HashDB<H>, storage: &mut NodeStorage<H::Out>) -> Self
+	fn from_encoded<C, H>(data: &[u8], db: &HashDB<H, DBValue>, storage: &mut NodeStorage<H::Out>) -> Self
 	where C: NodeCodec<H>,
 		  H: Hasher<Out = O>,
 	{
@@ -264,13 +264,13 @@ impl<'a, H> Index<&'a StorageHandle> for NodeStorage<H> {
 ///
 /// use keccak_hash::KECCAK_NULL_RLP;
 /// use ethtrie::{TrieDBMut, trie::TrieMut};
-/// use hashdb::DBValue;
+/// use trie::DBValue;
 /// use keccak_hasher::KeccakHasher;
 /// use memorydb::*;
 /// use ethereum_types::H256;
 ///
 /// fn main() {
-///   let mut memdb = MemoryDB::<KeccakHasher>::new();
+///   let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 ///   let mut root = H256::new();
 ///   let mut t = TrieDBMut::new(&mut memdb, &mut root);
 ///   assert!(t.is_empty());
@@ -288,7 +288,7 @@ where
 	C: NodeCodec<H>
 {
 	storage: NodeStorage<H::Out>,
-	db: &'a mut HashDB<H>,
+	db: &'a mut HashDB<H, DBValue>,
 	root: &'a mut H::Out,
 	root_handle: NodeHandle<H::Out>,
 	death_row: HashSet<H::Out>,
@@ -304,7 +304,7 @@ where
 	C: NodeCodec<H>
 {
 	/// Create a new trie with backing database `db` and empty `root`.
-	pub fn new(db: &'a mut HashDB<H>, root: &'a mut H::Out) -> Self {
+	pub fn new(db: &'a mut HashDB<H, DBValue>, root: &'a mut H::Out) -> Self {
 		*root = C::HASHED_NULL_NODE;
 		let root_handle = NodeHandle::Hash(C::HASHED_NULL_NODE);
 
@@ -321,7 +321,7 @@ where
 
 	/// Create a new trie with the backing database `db` and `root.
 	/// Returns an error if `root` does not exist.
-	pub fn from_existing(db: &'a mut HashDB<H>, root: &'a mut H::Out) -> Result<Self, H::Out, C::Error> {
+	pub fn from_existing(db: &'a mut HashDB<H, DBValue>, root: &'a mut H::Out) -> Result<Self, H::Out, C::Error> {
 		if !db.contains(root) {
 			return Err(Box::new(TrieError::InvalidStateRoot(*root)));
 		}
@@ -338,12 +338,12 @@ where
 		})
 	}
 	/// Get the backing database.
-	pub fn db(&self) -> &HashDB<H> {
+	pub fn db(&self) -> &HashDB<H, DBValue> {
 		self.db
 	}
 
 	/// Get the backing database mutably.
-	pub fn db_mut(&mut self) -> &mut HashDB<H> {
+	pub fn db_mut(&mut self) -> &mut HashDB<H, DBValue> {
 		self.db
 	}
 
@@ -965,7 +965,7 @@ where
 #[cfg(test)]
 mod tests {
 	use bytes::ToPretty;
-	use hashdb::{DBValue, Hasher, HashDB};
+	use hashdb::{Hasher, HashDB};
 	use keccak_hasher::KeccakHasher;
 	use memorydb::MemoryDB;
 	use rlp::{Decodable, Encodable};
@@ -974,8 +974,9 @@ mod tests {
 	use ethtrie::{TrieDBMut, RlpCodec, trie::{TrieMut, NodeCodec}};
 	use env_logger;
 	use ethereum_types::H256;
+    use DBValue;
 
-	fn populate_trie<'db, H, C>(db: &'db mut HashDB<KeccakHasher>, root: &'db mut H256, v: &[(Vec<u8>, Vec<u8>)]) -> TrieDBMut<'db>
+	fn populate_trie<'db, H, C>(db: &'db mut HashDB<KeccakHasher, DBValue>, root: &'db mut H256, v: &[(Vec<u8>, Vec<u8>)]) -> TrieDBMut<'db>
 		where H: Hasher, H::Out: Decodable + Encodable, C: NodeCodec<H>
 	{
 		let mut t = TrieDBMut::new(db, root);
@@ -1011,7 +1012,7 @@ mod tests {
 			}.make_with(&mut seed);
 
 			let real = trie_root::<KeccakHasher, _, _, _>(x.clone());
-			let mut memdb = MemoryDB::<KeccakHasher>::new();
+			let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 			let mut root = H256::new();
 			let mut memtrie = populate_trie::<_, RlpCodec>(&mut memdb, &mut root, &x);
 
@@ -1041,7 +1042,7 @@ mod tests {
 
 	#[test]
 	fn init() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		assert_eq!(*t.root(), RlpCodec::HASHED_NULL_NODE);
@@ -1049,7 +1050,7 @@ mod tests {
 
 	#[test]
 	fn insert_on_empty() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
@@ -1060,12 +1061,12 @@ mod tests {
 	fn remove_to_empty() {
 		let big_value = b"00000000000000000000000000000000";
 
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t1 = TrieDBMut::new(&mut memdb, &mut root);
 		t1.insert(&[0x01, 0x23], big_value).unwrap();
 		t1.insert(&[0x01, 0x34], big_value).unwrap();
-		let mut memdb2 = MemoryDB::<KeccakHasher>::new();
+		let mut memdb2 = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root2 = H256::new();
 		let mut t2 = TrieDBMut::new(&mut memdb2, &mut root2);
 
@@ -1077,7 +1078,7 @@ mod tests {
 
 	#[test]
 	fn insert_replace_root() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
@@ -1087,7 +1088,7 @@ mod tests {
 
 	#[test]
 	fn insert_make_branch_root() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
@@ -1100,7 +1101,7 @@ mod tests {
 
 	#[test]
 	fn insert_into_branch_root() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
@@ -1115,7 +1116,7 @@ mod tests {
 
 	#[test]
 	fn insert_value_into_branch_root() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
@@ -1128,7 +1129,7 @@ mod tests {
 
 	#[test]
 	fn insert_split_leaf() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
@@ -1141,7 +1142,7 @@ mod tests {
 
 	#[test]
 	fn insert_split_extenstion() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01, 0x23, 0x45], &[0x01]).unwrap();
@@ -1159,7 +1160,7 @@ mod tests {
 		let big_value0 = b"00000000000000000000000000000000";
 		let big_value1 = b"11111111111111111111111111111111";
 
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], big_value0).unwrap();
@@ -1174,7 +1175,7 @@ mod tests {
 	fn insert_duplicate_value() {
 		let big_value = b"00000000000000000000000000000000";
 
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], big_value).unwrap();
@@ -1187,7 +1188,7 @@ mod tests {
 
 	#[test]
 	fn test_at_empty() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let t = TrieDBMut::new(&mut memdb, &mut root);
 		assert_eq!(t.get(&[0x5]).unwrap(), None);
@@ -1195,7 +1196,7 @@ mod tests {
 
 	#[test]
 	fn test_at_one() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
@@ -1206,7 +1207,7 @@ mod tests {
 
 	#[test]
 	fn test_at_three() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
@@ -1236,12 +1237,12 @@ mod tests {
 			}.make_with(&mut seed);
 
 			let real = trie_root::<KeccakHasher, _, _, _>(x.clone());
-			let mut memdb = MemoryDB::<KeccakHasher>::new();
+			let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 			let mut root = H256::new();
 			let mut memtrie = populate_trie::<_, RlpCodec>(&mut memdb, &mut root, &x);
 			let mut y = x.clone();
 			y.sort_by(|ref a, ref b| a.0.cmp(&b.0));
-			let mut memdb2 = MemoryDB::<KeccakHasher>::new();
+			let mut memdb2 = MemoryDB::<KeccakHasher, DBValue>::new();
 			let mut root2 = H256::new();
 			let mut memtrie_sorted = populate_trie::<_, RlpCodec>(&mut memdb2, &mut root2, &y);
 			if *memtrie.root() != real || *memtrie_sorted.root() != real {
@@ -1263,7 +1264,7 @@ mod tests {
 
 	#[test]
 	fn test_trie_existing() {
-		let mut db = MemoryDB::<KeccakHasher>::new();
+		let mut db = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		{
 			let mut t = TrieDBMut::new(&mut db, &mut root);
@@ -1286,7 +1287,7 @@ mod tests {
 				count: 4,
 		}.make_with(&mut seed);
 
-		let mut db = MemoryDB::<KeccakHasher>::new();
+		let mut db = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut db, &mut root);
 		for &(ref key, ref value) in &x {
@@ -1314,7 +1315,7 @@ mod tests {
 				count: 4,
 		}.make_with(&mut seed);
 
-		let mut db = MemoryDB::<KeccakHasher>::new();
+		let mut db = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut db, &mut root);
 		for &(ref key, ref value) in &x {

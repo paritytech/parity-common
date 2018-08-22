@@ -42,7 +42,7 @@ extern crate keccak_hasher;
 extern crate triehash;
 
 use std::{fmt, error};
-use hashdb::{HashDB, DBValue, Hasher};
+use hashdb::{HashDB, Hasher};
 use std::marker::PhantomData;
 
 pub mod node;
@@ -69,6 +69,8 @@ pub use self::recorder::Recorder;
 pub use self::lookup::Lookup;
 pub use self::nibbleslice::NibbleSlice;
 pub use node_codec::NodeCodec;
+
+pub type DBValue = elastic_array::ElasticArray128<u8>;
 
 /// Trie Errors.
 ///
@@ -287,7 +289,7 @@ where
 	}
 
 	/// Create new immutable instance of Trie.
-	pub fn readonly(&self, db: &'db HashDB<H>, root: &'db H::Out) -> Result<TrieKinds<'db, H, C>, H::Out, <C as NodeCodec<H>>::Error> {
+	pub fn readonly(&self, db: &'db HashDB<H, DBValue>, root: &'db H::Out) -> Result<TrieKinds<'db, H, C>, H::Out, <C as NodeCodec<H>>::Error> {
 		match self.spec {
 			TrieSpec::Generic => Ok(TrieKinds::Generic(TrieDB::new(db, root)?)),
 			TrieSpec::Secure => Ok(TrieKinds::Secure(SecTrieDB::new(db, root)?)),
@@ -296,7 +298,7 @@ where
 	}
 
 	/// Create new mutable instance of Trie.
-	pub fn create(&self, db: &'db mut HashDB<H>, root: &'db mut H::Out) -> Box<TrieMut<H, C> + 'db> {
+	pub fn create(&self, db: &'db mut HashDB<H, DBValue>, root: &'db mut H::Out) -> Box<TrieMut<H, C> + 'db> {
 		match self.spec {
 			TrieSpec::Generic => Box::new(TrieDBMut::<_, C>::new(db, root)),
 			TrieSpec::Secure => Box::new(SecTrieDBMut::<_, C>::new(db, root)),
@@ -305,7 +307,7 @@ where
 	}
 
 	/// Create new mutable instance of trie and check for errors.
-	pub fn from_existing(&self, db: &'db mut HashDB<H>, root: &'db mut H::Out) -> Result<Box<TrieMut<H,C> + 'db>, H::Out, <C as NodeCodec<H>>::Error> {
+	pub fn from_existing(&self, db: &'db mut HashDB<H, DBValue>, root: &'db mut H::Out) -> Result<Box<TrieMut<H,C> + 'db>, H::Out, <C as NodeCodec<H>>::Error> {
 		match self.spec {
 			TrieSpec::Generic => Ok(Box::new(TrieDBMut::<_, C>::from_existing(db, root)?)),
 			TrieSpec::Secure => Ok(Box::new(SecTrieDBMut::<_, C>::from_existing(db, root)?)),
