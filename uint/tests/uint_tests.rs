@@ -1028,6 +1028,19 @@ fn test_u256_from_fixed_array() {
 }
 
 #[test]
+fn test_from_ref_to_fixed_array() {
+	let ary : &[u8; 32] = &[
+		1,0,1,2,1,0,1,2,
+		3,0,3,4,3,0,3,4,
+		5,0,5,6,5,0,5,6,
+		7,0,7,8,7,0,7,8
+	];
+	let big : U256 = ary.into();
+	// the numbers are each row of 8 bytes reversed and cast to u64
+	assert_eq!(big, U256([504410889324070664, 360293493601469702, 216176097878868740, 72058702156267778u64]));
+}
+
+#[test]
 fn test_u512_from_fixed_array() {
 	let ary = [
 		0, 0, 0, 0, 0, 0, 0, 0,
@@ -1044,7 +1057,6 @@ fn test_u512_from_fixed_array() {
 
 	let a_ref : &U512 = &ary.into();
 	assert_eq!( a_ref, &U512::from(123) );
-
 }
 
 #[test]
