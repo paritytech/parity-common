@@ -26,7 +26,6 @@ use bytes::ToPretty;
 use hashdb::{HashDB, Hasher, DBValue};
 use nibbleslice::NibbleSlice;
 
-use elastic_array::ElasticArray1024;
 use std::collections::{HashSet, VecDeque};
 use std::marker::PhantomData;
 use std::mem;
@@ -128,7 +127,7 @@ impl<O> Node<O> where O: AsRef<[u8]> + AsMut<[u8]> + Default + Debug + PartialEq
 	}
 
 	// TODO: parallelize
-	fn into_encoded<F, C, H>(self, mut child_cb: F) -> ElasticArray1024<u8>
+	fn into_encoded<F, C, H>(self, mut child_cb: F) -> Vec<u8>
 	where
 		C: NodeCodec<H>,
 		F: FnMut(NodeHandle<H::Out>) -> ChildReference<H::Out>,

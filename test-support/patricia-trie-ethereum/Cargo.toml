@@ -6,7 +6,7 @@ description = "Merkle-Patricia Trie (Ethereum Style)"
 license = "GPL-3.0"
 
 [dependencies]
-patricia-trie = { version = "0.2", path = "../../patricia_trie" }
+patricia-trie = { version = "0.3", path = "../../patricia_trie" }
 keccak-hasher = { version = "0.1", path = "../keccak-hasher" }
 hashdb = { version = "0.2", path = "../../hashdb" }
 rlp = { version = "0.3.0", path = "../../rlp" }

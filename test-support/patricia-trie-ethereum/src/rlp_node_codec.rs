@@ -16,7 +16,7 @@
 
 //! `NodeCodec` implementation for Rlp
 
-use elastic_array::{ElasticArray1024, ElasticArray128};
+use elastic_array::ElasticArray128;
 use ethereum_types::H256;
 use hashdb::Hasher;
 use keccak_hasher::KeccakHasher;
@@ -72,20 +72,20 @@ impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
 	fn is_empty_node(data: &[u8]) -> bool {
 		Rlp::new(data).is_empty()
 	}
-    fn empty_node() -> ElasticArray1024<u8> {
+    fn empty_node() -> Vec<u8> {
         let mut stream = RlpStream::new();
         stream.append_empty_data();
-        ElasticArray1024::from_vec(stream.drain())
+        stream.drain()
     }
 
-    fn leaf_node(partial: &[u8], value: &[u8]) -> ElasticArray1024<u8> {
+    fn leaf_node(partial: &[u8], value: &[u8]) -> Vec<u8> {
         let mut stream = RlpStream::new_list(2);
         stream.append(&partial);
         stream.append(&value);
-        ElasticArray1024::from_vec(stream.drain())
+        stream.drain()
     }
 
-	fn ext_node(partial: &[u8], child_ref: ChildReference<<KeccakHasher as Hasher>::Out>) -> ElasticArray1024<u8> {
+	fn ext_node(partial: &[u8], child_ref: ChildReference<<KeccakHasher as Hasher>::Out>) -> Vec<u8> {
         let mut stream = RlpStream::new_list(2);
         stream.append(&partial);
         match child_ref {
@@ -95,10 +95,10 @@ impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
                 stream.append_raw(bytes, 1)
             },
         };
-        ElasticArray1024::from_vec(stream.drain())
+        stream.drain()
 	}
 
-	fn branch_node<I>(children: I, value: Option<ElasticArray128<u8>>) -> ElasticArray1024<u8>
+	fn branch_node<I>(children: I, value: Option<ElasticArray128<u8>>) -> Vec<u8>
 	where I: IntoIterator<Item=Option<ChildReference<<KeccakHasher as Hasher>::Out>>>
     {
         let mut stream = RlpStream::new_list(17);
@@ -119,6 +119,6 @@ impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
         } else {
             stream.append_empty_data();
         }
-        ElasticArray1024::from_vec(stream.drain())
+        stream.drain()
     }
 }
