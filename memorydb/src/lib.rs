@@ -50,12 +50,12 @@ type FastMap<H, T> = HashMap<<H as KeyHasher>::Out, T, hash::BuildHasherDefault<
 /// use keccak_hasher::KeccakHasher;
 /// use memorydb::*;
 /// fn main() {
-///   let mut m = MemoryDB::<KeccakHasher>::new();
+///   let mut m = MemoryDB::<KeccakHasher, Vec<u8>>::new();
 ///   let d = "Hello world!".as_bytes();
 ///
 ///   let k = m.insert(d);
 ///   assert!(m.contains(&k));
-///   assert_eq!(m.get(&k).unwrap(), d);
+///   assert_eq!(m.get(&k).unwrap(), &d);
 ///
 ///   m.insert(d);
 ///   assert!(m.contains(&k));
@@ -74,7 +74,7 @@ type FastMap<H, T> = HashMap<<H as KeyHasher>::Out, T, hash::BuildHasherDefault<
 
 ///   m.insert(d);
 ///   assert!(m.contains(&k));
-///   assert_eq!(m.get(&k).unwrap(), d);
+///   assert_eq!(m.get(&k).unwrap(), &d);
 ///
 ///   m.remove(&k);
 ///   assert!(!m.contains(&k));
@@ -153,7 +153,7 @@ impl<H: KeyHasher, T> MemoryDB<H, T> {
 	/// use memorydb::*;
 	///
 	/// fn main() {
-	///   let mut m = MemoryDB::<KeccakHasher>::new();
+	///   let mut m = MemoryDB::<KeccakHasher, Vec<u8>>::new();
 	///   let hello_bytes = "Hello world!".as_bytes();
 	///   let hash = m.insert(hello_bytes);
 	///   assert!(m.contains(&hash));
@@ -332,7 +332,7 @@ mod tests {
 		Keccak::keccak256(hello_bytes, &mut hello_key);
 		let hello_key = H256(hello_key);
 
-		let mut m = MemoryDB::<KeccakHasher>::new();
+		let mut m = MemoryDB::<KeccakHasher, Vec<u8>>::new();
 		m.remove(&hello_key);
 		assert_eq!(m.raw(&hello_key).unwrap().1, -1);
 		m.purge();
@@ -342,7 +342,7 @@ mod tests {
 		m.purge();
 		assert_eq!(m.raw(&hello_key), None);
 
-		let mut m = MemoryDB::<KeccakHasher>::new();
+		let mut m = MemoryDB::<KeccakHasher, Vec<u8>>::new();
 		assert!(m.remove_and_purge(&hello_key).is_none());
 		assert_eq!(m.raw(&hello_key).unwrap().1, -1);
 		m.insert(hello_bytes);
@@ -355,13 +355,13 @@ mod tests {
 
 	#[test]
 	fn consolidate() {
-		let mut main = MemoryDB::<KeccakHasher>::new();
-		let mut other = MemoryDB::<KeccakHasher>::new();
+		let mut main = MemoryDB::<KeccakHasher, Vec<u8>>::new();
+		let mut other = MemoryDB::<KeccakHasher, Vec<u8>>::new();
 		let remove_key = other.insert(b"doggo");
 		main.remove(&remove_key);
 
 		let insert_key = other.insert(b"arf");
-		main.emplace(insert_key, DBValue::from_slice(b"arf"));
+		main.emplace(insert_key, "arf".as_bytes().to_vec());
 
 		let negative_remove_key = other.insert(b"negative");
 		other.remove(&negative_remove_key);	// ref cnt: 0
@@ -372,14 +372,14 @@ mod tests {
 
 		let overlay = main.drain();
 
-		assert_eq!(overlay.get(&remove_key).unwrap(), &(DBValue::from_slice(b"doggo"), 0));
-		assert_eq!(overlay.get(&insert_key).unwrap(), &(DBValue::from_slice(b"arf"), 2));
-		assert_eq!(overlay.get(&negative_remove_key).unwrap(), &(DBValue::from_slice(b"negative"), -2));
+		assert_eq!(overlay.get(&remove_key).unwrap(), &("doggo".as_bytes().to_vec(), 0));
+		assert_eq!(overlay.get(&insert_key).unwrap(), &("arf".as_bytes().to_vec(), 2));
+		assert_eq!(overlay.get(&negative_remove_key).unwrap(), &("negative".as_bytes().to_vec(), -2));
 	}
 
 	#[test]
 	fn default_works() {
-		let mut db = MemoryDB::<KeccakHasher>::default();
+		let mut db = MemoryDB::<KeccakHasher, Vec<u8>>::default();
 		let hashed_null_node = KeccakHasher::hash(&NULL_RLP);
 		assert_eq!(db.insert(&NULL_RLP), hashed_null_node);
 	}

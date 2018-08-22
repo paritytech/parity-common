@@ -8,7 +8,7 @@ license = "GPL-3.0"
 
 [dependencies]
 elastic-array = "0.10"
-hashdb = { version = "0.2", path = "../hashdb", default-features = false }
+hashdb = { version = "0.3", path = "../hashdb", default-features = false }
 rlp = { version = "0.3", path = "../rlp", default-features = false }
 
 [dev-dependencies]
