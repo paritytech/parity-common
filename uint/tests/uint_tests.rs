@@ -955,7 +955,7 @@ fn from_big_endian() {
 }
 
 #[test]
-fn from_fixed_array() {
+fn into_fixed_array() {
 	let expected: [u8; 32] = [
 		0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
@@ -964,6 +964,53 @@ fn from_fixed_array() {
 	];
 	let ary : [u8; 32] = U256::from(1).into();
 	assert_eq!(ary, expected);
+}
+
+#[test]
+fn test_u256_from_fixed_array() {
+	let ary = [
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 1,
+		0, 0, 0, 0, 0, 0, 0, 123,
+	];
+	let num : U256 = ary.into();
+	assert_eq!( num, U256::from(std::u64::MAX) + 1 + 123);
+
+	let a_ref : &U256 = &ary.into();
+	assert_eq!( a_ref, &(U256::from(std::u64::MAX) + 1 + 123));
+}
+
+#[test]
+fn test_from_ref_to_fixed_array() {
+	let ary : &[u8; 32] = &[
+		1,0,1,2,1,0,1,2,
+		3,0,3,4,3,0,3,4,
+		5,0,5,6,5,0,5,6,
+		7,0,7,8,7,0,7,8
+	];
+	let big : U256 = ary.into();
+	// the numbers are each row of 8 bytes reversed and cast to u64
+	assert_eq!(big, U256([504410889324070664, 360293493601469702, 216176097878868740, 72058702156267778u64]));
+}
+
+#[test]
+fn test_u512_from_fixed_array() {
+	let ary = [
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 123
+	];
+	let num : U512 = ary.into();
+	assert_eq!( num, U512::from(123) );
+
+	let a_ref : &U512 = &ary.into();
+	assert_eq!( a_ref, &U512::from(123) );
 }
 
 #[test]
