@@ -16,24 +16,11 @@
 
 extern crate core;
 extern crate test;
-#[macro_use]
-extern crate crunchy;
-#[macro_use]
 extern crate uint;
-construct_uint!(U128, 2);
-construct_uint!(U256, 4);
-construct_uint!(U512, 8);
+
+use uint::{U256, U512};
 
 use test::{Bencher, black_box};
-
-impl U256 {
-	/// Multiplies two 256-bit integers to produce full 512-bit integer
-	/// No overflow possible
-	#[inline(always)]
-	pub fn full_mul(self, other: U256) -> U512 {
-		U512(uint_full_mul_reg!(U256, 4, self, other))
-	}
-}
 
 #[bench]
 fn u256_add(b: &mut Bencher) {
@@ -134,11 +121,13 @@ fn u256_full_mul(b: &mut Bencher) {
 
 
 #[bench]
+// NOTE: uses native `u128` and does not measure this crates performance,
+// but might be interesting as a comparison.
 fn u128_mul(b: &mut Bencher) {
     b.iter(|| {
         let n = black_box(10000);
-        (1..n).fold(U128([12345u64, 0u64]), |old, new| {
-            old.overflowing_mul(U128::from(new | 1)).0
+        (1..n).fold(12345u128, |old, new| {
+            old.overflowing_mul(u128::from(new | 1u32)).0
         })
     });
 }
@@ -227,4 +216,31 @@ fn u256_from_be(b: &mut Bencher) {
         );
         let _ = U256::from_big_endian(&raw[..]);
     });
+}
+
+#[bench]
+fn from_fixed_array(b: &mut Bencher) {
+    let ary512 : [u8; 64] =  [
+        255, 0, 0, 123, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 121, 0, 0, 0, 0,
+        0, 213, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 100, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 45, 0, 0, 67, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 123
+    ];
+    let ary256 : [u8; 32] =  [
+        255, 0, 0, 123, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 121, 0, 0, 0, 0,
+        0, 213, 0, 0, 0, 0, 0, 0,
+    ];
+    b.iter(|| {
+        let n = black_box(1000);
+        for _i in 0..n {
+            let _ : U512 = black_box(ary512).into();
+            let _ : U256 = black_box(ary256).into();
+        }
+    })
 }
