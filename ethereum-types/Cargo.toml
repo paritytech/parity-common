@@ -12,8 +12,7 @@ ethbloom = { path = "../ethbloom", version = "0.5.0", default-features = false }
 ethereum-types-serialize = { version = "0.2.1", path = "../serialize", optional = true }
 fixed-hash = { git = "https://github.com/paritytech/parity-common", default_features = false }
 serde = { version = "1.0", optional = true }
-# TODO: remove `branch` when https://github.com/paritytech/parity-common/pull/30 lands
-uint = { version = "0.3", git = "https://github.com/paritytech/parity-common", default_features = false, branch = "dp/refactor/add-conversions" }
+uint = { version = "0.4.1", git = "https://github.com/paritytech/parity-common", default_features = false }
 
 [dev-dependencies]
 serde_json = "1.0"
