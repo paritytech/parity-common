@@ -753,7 +753,6 @@ macro_rules! construct_uint {
 			}
 
 			/// Overflowing multiplication by u32
-			#[allow(dead_code)] // not used when multiplied with inline assembly
 			fn overflowing_mul_u32(self, other: u32) -> (Self, bool) {
 				let $name(ref arr) = self;
 				let mut ret = [0u64; $n_words];
@@ -772,8 +771,6 @@ macro_rules! construct_uint {
 			impl_std_for_uint_internals!($name, $n_words);
 
 			/// Converts from big endian representation bytes in memory
-			/// Can also be used as (&slice).into(), as it is default `From`
-			/// slice implementation for U256
 			pub fn from_big_endian(slice: &[u8]) -> Self {
 				assert!($n_words * 8 >= slice.len());
 
