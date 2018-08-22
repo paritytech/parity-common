@@ -350,7 +350,6 @@ macro_rules! construct_uint {
 		/// Little-endian large integer type
 		#[repr(C)]
 		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
-		// TODO: serialize stuff? #[cfg_attr(feature="serialize", derive(Serialize, Deserialize))]
 		pub struct $name(pub [u64; $n_words]);
 
 		impl AsRef<$name> for $name {
@@ -366,7 +365,10 @@ macro_rules! construct_uint {
 		}
 
 		impl $name {
+
+			/// Maximum value.
 			pub const MAX: $name = $name([u64::max_value(); $n_words]);
+
 			/// Convert from a decimal string.
 			pub fn from_dec_str(value: &str) -> Result<Self, $crate::FromDecStrErr> {
 				if !value.bytes().all(|b| b >= 48 && b <= 57) {
@@ -395,7 +397,7 @@ macro_rules! construct_uint {
 				arr[0] as u32
 			}
 
-			/// Conversion to u64
+			/// Low word (u64)
 			#[inline]
 			pub fn low_u64(&self) -> u64 {
 				let &$name(ref arr) = self;
@@ -420,7 +422,7 @@ macro_rules! construct_uint {
 			///
 			/// # Panics
 			///
-			/// Panics if the number is larger than 2^64.
+			/// Panics if the number is larger than u64::max_value().
 			#[inline]
 			pub fn as_u64(&self) -> u64 {
 				let &$name(ref arr) = self;
@@ -608,8 +610,7 @@ macro_rules! construct_uint {
 				x * y
 			}
 
-			/// Fast exponentation by squaring
-			/// https://en.wikipedia.org/wiki/Exponentiation_by_squaring
+			/// Fast exponentation by squaring. Returns result and overflow flag.
 			pub fn overflowing_pow(self, expon: Self) -> (Self, bool) {
 				if expon.is_zero() { return (Self::one(), false) }
 
@@ -635,13 +636,13 @@ macro_rules! construct_uint {
 				(res, overflow)
 			}
 
-			/// Optimized instructions
+			/// Add with overflow.
 			#[inline(always)]
 			pub fn overflowing_add(self, other: $name) -> ($name, bool) {
 				uint_overflowing_add!($name, $n_words, self, other)
 			}
 
-			/// Addition which saturates at the maximum value.
+			/// Addition which saturates at the maximum value (Self::max_value()).
 			pub fn saturating_add(self, other: $name) -> $name {
 				match self.overflowing_add(other) {
 					(_, true) => $name::max_value(),
@@ -701,11 +702,6 @@ macro_rules! construct_uint {
 				}
 			}
 
-			/// Division with overflow
-			pub fn overflowing_div(self, other: $name) -> ($name, bool) {
-				(self / other, false)
-			}
-
 			/// Checked division. Returns `None` if `other == 0`.
 			pub fn checked_div(self, other: $name) -> Option<$name> {
 				if other.is_zero() {
@@ -713,11 +709,6 @@ macro_rules! construct_uint {
 				} else {
 					Some(self / other)
 				}
-			}
-
-			/// Modulus with overflow.
-			pub fn overflowing_rem(self, other: $name) -> ($name, bool) {
-				(self % other, false)
 			}
 
 			/// Checked modulus. Returns `None` if `other == 0`.
@@ -746,13 +737,13 @@ macro_rules! construct_uint {
 				}
 			}
 
-			/// Multiplication by u32
+			/// Multiplication by u32.
 			#[deprecated(note = "Use Mul<u32> instead.")]
 			pub fn mul_u32(self, other: u32) -> Self {
 				self * other
 			}
 
-			/// Overflowing multiplication by u32
+			/// Overflowing multiplication by u32.
 			fn overflowing_mul_u32(self, other: u32) -> (Self, bool) {
 				let $name(ref arr) = self;
 				let mut ret = [0u64; $n_words];
@@ -770,7 +761,7 @@ macro_rules! construct_uint {
 
 			impl_std_for_uint_internals!($name, $n_words);
 
-			/// Converts from big endian representation bytes in memory
+			/// Converts from big endian representation bytes in memory.
 			pub fn from_big_endian(slice: &[u8]) -> Self {
 				assert!($n_words * 8 >= slice.len());
 
@@ -789,7 +780,7 @@ macro_rules! construct_uint {
 				$name(ret)
 			}
 
-			/// Converts from little endian representation bytes in memory
+			/// Converts from little endian representation bytes in memory.
 			pub fn from_little_endian(slice: &[u8]) -> Self {
 				assert!($n_words * 8 >= slice.len());
 
