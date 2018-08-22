@@ -813,6 +813,19 @@ macro_rules! construct_uint {
 				arr
 			}
 		}
+
+		impl From<[u8; $n_words * 8]> for $name {
+			fn from(bytes: [u8; $n_words * 8]) -> Self {
+				bytes[..].as_ref().into()
+			}
+		}
+
+		impl<'a> From<&'a [u8; $n_words * 8]> for $name {
+			fn from(bytes: &[u8; $n_words * 8]) -> Self {
+				bytes[..].into()
+			}
+		}
+
 		impl Default for $name {
 			fn default() -> Self {
 				$name::zero()
@@ -1377,3 +1390,13 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 
 construct_uint!(U256, 4);
 construct_uint!(U512, 8);
+
+#[doc(hidden)]
+impl U256 {
+	/// Multiplies two 256-bit integers to produce full 512-bit integer
+	/// No overflow possible
+	#[inline(always)]
+	pub fn full_mul(self, other: U256) -> U512 {
+		U512(uint_full_mul_reg!(U256, 4, self, other))
+	}
+}
