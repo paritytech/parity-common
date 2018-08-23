@@ -1,6 +1,6 @@
 [package]
 name = "triehash"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "in memory patricia trie operations"
 repository = "https://github.com/paritytech/parity-common"
@@ -16,3 +16,6 @@ trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
 keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
 tiny-keccak = "1.4.2"
 ethereum-types = "0.4"
+
+[features]
+ethereum = ["rlp/ethereum"]
