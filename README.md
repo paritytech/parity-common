@@ -8,7 +8,7 @@ To specify a dependency, add to `Cargo.toml`
 
 ```toml
 [dependencies]
-ethereum-types = "0.3"
+ethereum-types = "0.4"
 ```
 
 Little example
@@ -34,5 +34,5 @@ in a `no_std` context, add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-ethereum-types = { version = "0.3", default-features = false }
+ethereum-types = { version = "0.4", default-features = false }
 ```
