@@ -22,16 +22,16 @@ use node_codec::NodeCodec;
 ///
 /// Use it as a `Trie` or `TrieMut` trait object. You can use `raw()` to get the backing `TrieDBMut` object.
 pub struct SecTrieDBMut<'db, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H>
 {
 	raw: TrieDBMut<'db, H, C>
 }
 
 impl<'db, H, C> SecTrieDBMut<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	/// Create a new trie with the backing database `db` and empty `root`
@@ -56,8 +56,8 @@ where
 }
 
 impl<'db, H, C> TrieMut<H, C> for SecTrieDBMut<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn root(&mut self) -> &H::Out {
@@ -94,7 +94,7 @@ mod test {
 	use keccak_hasher::KeccakHasher;
 	use ethtrie::{TrieDB, SecTrieDBMut, trie::{Trie, TrieMut}};
 	use ethereum_types::H256;
-    use DBValue;
+	use DBValue;
 
 	#[test]
 	fn sectrie_to_trie() {

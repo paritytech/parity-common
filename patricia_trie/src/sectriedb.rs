@@ -23,16 +23,16 @@ use node_codec::NodeCodec;
 ///
 /// Use it as a `Trie` trait object. You can use `raw()` to get the backing `TrieDB` object.
 pub struct SecTrieDB<'db, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H>
 {
 	raw: TrieDB<'db, H, C>
 }
 
 impl<'db, H, C> SecTrieDB<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	/// Create a new trie with the backing database `db` and empty `root`
@@ -56,8 +56,8 @@ where
 }
 
 impl<'db, H, C> Trie<H, C> for SecTrieDB<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn root(&self) -> &H::Out { self.raw.root() }
@@ -84,7 +84,7 @@ mod test {
 	use keccak_hasher::KeccakHasher;
 	use ethtrie::{TrieDBMut, SecTrieDB, trie::{Trie, TrieMut}};
 	use ethereum_types::H256;
-    use DBValue;
+	use DBValue;
 
 	#[test]
 	fn trie_to_sectrie() {

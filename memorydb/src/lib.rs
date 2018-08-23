@@ -30,7 +30,8 @@ use std::collections::HashMap;
 use std::hash;
 use std::mem;
 
-// Backing `HashMap` parametrized with a `Hasher` for the keys `Hasher::Out` and the `Hasher::StdHasher` as hash map builder.
+// Backing `HashMap` parametrized with a `Hasher` for the keys `Hasher::Out` and the `Hasher::StdHasher`
+// as hash map builder.
 type FastMap<H, T> = HashMap<<H as KeyHasher>::Out, T, hash::BuildHasherDefault<<H as KeyHasher>::StdHasher>>;
 
 /// Reference-counted memory-based `HashDB` implementation.
@@ -84,28 +85,28 @@ type FastMap<H, T> = HashMap<<H as KeyHasher>::Out, T, hash::BuildHasherDefault<
 pub struct MemoryDB<H: KeyHasher, T> {
 	data: FastMap<H, (T, i32)>,
 	hashed_null_node: H::Out,
-    null_node_data: T,
+	null_node_data: T,
 }
 
 impl<'a, H, T> Default for MemoryDB<H, T> where H: KeyHasher, H::Out: HeapSizeOf, T: From<&'a [u8]> {
 	fn default() -> Self { Self::new() }
 }
 
-impl<'a, H, T> MemoryDB<H, T> 
-    where H: KeyHasher,
-          H::Out: HeapSizeOf,
-          T: From<&'a [u8]>,
+impl<'a, H, T> MemoryDB<H, T>
+	where H: KeyHasher,
+		  H::Out: HeapSizeOf,
+		  T: From<&'a [u8]>,
 {
 	/// Create a new instance of the memory DB.
 	pub fn new() -> Self {
-        MemoryDB::from_null_node(&NULL_RLP, NULL_RLP.as_ref().into())
+		MemoryDB::from_null_node(&NULL_RLP, NULL_RLP.as_ref().into())
 	}
 }
 
-impl<H, T> MemoryDB<H, T> 
-    where H: KeyHasher,
-          H::Out: HeapSizeOf,
-          T: Default,
+impl<H, T> MemoryDB<H, T>
+	where H: KeyHasher,
+		  H::Out: HeapSizeOf,
+		  T: Default,
 {
 	/// Remove an element and delete it from storage if reference count reaches zero.
 	/// If the value was purged, return the old value.
@@ -131,14 +132,14 @@ impl<H, T> MemoryDB<H, T>
 
 impl<H: KeyHasher, T> MemoryDB<H, T> {
 
-    /// Create a new `MemoryDB` from a given null key/data
-    pub fn from_null_node(null_key: &[u8], null_node_data: T) -> Self {
+	/// Create a new `MemoryDB` from a given null key/data
+	pub fn from_null_node(null_key: &[u8], null_node_data: T) -> Self {
 		MemoryDB {
 			data: FastMap::<H,_>::default(),
 			hashed_null_node: H::hash(null_key),
-            null_node_data,
+			null_node_data,
 		}
-    }
+	}
 
 	/// Clear all data from the database.
 	///
@@ -207,9 +208,9 @@ impl<H: KeyHasher, T> MemoryDB<H, T> {
 }
 
 impl<H, T> MemoryDB<H, T>
-    where H: KeyHasher,
-          H::Out: HeapSizeOf,
-          T: HeapSizeOf,
+	where H: KeyHasher,
+		  H::Out: HeapSizeOf,
+		  T: HeapSizeOf,
 {
 	/// Returns the size of allocated heap memory
 	pub fn mem_used(&self) -> usize {
@@ -218,8 +219,8 @@ impl<H, T> MemoryDB<H, T>
 }
 
 impl<H, T> HashDB<H, T> for MemoryDB<H, T>
-    where H: KeyHasher,
-          T: Default + PartialEq<T> + for<'a> From<&'a [u8]> + Send + Sync,
+	where H: KeyHasher,
+		  T: Default + PartialEq<T> + for<'a> From<&'a [u8]> + Send + Sync,
 {
 	fn keys(&self) -> HashMap<H::Out, i32> {
 		self.data.iter()
@@ -311,8 +312,8 @@ impl<H, T> HashDB<H, T> for MemoryDB<H, T>
 }
 
 impl<H, T> AsHashDB<H, T> for MemoryDB<H, T>
-    where H: KeyHasher,
-          T: Default + PartialEq<T> + for<'a> From<&'a[u8]> + Send + Sync,
+	where H: KeyHasher,
+		  T: Default + PartialEq<T> + for<'a> From<&'a[u8]> + Send + Sync,
 {
 	fn as_hashdb(&self) -> &HashDB<H, T> { self }
 	fn as_hashdb_mut(&mut self) -> &mut HashDB<H, T> { self }

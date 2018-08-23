@@ -520,7 +520,7 @@ where
 					let branch_action = self.insert_inspector(branch, partial, value, old_val)?.unwrap_node();
 					InsertAction::Replace(branch_action)
 				} else if cp == existing_key.len() {
-				    trace!(target: "trie", "complete-prefix (cp={:?}): AUGMENT-AT-END", cp);
+					trace!(target: "trie", "complete-prefix (cp={:?}): AUGMENT-AT-END", cp);
 
 					// fully-shared prefix for an extension.
 					// make a stub branch and an extension.
@@ -974,7 +974,7 @@ mod tests {
 	use ethtrie::{TrieDBMut, RlpCodec, trie::{TrieMut, NodeCodec}};
 	use env_logger;
 	use ethereum_types::H256;
-    use DBValue;
+	use DBValue;
 
 	fn populate_trie<'db, H, C>(db: &'db mut HashDB<KeccakHasher, DBValue>, root: &'db mut H256, v: &[(Vec<u8>, Vec<u8>)]) -> TrieDBMut<'db>
 		where H: Hasher, H::Out: Decodable + Encodable, C: NodeCodec<H>

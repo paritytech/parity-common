@@ -64,10 +64,10 @@ impl RlpStream {
 	/// use rlp::*;
 	///
 	/// fn main () {
-	/// 	let mut stream = RlpStream::new_list(2);
-	/// 	stream.append_empty_data().append_empty_data();
-	/// 	let out = stream.out();
-	/// 	assert_eq!(out, vec![0xc2, 0x80, 0x80]);
+	///		let mut stream = RlpStream::new_list(2);
+	///		stream.append_empty_data().append_empty_data();
+	///		let out = stream.out();
+	///		assert_eq!(out, vec![0xc2, 0x80, 0x80]);
 	/// }
 	/// ```
 	pub fn append_empty_data(&mut self) -> &mut Self {
@@ -83,7 +83,7 @@ impl RlpStream {
 
 	/// Drain the object and return the underlying ElasticArray. Panics if it is not finished.
 	pub fn drain(self) -> Vec<u8> {
-        self.out()
+		self.out()
 	}
 
 	/// Appends raw (pre-serialised) RLP data. Use with caution. Chainable.
@@ -105,10 +105,10 @@ impl RlpStream {
 	/// use rlp::*;
 	///
 	/// fn main () {
-	/// 	let mut stream = RlpStream::new_list(2);
-	/// 	stream.append(&"cat").append(&"dog");
-	/// 	let out = stream.out();
-	/// 	assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
+	///		let mut stream = RlpStream::new_list(2);
+	///		stream.append(&"cat").append(&"dog");
+	///		let out = stream.out();
+	///		assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// }
 	/// ```
 	pub fn append<'a, E>(&'a mut self, value: &E) -> &'a mut Self where E: Encodable {
@@ -143,11 +143,11 @@ impl RlpStream {
 	/// use rlp::*;
 	///
 	/// fn main () {
-	/// 	let mut stream = RlpStream::new_list(2);
-	/// 	stream.begin_list(2).append(&"cat").append(&"dog");
-	/// 	stream.append(&"");
-	/// 	let out = stream.out();
-	/// 	assert_eq!(out, vec![0xca, 0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g', 0x80]);
+	///		let mut stream = RlpStream::new_list(2);
+	///		stream.begin_list(2).append(&"cat").append(&"dog");
+	///		stream.append(&"");
+	///		let out = stream.out();
+	///		assert_eq!(out, vec![0xca, 0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g', 0x80]);
 	/// }
 	/// ```
 	pub fn begin_list(&mut self, len: usize) -> &mut RlpStream {
@@ -219,14 +219,14 @@ impl RlpStream {
 	/// ```rust
 	/// extern crate rlp;
 	/// use rlp::*;
-	/// 
+	///
 	/// fn main () {
-	/// 	let mut stream = RlpStream::new_list(3);
-	/// 	stream.append(&"cat");
-	/// 	stream.clear();
-	/// 	stream.append(&"dog");
-	/// 	let out = stream.out();
-	/// 	assert_eq!(out, vec![0x83, b'd', b'o', b'g']);
+	///		let mut stream = RlpStream::new_list(3);
+	///		stream.append(&"cat");
+	///		stream.clear();
+	///		stream.append(&"dog");
+	///		let out = stream.out();
+	///		assert_eq!(out, vec![0x83, b'd', b'o', b'g']);
 	/// }
 	pub fn clear(&mut self) {
 		// clear bytes
@@ -243,13 +243,13 @@ impl RlpStream {
 	/// use rlp::*;
 	///
 	/// fn main () {
-	/// 	let mut stream = RlpStream::new_list(2);
-	/// 	stream.append(&"cat");
-	/// 	assert_eq!(stream.is_finished(), false);
-	/// 	stream.append(&"dog");
-	/// 	assert_eq!(stream.is_finished(), true);
-	/// 	let out = stream.out();
-	/// 	assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
+	///		let mut stream = RlpStream::new_list(2);
+	///		stream.append(&"cat");
+	///		assert_eq!(stream.is_finished(), false);
+	///		stream.append(&"dog");
+	///		assert_eq!(stream.is_finished(), true);
+	///		let out = stream.out();
+	///		assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// }
 	pub fn is_finished(&self) -> bool {
 		self.unfinished_lists.len() == 0
@@ -333,10 +333,10 @@ impl<'a> BasicEncoder<'a> {
 		let size_bytes = 4 - leading_empty_bytes as u8;
 		let mut buffer = [0u8; 4];
 		BigEndian::write_u32(&mut buffer, size);
-        assert!(position <= self.buffer.len());
+		assert!(position <= self.buffer.len());
 
 		self.buffer.extend_from_slice(&buffer[leading_empty_bytes..]);
-        self.buffer[position..].rotate_right(size_bytes as usize);
+		self.buffer[position..].rotate_right(size_bytes as usize);
 		size_bytes as u8
 	}
 

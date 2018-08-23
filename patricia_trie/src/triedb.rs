@@ -102,9 +102,9 @@ where
 		match C::try_decode_hash(node) {
 			Some(key) => {
 				self.db
-                    .get(&key)
-                    .map(|v| Cow::Borrowed(v))
-                    .ok_or_else(|| Box::new(TrieError::IncompleteDatabase(key)))
+					.get(&key)
+					.map(|v| Cow::Borrowed(v))
+					.ok_or_else(|| Box::new(TrieError::IncompleteDatabase(key)))
 			}
 			None => Ok(Cow::Owned(DBValue::from_slice(node)))
 		}
@@ -243,7 +243,7 @@ impl<'a, H: Hasher, C: NodeCodec<H>> TrieDBIterator<'a, H, C> {
 	}
 
 	fn seek<'key>(&mut self, node_data: &DBValue, mut key: NibbleSlice<'key>) -> Result<(), H::Out, C::Error> {
-        let mut node_data = Cow::Borrowed(node_data);
+		let mut node_data = Cow::Borrowed(node_data);
 		loop {
 			let (data, mid) = {
 				let node = C::decode(&node_data).expect("encoded data read from db; qed");
@@ -301,7 +301,7 @@ impl<'a, H: Hasher, C: NodeCodec<H>> TrieDBIterator<'a, H, C> {
 				}
 			};
 
-            node_data = data;
+			node_data = data;
 			key = key.mid(mid);
 		}
 	}
@@ -423,7 +423,7 @@ impl<'a, H: Hasher, C: NodeCodec<H>> Iterator for TrieDBIterator<'a, H, C> {
 
 #[cfg(test)]
 mod tests {
-    use DBValue;
+	use DBValue;
 	use keccak_hasher::KeccakHasher;
 	use memorydb::MemoryDB;
 	use ethtrie::{TrieDB, TrieDBMut, RlpCodec, trie::{Trie, TrieMut, Lookup}};
@@ -522,92 +522,92 @@ mod tests {
 		assert_eq!(format!("{:?}", t), "TrieDB { hash_count: 0, root: Node::Extension { slice: 4, item: Node::Branch { nodes: [Node::Empty, Node::Branch { nodes: [Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Branch { nodes: [Node::Empty, Node::Leaf { slice: , value: [65, 65] }, Node::Leaf { slice: , value: [65, 66] }, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty], value: None }, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty], value: Some([65]) }, Node::Leaf { slice: , value: [66] }, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty], value: None } } }");
 		assert_eq!(format!("{:#?}", t),
 "TrieDB {
-    hash_count: 0,
-    root: Node::Extension {
-        slice: 4,
-        item: Node::Branch {
-            nodes: [
-                Node::Empty,
-                Node::Branch {
-                    nodes: [
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Branch {
-                            nodes: [
-                                Node::Empty,
-                                Node::Leaf {
-                                    slice: ,
-                                    value: [
-                                        65,
-                                        65
-                                    ]
-                                },
-                                Node::Leaf {
-                                    slice: ,
-                                    value: [
-                                        65,
-                                        66
-                                    ]
-                                },
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty
-                            ],
-                            value: None
-                        },
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty
-                    ],
-                    value: Some(
-                        [
-                            65
-                        ]
-                    )
-                },
-                Node::Leaf {
-                    slice: ,
-                    value: [
-                        66
-                    ]
-                },
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty
-            ],
-            value: None
-        }
-    }
+	hash_count: 0,
+	root: Node::Extension {
+		slice: 4,
+		item: Node::Branch {
+			nodes: [
+				Node::Empty,
+				Node::Branch {
+					nodes: [
+						Node::Empty,
+						Node::Empty,
+						Node::Empty,
+						Node::Empty,
+						Node::Branch {
+							nodes: [
+								Node::Empty,
+								Node::Leaf {
+									slice: ,
+									value: [
+										65,
+										65
+									]
+								},
+								Node::Leaf {
+									slice: ,
+									value: [
+										65,
+										66
+									]
+								},
+								Node::Empty,
+								Node::Empty,
+								Node::Empty,
+								Node::Empty,
+								Node::Empty,
+								Node::Empty,
+								Node::Empty,
+								Node::Empty,
+								Node::Empty,
+								Node::Empty,
+								Node::Empty,
+								Node::Empty,
+								Node::Empty
+							],
+							value: None
+						},
+						Node::Empty,
+						Node::Empty,
+						Node::Empty,
+						Node::Empty,
+						Node::Empty,
+						Node::Empty,
+						Node::Empty,
+						Node::Empty,
+						Node::Empty,
+						Node::Empty,
+						Node::Empty
+					],
+					value: Some(
+						[
+							65
+						]
+					)
+				},
+				Node::Leaf {
+					slice: ,
+					value: [
+						66
+					]
+				},
+				Node::Empty,
+				Node::Empty,
+				Node::Empty,
+				Node::Empty,
+				Node::Empty,
+				Node::Empty,
+				Node::Empty,
+				Node::Empty,
+				Node::Empty,
+				Node::Empty,
+				Node::Empty,
+				Node::Empty,
+				Node::Empty
+			],
+			value: None
+		}
+	}
 }");
 	}
 

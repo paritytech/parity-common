@@ -138,7 +138,7 @@ mod tests {
 		use ethtrie::trie::{Trie, TrieMut, Recorder};
 		use memorydb::MemoryDB;
 		use ethtrie::{TrieDB, TrieDBMut};
-        use DBValue;
+		use DBValue;
 
 		let mut db = MemoryDB::<KeccakHasher, DBValue>::new();
 
