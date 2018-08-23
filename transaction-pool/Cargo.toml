@@ -1,7 +1,7 @@
 [package]
 description = "Generic transaction pool."
 name = "transaction-pool"
-version = "1.13.1"
+version = "1.13.2"
 license = "GPL-3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 
@@ -9,7 +9,7 @@ authors = ["Parity Technologies <admin@parity.io>"]
 error-chain = "0.12"
 log = "0.4"
 smallvec = "0.4"
-trace-time = "0.1"
+trace-time = { path = "../trace-time", version = "0.1" }
 
 [dev-dependencies]
-ethereum-types = "0.3"
+ethereum-types = "0.4"

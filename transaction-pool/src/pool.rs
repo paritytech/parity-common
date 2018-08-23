@@ -207,7 +207,7 @@ impl<T, S, L> Pool<T, S, L> where
 				bail!(error)
 			},
 			AddResult::TooCheapToEnter(new, score) => {
-				let error = error::ErrorKind::TooCheapToEnter(format!("{:x}", new.hash()), format!("{:?}", score));
+				let error = error::ErrorKind::TooCheapToEnter(format!("{:x}", new.hash()), format!("{:#x}", score));
 				self.listener.rejected(&new, &error);
 				bail!(error)
 			}
@@ -295,7 +295,7 @@ impl<T, S, L> Pool<T, S, L> where
 				scoring::Choice::ReplaceOld => Some(old.clone()),
 				// otherwise fail
 				scoring::Choice::RejectNew => {
-					return Err(error::ErrorKind::TooCheapToEnter(format!("{:?}", transaction.hash()), format!("{:?}", old.score)).into())
+					return Err(error::ErrorKind::TooCheapToEnter(format!("{:?}", transaction.hash()), format!("{:#x}", old.score)).into())
 				},
 			},
 		};

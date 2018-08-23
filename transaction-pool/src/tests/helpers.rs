@@ -101,7 +101,7 @@ impl Ready<Transaction> for NonceReady {
 		match tx.nonce.cmp(nonce) {
 			cmp::Ordering::Greater => Readiness::Future,
 			cmp::Ordering::Equal => {
-				*nonce = *nonce + 1.into();
+				*nonce += 1.into();
 				Readiness::Ready
 			},
 			cmp::Ordering::Less => Readiness::Stale,
