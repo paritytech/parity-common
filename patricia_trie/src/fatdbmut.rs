@@ -84,7 +84,7 @@ where
 		let out = self.raw.insert(hash.as_ref(), value)?;
 		let db = self.raw.db_mut();
 
-		// don't insert if it doesn't exist.
+		// insert if it doesn't exist.
 		if out.is_none() {
 			let aux_hash = H::hash(hash.as_ref());
 			db.emplace(aux_hash, DBValue::from_slice(key));
@@ -96,9 +96,10 @@ where
 		let hash = H::hash(key);
 		let out = self.raw.remove(hash.as_ref())?;
 
-		// don't remove if it already exists.
+		// remove if it already exists.
 		if out.is_some() {
-			self.raw.db_mut().remove(&hash);
+			let aux_hash = H::hash(hash.as_ref());
+			self.raw.db_mut().remove(&aux_hash);
 		}
 
 		Ok(out)
