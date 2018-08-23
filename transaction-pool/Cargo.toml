@@ -9,7 +9,7 @@ authors = ["Parity Technologies <admin@parity.io>"]
 error-chain = "0.12"
 log = "0.4"
 smallvec = "0.4"
-trace-time = { path = "../util/trace-time", version = "0.1" }
+trace-time = "0.1"
 
 [dev-dependencies]
 ethereum-types = "0.3"

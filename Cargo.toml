@@ -13,6 +13,7 @@ members = [
 	"patricia_trie",
 	"plain_hasher",
 	"rlp",
+	"transaction-pool",
 	"trie-standardmap",
 	"triehash",
 	"uint"
