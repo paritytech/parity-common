@@ -77,11 +77,19 @@ enum Node<H> {
 	Branch(Box<[Option<NodeHandle<H>>; 16]>, Option<DBValue>)
 }
 
-impl<O> Node<O> where O: AsRef<[u8]> + AsMut<[u8]> + Default + Debug + PartialEq + Eq + Hash + Send + Sync + Clone + Copy {
+impl<O> Node<O>
+where
+	O: AsRef<[u8]> + AsMut<[u8]> + Default + Debug + PartialEq + Eq + Hash + Send + Sync + Clone + Copy
+{
 	// load an inline node into memory or get the hash to do the lookup later.
-	fn inline_or_hash<C, H>(node: &[u8], db: &HashDB<H, DBValue>, storage: &mut NodeStorage<H::Out>) -> NodeHandle<H::Out>
-	where C: NodeCodec<H>,
-		  H: Hasher<Out = O>,
+	fn inline_or_hash<C, H>(
+		node: &[u8],
+		db: &HashDB<H, DBValue>,
+		storage: &mut NodeStorage<H::Out>
+	) -> NodeHandle<H::Out>
+	where
+		C: NodeCodec<H>,
+		H: Hasher<Out = O>,
 	{
 		C::try_decode_hash(&node)
 			.map(NodeHandle::Hash)
@@ -976,8 +984,15 @@ mod tests {
 	use ethereum_types::H256;
 	use DBValue;
 
-	fn populate_trie<'db, H, C>(db: &'db mut HashDB<KeccakHasher, DBValue>, root: &'db mut H256, v: &[(Vec<u8>, Vec<u8>)]) -> TrieDBMut<'db>
-		where H: Hasher, H::Out: Decodable + Encodable, C: NodeCodec<H>
+	fn populate_trie<'db, H, C>(
+		db: &'db mut HashDB<KeccakHasher, DBValue>,
+		root: &'db mut H256,
+		v: &[(Vec<u8>, Vec<u8>)]
+	) -> TrieDBMut<'db>
+	where
+		H: Hasher,
+		H::Out: Decodable + Encodable,
+		C: NodeCodec<H>,
 	{
 		let mut t = TrieDBMut::new(db, root);
 		for i in 0..v.len() {

@@ -88,14 +88,20 @@ pub struct MemoryDB<H: KeyHasher, T> {
 	null_node_data: T,
 }
 
-impl<'a, H, T> Default for MemoryDB<H, T> where H: KeyHasher, H::Out: HeapSizeOf, T: From<&'a [u8]> {
+impl<'a, H, T> Default for MemoryDB<H, T>
+where
+	H: KeyHasher,
+	H::Out: HeapSizeOf,
+	T: From<&'a [u8]>
+{
 	fn default() -> Self { Self::new() }
 }
 
 impl<'a, H, T> MemoryDB<H, T>
-	where H: KeyHasher,
-		  H::Out: HeapSizeOf,
-		  T: From<&'a [u8]>,
+where
+	H: KeyHasher,
+	H::Out: HeapSizeOf,
+	T: From<&'a [u8]>,
 {
 	/// Create a new instance of the memory DB.
 	pub fn new() -> Self {
@@ -104,9 +110,10 @@ impl<'a, H, T> MemoryDB<H, T>
 }
 
 impl<H, T> MemoryDB<H, T>
-	where H: KeyHasher,
-		  H::Out: HeapSizeOf,
-		  T: Default,
+where
+	H: KeyHasher,
+	H::Out: HeapSizeOf,
+	T: Default,
 {
 	/// Remove an element and delete it from storage if reference count reaches zero.
 	/// If the value was purged, return the old value.
@@ -208,9 +215,10 @@ impl<H: KeyHasher, T> MemoryDB<H, T> {
 }
 
 impl<H, T> MemoryDB<H, T>
-	where H: KeyHasher,
-		  H::Out: HeapSizeOf,
-		  T: HeapSizeOf,
+where
+	H: KeyHasher,
+	H::Out: HeapSizeOf,
+	T: HeapSizeOf,
 {
 	/// Returns the size of allocated heap memory
 	pub fn mem_used(&self) -> usize {
@@ -219,8 +227,9 @@ impl<H, T> MemoryDB<H, T>
 }
 
 impl<H, T> HashDB<H, T> for MemoryDB<H, T>
-	where H: KeyHasher,
-		  T: Default + PartialEq<T> + for<'a> From<&'a [u8]> + Send + Sync,
+where
+	H: KeyHasher,
+	T: Default + PartialEq<T> + for<'a> From<&'a [u8]> + Send + Sync,
 {
 	fn keys(&self) -> HashMap<H::Out, i32> {
 		self.data.iter()
@@ -312,8 +321,9 @@ impl<H, T> HashDB<H, T> for MemoryDB<H, T>
 }
 
 impl<H, T> AsHashDB<H, T> for MemoryDB<H, T>
-	where H: KeyHasher,
-		  T: Default + PartialEq<T> + for<'a> From<&'a[u8]> + Send + Sync,
+where
+	H: KeyHasher,
+	T: Default + PartialEq<T> + for<'a> From<&'a[u8]> + Send + Sync,
 {
 	fn as_hashdb(&self) -> &HashDB<H, T> { self }
 	fn as_hashdb_mut(&mut self) -> &mut HashDB<H, T> { self }

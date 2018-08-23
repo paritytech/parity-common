@@ -49,10 +49,11 @@ fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
 /// }
 /// ```
 pub fn ordered_trie_root<H, I, A>(input: I) -> H::Out
-	where I: IntoIterator<Item = A>,
-		  A: AsRef<[u8]>,
-		  H: Hasher,
-		  <H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
+where
+	I: IntoIterator<Item = A>,
+	A: AsRef<[u8]>,
+	H: Hasher,
+	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
 {
 	let gen_input: Vec<_> = input
 		// first put elements into btree to sort them by nibbles (key'd by index)
@@ -89,11 +90,12 @@ pub fn ordered_trie_root<H, I, A>(input: I) -> H::Out
 /// }
 /// ```
 pub fn trie_root<H, I, A, B>(input: I) -> H::Out
-	where I: IntoIterator<Item = (A, B)>,
-		  A: AsRef<[u8]> + Ord,
-		  B: AsRef<[u8]>,
-		  H: Hasher,
-		  <H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
+where
+	I: IntoIterator<Item = (A, B)>,
+	A: AsRef<[u8]> + Ord,
+	B: AsRef<[u8]>,
+	H: Hasher,
+	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
 {
 	let gen_input: Vec<_> = input
 		// first put elements into btree to sort them and to remove duplicates
@@ -127,11 +129,12 @@ pub fn trie_root<H, I, A, B>(input: I) -> H::Out
 /// }
 /// ```
 pub fn sec_trie_root<H, I, A, B>(input: I) -> H::Out
-	where I: IntoIterator<Item = (A, B)>,
-		  A: AsRef<[u8]>,
-		  B: AsRef<[u8]>,
-		  H: Hasher,
-		  <H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
+where
+	I: IntoIterator<Item = (A, B)>,
+	A: AsRef<[u8]>,
+	B: AsRef<[u8]>,
+	H: Hasher,
+	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
 {
 	let gen_input: Vec<_> = input
 		// first put elements into btree to sort them and to remove duplicates
@@ -147,11 +150,11 @@ pub fn sec_trie_root<H, I, A, B>(input: I) -> H::Out
 }
 
 fn gen_trie_root<H, A, B>(input: &[(A, B)]) -> H::Out
-	where
-		A: AsRef<[u8]>,
-		B: AsRef<[u8]>,
-		H: Hasher,
-	  	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
+where
+	A: AsRef<[u8]>,
+	B: AsRef<[u8]>,
+	H: Hasher,
+	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
 {
 	let mut stream = RlpStream::new();
 	hash256rlp::<H, _, _>(input, 0, &mut stream);
@@ -214,11 +217,11 @@ fn as_nibbles(bytes: &[u8]) -> ElasticArray8<u8> {
 }
 
 fn hash256rlp<H, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut RlpStream)
-	where
-		A: AsRef<[u8]>,
-		B: AsRef<[u8]>,
-		H: Hasher,
-		<H as hashdb::Hasher>::Out: rlp::Encodable,
+where
+	A: AsRef<[u8]>,
+	B: AsRef<[u8]>,
+	H: Hasher,
+	<H as hashdb::Hasher>::Out: rlp::Encodable,
 {
 	let inlen = input.len();
 
@@ -297,11 +300,11 @@ fn hash256rlp<H, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut RlpStream)
 }
 
 fn hash256aux<H, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut RlpStream)
-	where
-		A: AsRef<[u8]>,
-		B: AsRef<[u8]>,
-		H: Hasher,
-		<H as hashdb::Hasher>::Out: rlp::Encodable,
+where
+	A: AsRef<[u8]>,
+	B: AsRef<[u8]>,
+	H: Hasher,
+	<H as hashdb::Hasher>::Out: rlp::Encodable,
 {
 	let mut s = RlpStream::new();
 	hash256rlp::<H, _, _>(input, pre_len, &mut s);
