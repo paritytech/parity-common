@@ -23,16 +23,16 @@ use node_codec::NodeCodec;
 ///
 /// Use it as a `Trie` or `TrieMut` trait object.
 pub struct FatDBMut<'db, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H>
 {
 	raw: TrieDBMut<'db, H, C>,
 }
 
 impl<'db, H, C> FatDBMut<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	/// Create a new trie with the backing database `db` and empty `root`
@@ -61,8 +61,8 @@ where
 }
 
 impl<'db, H, C> TrieMut<H, C> for FatDBMut<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn root(&mut self) -> &H::Out { self.raw.root() }
@@ -109,15 +109,13 @@ where
 mod test {
 	use hashdb::DBValue;
 	use memorydb::MemoryDB;
-	use ethtrie::trie::{Trie, TrieMut};
-	use ethtrie::{TrieDB, FatDBMut};
-	use keccak_hasher::KeccakHasher;
 	use keccak;
 	use ethereum_types::H256;
+	use super::super::{test_support::*, Trie, TrieMut};
 
 	#[test]
 	fn fatdbmut_to_trie() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<TestHasher>::new();
 		let mut root = H256::new();
 		{
 			let mut t = FatDBMut::new(&mut memdb, &mut root);

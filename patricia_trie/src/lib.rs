@@ -16,7 +16,7 @@
 
 //! Trie interface and implementation.
 extern crate elastic_array;
-extern crate parity_bytes as bytes; // TODO: name changed; update upstream when `parity-common` is available
+extern crate parity_bytes as bytes;
 extern crate hashdb;
 extern crate rand;
 #[macro_use]
@@ -28,8 +28,8 @@ extern crate env_logger;
 extern crate ethereum_types;
 #[cfg(test)]
 extern crate trie_standardmap as standardmap;
-#[cfg(test)]
-extern crate patricia_trie_ethereum as ethtrie;
+// #[cfg(test)]
+// extern crate patricia_trie_ethereum as ethtrie;
 #[cfg(test)]
 extern crate memorydb;
 #[cfg(test)]
@@ -37,7 +37,11 @@ extern crate rlp;
 #[cfg(test)]
 extern crate keccak_hash as keccak;
 #[cfg(test)]
-extern crate keccak_hasher;
+extern crate tiny_keccak;
+#[cfg(test)]
+extern crate plain_hasher;
+// #[cfg(test)]
+// extern crate keccak_hasher;
 #[cfg(test)]
 extern crate triehash;
 
@@ -58,6 +62,9 @@ mod lookup;
 mod nibblevec;
 mod nibbleslice;
 mod node_codec;
+
+#[cfg(test)]
+mod test_support;
 
 pub use self::triedb::{TrieDB, TrieDBIterator};
 pub use self::triedbmut::{TrieDBMut, ChildReference};

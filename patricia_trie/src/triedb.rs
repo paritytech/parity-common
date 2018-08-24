@@ -30,36 +30,9 @@ use std::marker::PhantomData;
 ///
 /// Use it as a `Trie` trait object. You can use `db()` to get the backing database object.
 /// Use `get` and `contains` to query values associated with keys in the trie.
-///
-/// # Example
-/// ```
-/// extern crate patricia_trie as trie;
-/// extern crate patricia_trie_ethereum as ethtrie;
-/// extern crate hashdb;
-/// extern crate keccak_hasher;
-/// extern crate memorydb;
-/// extern crate ethereum_types;
-///
-/// use trie::*;
-/// use hashdb::*;
-/// use keccak_hasher::KeccakHasher;
-/// use memorydb::*;
-/// use ethereum_types::H256;
-/// use ethtrie::{TrieDB, TrieDBMut};
-///
-///
-/// fn main() {
-///   let mut memdb = MemoryDB::<KeccakHasher>::new();
-///   let mut root = H256::new();
-///   TrieDBMut::new(&mut memdb, &mut root).insert(b"foo", b"bar").unwrap();
-///   let t = TrieDB::new(&memdb, &root).unwrap();
-///   assert!(t.contains(b"foo").unwrap());
-///   assert_eq!(t.get(b"foo").unwrap().unwrap(), DBValue::from_slice(b"bar"));
-/// }
-/// ```
 pub struct TrieDB<'db, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H>
 {
 	db: &'db HashDB<H>,
@@ -70,8 +43,8 @@ where
 }
 
 impl<'db, H, C> TrieDB<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	/// Create a new trie with the backing database `db` and `root`
@@ -132,8 +105,8 @@ where
 
 // This is for pretty debug output only
 struct TrieAwareDebugNode<'db, 'a, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H> + 'db
 {
 	trie: &'db TrieDB<'db, H, C>,
@@ -141,8 +114,8 @@ where
 }
 
 impl<'db, 'a, H, C> fmt::Debug for TrieAwareDebugNode<'db, 'a, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -180,8 +153,8 @@ where
 }
 
 impl<'db, H, C> fmt::Debug for TrieDB<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -415,16 +388,15 @@ impl<'a, H: Hasher, C: NodeCodec<H>> Iterator for TrieDBIterator<'a, H, C> {
 #[cfg(test)]
 mod tests {
 	use hashdb::DBValue;
-	use keccak_hasher::KeccakHasher;
 	use memorydb::MemoryDB;
-	use ethtrie::{TrieDB, TrieDBMut, RlpCodec, trie::{Trie, TrieMut, Lookup}};
 	use ethereum_types::H256;
+	use super::super::{test_support::*, Trie, TrieMut, Lookup};
 
 	#[test]
 	fn iterator() {
 		let d = vec![DBValue::from_slice(b"A"), DBValue::from_slice(b"AA"), DBValue::from_slice(b"AB"), DBValue::from_slice(b"B")];
 
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<TestHasher>::new();
 		let mut root = H256::new();
 		{
 			let mut t = TrieDBMut::new(&mut memdb, &mut root);
@@ -441,8 +413,8 @@ mod tests {
 	#[test]
 	fn iterator_seek() {
 		let d = vec![ DBValue::from_slice(b"A"), DBValue::from_slice(b"AA"), DBValue::from_slice(b"AB"), DBValue::from_slice(b"B") ];
-	
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+
+		let mut memdb = MemoryDB::<TestHasher>::new();
 		let mut root = H256::new();
 		{
 			let mut t = TrieDBMut::new(&mut memdb, &mut root);
@@ -450,7 +422,7 @@ mod tests {
 				t.insert(x, x).unwrap();
 			}
 		}
-	
+
 		let t = TrieDB::new(&memdb, &root).unwrap();
 		let mut iter = t.iter().unwrap();
 		assert_eq!(iter.next().unwrap().unwrap(), (b"A".to_vec(), DBValue::from_slice(b"A")));
@@ -481,7 +453,7 @@ mod tests {
 
 	#[test]
 	fn get_len() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<TestHasher>::new();
 		let mut root = H256::new();
 		{
 			let mut t = TrieDBMut::new(&mut memdb, &mut root);
@@ -499,7 +471,7 @@ mod tests {
 	fn debug_output_supports_pretty_print() {
 		let d = vec![ DBValue::from_slice(b"A"), DBValue::from_slice(b"AA"), DBValue::from_slice(b"AB"), DBValue::from_slice(b"B") ];
 
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<TestHasher>::new();
 		let mut root = H256::new();
 		let root = {
 			let mut t = TrieDBMut::new(&mut memdb, &mut root);
@@ -607,9 +579,9 @@ mod tests {
 		use rlp;
 		use ethereum_types::H512;
 		use std::marker::PhantomData;
-		use ethtrie::trie::NibbleSlice;
+		use super::super::NibbleSlice;
 
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<TestHasher>::new();
 		let mut root = H256::new();
 		{
 			let mut t = TrieDBMut::new(&mut memdb, &mut root);

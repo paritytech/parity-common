@@ -80,8 +80,9 @@ impl<HO: Copy> Recorder<HO> {
 mod tests {
 	use super::*;
 	use keccak::keccak;
-	use keccak_hasher::KeccakHasher;
+	use memorydb::MemoryDB;
 	use ethereum_types::H256;
+	use super::super::{test_support::*, Trie, TrieMut, Recorder};
 
 	#[test]
 	fn basic_recorder() {
@@ -135,11 +136,7 @@ mod tests {
 
 	#[test]
 	fn trie_record() {
-		use ethtrie::trie::{Trie, TrieMut, Recorder};
-		use memorydb::MemoryDB;
-		use ethtrie::{TrieDB, TrieDBMut};
-
-		let mut db = MemoryDB::<KeccakHasher>::new();
+		let mut db = MemoryDB::<TestHasher>::new();
 
 		let mut root = H256::default();
 
