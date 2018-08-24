@@ -28,8 +28,6 @@ extern crate env_logger;
 extern crate ethereum_types;
 #[cfg(test)]
 extern crate trie_standardmap as standardmap;
-// #[cfg(test)]
-// extern crate patricia_trie_ethereum as ethtrie;
 #[cfg(test)]
 extern crate memorydb;
 #[cfg(test)]
@@ -40,8 +38,6 @@ extern crate keccak_hash as keccak;
 extern crate tiny_keccak;
 #[cfg(test)]
 extern crate plain_hasher;
-// #[cfg(test)]
-// extern crate keccak_hasher;
 #[cfg(test)]
 extern crate triehash;
 
