@@ -15,10 +15,15 @@ pub fn clean_0x(s: &str) -> &str {
 	}
 }
 
+/// Construct a fixed-size hash type.
+/// Takes the name of the type and the size in bytes and an optional third argument for meta data
+/// Example: `construct_hash!(H256, 32);`
+/// Example: `construct_hash!(H160, 20, cfg_attr(feature = "serialize", derive(Serialize, Deserialize)));`
 #[macro_export]
 macro_rules! construct_hash {
-	($from: ident, $size: expr) => {
+	($from: ident, $size: expr $(, $m:meta)*) => {
 		#[repr(C)]
+		$(#[$m])*
 		/// Unformatted binary data of fixed length.
 		pub struct $from (pub [u8; $size]);
 
@@ -87,6 +92,15 @@ macro_rules! construct_hash {
 			pub fn len() -> usize {
 				$size
 			}
+
+            /// Returns a constant raw pointer to the value
+            pub fn as_ptr(&self) -> *const u8 {
+                self.0.as_ptr()
+            }
+
+            pub fn as_mut_ptr(&mut self) -> *mut u8 {
+                (&mut self.0).as_mut_ptr()
+            }
 
 			#[inline]
 			/// Assign self to be of the same value as a slice of bytes of length `len()`.
@@ -321,6 +335,79 @@ macro_rules! construct_hash {
 	}
 }
 
+/// Implements conversion to and from hash types of different sizes. Uses the
+/// last bytes, e.g. `From<H256> for H160` uses bytes 12..32
+/// CAUTION: make sure to call with correct sizes and the bigger type first or
+/// bad things will happen!
+#[macro_export]
+macro_rules! impl_hash_conversions {
+	($a: ident, $a_size: expr, $b: ident, $b_size: expr) => {
+		impl From<$b> for $a {
+			fn from(value: $b) -> $a {
+				debug_assert!($a_size > $b_size && $a_size % 2 == 0 && $b_size %2 == 0);
+				let mut ret = $a::new();
+				ret.0[($a_size - $b_size)..$a_size].copy_from_slice(&value);
+				ret
+			}
+		}
+
+		impl From<$a> for $b {
+			fn from(value: $a) -> $b {
+				debug_assert!($a_size > $b_size && $a_size % 2 == 0 && $b_size %2 == 0);
+				let mut ret = $b::new();
+				ret.0.copy_from_slice(&value[($a_size - $b_size)..$a_size]);
+				ret
+			}
+		}
+
+		impl<'a> From<&'a $b> for $a {
+			fn from(value: &'a $b) -> $a {
+				let mut ret = $a::new();
+				ret.0[($a_size - $b_size)..$a_size].copy_from_slice(value);
+				ret
+			}
+		}
+	}
+}
+
+/// Implements conversion to and from a hash type and the equally sized unsigned int.
+/// CAUTION: Bad things will happen if the two types are not of the same size!
+#[cfg(feature="uint_conversions")]
+#[macro_export]
+macro_rules! impl_hash_uint_conversions {
+	($hash: ident, $uint: ident) => {
+		debug_assert_eq!(::core::mem::size_of::<$hash>(), ::core::mem::size_of::<$uint>());
+		impl From<$uint> for $hash {
+			fn from(value: $uint) -> $hash {
+				let mut ret = $hash::new();
+				value.to_big_endian(&mut ret);
+				ret
+			}
+		}
+
+		impl<'a> From<&'a $uint> for $hash {
+			fn from(value: &'a $uint) -> $hash {
+				let mut ret: $hash = $hash::new();
+				value.to_big_endian(&mut ret);
+				ret
+			}
+		}
+
+		impl From<$hash> for $uint {
+			fn from(value: $hash) -> $uint {
+				$uint::from(&value as &[u8])
+			}
+		}
+
+		impl<'a> From<&'a $hash> for $uint {
+			fn from(value: &'a $hash) -> $uint {
+				$uint::from(value.as_ref() as &[u8])
+			}
+		}
+
+	}
+}
+
 #[cfg(all(feature="heapsizeof", feature="libc", not(target_os = "unknown")))]
 #[macro_export]
 #[doc(hidden)]
@@ -367,7 +454,7 @@ macro_rules! impl_std_for_hash {
 
 			fn from_str(s: &str) -> Result<$from, $crate::rustc_hex::FromHexError> {
 				use $crate::rustc_hex::FromHex;
-				let a = s.from_hex()?;
+				let a : Vec<u8> = s.from_hex()?;
 				if a.len() != $size {
 					return Err($crate::rustc_hex::FromHexError::InvalidHexLength);
 				}
@@ -492,7 +579,13 @@ macro_rules! impl_quickcheck_arbitrary_for_hash {
 
 #[cfg(test)]
 mod tests {
+	construct_hash!(H256, 32);
+	construct_hash!(H160, 20);
 	construct_hash!(H128, 16);
+	construct_hash!(H64, 8);
+	construct_hash!(H32, 4);
+
+	impl_hash_conversions!(H256, 32, H160, 20);
 
 	#[test]
 	fn test_construct_hash() {
@@ -527,5 +620,68 @@ mod tests {
 		test(0x100, "00000000000000000000000000000100", "0000…0100");
 		test(0xfff, "00000000000000000000000000000fff", "0000…0fff");
 		test(0x1000, "00000000000000000000000000001000", "0000…1000");
+	}
+
+	#[test]
+	fn hash_bitor() {
+		let a = H64([1; 8]);
+		let b = H64([2; 8]);
+		let c = H64([3; 8]);
+
+		// borrow
+		assert_eq!(&a | &b, c);
+
+		// move
+		assert_eq!(a | b, c);
+	}
+
+	#[test]
+	fn from_and_to_address() {
+		let address: H160 = "ef2d6d194084c2de36e0dabfce45d046b37d1106".into();
+		let h = H256::from(address.clone());
+		let a = H160::from(h);
+		assert_eq!(address, a);
+	}
+
+	#[test]
+	fn from_u64() {
+		use core::str::FromStr;
+
+		assert_eq!(H128::from(0x1234567890abcdef), H128::from_str("00000000000000001234567890abcdef").unwrap());
+		assert_eq!(H64::from(0x1234567890abcdef), H64::from_str("1234567890abcdef").unwrap());
+		assert_eq!(H32::from(0x1234567890abcdef), H32::from_str("90abcdef").unwrap());
+	}
+
+	#[test]
+	fn from_str() {
+		assert_eq!(H64::from(0x1234567890abcdef), H64::from("0x1234567890abcdef"));
+		assert_eq!(H64::from(0x1234567890abcdef), H64::from("1234567890abcdef"));
+		assert_eq!(H64::from(0x234567890abcdef), H64::from("0x234567890abcdef"));
+	}
+
+	#[cfg(feature = "uint_conversions")]
+	#[test]
+	fn from_and_to_u256() {
+		use uint::U256;
+
+		impl_hash_uint_conversions!(H256, U256);
+
+		let u: U256 = 0x123456789abcdef0u64.into();
+		let h = H256::from(u);
+		assert_eq!(H256::from(u), H256::from("000000000000000000000000000000000000000000000000123456789abcdef0"));
+		let h_ref = H256::from(&u);
+		assert_eq!(h, h_ref);
+		let r_ref: U256 = From::from(&h);
+		assert!(r_ref == u);
+		let r: U256 = From::from(h);
+		assert!(r == u)
+	}
+
+	#[test]
+	#[should_panic]
+	fn converting_differently_sized_types_panics() {
+		use uint::U512;
+
+		impl_hash_uint_conversions!(H256, U512);
 	}
 }
