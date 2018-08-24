@@ -344,8 +344,7 @@ macro_rules! impl_hash_conversions {
 	($a: ident, $a_size: expr, $b: ident, $b_size: expr) => {
 		impl From<$b> for $a {
 			fn from(value: $b) -> $a {
-				// REVIEW: better way of ensuring the macro params are ok?
-				assert!($a_size > $b_size && $a_size % 2 == 0 && $b_size %2 == 0);
+				debug_assert!($a_size > $b_size && $a_size % 2 == 0 && $b_size %2 == 0);
 				let mut ret = $a::new();
 				ret.0[($a_size - $b_size)..$a_size].copy_from_slice(&value);
 				ret
@@ -354,8 +353,7 @@ macro_rules! impl_hash_conversions {
 
 		impl From<$a> for $b {
 			fn from(value: $a) -> $b {
-				// REVIEW: better way of ensuring the macro params are ok?
-				assert!($a_size > $b_size && $a_size % 2 == 0 && $b_size %2 == 0);
+				debug_assert!($a_size > $b_size && $a_size % 2 == 0 && $b_size %2 == 0);
 				let mut ret = $b::new();
 				ret.0.copy_from_slice(&value[($a_size - $b_size)..$a_size]);
 				ret
@@ -378,6 +376,7 @@ macro_rules! impl_hash_conversions {
 #[macro_export]
 macro_rules! impl_hash_uint_conversions {
 	($hash: ident, $uint: ident) => {
+		debug_assert_eq!(::core::mem::size_of::<$hash>(), ::core::mem::size_of::<$uint>());
 		impl From<$uint> for $hash {
 			fn from(value: $uint) -> $hash {
 				let mut ret = $hash::new();
@@ -676,5 +675,13 @@ mod tests {
 		assert!(r_ref == u);
 		let r: U256 = From::from(h);
 		assert!(r == u)
+	}
+
+	#[test]
+	#[should_panic]
+	fn converting_differently_sized_types_panics() {
+		use uint::U512;
+
+		impl_hash_uint_conversions!(H256, U512);
 	}
 }
