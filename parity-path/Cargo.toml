@@ -1,5 +1,5 @@
 [package]
-name = "path"
+name = "parity-path"
 version = "0.1.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "GPL3"
