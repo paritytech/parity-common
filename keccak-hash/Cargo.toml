@@ -1,14 +1,14 @@
 [package]
-description = "Rust bindings for tinykeccak C library"
-homepage = "https://github.com/paritytech/keccak-hash"
-readme = "README.md"
-license = "GPL-3.0"
 name = "keccak-hash"
 version = "0.1.2"
+description = "`keccak-hash` is a set of utility functions to facilitate working with Keccak hashes (256/512 bits long)."
 authors = ["Parity Technologies <admin@parity.io>"]
+repository = "https://github.com/paritytech/parity-common"
+readme = "README.md"
+license = "GPL-3.0"
 
 [dependencies]
-ethereum-types = "0.3"
+ethereum-types = "0.4"
 tiny-keccak = "1.4"
 
 [dev-dependencies]

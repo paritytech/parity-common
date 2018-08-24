@@ -2,9 +2,11 @@
 name = "parity-crypto"
 version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>"]
+repository = "https://github.com/paritytech/parity-common"
+description = "Crypto utils used by ethstore and network."
+license = "GPL-3.0"
 
 [dependencies]
-ethereum-types = "0.3"
 quick-error = "1.2.2"
 ring = "0.12"
 rust-crypto = "0.2.36"
