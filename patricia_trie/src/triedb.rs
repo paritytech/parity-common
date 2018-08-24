@@ -58,8 +58,8 @@ use std::marker::PhantomData;
 /// }
 /// ```
 pub struct TrieDB<'db, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H>
 {
 	db: &'db HashDB<H>,
@@ -70,8 +70,8 @@ where
 }
 
 impl<'db, H, C> TrieDB<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	/// Create a new trie with the backing database `db` and `root`
@@ -132,8 +132,8 @@ where
 
 // This is for pretty debug output only
 struct TrieAwareDebugNode<'db, 'a, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H> + 'db
 {
 	trie: &'db TrieDB<'db, H, C>,
@@ -141,8 +141,8 @@ where
 }
 
 impl<'db, 'a, H, C> fmt::Debug for TrieAwareDebugNode<'db, 'a, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -180,8 +180,8 @@ where
 }
 
 impl<'db, H, C> fmt::Debug for TrieDB<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -383,7 +383,7 @@ impl<'a, H: Hasher, C: NodeCodec<H>> Iterator for TrieDBIterator<'a, H, C> {
 							i => *self.key_nibbles.last_mut()
 								.expect("pushed as 0; moves sequentially; removed afterwards; qed") = i as u8,
 						}
-						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&*children[i]))
+						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&children[i]))
 					},
 					(Status::AtChild(i), &OwnedNode::Branch(_, _)) => {
 						if i == 0 {
@@ -441,7 +441,7 @@ mod tests {
 	#[test]
 	fn iterator_seek() {
 		let d = vec![ DBValue::from_slice(b"A"), DBValue::from_slice(b"AA"), DBValue::from_slice(b"AB"), DBValue::from_slice(b"B") ];
-	
+
 		let mut memdb = MemoryDB::<KeccakHasher>::new();
 		let mut root = H256::new();
 		{
@@ -450,7 +450,7 @@ mod tests {
 				t.insert(x, x).unwrap();
 			}
 		}
-	
+
 		let t = TrieDB::new(&memdb, &root).unwrap();
 		let mut iter = t.iter().unwrap();
 		assert_eq!(iter.next().unwrap().unwrap(), (b"A".to_vec(), DBValue::from_slice(b"A")));
