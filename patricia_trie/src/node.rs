@@ -35,26 +35,43 @@ pub enum Node<'a> {
 	Branch([&'a [u8]; 16], Option<&'a [u8]>),
 }
 
-/// A Sparse (non mutable) owned vector struct to hold branch keys
+/// A Sparse (non mutable) owned vector struct to hold branch keys and value
 #[derive(Eq, PartialEq, Debug, Clone)]
-pub struct BranchKeys {
+pub struct Branch {
 	data: Vec<u8>,
-	ubounds: [usize; 17],
+	ubounds: [usize; 18],
+	has_value: bool,
 }
 
-impl<'a> From<[&'a [u8]; 16]> for BranchKeys {
-	fn from(a: [&'a [u8]; 16]) -> Self {
+impl Branch {
+	fn new(a: [&[u8]; 16], value: Option<&[u8]>) -> Self {
 		let mut data = Vec::with_capacity(a.iter().map(|inner| inner.len()).sum());
-		let mut ubounds = [0; 17];
+		let mut ubounds = [0; 18];
 		for (inner, ub) in a.iter().zip(ubounds.iter_mut().skip(1)) {
 			data.extend_from_slice(inner);
 			*ub = data.len();
 		}
-		BranchKeys { data, ubounds }
+		if let Some(value) = value {
+			data.extend(value);
+			ubounds[17] = data.len();
+		}
+		Branch { data, ubounds, has_value: value.is_some() }
+	}
+
+	pub fn get_value(&self) -> Option<&[u8]> {
+		if self.has_value {
+			Some(&self.data[self.ubounds[16]..self.ubounds[17]])
+		} else {
+			None
+		}
+	}
+
+	pub fn has_value(&self) -> bool {
+		self.has_value
 	}
 }
 
-impl ::std::ops::Index<usize> for BranchKeys {
+impl ::std::ops::Index<usize> for Branch {
 	type Output = [u8];
 	fn index(&self, index: usize) -> &[u8] {
 		assert!(index < 16);
@@ -72,7 +89,7 @@ pub enum OwnedNode {
 	/// Extension node: partial key and child node.
 	Extension(NibbleVec, DBValue),
 	/// Branch node: 16 children and an optional value.
-	Branch(BranchKeys, Option<DBValue>),
+	Branch(Branch),
 }
 
 impl<'a> From<Node<'a>> for OwnedNode {
@@ -81,7 +98,7 @@ impl<'a> From<Node<'a>> for OwnedNode {
 			Node::Empty => OwnedNode::Empty,
 			Node::Leaf(k, v) => OwnedNode::Leaf(k.into(), DBValue::from_slice(v)),
 			Node::Extension(k, child) => OwnedNode::Extension(k.into(), DBValue::from_slice(child)),
-			Node::Branch(c, val) => OwnedNode::Branch(c.into(), val.map(DBValue::from_slice)),
+			Node::Branch(c, val) => OwnedNode::Branch(Branch::new(c, val)),
 		}
 	}
 }
