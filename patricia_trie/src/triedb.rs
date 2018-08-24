@@ -371,7 +371,8 @@ impl<'a, H: Hasher, C: NodeCodec<H>> Iterator for TrieDBIterator<'a, H, C> {
 						IterStep::PopTrail
 					},
 					(Status::At, &OwnedNode::Branch(ref branch)) if branch.has_value() => {
-						return Some(Ok((self.key(), DBValue::from_slice(branch.get_value().unwrap()))));
+						let value = branch.get_value().expect("already checked `has_value`");
+						return Some(Ok((self.key(), DBValue::from_slice(value))));
 					},
 					(Status::At, &OwnedNode::Leaf(_, ref v)) => {
 						return Some(Ok((self.key(), v.clone())));
@@ -380,7 +381,7 @@ impl<'a, H: Hasher, C: NodeCodec<H>> Iterator for TrieDBIterator<'a, H, C> {
 						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&*d))
 					},
 					(Status::At, &OwnedNode::Branch(_)) => IterStep::Continue,
-					(Status::AtChild(i), &OwnedNode::Branch(ref branch)) if branch[i].len() > 0 => {
+					(Status::AtChild(i), &OwnedNode::Branch(ref branch)) if !branch[i].is_empty() => {
 						match i {
 							0 => self.key_nibbles.push(0),
 							i => *self.key_nibbles.last_mut()

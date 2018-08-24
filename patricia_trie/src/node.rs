@@ -58,6 +58,7 @@ impl Branch {
 		Branch { data, ubounds, has_value: value.is_some() }
 	}
 
+	/// Get the node value, if any
 	pub fn get_value(&self) -> Option<&[u8]> {
 		if self.has_value {
 			Some(&self.data[self.ubounds[16]..self.ubounds[17]])
@@ -66,6 +67,7 @@ impl Branch {
 		}
 	}
 
+	/// Test if the node has a value
 	pub fn has_value(&self) -> bool {
 		self.has_value
 	}
