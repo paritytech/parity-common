@@ -18,20 +18,21 @@
 //!
 //! This module should be used to generate trie root hash.
 
-extern crate elastic_array;
 extern crate hashdb;
 extern crate rlp;
 #[cfg(test)] extern crate keccak_hasher;
 
 use std::collections::BTreeMap;
 use std::cmp;
-use elastic_array::{ElasticArray4, ElasticArray8};
+use std::iter::once;
 use hashdb::Hasher;
 use rlp::RlpStream;
 
 fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
-	let len = cmp::min(first.len(), second.len());
-	(0..len).take_while(|&i| first[i] == second[i]).count()
+	first.iter()
+		.zip(second.iter())
+		.position(|(f, s)| f != s)
+		.unwrap_or_else(|| cmp::min(first.len(), second.len()))
 }
 
 /// Generates a trie root hash for a vector of values
@@ -45,29 +46,17 @@ fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
 /// fn main() {
 /// 	let v = &["doe", "reindeer"];
 /// 	let root = "e766d5d51b89dc39d981b41bda63248d7abce4f0225eefd023792a540bcffee3";
-/// 	assert_eq!(ordered_trie_root::<KeccakHasher, _, _>(v), root.into());
+/// 	assert_eq!(ordered_trie_root::<KeccakHasher, _>(v), root.into());
 /// }
 /// ```
-pub fn ordered_trie_root<H, I, A>(input: I) -> H::Out
+pub fn ordered_trie_root<H, I>(input: I) -> H::Out
 where
-	I: IntoIterator<Item = A>,
-	A: AsRef<[u8]>,
+	I: IntoIterator,
+	I::Item: AsRef<[u8]>,
 	H: Hasher,
 	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
 {
-	let gen_input: Vec<_> = input
-		// first put elements into btree to sort them by nibbles (key'd by index)
-		// optimize it later
-		.into_iter()
-		.enumerate()
-		.map(|(i, slice)| (rlp::encode(&i), slice))
-		.collect::<BTreeMap<_, _>>()
-		// then move them to a vector
-		.into_iter()
-		.map(|(k, v)| (as_nibbles(&k), v) )
-		.collect();
-
-	gen_trie_root::<H,_, _>(&gen_input)
+	trie_root::<H, _, _, _>(input.into_iter().enumerate().map(|(i, v)| (rlp::encode(&i), v)))
 }
 
 /// Generates a trie root hash for a vector of key-value tuples
@@ -97,16 +86,31 @@ where
 	H: Hasher,
 	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
 {
-	let gen_input: Vec<_> = input
-		// first put elements into btree to sort them and to remove duplicates
-		.into_iter()
-		.collect::<BTreeMap<_, _>>()
-		// then move them to a vector
-		.into_iter()
-		.map(|(k, v)| (as_nibbles(k.as_ref()), v) )
-		.collect();
 
-	gen_trie_root::<H, _, _>(&gen_input)
+	// first put elements into btree to sort them and to remove duplicates
+	let input = input
+		.into_iter()
+		.collect::<BTreeMap<_, _>>();
+
+	let mut nibbles = Vec::with_capacity(input.keys().map(|k| k.as_ref().len()).sum::<usize>() * 2);
+	let mut lens = Vec::with_capacity(input.len() + 1);
+	lens.push(0);
+	for k in input.keys() {
+		for &b in k.as_ref() {
+			nibbles.push(b >> 4);
+			nibbles.push(b & 0x0F);
+		}
+		lens.push(nibbles.len());
+	}
+
+	// then move them to a vector
+	let input = input.into_iter().zip(lens.windows(2))
+		.map(|((_, v), w)| (&nibbles[w[0]..w[1]], v))
+		.collect::<Vec<_>>();
+
+	let mut stream = RlpStream::new();
+	hash256rlp::<H, _, _>(&input, 0, &mut stream);
+	H::hash(&stream.out())
 }
 
 /// Generates a key-hashed (secure) trie root hash for a vector of key-value tuples.
@@ -136,29 +140,7 @@ where
 	H: Hasher,
 	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
 {
-	let gen_input: Vec<_> = input
-		// first put elements into btree to sort them and to remove duplicates
-		.into_iter()
-		.map(|(k, v)| (H::hash(k.as_ref()), v))
-		.collect::<BTreeMap<_, _>>()
-		// then move them to a vector
-		.into_iter()
-		.map(|(k, v)| (as_nibbles(k.as_ref()), v) )
-		.collect();
-
-	gen_trie_root::<H, _, _>(&gen_input)
-}
-
-fn gen_trie_root<H, A, B>(input: &[(A, B)]) -> H::Out
-where
-	A: AsRef<[u8]>,
-	B: AsRef<[u8]>,
-	H: Hasher,
-	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
-{
-	let mut stream = RlpStream::new();
-	hash256rlp::<H, _, _>(input, 0, &mut stream);
-	H::hash(&stream.out())
+	trie_root::<H, _, _, _>(input.into_iter().map(|(k, v)| (H::hash(k.as_ref()), v)))
 }
 
 /// Hex-prefix Notation. First nibble has flags: oddness = 2^0 & termination = 2^1.
@@ -180,10 +162,9 @@ where
 ///  [1,2,3,4,5,T]     0x312345   // 5 > 3
 ///  [1,2,3,4,T]       0x201234   // 4 > 3
 /// ```
-fn hex_prefix_encode(nibbles: &[u8], leaf: bool) -> ElasticArray4<u8> {
+fn hex_prefix_encode<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Item = u8> + 'a {
 	let inlen = nibbles.len();
 	let oddness_factor = inlen % 2;
-	let mut res = ElasticArray4::new();
 
 	let first_byte = {
 		let mut bits = ((inlen as u8 & 1) + (2 * leaf as u8)) << 4;
@@ -192,28 +173,7 @@ fn hex_prefix_encode(nibbles: &[u8], leaf: bool) -> ElasticArray4<u8> {
 		}
 		bits
 	};
-
-	res.push(first_byte);
-
-	let mut offset = oddness_factor;
-	while offset < inlen {
-		let byte = (nibbles[offset] << 4) + nibbles[offset + 1];
-		res.push(byte);
-		offset += 2;
-	}
-
-	res
-}
-
-/// Converts slice of bytes to nibbles.
-fn as_nibbles(bytes: &[u8]) -> ElasticArray8<u8> {
-	let mut res = ElasticArray8::new();
-	for i in 0..bytes.len() {
-		let byte = bytes[i];
-		res.push(byte >> 4);
-		res.push(byte & 0b1111);
-	}
-	res
+	once(first_byte).chain(nibbles[oddness_factor..].chunks(2).map(|ch| ch[0] << 4 | ch[1]))
 }
 
 fn hash256rlp<H, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut RlpStream)
@@ -239,7 +199,7 @@ where
 	// and then append value
 	if inlen == 1 {
 		stream.begin_list(2);
-		stream.append(&&*hex_prefix_encode(&key[pre_len..], true));
+		stream.append_iter(hex_prefix_encode(&key[pre_len..], true));
 		stream.append(&value);
 		return;
 	}
@@ -258,7 +218,7 @@ where
 	// then recursively append suffixes of all items who had this key
 	if shared_prefix > pre_len {
 		stream.begin_list(2);
-		stream.append(&&*hex_prefix_encode(&key[pre_len..shared_prefix], false));
+		stream.append_iter(hex_prefix_encode(&key[pre_len..shared_prefix], false));
 		hash256aux::<H, _, _>(input, shared_prefix, stream);
 		return;
 	}
@@ -315,18 +275,6 @@ where
 	};
 }
 
-#[test]
-fn test_nibbles() {
-	let v = vec![0x31, 0x23, 0x45];
-	let e = vec![3, 1, 2, 3, 4, 5];
-	assert_eq!(as_nibbles(&v), e);
-
-	// A => 65 => 0x41 => [4, 1]
-	let v: Vec<u8> = From::from("A");
-	let e = vec![4, 1];
-	assert_eq!(as_nibbles(&v), e);
-}
-
 #[cfg(test)]
 mod tests {
 	use super::{trie_root, shared_prefix_len, hex_prefix_encode};
@@ -336,32 +284,32 @@ mod tests {
 	fn test_hex_prefix_encode() {
 		let v = vec![0, 0, 1, 2, 3, 4, 5];
 		let e = vec![0x10, 0x01, 0x23, 0x45];
-		let h = hex_prefix_encode(&v, false);
+		let h = hex_prefix_encode(&v, false).collect::<Vec<_>>();
 		assert_eq!(h, e);
 
 		let v = vec![0, 1, 2, 3, 4, 5];
 		let e = vec![0x00, 0x01, 0x23, 0x45];
-		let h = hex_prefix_encode(&v, false);
+		let h = hex_prefix_encode(&v, false).collect::<Vec<_>>();
 		assert_eq!(h, e);
 
 		let v = vec![0, 1, 2, 3, 4, 5];
 		let e = vec![0x20, 0x01, 0x23, 0x45];
-		let h = hex_prefix_encode(&v, true);
+		let h = hex_prefix_encode(&v, true).collect::<Vec<_>>();
 		assert_eq!(h, e);
 
 		let v = vec![1, 2, 3, 4, 5];
 		let e = vec![0x31, 0x23, 0x45];
-		let h = hex_prefix_encode(&v, true);
+		let h = hex_prefix_encode(&v, true).collect::<Vec<_>>();
 		assert_eq!(h, e);
 
 		let v = vec![1, 2, 3, 4];
 		let e = vec![0x00, 0x12, 0x34];
-		let h = hex_prefix_encode(&v, false);
+		let h = hex_prefix_encode(&v, false).collect::<Vec<_>>();
 		assert_eq!(h, e);
 
 		let v = vec![4, 1];
 		let e = vec![0x20, 0x41];
-		let h = hex_prefix_encode(&v, true);
+		let h = hex_prefix_encode(&v, true).collect::<Vec<_>>();
 		assert_eq!(h, e);
 	}
 

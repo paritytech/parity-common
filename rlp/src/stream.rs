@@ -120,6 +120,30 @@ impl RlpStream {
 		self
 	}
 
+	/// Appends iterator to the end of stream, chainable.
+	///
+	/// ```rust
+	/// extern crate rlp;
+	/// use rlp::*;
+	///
+	/// fn main () {
+	/// 	let mut stream = RlpStream::new_list(2);
+	/// 	stream.append(&"cat").append_iter("dog".as_bytes().iter().cloned());
+	/// 	let out = stream.out();
+	/// 	assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
+	/// }
+	/// ```
+	pub fn append_iter<'a, I>(&'a mut self, value: I) -> &'a mut Self
+	where I: IntoIterator<Item = u8>,
+	{
+		self.finished_list = false;
+		self.encoder().encode_iter(value);
+		if !self.finished_list {
+			self.note_appended(1);
+		}
+		self
+	}
+
 	/// Appends list of values to the end of stream, chainable.
 	pub fn append_list<'a, E, K>(&'a mut self, values: &[K]) -> &'a mut Self where E: Encodable, K: Borrow<E> {
 		self.begin_list(values.len());
@@ -353,17 +377,36 @@ impl<'a> BasicEncoder<'a> {
 		};
 	}
 
-	/// Pushes encoded value to the end of buffer
 	pub fn encode_value(&mut self, value: &[u8]) {
-		match value.len() {
+		self.encode_iter(value.iter().cloned());
+	}
+
+	/// Pushes encoded value to the end of buffer
+	pub fn encode_iter<I>(&mut self, value: I)
+	where I: IntoIterator<Item=u8>,
+	{
+		let mut value = value.into_iter();
+		let len = match value.size_hint() {
+			(lower, Some(upper)) if lower == upper => lower,
+			_ => {
+				let value = value.collect::<Vec<_>>();
+				return self.encode_iter(value);
+			}
+		};
+		match len {
 			// just 0
 			0 => self.buffer.push(0x80u8),
-			// byte is its own encoding if < 0x80
-			1 if value[0] < 0x80 => self.buffer.push(value[0]),
-			// (prefix + length), followed by the string
 			len @ 1 ... 55 => {
-				self.buffer.push(0x80u8 + len as u8);
-				self.buffer.extend_from_slice(value);
+				let first = value.next().expect("iterator length is higher than 1");
+				if len == 1 && first < 0x80 {
+					// byte is its own encoding if < 0x80
+					self.buffer.push(first);
+				} else {
+					// (prefix + length), followed by the string
+					self.buffer.push(0x80u8 + len as u8);
+					self.buffer.push(first);
+					self.buffer.extend(value);
+				}
 			}
 			// (prefix + length of length), followed by the length, followd by the string
 			len => {
@@ -371,7 +414,7 @@ impl<'a> BasicEncoder<'a> {
 				let position = self.buffer.len();
 				let inserted_bytes = self.insert_size(len, position);
 				self.buffer[position - 1] = 0xb7 + inserted_bytes;
-				self.buffer.extend_from_slice(value);
+				self.buffer.extend(value);
 			}
 		}
 	}
