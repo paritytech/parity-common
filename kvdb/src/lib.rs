@@ -77,8 +77,9 @@ impl<K, V> DBTransaction<K, V> {
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
 	pub fn put<IK, IV>(&mut self, col: Option<u32>, key: IK, value: IV)
-	where IK: Into<K>,
-		  IV: Into<V>,
+	where
+		IK: Into<K>,
+		IV: Into<V>,
 	{
 		self.ops.push(DBOp::Insert {
 			col: col,
