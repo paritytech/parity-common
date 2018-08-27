@@ -17,7 +17,6 @@
 #[macro_use]
 extern crate log;
 
-extern crate elastic_array;
 extern crate fs_swap;
 extern crate interleaved_ordered;
 extern crate num_cpus;
@@ -31,7 +30,6 @@ extern crate ethereum_types;
 extern crate kvdb;
 
 use std::collections::HashMap;
-use std::marker::PhantomData;
 use std::{cmp, fs, io, mem, result, error};
 use std::path::Path;
 
@@ -40,11 +38,10 @@ use parity_rocksdb::{
 	DB, Writable, WriteBatch, WriteOptions, IteratorMode, DBIterator,
 	Options, BlockBasedOptions, Direction, Cache, Column, ReadOptions
 };
-use interleaved_ordered::{interleave_ordered, InterleaveOrdered};
+use interleaved_ordered::interleave_ordered;
 
-use elastic_array::ElasticArray32;
 use fs_swap::{swap, swap_nonatomic};
-use kvdb::{KeyValueDB, DBTransaction, DBValue, DBOp};
+use kvdb::{KeyValueDB, DBTransaction, DBOp};
 
 #[cfg(target_os = "linux")]
 use regex::Regex;
@@ -54,6 +51,9 @@ use std::process::Command;
 use std::fs::File;
 #[cfg(target_os = "linux")]
 use std::path::PathBuf;
+
+pub type DBValue = Vec<u8>;
+pub type DBKey = Vec<u8>;
 
 fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<error::Error + Send + Sync>> {
 	io::Error::new(io::ErrorKind::Other, e)
@@ -200,23 +200,6 @@ impl Default for DatabaseConfig {
 	}
 }
 
-/// Database iterator (for flushed data only)
-// The compromise of holding only a virtual borrow vs. holding a lock on the
-// inner DB (to prevent closing via restoration) may be re-evaluated in the future.
-//
-pub struct DatabaseIterator<'a> {
-	iter: InterleaveOrdered<::std::vec::IntoIter<(Box<[u8]>, Box<[u8]>)>, DBIterator>,
-	_marker: PhantomData<&'a Database>,
-}
-
-impl<'a> Iterator for DatabaseIterator<'a> {
-	type Item = (Box<[u8]>, Box<[u8]>);
-
-	fn next(&mut self) -> Option<Self::Item> {
-		self.iter.next()
-	}
-}
-
 struct DBAndColumns {
 	db: DB,
 	cfs: Vec<Column>,
@@ -252,9 +235,9 @@ pub struct Database {
 	block_opts: BlockBasedOptions,
 	path: String,
 	// Dirty values added with `write_buffered`. Cleaned on `flush`.
-	overlay: RwLock<Vec<HashMap<ElasticArray32<u8>, KeyState>>>,
+	overlay: RwLock<Vec<HashMap<DBKey, KeyState>>>,
 	// Values currently being flushed. Cleared when `flush` completes.
-	flushing: RwLock<Vec<HashMap<ElasticArray32<u8>, KeyState>>>,
+	flushing: RwLock<Vec<HashMap<DBKey, KeyState>>>,
 	// Prevents concurrent flushes.
 	// Value indicates if a flush is in progress.
 	flushing_lock: Mutex<bool>,
@@ -393,7 +376,7 @@ impl Database {
 	}
 
 	/// Helper to create new transaction for this database.
-	pub fn transaction(&self) -> DBTransaction {
+	pub fn transaction(&self) -> DBTransaction<DBKey, DBValue> {
 		DBTransaction::new()
 	}
 
@@ -402,7 +385,7 @@ impl Database {
 	}
 
 	/// Commit transaction to database.
-	pub fn write_buffered(&self, tr: DBTransaction) {
+	pub fn write_buffered(&self, tr: DBTransaction<DBKey, DBValue>) {
 		let mut overlay = self.overlay.write();
 		let ops = tr.ops;
 		for op in ops {
@@ -478,7 +461,7 @@ impl Database {
 	}
 
 	/// Commit transaction to database.
-	pub fn write(&self, tr: DBTransaction) -> io::Result<()> {
+	pub fn write(&self, tr: DBTransaction<DBKey, DBValue>) -> io::Result<()> {
 		match *self.db.read() {
 			Some(DBAndColumns { ref db, ref cfs }) => {
 				let batch = WriteBatch::new();
@@ -520,10 +503,11 @@ impl Database {
 							Some(&KeyState::Delete) => Ok(None),
 							None => {
 								col.map_or_else(
-									|| db.get_opt(key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))),
-									|c| db.get_cf_opt(cfs[c as usize], key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))))
+									|| db.get_opt(key, &self.read_opts).map(|v| v.map(|v| v.to_vec())),
+									|c| db.get_cf_opt(cfs[c as usize], key, &self.read_opts)
+									.map(|v| v.map(|v| v.to_vec())))
 									.map_err(other_io_err)
-							},
+							}
 						}
 					},
 				}
@@ -534,7 +518,7 @@ impl Database {
 
 	/// Get value by partial key. Prefix size should match configured prefix size. Only searches flushed values.
 	// TODO: support prefix seek for unflushed data
-	pub fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
+	pub fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<DBValue> {
 		self.iter_from_prefix(col, prefix).and_then(|mut iter| {
 			match iter.next() {
 				// TODO: use prefix_same_as_start read option (not availabele in C API currently)
@@ -545,14 +529,13 @@ impl Database {
 	}
 
 	/// Get database iterator for flushed data.
-	pub fn iter(&self, col: Option<u32>) -> Option<DatabaseIterator> {
+	pub fn iter<'a>(&'a self, col: Option<u32>) -> Option<impl Iterator<Item=(DBKey, DBValue)> + 'a> {
 		match *self.db.read() {
 			Some(DBAndColumns { ref db, ref cfs }) => {
 				let overlay = &self.overlay.read()[Self::to_overlay_column(col)];
 				let mut overlay_data = overlay.iter()
 					.filter_map(|(k, v)| match *v {
-						KeyState::Insert(ref value) =>
-							Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_vec().into_boxed_slice())),
+						KeyState::Insert(ref value) => Some((k.clone(), value.clone())),
 						KeyState::Delete => None,
 					}).collect::<Vec<_>>();
 				overlay_data.sort();
@@ -563,27 +546,30 @@ impl Database {
 						.expect("iterator params are valid; qed")
 				);
 
-				Some(DatabaseIterator {
-					iter: interleave_ordered(overlay_data, iter),
-					_marker: PhantomData,
-				})
+				Some(interleave_ordered(overlay_data, iter.map(|(k, v)| (k.into(), v.into()))))
 			},
 			None => None,
 		}
 	}
 
-	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<DatabaseIterator> {
+	fn iter_from_prefix<'a>(
+		&'a self,
+		col: Option<u32>,
+		prefix: &[u8]
+	) -> Option<impl Iterator<Item=(DBKey, DBValue)> + 'a>
+	{
 		match *self.db.read() {
 			Some(DBAndColumns { ref db, ref cfs }) => {
-				let iter = col.map_or_else(|| db.iterator_opt(IteratorMode::From(prefix, Direction::Forward), &self.read_opts),
-					|c| db.iterator_cf_opt(cfs[c as usize], IteratorMode::From(prefix, Direction::Forward), &self.read_opts)
-						.expect("iterator params are valid; qed"));
+				let iter = col.map_or_else(
+						|| db.iterator_opt(IteratorMode::From(prefix, Direction::Forward), &self.read_opts),
+						|c| db.iterator_cf_opt(
+							cfs[c as usize],
+							IteratorMode::From(prefix, Direction::Forward),
+							&self.read_opts,
+						).expect("iterator params are valid; qed"));
 
-				Some(DatabaseIterator {
-					iter: interleave_ordered(Vec::new(), iter),
-					_marker: PhantomData,
-				})
-			},
+				Some(interleave_ordered(Vec::new(), iter.map(|(k, v)| (k.into(), v.into()))))
+			}
 			None => None,
 		}
 	}
@@ -596,10 +582,11 @@ impl Database {
 	}
 
 	/// Restore the database from a copy at given path.
-	pub fn restore(&self, new_db: &str) -> io::Result<()> {
+	pub fn restore<P: AsRef<Path>>(&self, new_db: P) -> io::Result<()> {
 		self.close();
 
 		// swap is guaranteed to be atomic
+		let new_db = new_db.as_ref();
 		match swap(new_db, &self.path) {
 			Ok(_) => {
 				// ignore errors
@@ -667,20 +654,20 @@ impl Database {
 
 // duplicate declaration of methods here to avoid trait import in certain existing cases
 // at time of addition.
-impl KeyValueDB for Database {
+impl KeyValueDB<DBKey, DBValue> for Database {
 	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
 		Database::get(self, col, key)
 	}
 
-	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
+	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<DBValue> {
 		Database::get_by_prefix(self, col, prefix)
 	}
 
-	fn write_buffered(&self, transaction: DBTransaction) {
+	fn write_buffered(&self, transaction: DBTransaction<DBKey, DBValue>) {
 		Database::write_buffered(self, transaction)
 	}
 
-	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
+	fn write(&self, transaction: DBTransaction<DBKey, DBValue>) -> io::Result<()> {
 		Database::write(self, transaction)
 	}
 
@@ -688,19 +675,19 @@ impl KeyValueDB for Database {
 		Database::flush(self)
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=(DBKey, DBValue)> + 'a> {
 		let unboxed = Database::iter(self, col);
 		Box::new(unboxed.into_iter().flat_map(|inner| inner))
 	}
 
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-		-> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
+		-> Box<Iterator<Item=(DBKey, DBValue)> + 'a>
 	{
 		let unboxed = Database::iter_from_prefix(self, col, prefix);
 		Box::new(unboxed.into_iter().flat_map(|inner| inner))
 	}
 
-	fn restore(&self, new_db: &str) -> io::Result<()> {
+	fn restore<P: AsRef<Path>>(&self, new_db: P) -> io::Result<()> {
 		Database::restore(self, new_db)
 	}
 }
@@ -729,8 +716,8 @@ mod tests {
 		let key3 = H256::from_str("01c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
 
 		let mut batch = db.transaction();
-		batch.put(None, &key1, b"cat");
-		batch.put(None, &key2, b"dog");
+		batch.put(None, &*key1, "cat".as_bytes());
+		batch.put(None, &*key2, "dog".as_bytes());
 		db.write(batch).unwrap();
 
 		assert_eq!(&*db.get(None, &key1).unwrap().unwrap(), b"cat");
@@ -743,35 +730,35 @@ mod tests {
 		assert_eq!(&*contents[1].1, b"dog");
 
 		let mut batch = db.transaction();
-		batch.delete(None, &key1);
+		batch.delete(None, &*key1);
 		db.write(batch).unwrap();
 
-		assert!(db.get(None, &key1).unwrap().is_none());
+		assert!(db.get(None, &*key1).unwrap().is_none());
 
 		let mut batch = db.transaction();
-		batch.put(None, &key1, b"cat");
+		batch.put(None, &*key1, "cat".as_bytes());
 		db.write(batch).unwrap();
 
 		let mut transaction = db.transaction();
-		transaction.put(None, &key3, b"elephant");
-		transaction.delete(None, &key1);
+		transaction.put(None, &*key3, "elephant".as_bytes());
+		transaction.delete(None, &*key1);
 		db.write(transaction).unwrap();
 		assert!(db.get(None, &key1).unwrap().is_none());
-		assert_eq!(&*db.get(None, &key3).unwrap().unwrap(), b"elephant");
+		assert_eq!(&*db.get(None, &key3).unwrap().unwrap(), "elephant".as_bytes());
 
-		assert_eq!(&*db.get_by_prefix(None, &key3).unwrap(), b"elephant");
-		assert_eq!(&*db.get_by_prefix(None, &key2).unwrap(), b"dog");
+		assert_eq!(&*db.get_by_prefix(None, &*key3).unwrap(), "elephant".as_bytes());
+		assert_eq!(&*db.get_by_prefix(None, &*key2).unwrap(), "dog".as_bytes());
 
 		let mut transaction = db.transaction();
-		transaction.put(None, &key1, b"horse");
-		transaction.delete(None, &key3);
+		transaction.put(None, &*key1, "horse".as_bytes());
+		transaction.delete(None, &*key3);
 		db.write_buffered(transaction);
-		assert!(db.get(None, &key3).unwrap().is_none());
-		assert_eq!(&*db.get(None, &key1).unwrap().unwrap(), b"horse");
+		assert!(db.get(None, &*key3).unwrap().is_none());
+		assert_eq!(&*db.get(None, &*key1).unwrap().unwrap(), "horse".as_bytes());
 
 		db.flush().unwrap();
-		assert!(db.get(None, &key3).unwrap().is_none());
-		assert_eq!(&*db.get(None, &key1).unwrap().unwrap(), b"horse");
+		assert!(db.get(None, &*key3).unwrap().is_none());
+		assert_eq!(&*db.get(None, &*key1).unwrap().unwrap(), "horse".as_bytes());
 	}
 
 	#[test]
@@ -848,13 +835,13 @@ mod tests {
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
 
 		let mut batch = db.transaction();
-		batch.put(None, b"foo", b"bar");
+		batch.put(None, "foo".as_bytes(), "bar".as_bytes());
 		db.write_buffered(batch);
 
 		let mut batch = db.transaction();
-		batch.put(None, b"foo", b"baz");
+		batch.put(None, "foo".as_bytes(), "baz".as_bytes());
 		db.write(batch).unwrap();
 
-		assert_eq!(db.get(None, b"foo").unwrap().unwrap().as_ref(), b"baz");
+		assert_eq!(db.get(None, "foo".as_bytes()).unwrap().unwrap(), b"baz");
 	}
 }

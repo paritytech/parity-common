@@ -1,11 +1,9 @@
 [package]
 name = "kvdb"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "Generic key-value trait"
 license = "GPL-3.0"
 
 [dependencies]
-elastic-array = "0.10"
-parity-bytes = { version = "0.1", path = "../parity-bytes" }

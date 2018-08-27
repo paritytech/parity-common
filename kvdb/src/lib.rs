@@ -16,48 +16,40 @@
 
 //! Key-Value store abstraction with `RocksDB` backend.
 
-extern crate elastic_array;
-extern crate parity_bytes as bytes;
-
 use std::io;
 use std::path::Path;
 use std::sync::Arc;
-use elastic_array::{ElasticArray128, ElasticArray32};
-use bytes::Bytes;
 
 /// Required length of prefixes.
 pub const PREFIX_LEN: usize = 12;
 
-/// Database value.
-pub type DBValue = ElasticArray128<u8>;
-
 /// Write transaction. Batches a sequence of put/delete operations for efficiency.
 #[derive(Default, Clone, PartialEq)]
-pub struct DBTransaction {
+pub struct DBTransaction<K, V> {
 	/// Database operations.
-	pub ops: Vec<DBOp>,
+	pub ops: Vec<DBOp<K, V>>,
 }
 
 /// Database operation.
 #[derive(Clone, PartialEq)]
-pub enum DBOp {
+pub enum DBOp<K, V> {
 	Insert {
 		col: Option<u32>,
-		key: ElasticArray32<u8>,
-		value: DBValue,
+		key: K,
+		value: V,
 	},
 	Delete {
 		col: Option<u32>,
-		key: ElasticArray32<u8>,
+		key: K,
 	}
 }
 
-impl DBOp {
+impl<K, V> DBOp<K, V> {
 	/// Returns the key associated with this operation.
-	pub fn key(&self) -> &[u8] {
+	pub fn key(&self) -> &[u8] where K: AsRef<[u8]> {
 		match *self {
-			DBOp::Insert { ref key, .. } => key,
-			DBOp::Delete { ref key, .. } => key,
+			DBOp::Insert { ref key, .. } => key.as_ref(),
+			DBOp::Delete { ref key, .. } => key.as_ref(),
 		}
 	}
 
@@ -70,48 +62,36 @@ impl DBOp {
 	}
 }
 
-impl DBTransaction {
+impl<K, V> DBTransaction<K, V> {
 	/// Create new transaction.
-	pub fn new() -> DBTransaction {
+	pub fn new() -> Self {
 		DBTransaction::with_capacity(256)
 	}
 
 	/// Create new transaction with capacity.
-	pub fn with_capacity(cap: usize) -> DBTransaction {
+	pub fn with_capacity(cap: usize) -> Self {
 		DBTransaction {
 			ops: Vec::with_capacity(cap)
 		}
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
-	pub fn put(&mut self, col: Option<u32>, key: &[u8], value: &[u8]) {
-		let mut ekey = ElasticArray32::new();
-		ekey.append_slice(key);
+	pub fn put<IK, IV>(&mut self, col: Option<u32>, key: IK, value: IV)
+	where IK: Into<K>,
+		  IV: Into<V>,
+	{
 		self.ops.push(DBOp::Insert {
 			col: col,
-			key: ekey,
-			value: DBValue::from_slice(value),
-		});
-	}
-
-	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
-	pub fn put_vec(&mut self, col: Option<u32>, key: &[u8], value: Bytes) {
-		let mut ekey = ElasticArray32::new();
-		ekey.append_slice(key);
-		self.ops.push(DBOp::Insert {
-			col: col,
-			key: ekey,
-			value: DBValue::from_vec(value),
+			key: key.into(),
+			value: value.into(),
 		});
 	}
 
 	/// Delete value by key.
-	pub fn delete(&mut self, col: Option<u32>, key: &[u8]) {
-		let mut ekey = ElasticArray32::new();
-		ekey.append_slice(key);
+	pub fn delete<IK: Into<K>>(&mut self, col: Option<u32>, key: IK) {
 		self.ops.push(DBOp::Delete {
 			col: col,
-			key: ekey,
+			key: key.into(),
 		});
 	}
 }
@@ -134,21 +114,22 @@ impl DBTransaction {
 ///
 /// The API laid out here, along with the `Sync` bound implies interior synchronization for
 /// implementation.
-pub trait KeyValueDB: Sync + Send {
+pub trait KeyValueDB<K: AsRef<[u8]>, V>: Sync + Send {
+
 	/// Helper to create a new transaction.
-	fn transaction(&self) -> DBTransaction { DBTransaction::new() }
+	fn transaction(&self) -> DBTransaction<K, V> { DBTransaction::new() }
 
 	/// Get a value by key.
-	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>>;
+	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<V>>;
 
 	/// Get a value by partial key. Only works for flushed data.
-	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>>;
+	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<V>;
 
 	/// Write a transaction of changes to the buffer.
-	fn write_buffered(&self, transaction: DBTransaction);
+	fn write_buffered(&self, transaction: DBTransaction<K, V>);
 
 	/// Write a transaction of changes to the backing store.
-	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
+	fn write(&self, transaction: DBTransaction<K, V>) -> io::Result<()> {
 		self.write_buffered(transaction);
 		self.flush()
 	}
@@ -157,19 +138,20 @@ pub trait KeyValueDB: Sync + Send {
 	fn flush(&self) -> io::Result<()>;
 
 	/// Iterate over flushed data for a given column.
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>;
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=(K, V)> + 'a>;
 
 	/// Iterate over flushed data for a given column, starting from a given prefix.
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-		-> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>;
+		-> Box<Iterator<Item=(K, V)> + 'a>;
 
 	/// Attempt to replace this database with a new one located at the given path.
-	fn restore(&self, new_db: &str) -> io::Result<()>;
+	fn restore<P: AsRef<Path>>(&self, new_db: P) -> io::Result<()>;
 }
 
 /// Generic key-value database handler. This trait contains one function `open`. When called, it opens database with a
 /// predefined config.
-pub trait KeyValueDBHandler: Send + Sync {
+pub trait KeyValueDBHandler<K: AsRef<[u8]>, V>: Send + Sync {
+	type DB: KeyValueDB<K, V>;
 	/// Open the predefined key-value database.
-	fn open(&self, path: &Path) -> io::Result<Arc<KeyValueDB>>;
+	fn open<P: AsRef<Path>>(&self, path: P) -> io::Result<Arc<Self::DB>>;
 }

@@ -19,14 +19,18 @@ extern crate kvdb;
 
 use std::collections::{BTreeMap, HashMap};
 use std::io;
+use std::path::Path;
 use parking_lot::RwLock;
-use kvdb::{DBValue, DBTransaction, KeyValueDB, DBOp};
+use kvdb::{DBTransaction, KeyValueDB, DBOp};
+
+pub type DBValue = Vec<u8>;
+pub type DBKey = Vec<u8>;
 
 /// A key-value database fulfilling the `KeyValueDB` trait, living in memory.
 /// This is generally intended for tests and is not particularly optimized.
 #[derive(Default)]
 pub struct InMemory {
-	columns: RwLock<HashMap<Option<u32>, BTreeMap<Vec<u8>, DBValue>>>,
+	columns: RwLock<HashMap<Option<u32>, BTreeMap<DBKey, DBValue>>>,
 }
 
 /// Create an in-memory database with the given number of columns.
@@ -44,7 +48,7 @@ pub fn create(num_cols: u32) -> InMemory {
 	}
 }
 
-impl KeyValueDB for InMemory {
+impl KeyValueDB<DBKey, DBValue> for InMemory {
 	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let columns = self.columns.read();
 		match columns.get(&col) {
@@ -53,25 +57,25 @@ impl KeyValueDB for InMemory {
 		}
 	}
 
-	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
+	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<DBValue> {
 		let columns = self.columns.read();
 		match columns.get(&col) {
 			None => None,
-			Some(map) =>
-				map.iter()
-					.find(|&(ref k ,_)| k.starts_with(prefix))
-					.map(|(_, v)| v.to_vec().into_boxed_slice())
+			Some(map) => map.iter()
+				.find(|&(ref k ,_)| k.starts_with(prefix))
+				.map(|(_, v)| v)
+				.cloned(),
 		}
 	}
 
-	fn write_buffered(&self, transaction: DBTransaction) {
+	fn write_buffered(&self, transaction: DBTransaction<DBKey, DBValue>) {
 		let mut columns = self.columns.write();
 		let ops = transaction.ops;
 		for op in ops {
 			match op {
 				DBOp::Insert { col, key, value } => {
 					if let Some(col) = columns.get_mut(&col) {
-						col.insert(key.into_vec(), value);
+						col.insert(key, value);
 					}
 				},
 				DBOp::Delete { col, key } => {
@@ -87,32 +91,28 @@ impl KeyValueDB for InMemory {
 		Ok(())
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=(DBKey, DBValue)> + 'a> {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new( // TODO: worth optimizing at all?
-				map.clone()
-					.into_iter()
-					.map(|(k, v)| (k.into_boxed_slice(), v.into_vec().into_boxed_slice()))
+				map.clone().into_iter()
 			),
 			None => Box::new(None.into_iter()),
 		}
 	}
 
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-		-> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
+		-> Box<Iterator<Item=(DBKey, DBValue)> + 'a>
 	{
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
-				map.clone()
-					.into_iter()
+				map.clone().into_iter()
 					.skip_while(move |&(ref k, _)| !k.starts_with(prefix))
-					.map(|(k, v)| (k.into_boxed_slice(), v.into_vec().into_boxed_slice()))
 			),
 			None => Box::new(None.into_iter()),
 		}
 	}
 
-	fn restore(&self, _new_db: &str) -> io::Result<()> {
+	fn restore<P: AsRef<Path>>(&self, _new_db: P) -> io::Result<()> {
 		Err(io::Error::new(io::ErrorKind::Other, "Attempted to restore in-memory database"))
 	}
 }
