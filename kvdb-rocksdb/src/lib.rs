@@ -25,7 +25,9 @@ extern crate parking_lot;
 extern crate regex;
 extern crate parity_rocksdb;
 
+#[cfg(test)]
 extern crate ethereum_types;
+
 extern crate kvdb;
 
 use std::collections::HashMap;
