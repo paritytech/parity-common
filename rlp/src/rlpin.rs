@@ -223,7 +223,10 @@ impl<'a> Rlp<'a> {
 		match self.bytes[0] {
 			0...0x80 => true,
 			0x81...0xb7 => self.bytes[1] != 0,
-			b @ 0xb8...0xbf => self.bytes[1 + b as usize - 0xb7] != 0,
+			b @ 0xb8...0xbf => {
+				let payload_idx = 1 + b as usize - 0xb7;
+				payload_idx < self.bytes.len() && self.bytes[payload_idx] != 0
+			},
 			_ => false
 		}
 	}
