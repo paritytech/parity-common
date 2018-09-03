@@ -1,15 +1,15 @@
 [package]
-description = "Recursive-length prefix encoding, decoding, and compression"
-repository = "https://github.com/paritytech/parity"
-license = "MIT/Apache-2.0"
 name = "rlp"
-version = "0.2.2"
+description = "Recursive-length prefix encoding, decoding, and compression"
+repository = "https://github.com/paritytech/parity-common"
+license = "MIT/Apache-2.0"
+version = "0.2.4"
 authors = ["Parity Technologies <admin@parity.io>"]
 
 [dependencies]
 byteorder = "1.0"
 elastic-array = "0.10"
-ethereum-types = { version = "0.3", optional = true }
+ethereum-types = { version = "0.4", optional = true }
 rustc-hex = {version = "2.0", default-features = false }
 
 [dev-dependencies]

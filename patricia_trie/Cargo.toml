@@ -3,6 +3,7 @@ name = "patricia-trie"
 version = "0.2.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "Merkle-Patricia Trie generic over key hasher and node encoding"
+repository = "https://github.com/paritytech/parity-common"
 license = "GPL-3.0"
 
 [dependencies]
@@ -14,10 +15,10 @@ parity-bytes = { version = "0.1", path = "../parity-bytes" }
 
 [dev-dependencies]
 env_logger = "0.5"
-ethereum-types = "0.3"
+ethereum-types = "0.4"
 keccak-hash = { version = "0.1", path = "../keccak-hash" }
 memorydb = { version = "0.2", path = "../memorydb", default-features = false }
-rlp = { version = "0.2.1", path = "../rlp", default-features = false }
+rlp = { version = "0.2", path = "../rlp", default-features = false }
 trie-standardmap = { version = "0.1", path = "../trie-standardmap", default-features = false }
 triehash = { version = "0.2", path = "../triehash", default-features = false }
 parity-bytes = { version = "0.1.0", path = "../parity-bytes" }
@@ -33,9 +34,9 @@ parity-bytes = { version = "0.1.0", path = "../parity-bytes" }
 # Note that this is a *copy*, without any git history or link to the mother
 # repo. They are to be considered test-only helpers and do not necessarily need
 # to be in sync with the `parity-ethereum` versions.
-patricia-trie-ethereum = { path = "../test-support/patricia-trie-ethereum" }
+patricia-trie-ethereum = { version = "0.1", path = "../test-support/patricia-trie-ethereum" }
 # We need this in-tree or we end up with duplicate versions when `keccak-hasher`
 # from crates.io fetches `hashdb` from crates, which causes compiler error
 # `error[E0277]: the trait bound `keccak_hasher::KeccakHasher: hashdb::Hasher`
 # is not satisfied`. Not sure if there's any way around that.
-keccak-hasher = { path = "../test-support/keccak-hasher" }
+keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }

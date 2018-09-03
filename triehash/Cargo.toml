@@ -1,18 +1,21 @@
 [package]
 name = "triehash"
-version = "0.2.1"
+version = "0.2.3"
 authors = ["Parity Technologies <admin@parity.io>"]
-description = "in memory patricia trie operations"
+description = "In-memory patricia trie operations"
 repository = "https://github.com/paritytech/parity-common"
 license = "GPL-3.0"
 
 [dependencies]
 elastic-array = "0.10"
 hashdb = { version = "0.2", path = "../hashdb", default-features = false }
-rlp = { version = "0.2", path = "../rlp", default-features = false }
+rlp = { version = "0.2.4", path = "../rlp", default-features = false }
 
 [dev-dependencies]
 trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
 keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
 tiny-keccak = "1.4.2"
 ethereum-types = "0.4"
+
+[features]
+ethereum = ["rlp/ethereum"]
