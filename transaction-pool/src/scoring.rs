@@ -138,7 +138,7 @@ impl<T, S: Clone> Clone for ScoreWithRef<T, S> {
 impl<S: cmp::Ord, T> Ord for ScoreWithRef<T, S> {
 	fn cmp(&self, other: &Self) -> cmp::Ordering {
 		other.score.cmp(&self.score)
-			.then(other.transaction.insertion_id.cmp(&self.transaction.insertion_id))
+			.then(self.transaction.insertion_id.cmp(&other.transaction.insertion_id))
 	}
 }
 
@@ -155,3 +155,33 @@ impl<S: cmp::Ord, T>  PartialEq for ScoreWithRef<T, S> {
 }
 
 impl<S: cmp::Ord, T> Eq for ScoreWithRef<T, S> {}
+
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	fn score(score: u64, insertion_id: u64) -> ScoreWithRef<(), u64> {
+		ScoreWithRef {
+			score,
+			transaction: Transaction {
+				insertion_id,
+				transaction: Default::default(),
+			},
+		}
+	}
+
+	#[test]
+	fn scoring_comparison() {
+		// the higher the score the better
+		assert_eq!(score(10, 0).cmp(&score(0, 0)), cmp::Ordering::Less);
+		assert_eq!(score(0, 0).cmp(&score(10, 0)), cmp::Ordering::Greater);
+
+		// equal is equal
+		assert_eq!(score(0, 0).cmp(&score(0, 0)), cmp::Ordering::Equal);
+
+		// lower insertion id is better
+		assert_eq!(score(0, 0).cmp(&score(0, 10)), cmp::Ordering::Less);
+		assert_eq!(score(0, 10).cmp(&score(0, 0)), cmp::Ordering::Greater);
+	}
+}

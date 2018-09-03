@@ -210,6 +210,14 @@ fn should_construct_pending() {
 
 	let tx0 = txq.import(b.tx().nonce(0).gas_price(5).new()).unwrap();
 	let tx1 = txq.import(b.tx().nonce(1).gas_price(5).new()).unwrap();
+
+	let tx9 = txq.import(b.tx().sender(2).nonce(0).new()).unwrap();
+
+	let tx5 = txq.import(b.tx().sender(1).nonce(0).new()).unwrap();
+	let tx6 = txq.import(b.tx().sender(1).nonce(1).new()).unwrap();
+	let tx7 = txq.import(b.tx().sender(1).nonce(2).new()).unwrap();
+	let tx8 = txq.import(b.tx().sender(1).nonce(3).gas_price(4).new()).unwrap();
+
 	let tx2 = txq.import(b.tx().nonce(2).new()).unwrap();
 	// this transaction doesn't get to the block despite high gas price
 	// because of block gas limit and simplistic ordering algorithm.
@@ -217,14 +225,9 @@ fn should_construct_pending() {
 	//gap
 	txq.import(b.tx().nonce(5).new()).unwrap();
 
-	let tx5 = txq.import(b.tx().sender(1).nonce(0).new()).unwrap();
-	let tx6 = txq.import(b.tx().sender(1).nonce(1).new()).unwrap();
-	let tx7 = txq.import(b.tx().sender(1).nonce(2).new()).unwrap();
-	let tx8 = txq.import(b.tx().sender(1).nonce(3).gas_price(4).new()).unwrap();
 	// gap
 	txq.import(b.tx().sender(1).nonce(5).new()).unwrap();
 
-	let tx9 = txq.import(b.tx().sender(2).nonce(0).new()).unwrap();
 	assert_eq!(txq.light_status().transaction_count, 11);
 	assert_eq!(txq.status(NonceReady::default()), Status {
 		stalled: 0,
@@ -325,6 +328,13 @@ fn should_update_scoring_correctly() {
 	let b = TransactionBuilder::default();
 	let mut txq = TestPool::default();
 
+	let tx9 = txq.import(b.tx().sender(2).nonce(0).new()).unwrap();
+
+	let tx5 = txq.import(b.tx().sender(1).nonce(0).new()).unwrap();
+	let tx6 = txq.import(b.tx().sender(1).nonce(1).new()).unwrap();
+	let tx7 = txq.import(b.tx().sender(1).nonce(2).new()).unwrap();
+	let tx8 = txq.import(b.tx().sender(1).nonce(3).gas_price(4).new()).unwrap();
+
 	let tx0 = txq.import(b.tx().nonce(0).gas_price(5).new()).unwrap();
 	let tx1 = txq.import(b.tx().nonce(1).gas_price(5).new()).unwrap();
 	let tx2 = txq.import(b.tx().nonce(2).new()).unwrap();
@@ -334,14 +344,9 @@ fn should_update_scoring_correctly() {
 	//gap
 	txq.import(b.tx().nonce(5).new()).unwrap();
 
-	let tx5 = txq.import(b.tx().sender(1).nonce(0).new()).unwrap();
-	let tx6 = txq.import(b.tx().sender(1).nonce(1).new()).unwrap();
-	let tx7 = txq.import(b.tx().sender(1).nonce(2).new()).unwrap();
-	let tx8 = txq.import(b.tx().sender(1).nonce(3).gas_price(4).new()).unwrap();
 	// gap
 	txq.import(b.tx().sender(1).nonce(5).new()).unwrap();
 
-	let tx9 = txq.import(b.tx().sender(2).nonce(0).new()).unwrap();
 	assert_eq!(txq.light_status().transaction_count, 11);
 	assert_eq!(txq.status(NonceReady::default()), Status {
 		stalled: 0,

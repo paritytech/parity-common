@@ -1,6 +1,6 @@
 [package]
 name = "fixed-hash"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 homepage = "https://github.com/paritytech/parity-common"
@@ -9,8 +9,11 @@ description = "Fixed-size hashes"
 [dependencies]
 heapsize = { version = "0.4", optional = true }
 rand = { version = "0.4", optional = true }
-rustc-hex = { version = "1.0", optional = true }
+rustc-hex = { version = "2.0", optional = true }
 quickcheck = { version = "0.6", optional = true }
+uint = { version = "0.4", path = "../uint", optional = true, default-features = false }
+serde = { version = "1.0", optional = true }
+serde_derive = { version = "1.0", optional = true }
 
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
 libc = { version = "0.2", optional = true, default-features = false }
@@ -20,3 +23,5 @@ default = ["libc"]
 std = ["rustc-hex", "rand"]
 heapsizeof = ["heapsize"]
 impl_quickcheck_arbitrary = ["quickcheck"]
+serialize = ["serde", "serde_derive"]
+uint_conversions = ["uint"]
