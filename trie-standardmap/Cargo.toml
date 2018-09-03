@@ -1,11 +1,13 @@
 [package]
 name = "trie-standardmap"
-version = "0.1.0"
-authors = ["debris <marek.kotewicz@gmail.com>"]
 description = "Standard test map for profiling tries"
+version = "0.1.1"
+authors = ["debris <marek.kotewicz@gmail.com>", "Parity Technologies <admin@parity.io>"]
+repository = "https://github.com/paritytech/parity-common"
+license = "GPL-3.0"
 
 [dependencies]
-ethereum-types = "0.3"
+ethereum-types = "0.4"
 keccak-hash = { version = "0.1", path = "../keccak-hash" }
-parity-bytes = { path = "../parity-bytes" }
-rlp = { path = "../rlp" }
+parity-bytes = { version = "0.1", path = "../parity-bytes" }
+rlp = { version = "0.2.4", path = "../rlp" }

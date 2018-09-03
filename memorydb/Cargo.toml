@@ -3,6 +3,7 @@ name = "memorydb"
 version = "0.2.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "in-memory implementation of hashdb"
+repository = "https://github.com/paritytech/parity-common"
 license = "GPL-3.0"
 
 [dependencies]
@@ -14,6 +15,6 @@ rlp = { version = "0.2", path = "../rlp", default-features = false }
 
 [dev-dependencies]
 tiny-keccak = "1.4.2"
-ethereum-types = "0.3"
+ethereum-types = "0.4"
 keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
 keccak-hash = { version = "0.1", path = "../keccak-hash" }

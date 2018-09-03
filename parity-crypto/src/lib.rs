@@ -14,10 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Crypto utils used ethstore and network.
+//! Crypto utils used by ethstore and network.
 
 extern crate crypto as rcrypto;
-extern crate ethereum_types;
 #[macro_use]
 extern crate quick_error;
 extern crate ring;
