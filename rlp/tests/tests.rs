@@ -429,3 +429,12 @@ fn test_rlp_stream_unbounded_list() {
 	stream.complete_unbounded_list();
 	assert!(stream.is_finished());
 }
+
+#[test]
+fn test_rlp_is_int() {
+	for b in 0xb8..0xc0 {
+		let data: Vec<u8> = vec![b];
+		let rlp = Rlp::new(&data);
+		assert_eq!(rlp.is_int(), false);
+	}
+}
