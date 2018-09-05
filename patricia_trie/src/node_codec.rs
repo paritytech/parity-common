@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Generic trait for trie node encoding/decoding. Takes a `hashdb::Hasher` 
+//! Generic trait for trie node encoding/decoding. Takes a `hashdb::Hasher`
 //! to parametrize the hashes used in the codec.
 
 use hashdb::Hasher;
@@ -30,7 +30,7 @@ pub trait NodeCodec<H: Hasher>: Sized {
 
 	/// Null node type
 	const HASHED_NULL_NODE: H::Out;
-	
+
 	/// Decode bytes to a `Node`. Returns `Self::E` on failure.
 	fn decode(data: &[u8]) -> Result<Node, Self::Error>;
 
@@ -43,13 +43,13 @@ pub trait NodeCodec<H: Hasher>: Sized {
 	/// Returns an empty node
 	fn empty_node() -> ElasticArray1024<u8>;
 
-	/// Returns an encoded leaft node
+	/// Returns an encoded leaf node
 	fn leaf_node(partial: &[u8], value: &[u8]) -> ElasticArray1024<u8>;
 
 	/// Returns an encoded extension node
 	fn ext_node(partial: &[u8], child_ref: ChildReference<H::Out>) -> ElasticArray1024<u8>;
 
-	/// Returns an encoded branch node. Takes an iterator yielding `ChildReference<H::Out>` and an optional value
+	/// Returns an encoded branch node. Takes an iterator yielding `ChildReference<H::Out>` as an optional value
 	fn branch_node<I>(children: I, value: Option<ElasticArray128<u8>>) -> ElasticArray1024<u8>
 	where I: IntoIterator<Item=Option<ChildReference<H::Out>>>;
 }
