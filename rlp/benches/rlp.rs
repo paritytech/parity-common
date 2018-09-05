@@ -101,3 +101,18 @@ fn bench_stream_1000_empty_lists(b: &mut Bencher) {
 		let _ = stream.out();
 	});
 }
+
+#[bench]
+fn bench_decode_1000_values(b: &mut Bencher) {
+	let mut stream = RlpStream::new_list(1000);
+	for _ in 0..1000 {
+		stream.append(&U256::from(1));
+	}
+	let data= stream.out();
+	b.iter(|| {
+		let rlp = Rlp::new(&data);
+		for i in 0..1000 {
+			let _: U256 = rlp.val_at(i).unwrap();
+		}
+	});
+}

@@ -72,21 +72,19 @@ impl PayloadInfo {
 
 	/// Create a new object from the given bytes RLP. The bytes
 	pub fn from(header_bytes: &[u8]) -> Result<PayloadInfo, DecoderError> {
-		match header_bytes.first().cloned() {
-			None => Err(DecoderError::RlpIsTooShort),
-			Some(0...0x7f) => Ok(PayloadInfo::new(0, 1)),
-			Some(l @ 0x80...0xb7) => Ok(PayloadInfo::new(1, l as usize - 0x80)),
-			Some(l @ 0xb8...0xbf) => {
-				let len_of_len = l as usize - 0xb7;
-				calculate_payload_info(header_bytes, len_of_len)
-			}
-			Some(l @ 0xc0...0xf7) => Ok(PayloadInfo::new(1, l as usize - 0xc0)),
-			Some(l @ 0xf8...0xff) => {
-				let len_of_len = l as usize - 0xf7;
-				calculate_payload_info(header_bytes, len_of_len)
-			},
-			// we cant reach this place, but rust requires _ to be implemented
-			_ => { unreachable!(); }
+		let l = *header_bytes.first().ok_or_else(|| DecoderError::RlpIsTooShort)?;
+		if l <= 0x7f {
+			Ok(PayloadInfo::new(0, 1))
+		} else if l <= 0xb7 {
+			Ok(PayloadInfo::new(1, l as usize - 0x80))
+		} else if l <= 0xbf {
+			let len_of_len = l as usize - 0xb7;
+			calculate_payload_info(header_bytes, len_of_len)
+		} else if l <= 0xf7 {
+			Ok(PayloadInfo::new(1, l as usize - 0xc0))
+		} else {
+			let len_of_len = l as usize - 0xf7;
+			calculate_payload_info(header_bytes, len_of_len)
 		}
 	}
 }
@@ -97,21 +95,11 @@ impl PayloadInfo {
 ///
 /// Should be used in places where, error handling is required,
 /// eg. on input
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Rlp<'a> {
 	bytes: &'a [u8],
 	offset_cache: Cell<OffsetCache>,
 	count_cache: Cell<Option<usize>>,
-}
-
-impl<'a> Clone for Rlp<'a> {
-	fn clone(&self) -> Rlp<'a> {
-		Rlp {
-			bytes: self.bytes,
-			offset_cache: self.offset_cache.clone(),
-			count_cache: self.count_cache.clone(),
-		}
-	}
 }
 
 impl<'a> fmt::Display for Rlp<'a> {
@@ -132,7 +120,7 @@ impl<'a> fmt::Display for Rlp<'a> {
 	}
 }
 
-impl<'a, 'view> Rlp<'a> where 'a: 'view {
+impl<'a> Rlp<'a> {
 	pub fn new(bytes: &'a [u8]) -> Rlp<'a> {
 		Rlp {
 			bytes: bytes,
@@ -141,7 +129,7 @@ impl<'a, 'view> Rlp<'a> where 'a: 'view {
 		}
 	}
 
-	pub fn as_raw(&'view self) -> &'a [u8] {
+	pub fn as_raw<'view>(&'view self) -> &'a [u8] where 'a: 'view {
 		self.bytes
 	}
 
@@ -160,7 +148,7 @@ impl<'a, 'view> Rlp<'a> where 'a: 'view {
 		BasicDecoder::payload_info(self.bytes)
 	}
 
-	pub fn data(&'view self) -> Result<&'a [u8], DecoderError> {
+	pub fn data<'view>(&'view self) -> Result<&'a [u8], DecoderError> where 'a: 'view {
 		let pi = BasicDecoder::payload_info(self.bytes)?;
 		Ok(&self.bytes[pi.header_len..(pi.header_len + pi.value_len)])
 	}
@@ -187,7 +175,7 @@ impl<'a, 'view> Rlp<'a> where 'a: 'view {
 		}
 	}
 
-	pub fn at(&'view self, index: usize) -> Result<Rlp<'a>, DecoderError> {
+	pub fn at<'view>(&'view self, index: usize) -> Result<Rlp<'a>, DecoderError> where 'a: 'view {
 		if !self.is_list() {
 			return Err(DecoderError::RlpExpectedToBeList);
 		}
@@ -235,12 +223,15 @@ impl<'a, 'view> Rlp<'a> where 'a: 'view {
 		match self.bytes[0] {
 			0...0x80 => true,
 			0x81...0xb7 => self.bytes[1] != 0,
-			b @ 0xb8...0xbf => self.bytes[1 + b as usize - 0xb7] != 0,
+			b @ 0xb8...0xbf => {
+				let payload_idx = 1 + b as usize - 0xb7;
+				payload_idx < self.bytes.len() && self.bytes[payload_idx] != 0
+			},
 			_ => false
 		}
 	}
 
-	pub fn iter(&'view self) -> RlpIterator<'a, 'view> {
+	pub fn iter<'view>(&'view self) -> RlpIterator<'a, 'view> where 'a: 'view {
 		self.into_iter()
 	}
 
@@ -261,7 +252,7 @@ impl<'a, 'view> Rlp<'a> where 'a: 'view {
 	}
 
 	pub fn decoder(&self) -> BasicDecoder {
-		BasicDecoder::new(self.clone())
+		BasicDecoder::new(self.bytes)
 	}
 
 	/// consumes first found prefix
@@ -320,13 +311,13 @@ impl<'a, 'view> Iterator for RlpIterator<'a, 'view> {
 }
 
 pub struct BasicDecoder<'a> {
-	rlp: Rlp<'a>
+	rlp: &'a [u8],
 }
 
 impl<'a> BasicDecoder<'a> {
-	pub fn new(rlp: Rlp<'a>) -> BasicDecoder<'a> {
+	pub fn new(rlp: &'a [u8]) -> BasicDecoder<'a> {
 		BasicDecoder {
-			rlp: rlp
+			rlp,
 		}
 	}
 
@@ -342,43 +333,38 @@ impl<'a> BasicDecoder<'a> {
 	pub fn decode_value<T, F>(&self, f: F) -> Result<T, DecoderError>
 		where F: Fn(&[u8]) -> Result<T, DecoderError> {
 
-		let bytes = self.rlp.as_raw();
+		let bytes = self.rlp;
 
-		match bytes.first().cloned() {
-			// RLP is too short.
-			None => Err(DecoderError::RlpIsTooShort),
-			// Single byte value.
-			Some(l @ 0...0x7f) => Ok(f(&[l])?),
-			// 0-55 bytes
-			Some(l @ 0x80...0xb7) => {
-				let last_index_of = 1 + l as usize - 0x80;
-				if bytes.len() < last_index_of {
-					return Err(DecoderError::RlpInconsistentLengthAndData);
-				}
-				let d = &bytes[1..last_index_of];
-				if l == 0x81 && d[0] < 0x80 {
-					return Err(DecoderError::RlpInvalidIndirection);
-				}
-				Ok(f(d)?)
-			},
-			// Longer than 55 bytes.
-			Some(l @ 0xb8...0xbf) => {
-				let len_of_len = l as usize - 0xb7;
-				let begin_of_value = 1 as usize + len_of_len;
-				if bytes.len() < begin_of_value {
-					return Err(DecoderError::RlpInconsistentLengthAndData);
-				}
-				let len = decode_usize(&bytes[1..begin_of_value])?;
+		let l = *bytes.first().ok_or_else(|| DecoderError::RlpIsTooShort)?;
 
-				let last_index_of_value = begin_of_value.checked_add(len)
-					.ok_or(DecoderError::RlpInvalidLength)?;
-				if bytes.len() < last_index_of_value {
-					return Err(DecoderError::RlpInconsistentLengthAndData);
-				}
-				Ok(f(&bytes[begin_of_value..last_index_of_value])?)
+		if l <= 0x7f {
+			Ok(f(&[l])?)
+		} else if l <= 0xb7 {
+			let last_index_of = 1 + l as usize - 0x80;
+			if bytes.len() < last_index_of {
+				return Err(DecoderError::RlpInconsistentLengthAndData);
 			}
-			// We are reading value, not a list!
-			_ => Err(DecoderError::RlpExpectedToBeData)
+			let d = &bytes[1..last_index_of];
+			if l == 0x81 && d[0] < 0x80 {
+				return Err(DecoderError::RlpInvalidIndirection);
+			}
+			Ok(f(d)?)
+		} else if l <= 0xbf {
+			let len_of_len = l as usize - 0xb7;
+			let begin_of_value = 1 as usize + len_of_len;
+			if bytes.len() < begin_of_value {
+				return Err(DecoderError::RlpInconsistentLengthAndData);
+			}
+			let len = decode_usize(&bytes[1..begin_of_value])?;
+
+			let last_index_of_value = begin_of_value.checked_add(len)
+				.ok_or(DecoderError::RlpInvalidLength)?;
+			if bytes.len() < last_index_of_value {
+				return Err(DecoderError::RlpInconsistentLengthAndData);
+			}
+			Ok(f(&bytes[begin_of_value..last_index_of_value])?)
+		} else {
+			Err(DecoderError::RlpExpectedToBeData)
 		}
 	}
 }
