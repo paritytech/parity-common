@@ -127,4 +127,21 @@ mod test {
 		let t = TrieDB::new(&memdb, &root).unwrap();
 		assert_eq!(t.get(&keccak::keccak(&[0x01u8, 0x23])).unwrap().unwrap(), DBValue::from_slice(&[0x01u8, 0x23]));
 	}
+
+	#[test]
+	fn fatdbmut_insert_remove_key_mapping() {
+		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut root = H256::new();
+		let key = [0x01u8, 0x23];
+		let val = [0x01u8, 0x24];
+		let key_hash = keccak::keccak(&key);
+		let aux_hash = keccak::keccak(&key_hash);
+		let mut t = FatDBMut::new(&mut memdb, &mut root);
+		t.insert(&key, &val).unwrap();
+		assert_eq!(t.get(&key), Ok(Some(DBValue::from_slice(&val))));
+		assert_eq!(t.db().get(&aux_hash), Some(DBValue::from_slice(&key)));
+		t.remove(&key).unwrap();
+		assert_eq!(t.db().get(&aux_hash), None);
+	}
+
 }
