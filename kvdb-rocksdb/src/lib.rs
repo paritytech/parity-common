@@ -613,8 +613,8 @@ impl Database {
 						let _ = fs::remove_dir_all(new_db);
 					},
 					Err(err) => {
-						warn!("DB restoration failed: could not swap DB directories");
-						return Err(err.into());
+						warn!("Failed to swap DB directories: {:?}", err);
+						return Err(io::Error::new(io::ErrorKind::Other, "DB restoration failed: could not swap DB directories"));
 					}
 				}
 			}
