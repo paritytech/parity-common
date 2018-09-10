@@ -32,7 +32,7 @@ use ethereum_types::H256;
 use keccak_hash::keccak;
 use memorydb::MemoryDB;
 use test::{Bencher, black_box};
-use trie::{TrieMut, Trie};
+use trie::{TrieMut, Trie, NibbleSlice};
 use trie_standardmap::{Alphabet, ValueMode, StandardMap};
 use keccak_hasher::KeccakHasher;
 use ethtrie::{TrieDB, TrieDBMut};
@@ -209,6 +209,26 @@ fn trie_insertions_six_low(b: &mut Bencher) {
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		for i in d.iter() {
 			t.insert(&i.0, &i.1).unwrap();
+		}
+	})
+}
+
+#[bench]
+fn nibble_common_prefix(b: &mut Bencher) {
+	let st = StandardMap {
+		alphabet: Alphabet::Custom(b"abcdef".to_vec()),
+		min_key: 32,
+		journal_key: 0,
+		value_mode: ValueMode::Mirror,
+		count: 999,
+	};
+	let (keys, values): (Vec<_>, Vec<_>) = st.make().iter().cloned().unzip();
+	let mixed: Vec<_> = keys.iter().zip(values.iter().rev()).map(|pair| {
+		(NibbleSlice::new(pair.0), NibbleSlice::new(pair.1))
+	}).collect();
+	b.iter(||{
+		for (left, right) in mixed.iter() {
+			let _ = left.common_prefix(&right);
 		}
 	})
 }
