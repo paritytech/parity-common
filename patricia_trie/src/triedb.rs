@@ -58,8 +58,8 @@ use std::marker::PhantomData;
 /// }
 /// ```
 pub struct TrieDB<'db, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H>
 {
 	db: &'db HashDB<H>,
@@ -70,8 +70,8 @@ where
 }
 
 impl<'db, H, C> TrieDB<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	/// Create a new trie with the backing database `db` and `root`
@@ -94,7 +94,7 @@ where
 			.ok_or_else(|| Box::new(TrieError::InvalidStateRoot(*self.root)))
 	}
 
-	/// Given some node-describing data `node`, return the actual node RLP.
+	/// Given some node-describing data `node`, return the actual encoded node.
 	/// This could be a simple identity operation in the case that the node is sufficiently small, but
 	/// may require a database lookup.
 	fn get_raw_or_lookup(&'db self, node: &'db [u8]) -> Result<DBValue, H::Out, C::Error> {
@@ -132,8 +132,8 @@ where
 
 // This is for pretty debug output only
 struct TrieAwareDebugNode<'db, 'a, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H> + 'db
 {
 	trie: &'db TrieDB<'db, H, C>,
@@ -141,8 +141,8 @@ where
 }
 
 impl<'db, 'a, H, C> fmt::Debug for TrieAwareDebugNode<'db, 'a, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -180,8 +180,8 @@ where
 }
 
 impl<'db, H, C> fmt::Debug for TrieDB<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -319,13 +319,13 @@ impl<'a, H: Hasher, C: NodeCodec<H>> TrieDBIterator<'a, H, C> {
 		}
 	}
 
-	/// The present key.
+	/// The present key, converted back from nibbles to bytes. Allocates.
 	fn key(&self) -> Bytes {
 		// collapse the key_nibbles down to bytes.
 		let nibbles = &self.key_nibbles;
-		let mut i = 1;
-		let mut result = Bytes::with_capacity(nibbles.len() / 2);
 		let len = nibbles.len();
+		let mut result = Bytes::with_capacity(len / 2);
+		let mut i = 1;
 		while i < len {
 			result.push(nibbles[i - 1] * 16 + nibbles[i]);
 			i += 2;
@@ -441,7 +441,7 @@ mod tests {
 	#[test]
 	fn iterator_seek() {
 		let d = vec![ DBValue::from_slice(b"A"), DBValue::from_slice(b"AA"), DBValue::from_slice(b"AB"), DBValue::from_slice(b"B") ];
-	
+
 		let mut memdb = MemoryDB::<KeccakHasher>::new();
 		let mut root = H256::new();
 		{
@@ -450,7 +450,7 @@ mod tests {
 				t.insert(x, x).unwrap();
 			}
 		}
-	
+
 		let t = TrieDB::new(&memdb, &root).unwrap();
 		let mut iter = t.iter().unwrap();
 		assert_eq!(iter.next().unwrap().unwrap(), (b"A".to_vec(), DBValue::from_slice(b"A")));

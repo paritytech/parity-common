@@ -59,18 +59,26 @@ impl NibbleVec {
 
 	/// Push a nibble onto the `NibbleVec`. Ignores the high 4 bits.
 	pub fn push(&mut self, nibble: u8) {
-		let nibble = nibble & 0x0F;
+		let nibble = nibble & 0b_0000_1111; // retain the lower 4 bits
 
 		if self.len % 2 == 0 {
+			// If we're even then we start a new byte and just push a new byte
+			// containing the nibble left-shifted 4 steps.
 			self.inner.push(nibble << 4);
 		} else {
+			// If we're odd we combine (OR) the last byte with the new data;
+			// the last byte will have its data in the high bits so by OR-ing
+			// with the lower 4 bits nothing is thrown away.
+			// last == 0b_1010_0000
+			// nibb == 0b_0000_1100
+			// |=   -> 0b_1010_1100
 			*self.inner.last_mut().expect("len != 0 since len % 2 != 0; inner has a last element; qed") |= nibble;
 		}
 
 		self.len += 1;
 	}
 
-	/// Try to pop a nibble off the `NibbleVec`. Fails if len == 0.
+	/// Try to pop a nibble off the `NibbleVec`. `None` if len == 0.
 	pub fn pop(&mut self) -> Option<u8> {
 		if self.is_empty() {
 			return None;
@@ -78,9 +86,13 @@ impl NibbleVec {
 
 		let byte = self.inner.pop().expect("len != 0; inner has last elem; qed");
 		let nibble = if self.len % 2 == 0 {
+			// If even, the last byte is the lower 4 bits of the original byte
+			// …so put the high 4 bits back in a new entry
 			self.inner.push(byte & 0xF0);
+			 // …and return the lower 4 bits
 			byte & 0x0F
 		} else {
+			// if we're odd, then the last byte only contains the 4 lower bits (right-shifted)
 			byte >> 4
 		};
 
