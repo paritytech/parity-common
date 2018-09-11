@@ -25,7 +25,7 @@ use elastic_array::{ElasticArray1024, ElasticArray128};
 
 /// Trait for trie node encoding/decoding
 pub trait NodeCodec<H: Hasher>: Sized {
-	/// Encoding error type
+	/// Codec error type
 	type Error: ::std::error::Error;
 
 	/// Null node type
