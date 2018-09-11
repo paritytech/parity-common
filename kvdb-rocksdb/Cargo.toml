@@ -8,7 +8,7 @@ license = "GPL-3.0"
 
 [dependencies]
 elastic-array = "0.10"
-fs-swap = "0.2.1"
+fs-swap = "0.2.4"
 interleaved-ordered = "0.1.0"
 kvdb = { version = "0.1", path = "../kvdb" }
 log = "0.3"
