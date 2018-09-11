@@ -606,15 +606,15 @@ impl Database {
 				let _ = fs::remove_dir_all(new_db);
 			},
 			Err(err) => {
-				warn!("DB atomic swap failed: {}", err);
+				debug!("DB atomic swap failed: {}", err);
 				match swap_nonatomic(new_db, &self.path) {
 					Ok(_) => {
 						// ignore errors
 						let _ = fs::remove_dir_all(new_db);
 					},
 					Err(err) => {
-						warn!("DB nonatomic atomic swap failed: {}", err);
-						return Err(err.into());
+						warn!("Failed to swap DB directories: {:?}", err);
+						return Err(io::Error::new(io::ErrorKind::Other, "DB restoration failed: could not swap DB directories"));
 					}
 				}
 			}
