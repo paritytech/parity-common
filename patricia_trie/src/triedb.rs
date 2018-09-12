@@ -58,8 +58,8 @@ use std::marker::PhantomData;
 /// }
 /// ```
 pub struct TrieDB<'db, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H>
 {
 	db: &'db HashDB<H>,
@@ -70,8 +70,8 @@ where
 }
 
 impl<'db, H, C> TrieDB<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	/// Create a new trie with the backing database `db` and `root`
@@ -132,8 +132,8 @@ where
 
 // This is for pretty debug output only
 struct TrieAwareDebugNode<'db, 'a, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H> + 'db
 {
 	trie: &'db TrieDB<'db, H, C>,
@@ -141,8 +141,8 @@ where
 }
 
 impl<'db, 'a, H, C> fmt::Debug for TrieAwareDebugNode<'db, 'a, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -180,8 +180,8 @@ where
 }
 
 impl<'db, H, C> fmt::Debug for TrieDB<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -216,8 +216,8 @@ impl Crumb {
 		self.status = match (&self.status, &self.node) {
 			(_, &OwnedNode::Empty) => Status::Exiting,
 			(&Status::Entering, _) => Status::At,
-			(&Status::At, &OwnedNode::Branch(_, _)) => Status::AtChild(0),
-			(&Status::AtChild(x), &OwnedNode::Branch(_, _)) if x < 15 => Status::AtChild(x + 1),
+			(&Status::At, &OwnedNode::Branch(_)) => Status::AtChild(0),
+			(&Status::AtChild(x), &OwnedNode::Branch(_)) if x < 15 => Status::AtChild(x + 1),
 			_ => Status::Exiting,
 		}
 	}
@@ -365,27 +365,31 @@ impl<'a, H: Hasher, C: NodeCodec<H>> Iterator for TrieDBIterator<'a, H, C> {
 								let l = self.key_nibbles.len();
 								self.key_nibbles.truncate(l - n.len());
 							},
-							OwnedNode::Branch(_, _) => { self.key_nibbles.pop(); },
+							OwnedNode::Branch(_) => { self.key_nibbles.pop(); },
 							_ => {}
 						}
 						IterStep::PopTrail
 					},
-					(Status::At, &OwnedNode::Leaf(_, ref v)) | (Status::At, &OwnedNode::Branch(_, Some(ref v))) => {
+					(Status::At, &OwnedNode::Branch(ref branch)) if branch.has_value() => {
+						let value = branch.get_value().expect("already checked `has_value`");
+						return Some(Ok((self.key(), DBValue::from_slice(value))));
+					},
+					(Status::At, &OwnedNode::Leaf(_, ref v)) => {
 						return Some(Ok((self.key(), v.clone())));
 					},
 					(Status::At, &OwnedNode::Extension(_, ref d)) => {
 						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&*d))
 					},
-					(Status::At, &OwnedNode::Branch(_, _)) => IterStep::Continue,
-					(Status::AtChild(i), &OwnedNode::Branch(ref children, _)) if children[i].len() > 0 => {
+					(Status::At, &OwnedNode::Branch(_)) => IterStep::Continue,
+					(Status::AtChild(i), &OwnedNode::Branch(ref branch)) if !branch[i].is_empty() => {
 						match i {
 							0 => self.key_nibbles.push(0),
 							i => *self.key_nibbles.last_mut()
 								.expect("pushed as 0; moves sequentially; removed afterwards; qed") = i as u8,
 						}
-						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&*children[i]))
+						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&branch[i]))
 					},
-					(Status::AtChild(i), &OwnedNode::Branch(_, _)) => {
+					(Status::AtChild(i), &OwnedNode::Branch(_)) => {
 						if i == 0 {
 							self.key_nibbles.push(0);
 						}
@@ -441,7 +445,7 @@ mod tests {
 	#[test]
 	fn iterator_seek() {
 		let d = vec![ DBValue::from_slice(b"A"), DBValue::from_slice(b"AA"), DBValue::from_slice(b"AB"), DBValue::from_slice(b"B") ];
-	
+
 		let mut memdb = MemoryDB::<KeccakHasher>::new();
 		let mut root = H256::new();
 		{
@@ -450,7 +454,7 @@ mod tests {
 				t.insert(x, x).unwrap();
 			}
 		}
-	
+
 		let t = TrieDB::new(&memdb, &root).unwrap();
 		let mut iter = t.iter().unwrap();
 		assert_eq!(iter.next().unwrap().unwrap(), (b"A".to_vec(), DBValue::from_slice(b"A")));

@@ -35,6 +35,52 @@ pub enum Node<'a> {
 	Branch([&'a [u8]; 16], Option<&'a [u8]>),
 }
 
+/// A Sparse (non mutable) owned vector struct to hold branch keys and value
+#[derive(Eq, PartialEq, Debug, Clone)]
+pub struct Branch {
+	data: Vec<u8>,
+	ubounds: [usize; 18],
+	has_value: bool,
+}
+
+impl Branch {
+	fn new(a: [&[u8]; 16], value: Option<&[u8]>) -> Self {
+		let mut data = Vec::with_capacity(a.iter().map(|inner| inner.len()).sum());
+		let mut ubounds = [0; 18];
+		for (inner, ub) in a.iter().zip(ubounds.iter_mut().skip(1)) {
+			data.extend_from_slice(inner);
+			*ub = data.len();
+		}
+		if let Some(value) = value {
+			data.extend(value);
+			ubounds[17] = data.len();
+		}
+		Branch { data, ubounds, has_value: value.is_some() }
+	}
+
+	/// Get the node value, if any
+	pub fn get_value(&self) -> Option<&[u8]> {
+		if self.has_value {
+			Some(&self.data[self.ubounds[16]..self.ubounds[17]])
+		} else {
+			None
+		}
+	}
+
+	/// Test if the node has a value
+	pub fn has_value(&self) -> bool {
+		self.has_value
+	}
+}
+
+impl ::std::ops::Index<usize> for Branch {
+	type Output = [u8];
+	fn index(&self, index: usize) -> &[u8] {
+		assert!(index < 16);
+		&self.data[self.ubounds[index]..self.ubounds[index + 1]]
+	}
+}
+
 /// An owning node type. Useful for trie iterators.
 #[derive(Debug, PartialEq, Eq)]
 pub enum OwnedNode {
@@ -45,7 +91,7 @@ pub enum OwnedNode {
 	/// Extension node: partial key and child node.
 	Extension(NibbleVec, DBValue),
 	/// Branch node: 16 children and an optional value.
-	Branch([NodeKey; 16], Option<DBValue>),
+	Branch(Branch),
 }
 
 impl<'a> From<Node<'a>> for OwnedNode {
@@ -54,16 +100,7 @@ impl<'a> From<Node<'a>> for OwnedNode {
 			Node::Empty => OwnedNode::Empty,
 			Node::Leaf(k, v) => OwnedNode::Leaf(k.into(), DBValue::from_slice(v)),
 			Node::Extension(k, child) => OwnedNode::Extension(k.into(), DBValue::from_slice(child)),
-			Node::Branch(c, val) => {
-				let children = [
-					NodeKey::from_slice(c[0]), NodeKey::from_slice(c[1]), NodeKey::from_slice(c[2]), NodeKey::from_slice(c[3]),
-					NodeKey::from_slice(c[4]), NodeKey::from_slice(c[5]), NodeKey::from_slice(c[6]), NodeKey::from_slice(c[7]),
-					NodeKey::from_slice(c[8]), NodeKey::from_slice(c[9]), NodeKey::from_slice(c[10]), NodeKey::from_slice(c[11]),
-					NodeKey::from_slice(c[12]), NodeKey::from_slice(c[13]), NodeKey::from_slice(c[14]), NodeKey::from_slice(c[15]),
-				];
-
-				OwnedNode::Branch(children, val.map(DBValue::from_slice))
-			}
+			Node::Branch(c, val) => OwnedNode::Branch(Branch::new(c, val)),
 		}
 	}
 }
