@@ -8,7 +8,6 @@ license = "GPL-3.0"
 
 [dependencies]
 quick-error = "1.2.2"
-ring = "0.12"
+ring = "0.13"
 rust-crypto = "0.2.36"
 tiny-keccak = "1.4"
-
