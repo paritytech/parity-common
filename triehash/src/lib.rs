@@ -108,9 +108,10 @@ where
 		.map(|((_, v), w)| (&nibbles[w[0]..w[1]], v))
 		.collect::<Vec<_>>();
 
-	let mut stream = RlpStream::new();
-	hash256rlp::<H, _, _>(&input, 0, &mut stream);
-	H::hash(&stream.out())
+	new_hash256rlp::<H, _, _>(&input)
+	//let mut stream = RlpStream::new();
+	//hash256rlp::<H, _, _>(&input, 0, &mut stream);
+	//H::hash(&stream.out())
 }
 
 /// Generates a key-hashed (secure) trie root hash for a vector of key-value tuples.
@@ -176,6 +177,225 @@ fn hex_prefix_encode<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Item = 
 	once(first_byte).chain(nibbles[oddness_factor..].chunks(2).map(|ch| ch[0] << 4 | ch[1]))
 }
 
+fn new_hash256rlp<H, A, B>(i: &[(A, B)]) -> H::Out
+where
+	A: AsRef<[u8]>,
+	B: AsRef<[u8]>,
+	H: Hasher,
+	<H as hashdb::Hasher>::Out: rlp::Encodable,
+{
+	#[derive(Debug, PartialEq)]
+	enum Action<'a> {
+		Stream,
+		StreamBranch {
+			index: u8,
+			begin: usize,
+		},
+		Finalize,
+		FinalizeStream {
+			value: Option<&'a [u8]>,
+		},
+	}
+
+	struct Checkpoint<'a, A: 'a, B: 'a> {
+		input: &'a [(A, B)],
+		shared_len: usize,
+		stream: RlpStream,
+		action: Action<'a>,
+	};
+
+	let mut last_output: Option<Vec<u8>> = None;
+	let mut checkpoints = vec![Checkpoint {
+		input: i,
+		shared_len: 0,
+		stream: RlpStream::new(),
+		action: Action::Stream,
+	}];
+
+	while let Some(mut ch) = checkpoints.pop() {
+		//println!("---");
+		//println!("ch.input: {:?}", ch.input.iter().map(|(a, b)| (a.as_ref(), b.as_ref())).collect::<Vec<_>>());
+		println!("ch.action: {:?}", ch.action);
+		//println!("last_output: {:?}", last_output.is_some());
+
+		// at first check append any substream
+		if let Some(out) = last_output.take() {
+			println!("hash: {:?}", H::hash(&out));
+			match out.len() {
+				0...31 => ch.stream.append_raw(&out, 1),
+				_ => ch.stream.append(&H::hash(&out))
+			};
+		}
+		//println!("stream now {:?}", ch.stream.as_raw());
+
+		match ch.action {
+			Action::Finalize => {
+				last_output = Some(ch.stream.out())
+			},
+			Action::FinalizeStream { value } => {
+				match value {
+					Some(value) => {
+						ch.stream.append(&value);
+					},
+					None => {
+						ch.stream.append_empty_data();
+					},
+				}
+				last_output = Some(ch.stream.out())
+			},
+			Action::Stream => {
+				let inlen = ch.input.len();
+
+				// in case of empty slice, just append empty data
+				if inlen == 0 {
+					ch.stream.append_empty_data();
+
+					checkpoints.push(Checkpoint {
+						input: ch.input,
+						shared_len: ch.shared_len,
+						stream: ch.stream,
+						action: Action::Finalize,
+					});
+					continue;
+				}
+
+				// take slices
+				let key: &[u8] = &ch.input[0].0.as_ref();
+				let value: &[u8] = &ch.input[0].1.as_ref();
+
+				// if the slice contains just one item, append the suffix of the key
+				// and then append value
+				if inlen == 1 {
+					ch.stream.begin_list(2);
+					ch.stream.append_iter(hex_prefix_encode(&key[ch.shared_len..], true));
+					ch.stream.append(&value);
+
+					checkpoints.push(Checkpoint {
+						input: ch.input,
+						shared_len: ch.shared_len,
+						stream: ch.stream,
+						action: Action::Finalize,
+					});
+					continue;
+				}
+
+				// get length of the longest shared prefix in slice keys
+				let shared_prefix = ch.input.iter()
+					// skip first tuple
+					.skip(1)
+					// get minimum number of shared nibbles between first and each successive
+					.fold(key.len(), | acc, &(ref k, _) | {
+						cmp::min(shared_prefix_len(key, k.as_ref()), acc)
+					});
+
+				// if shared prefix is higher than current prefix append its
+				// new part of the key to the stream
+				// then recursively append suffixes of all items who had this key
+				if shared_prefix > ch.shared_len {
+					ch.stream.begin_list(2);
+					ch.stream.append_iter(hex_prefix_encode(&key[ch.shared_len..shared_prefix], false));
+					checkpoints.push(Checkpoint {
+						input: ch.input,
+						shared_len: ch.shared_len,
+						stream: ch.stream,
+						action: Action::Finalize,
+					});
+					checkpoints.push(Checkpoint {
+						input: ch.input,
+						shared_len: shared_prefix,
+						stream: RlpStream::new(),
+						action: Action::Stream,
+					});
+					continue;
+				}
+
+				// an item for every possible nibble/suffix
+				// + 1 for data
+				ch.stream.begin_list(17);
+
+				// if first key len is equal to prefix_len, move to next element
+				let mut begin = match ch.shared_len == key.len() {
+					true => 1,
+					false => 0
+				};
+
+				checkpoints.push(Checkpoint {
+					input: ch.input,
+					shared_len: ch.shared_len,
+					stream: ch.stream,
+					action: Action::StreamBranch {
+						index: 0,
+						begin,
+					},
+				});
+			},
+			Action::StreamBranch { index, begin } => {
+
+				// count how many successive elements have same next nibble
+				let len = match begin < ch.input.len() {
+					true => ch.input[begin..].iter()
+						.take_while(| pair | pair.0.as_ref()[ch.shared_len] == index )
+						.count(),
+					false => 0
+				};
+
+
+				// if at least 1 successive element has the same nibble
+				// append their suffixes
+				let branch_node = if len == 0 {
+					ch.stream.append_empty_data();
+					None
+				} else {
+					Some(Checkpoint {
+						input: &ch.input[begin..(begin + len)],
+						shared_len: ch.shared_len + 1,
+						stream: RlpStream::new(),
+						action: Action::Stream,
+					})
+				};
+
+				// 0...14
+				if index != 15 {
+					checkpoints.push(Checkpoint {
+						input: ch.input,
+						shared_len: ch.shared_len,
+						stream: ch.stream,
+						action: Action::StreamBranch {
+							index: index + 1,
+							begin: begin + len,
+						},
+					});
+				} else {
+					let key: &[u8] = &ch.input[0].0.as_ref();
+					let value: &[u8] = &ch.input[0].1.as_ref();
+
+					// if fist key len is equal prefix, append its value
+					let value = match ch.shared_len == key.len() {
+						true => Some(value),
+						false => None,
+					};
+
+					checkpoints.push(Checkpoint {
+						input: ch.input,
+						shared_len: ch.shared_len,
+						stream: ch.stream,
+						action: Action::FinalizeStream {
+							value
+						},
+					});
+				}
+
+				if let Some(node) = branch_node {
+					checkpoints.push(node);
+				}
+			},
+		}
+
+	}
+
+	H::hash(&last_output.expect("last_output should be set after while loop; qed"))
+}
+
 fn hash256rlp<H, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut RlpStream)
 where
 	A: AsRef<[u8]>,
@@ -183,6 +403,8 @@ where
 	H: Hasher,
 	<H as hashdb::Hasher>::Out: rlp::Encodable,
 {
+	//println!("ch.input: {:?}", input.iter().map(|(a, b)| (a.as_ref(), b.as_ref())).collect::<Vec<_>>());
+	//println!("---");
 	let inlen = input.len();
 
 	// in case of empty slice, just append empty data
@@ -268,7 +490,9 @@ where
 {
 	let mut s = RlpStream::new();
 	hash256rlp::<H, _, _>(input, pre_len, &mut s);
+	//println!("stream now {:?}", s.as_raw());
 	let out = s.out();
+	println!("hash: {:?}", H::hash(&out));
 	match out.len() {
 		0...31 => stream.append_raw(&out, 1),
 		_ => stream.append(&H::hash(&out))
@@ -332,6 +556,7 @@ mod tests {
 			(vec![0xf1u8, 0x23], vec![0xf1u8, 0x23]), // last two tuples are swapped
 			(vec![0x81u8, 0x23], vec![0x81u8, 0x23]),
 		]));
+		//assert!(false);
 	}
 
 	#[test]
