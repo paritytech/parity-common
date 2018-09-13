@@ -130,7 +130,7 @@ mod test {
 
 	#[test]
 	fn fatdbmut_insert_remove_key_mapping() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let key = [0x01u8, 0x23];
 		let val = [0x01u8, 0x24];
@@ -139,7 +139,7 @@ mod test {
 		let mut t = FatDBMut::new(&mut memdb, &mut root);
 		t.insert(&key, &val).unwrap();
 		assert_eq!(t.get(&key), Ok(Some(DBValue::from_slice(&val))));
-		assert_eq!(t.db().get(&aux_hash), Some(DBValue::from_slice(&key)));
+		assert_eq!(t.db().get(&aux_hash), Some(&DBValue::from_slice(&key)));
 		t.remove(&key).unwrap();
 		assert_eq!(t.db().get(&aux_hash), None);
 	}
