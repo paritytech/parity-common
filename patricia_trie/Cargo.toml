@@ -1,6 +1,6 @@
 [package]
 name = "patricia-trie"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "Merkle-Patricia Trie generic over key hasher and node encoding"
 repository = "https://github.com/paritytech/parity-common"
@@ -10,17 +10,17 @@ license = "GPL-3.0"
 elastic-array = "0.10"
 log = "0.3"
 rand = "0.4"
-hashdb = { version = "0.2", path = "../hashdb" }
+hashdb = { version = "0.3", path = "../hashdb" }
 parity-bytes = { version = "0.1", path = "../parity-bytes" }
 
 [dev-dependencies]
 env_logger = "0.5"
 ethereum-types = "0.4"
 keccak-hash = { version = "0.1", path = "../keccak-hash" }
-memorydb = { version = "0.2", path = "../memorydb", default-features = false }
-rlp = { version = "0.2", path = "../rlp", default-features = false }
+memorydb = { version = "0.3", path = "../memorydb", default-features = false }
+rlp = { version = "0.3.0", path = "../rlp", default-features = false }
 trie-standardmap = { version = "0.1", path = "../trie-standardmap", default-features = false }
-triehash = { version = "0.2", path = "../triehash", default-features = false }
+triehash = { version = "0.3", path = "../triehash", default-features = false }
 parity-bytes = { version = "0.1.0", path = "../parity-bytes" }
 
 # REVIEW: what's a better way to deal with this? The tests here in

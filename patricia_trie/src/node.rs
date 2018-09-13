@@ -17,7 +17,7 @@
 use elastic_array::ElasticArray36;
 use nibbleslice::NibbleSlice;
 use nibblevec::NibbleVec;
-use hashdb::DBValue;
+use super::DBValue;
 
 /// Partial node key type.
 pub type NodeKey = ElasticArray36<u8>;
