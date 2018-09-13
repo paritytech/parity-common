@@ -223,7 +223,7 @@ impl RlpStream {
 	/// ```rust
 	/// extern crate rlp;
 	/// use rlp::*;
-	/// 
+	///
 	/// fn main () {
 	/// 	let mut stream = RlpStream::new_list(3);
 	/// 	stream.append(&"cat");
@@ -261,7 +261,6 @@ impl RlpStream {
 
 	/// Get raw encoded bytes
 	pub fn as_raw(&self) -> &[u8] {
-		//&self.encoder.bytes
 		&self.buffer
 	}
 
@@ -270,7 +269,6 @@ impl RlpStream {
 	/// panic! if stream is not finished.
 	pub fn out(self) -> Vec<u8> {
 		match self.is_finished() {
-			//true => self.encoder.out().into_vec(),
 			true => self.buffer.into_vec(),
 			false => panic!()
 		}
