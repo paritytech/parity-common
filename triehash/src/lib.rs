@@ -29,6 +29,8 @@ extern crate env_logger;
 
 use std::collections::BTreeMap;
 use std::cmp;
+use std::iter::once;
+use std::fmt;
 use hashdb::Hasher;
 
 mod stream;
@@ -36,8 +38,10 @@ pub use stream::TrieStream;
 pub use stream::RlpTrieStream; // TODO: test-only, or move to façade crate
 
 fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
-	let len = cmp::min(first.len(), second.len());
-	(0..len).take_while(|&i| first[i] == second[i]).count()
+	first.iter()
+		.zip(second.iter())
+		.position(|(f, s)| f != s)
+		.unwrap_or_else(|| cmp::min(first.len(), second.len()))
 }
 
 /// Generates a trie root hash for a vector of values
@@ -52,29 +56,18 @@ fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
 /// fn main() {
 /// 	let v = &["doe", "reindeer"];
 /// 	let root = "e766d5d51b89dc39d981b41bda63248d7abce4f0225eefd023792a540bcffee3";
-/// 	assert_eq!(ordered_trie_root::<KeccakHasher, RlpTrieStream, _, _>(v), root.into());
+/// 	assert_eq!(ordered_trie_root::<KeccakHasher, RlpTrieStream, _>(v), root.into());
 /// }
 /// ```
-pub fn ordered_trie_root<H, S, I, A>(input: I) -> H::Out
-	where I: IntoIterator<Item = A>,
-		  A: AsRef<[u8]> + std::fmt::Debug,
-		  H: Hasher,
-		  <H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
-		  S: TrieStream,
+pub fn ordered_trie_root<H, S, I>(input: I) -> H::Out
+where
+	I: IntoIterator + fmt::Debug,
+	I::Item: AsRef<[u8]> + fmt::Debug,
+	H: Hasher,
+	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
+S: TrieStream,
 {
-	let gen_input: Vec<_> = input
-		// first put elements into btree to sort them by nibbles (key'd by index)
-		// optimize it later
-		.into_iter()
-		.enumerate()
-		.map(|(i, slice)| (rlp::encode(&i), slice))
-		.collect::<BTreeMap<_, _>>()
-		// then convert the key to nibbles and  move them to a vector of (k, v) tuples
-		.into_iter()
-		.map(|(k, v)| (as_nibbles(&k), v) )
-		.collect();
-
-	gen_trie_root::<H, S, _, _>(&gen_input)
+	trie_root::<H, S, _, _, _>(input.into_iter().enumerate().map(|(i, v)| (rlp::encode(&i), v)))
 }
 
 /// Generates a trie root hash for a vector of key-value tuples
@@ -82,7 +75,6 @@ pub fn ordered_trie_root<H, S, I, A>(input: I) -> H::Out
 /// ```rust
 /// extern crate triehash;
 /// extern crate keccak_hasher;
-/// extern crate rlp;
 /// use triehash::{trie_root, RlpTrieStream};
 /// use keccak_hasher::KeccakHasher;
 ///
@@ -98,45 +90,72 @@ pub fn ordered_trie_root<H, S, I, A>(input: I) -> H::Out
 /// }
 /// ```
 pub fn trie_root<H, S, I, A, B>(input: I) -> H::Out
-	where I: IntoIterator<Item = (A, B)> + std::fmt::Debug,
+	where I: IntoIterator<Item = (A, B)>,
 		  A: AsRef<[u8]> + Ord + std::fmt::Debug,
 		  B: AsRef<[u8]> + std::fmt::Debug,
 		  H: Hasher,
 		  <H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
 		  S: TrieStream,
 {
-	trace!(target: "triehash", "[trie_root] input: {:?}", input);
-	let gen_input: Vec<_> = input
-		// first put elements into btree to sort them and to remove duplicates
-		.into_iter()
-		.collect::<BTreeMap<_, _>>()
-		// then convert the key to nibbles and  move them to a vector of (k, v) tuples
-		.into_iter()
-		// .inspect(|x| trace!(target: "triehash", "[trie_root] element: {:?}, as nibble: {:?}", x, as_nibbles(x.0.as_ref())))
-		.map(|(k, v)| (as_nibbles(k.as_ref()), v) )
-		.collect();
 
-	trace!(target: "triehash", "[trie_root] normalized input: {:?}", gen_input);
-	gen_trie_root::<H, S, _, _>(&gen_input)
-}
-pub fn trie_root2<H, S, I, A, B>(input: I) -> H::Out
-	where I: IntoIterator<Item = (A, B)> + std::fmt::Debug,
-		  A: AsRef<[u8]> + Ord + std::fmt::Debug,
-		  B: AsRef<[u8]> + std::fmt::Debug,
-		  H: Hasher,
-		  <H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
-		  S: TrieStream,
-{
-	let gen_input: Vec<_> = input
+	// first put elements into btree to sort them and to remove duplicates
+	let input = input
 		.into_iter()
-		.collect::<BTreeMap<_, _>>()
-		.into_iter()
-		.map(|(k, v)| (as_nibbles(k.as_ref()), v) )
-		.collect();
+		.collect::<BTreeMap<_, _>>();
 
-	trace!(target: "triehash", "[trie_root2] sorted, nibbleized input: {:?}", gen_input);
+	let mut nibbles = Vec::with_capacity(input.keys().map(|k| k.as_ref().len()).sum::<usize>() * 2);
+	let mut lens = Vec::with_capacity(input.len() + 1);
+	lens.push(0);
+	for k in input.keys() {
+		for &b in k.as_ref() {
+			nibbles.push(b >> 4);
+			nibbles.push(b & 0x0F);
+		}
+		lens.push(nibbles.len());
+	}
+
+	// then move them to a vector
+	let input = input.into_iter().zip(lens.windows(2))
+		.map(|((_, v), w)| (&nibbles[w[0]..w[1]], v))
+		.collect::<Vec<_>>();
+
 	let mut stream = S::new();
-	build_trie::<H, S, _, _>(&gen_input, &mut stream);
+	hash256rlp::<H, S, _, _>(&input, 0, &mut stream);
+	H::hash(&stream.out())
+}
+
+pub fn trie_root2<H, S, I, A, B>(input: I) -> H::Out
+	where I: IntoIterator<Item = (A, B)>,
+		  A: AsRef<[u8]> + Ord + std::fmt::Debug,
+		  B: AsRef<[u8]> + std::fmt::Debug,
+		  H: Hasher,
+		  <H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
+		  S: TrieStream,
+{
+
+	// first put elements into btree to sort them and to remove duplicates
+	let input = input
+		.into_iter()
+		.collect::<BTreeMap<_, _>>();
+
+	let mut nibbles = Vec::with_capacity(input.keys().map(|k| k.as_ref().len()).sum::<usize>() * 2);
+	let mut lens = Vec::with_capacity(input.len() + 1);
+	lens.push(0);
+	for k in input.keys() {
+		for &b in k.as_ref() {
+			nibbles.push(b >> 4);
+			nibbles.push(b & 0x0F);
+		}
+		lens.push(nibbles.len());
+	}
+
+	// then move them to a vector
+	let input = input.into_iter().zip(lens.windows(2))
+		.map(|((_, v), w)| (&nibbles[w[0]..w[1]], v))
+		.collect::<Vec<_>>();
+
+	let mut stream = S::new();
+	build_trie::<H, S, _, _>(&input, &mut stream);
 	H::hash(&stream.out())
 }
 
@@ -145,7 +164,6 @@ pub fn trie_root2<H, S, I, A, B>(input: I) -> H::Out
 /// ```rust
 /// extern crate triehash;
 /// extern crate keccak_hasher;
-/// extern crate rlp;
 /// use triehash::{sec_trie_root, RlpTrieStream};
 /// use keccak_hasher::KeccakHasher;
 ///
@@ -161,38 +179,15 @@ pub fn trie_root2<H, S, I, A, B>(input: I) -> H::Out
 /// }
 /// ```
 pub fn sec_trie_root<H, S, I, A, B>(input: I) -> H::Out
-	where I: IntoIterator<Item = (A, B)>,
-		  A: AsRef<[u8]> + std::fmt::Debug,
-		  B: AsRef<[u8]> + std::fmt::Debug,
-		  H: Hasher,
-		  <H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
-		  S: TrieStream,
+where
+	I: IntoIterator<Item = (A, B)> + fmt::Debug,
+	A: AsRef<[u8]> + fmt::Debug,
+	B: AsRef<[u8]> + fmt::Debug,
+	H: Hasher,
+	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
+	S: TrieStream,
 {
-	let gen_input: Vec<_> = input
-		// first put elements into btree to sort them and to remove duplicates
-		.into_iter()
-		.map(|(k, v)| (H::hash(k.as_ref()), v))
-		.collect::<BTreeMap<_, _>>()
-		// then convert the key to nibbles and  move them to a vector of (k, v) tuples
-		.into_iter()
-		.map(|(k, v)| (as_nibbles(k.as_ref()), v) )
-		.collect();
-
-	gen_trie_root::<H, S, _, _>(&gen_input)
-}
-
-fn gen_trie_root<H, S, A, B>(input: &[(A, B)]) -> H::Out
-	where
-		A: AsRef<[u8]> + std::fmt::Debug,
-		B: AsRef<[u8]> + std::fmt::Debug,
-		H: Hasher,
-	  	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
-		S: TrieStream,
-{
-	// let mut stream = RlpTrieStream::new();
-	let mut stream = S::new();
-	hash256rlp::<H, S, _, _>(input, 0, &mut stream);
-	H::hash(&stream.out())
+	trie_root::<H, S, _, _, _>(input.into_iter().map(|(k, v)| (H::hash(k.as_ref()), v)))
 }
 
 /// Hex-prefix Encoding. Encodes a payload and a flag. The high nibble of the first
@@ -219,10 +214,9 @@ fn gen_trie_root<H, S, A, B>(input: &[(A, B)]) -> H::Out
 ///  [1,2,3,4,5,T]     0x31_23_45		// odd length (5), leaf => high nibble of 1st byte is 0b0011; low nibble of 1st byte is set to first payload nibble (1) so the 1st byte becomes 0b0011_0001, i.e. 0x31
 ///  [1,2,3,4,T]       0x20_12_34
 /// ```
-pub(crate) fn hex_prefix_encode(nibbles: &[u8], leaf: bool) -> Vec<u8> {
+fn hex_prefix_encode<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Item = u8> + 'a {
 	let inlen = nibbles.len();
 	let oddness_factor = inlen % 2;
-	let mut res = Vec::with_capacity(inlen/2 + 1);
 
 	let first_byte = {
 		let mut bits = ((inlen as u8 & 1) + (2 * leaf as u8)) << 4;
@@ -231,33 +225,7 @@ pub(crate) fn hex_prefix_encode(nibbles: &[u8], leaf: bool) -> Vec<u8> {
 		}
 		bits
 	};
-
-	res.push(first_byte);
-
-	let mut offset = oddness_factor;
-	while offset < inlen {
-		let byte = (nibbles[offset] << 4) + nibbles[offset + 1];
-		res.push(byte);
-		offset += 2;
-	}
-
-	res
-}
-
-/// Converts slice of bytes to a vec of nibbles (reppresented as bytes).
-/// Each input byte is converted to two new bytes containing the upper/lower
-/// half of the original.
-fn as_nibbles(bytes: &[u8]) -> Vec<u8> {
-	let mut res = Vec::with_capacity(bytes.len() * 2);
-	for i in 0..bytes.len() {
-		let byte = bytes[i];
-		// trace!(target:"triehash", "original byte:         {:#010b}", byte);
-		res.push(byte >> 4);
-		// trace!(target:"triehash", "right shifted 4 steps: {:#010b}", byte >> 4);
-		res.push(byte & 0b1111);
-		// trace!(target:"triehash", "anded:                 {:#010b}", byte & 0b1111);
-	}
-	res
+	once(first_byte).chain(nibbles[oddness_factor..].chunks(2).map(|ch| ch[0] << 4 | ch[1]))
 }
 
 /// Takes a vector of key/value tuples where the key is a slice of nibbles
@@ -287,7 +255,7 @@ fn hash256rlp<H, S, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut S)
 	// and then append value
 	if inlen == 1 {
 		stream.begin_list(2);
-		stream.append(&&*hex_prefix_encode(&key[pre_len..], true));
+		stream.append_iter(hex_prefix_encode(&key[pre_len..], true));
 		stream.append(&value);
 		trace!(target: "triehash", "[hash256rlp] single item. END.");
 		return;
@@ -310,10 +278,9 @@ fn hash256rlp<H, S, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut S)
 	// then recursively append suffixes of all items who had this key
 	if shared_prefix > pre_len {
 		stream.begin_list(2);
-		stream.append(&&*hex_prefix_encode(&key[pre_len..shared_prefix], false));
+		stream.append_iter(hex_prefix_encode(&key[pre_len..shared_prefix], false));
 		trace!(target: "triehash", "[hash256rlp] shared_prefix ({:?}) is longer than prefix len ({:?}); appending path {:?} to stream", shared_prefix, pre_len, &key[pre_len..shared_prefix]);
 		hash256aux::<H, S, _, _>(input, shared_prefix, stream);
-		// trace!(target: "triehash", "[hash256rlp] back after recursing. Stream: {:?}. END.", stream);
 		trace!(target: "triehash", "[hash256rlp] back after recursing. END.");
 		return;
 	}
@@ -343,8 +310,6 @@ fn hash256rlp<H, S, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut S)
 				.count(),
 			false => 0
 		};
-
-		// trace!(target: "triehash", "    slot {} {} successive elements have the same nibble. Begin: {}", i, len, begin);
 
 		// if at least 1 successive element has the same nibble
 		// append their suffixes
@@ -379,7 +344,7 @@ fn hash256aux<H, S, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut S)
 	if input.len() == 1 {
 		trace!(target: "triehash", "[aux] single item. Appending k/v.");
 		s.begin_list(2);
-		s.append(&&*hex_prefix_encode(&input[0].0.as_ref()[pre_len..], true));
+		s.append_iter(hex_prefix_encode(&input[0].0.as_ref()[pre_len..], true));
 		s.append(&input[0].1.as_ref());
 	} else {
 		trace!(target: "triehash", "[aux] multiple items. Recursing.");
@@ -419,7 +384,7 @@ fn hash256aux<H, S, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut S)
 // 			trace!(target: "triehash", "[hash256rlp] first key length: {:?}, k: {:?}, current acc: {:?}; shared prefix len: {:?}", key.len(), k, acc, o);
 // 			o
 // 		});
-// 	s.begin_list(2); s.append(&&*hex_prefix_encode(&key[..shared_prefix], false));
+// 	s.begin_list(2); s.append_iter(hex_prefix_encode(&key[..shared_prefix], false));
 // 	s
 // }
 
@@ -435,23 +400,15 @@ where
 	let input_length = input.len();
 	match input_length {
 		0 => stream.append_empty_data(),
-		1 => stream.append_leaf(&&*hex_prefix_encode(input[0].0.as_ref(), true), &input[0].1.as_ref()),
+		1 => stream.append_leaf(
+				// &hex_prefix_encode(input[0].0.as_ref(), true).collect::<Vec<_>>(),
+				&input[0].0.as_ref(),
+				&input[0].1.as_ref()
+			),
 		_ => {
 			unreachable!();
 		}
 	}
-}
-
-#[test]
-fn test_nibbles() {
-	let v = vec![0x31, 0x23, 0x45];
-	let e = vec![3, 1, 2, 3, 4, 5];
-	assert_eq!(as_nibbles(&v), e);
-
-	// A => 65 => 0x41 => [4, 1]
-	let v: Vec<u8> = From::from("A");
-	let e = vec![4, 1];
-	assert_eq!(as_nibbles(&v), e);
 }
 
 #[cfg(test)]
@@ -509,32 +466,32 @@ mod tests {
 	fn test_hex_prefix_encode() {
 		let v = vec![0, 0, 1, 2, 3, 4, 5];
 		let e = vec![0x10, 0x01, 0x23, 0x45];
-		let h = hex_prefix_encode(&v, false);
+		let h = hex_prefix_encode(&v, false).collect::<Vec<_>>();
 		assert_eq!(h, e);
 
 		let v = vec![0, 1, 2, 3, 4, 5];
 		let e = vec![0x00, 0x01, 0x23, 0x45];
-		let h = hex_prefix_encode(&v, false);
+		let h = hex_prefix_encode(&v, false).collect::<Vec<_>>();
 		assert_eq!(h, e);
 
 		let v = vec![0, 1, 2, 3, 4, 5];
 		let e = vec![0x20, 0x01, 0x23, 0x45];
-		let h = hex_prefix_encode(&v, true);
+		let h = hex_prefix_encode(&v, true).collect::<Vec<_>>();
 		assert_eq!(h, e);
 
 		let v = vec![1, 2, 3, 4, 5];
 		let e = vec![0x31, 0x23, 0x45];
-		let h = hex_prefix_encode(&v, true);
+		let h = hex_prefix_encode(&v, true).collect::<Vec<_>>();
 		assert_eq!(h, e);
 
 		let v = vec![1, 2, 3, 4];
 		let e = vec![0x00, 0x12, 0x34];
-		let h = hex_prefix_encode(&v, false);
+		let h = hex_prefix_encode(&v, false).collect::<Vec<_>>();
 		assert_eq!(h, e);
 
 		let v = vec![4, 1];
 		let e = vec![0x20, 0x41];
-		let h = hex_prefix_encode(&v, true);
+		let h = hex_prefix_encode(&v, true).collect::<Vec<_>>();
 		assert_eq!(h, e);
 	}
 

@@ -31,6 +31,7 @@ pub trait TrieStream {
 	fn out(self) -> Vec<u8>;
 
 	// legacy
+	fn append_iter<'a, I>(&'a mut self, value: I) -> &'a mut Self where I: IntoIterator<Item = u8>;
 	fn new_list(len: usize) -> Self;
 	fn begin_list(&mut self, len: usize) -> &mut Self;
 	fn append_raw<'a>(&'a mut self, bytes: &[u8], item_count: usize) -> &'a mut Self;
@@ -47,7 +48,8 @@ impl TrieStream for RlpTrieStream {
 	fn append_empty_data(&mut self) { self.stream.append_empty_data(); }
 	fn append_leaf(&mut self, key: &[u8], value: &[u8]) {
 		self.stream.begin_list(2);
-		self.stream.append(&&*hex_prefix_encode(&key, true));
+		// self.stream.append(&key);
+		self.stream.append_iter(hex_prefix_encode(&key, true));
 		self.stream.append(&value);
 	}
 	fn out(self) -> Vec<u8> {
@@ -55,6 +57,11 @@ impl TrieStream for RlpTrieStream {
 	}
 
 	// legacy
+	fn append_iter<'a, I>(&'a mut self, value: I) -> &'a mut Self where I: IntoIterator<Item = u8> {
+		self.stream.append_iter(value);
+		self
+	}
+
 	fn new_list(len: usize) -> Self { Self { stream: RlpStream::new_list(len) } }
 	fn begin_list(&mut self, len: usize) -> &mut Self { self.stream.begin_list(len); self }
 	fn append_raw<'a>(&'a mut self, bytes: &[u8], item_count: usize) -> &'a mut Self {

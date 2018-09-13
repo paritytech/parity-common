@@ -7,6 +7,7 @@
 // except according to those terms.
 
 use std::{mem, str};
+use std::iter::{once, empty};
 use byteorder::{ByteOrder, BigEndian};
 use traits::{Encodable, Decodable};
 use stream::RlpStream;
@@ -31,11 +32,7 @@ pub fn decode_usize(bytes: &[u8]) -> Result<usize, DecoderError> {
 
 impl Encodable for bool {
 	fn rlp_append(&self, s: &mut RlpStream) {
-		if *self {
-			s.encoder().encode_value(&[1]);
-		} else {
-			s.encoder().encode_value(&[0]);
-		}
+		s.encoder().encode_iter(once(if *self { 1u8 } else { 0 }));
 	}
 }
 
@@ -99,9 +96,9 @@ impl<T> Decodable for Option<T> where T: Decodable {
 impl Encodable for u8 {
 	fn rlp_append(&self, s: &mut RlpStream) {
 		if *self != 0 {
-			s.encoder().encode_value(&[*self]);
+			s.encoder().encode_iter(once(*self));
 		} else {
-			s.encoder().encode_value(&[]);
+			s.encoder().encode_iter(empty());
 		}
 	}
 }

@@ -1,6 +1,6 @@
 [package]
 name = "triehash"
-version = "0.2.3"
+version = "0.3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "In-memory patricia trie operations"
 repository = "https://github.com/paritytech/parity-common"
@@ -8,8 +8,8 @@ license = "GPL-3.0"
 
 [dependencies]
 log = "0.4"
-hashdb = { version = "0.2", path = "../hashdb", default-features = false }
-rlp = { version = "0.2.4", path = "../rlp", default-features = false }
+hashdb = { version = "0.3", path = "../hashdb", default-features = false }
+rlp = { version = "0.3", path = "../rlp", default-features = false }
 
 [dev-dependencies]
 env_logger = "0.5"

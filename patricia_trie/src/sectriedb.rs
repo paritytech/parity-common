@@ -16,23 +16,23 @@
 
 use hashdb::{HashDB, Hasher};
 use super::triedb::TrieDB;
-use super::{Result, Trie, TrieItem, TrieIterator, Query};
+use super::{Result, DBValue, Trie, TrieItem, TrieIterator, Query};
 use node_codec::NodeCodec;
 
 /// A `Trie` implementation which hashes keys and uses a generic `HashDB` backing database.
 ///
 /// Use it as a `Trie` trait object. You can use `raw()` to get the backing `TrieDB` object.
 pub struct SecTrieDB<'db, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H>
 {
 	raw: TrieDB<'db, H, C>
 }
 
 impl<'db, H, C> SecTrieDB<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	/// Create a new trie with the backing database `db` and empty `root`
@@ -40,7 +40,7 @@ where
 	/// Initialise to the state entailed by the genesis block.
 	/// This guarantees the trie is built correctly.
 	/// Returns an error if root does not exist.
-	pub fn new(db: &'db HashDB<H>, root: &'db H::Out) -> Result<Self, H::Out, C::Error> {
+	pub fn new(db: &'db HashDB<H, DBValue>, root: &'db H::Out) -> Result<Self, H::Out, C::Error> {
 		Ok(SecTrieDB { raw: TrieDB::new(db, root)? })
 	}
 
@@ -56,8 +56,8 @@ where
 }
 
 impl<'db, H, C> Trie<H, C> for SecTrieDB<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn root(&self) -> &H::Out { self.raw.root() }
@@ -80,15 +80,15 @@ where
 #[cfg(test)]
 mod test {
 	use memorydb::MemoryDB;
-	use hashdb::DBValue;
 	use keccak;
 	use keccak_hasher::KeccakHasher;
 	use ethtrie::{TrieDBMut, SecTrieDB, trie::{Trie, TrieMut}};
 	use ethereum_types::H256;
+	use DBValue;
 
 	#[test]
 	fn trie_to_sectrie() {
-		let mut db = MemoryDB::<KeccakHasher>::new();
+		let mut db = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		{
 			let mut t = TrieDBMut::new(&mut db, &mut root);

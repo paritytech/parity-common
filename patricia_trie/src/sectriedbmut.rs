@@ -14,50 +14,50 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use hashdb::{HashDB, DBValue, Hasher};
-use super::{Result, TrieMut, TrieDBMut};
+use hashdb::{HashDB, Hasher};
+use super::{Result, DBValue, TrieMut, TrieDBMut};
 use node_codec::NodeCodec;
 
 /// A mutable `Trie` implementation which hashes keys and uses a generic `HashDB` backing database.
 ///
 /// Use it as a `Trie` or `TrieMut` trait object. You can use `raw()` to get the backing `TrieDBMut` object.
 pub struct SecTrieDBMut<'db, H, C>
-where 
-	H: Hasher + 'db, 
+where
+	H: Hasher + 'db,
 	C: NodeCodec<H>
 {
 	raw: TrieDBMut<'db, H, C>
 }
 
 impl<'db, H, C> SecTrieDBMut<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	/// Create a new trie with the backing database `db` and empty `root`
 	/// Initialise to the state entailed by the genesis block.
 	/// This guarantees the trie is built correctly.
-	pub fn new(db: &'db mut HashDB<H>, root: &'db mut H::Out) -> Self {
+	pub fn new(db: &'db mut HashDB<H, DBValue>, root: &'db mut H::Out) -> Self {
 		SecTrieDBMut { raw: TrieDBMut::new(db, root) }
 	}
 
 	/// Create a new trie with the backing database `db` and `root`.
 	///
 	/// Returns an error if root does not exist.
-	pub fn from_existing(db: &'db mut HashDB<H>, root: &'db mut H::Out) -> Result<Self, H::Out, C::Error> {
+	pub fn from_existing(db: &'db mut HashDB<H, DBValue>, root: &'db mut H::Out) -> Result<Self, H::Out, C::Error> {
 		Ok(SecTrieDBMut { raw: TrieDBMut::from_existing(db, root)? })
 	}
 
 	/// Get the backing database.
-	pub fn db(&self) -> &HashDB<H> { self.raw.db() }
+	pub fn db(&self) -> &HashDB<H, DBValue> { self.raw.db() }
 
 	/// Get the backing database.
-	pub fn db_mut(&mut self) -> &mut HashDB<H> { self.raw.db_mut() }
+	pub fn db_mut(&mut self) -> &mut HashDB<H, DBValue> { self.raw.db_mut() }
 }
 
 impl<'db, H, C> TrieMut<H, C> for SecTrieDBMut<'db, H, C>
-where 
-	H: Hasher, 
+where
+	H: Hasher,
 	C: NodeCodec<H>
 {
 	fn root(&mut self) -> &H::Out {
@@ -90,15 +90,15 @@ where
 #[cfg(test)]
 mod test {
 	use memorydb::MemoryDB;
-	use hashdb::DBValue;
 	use keccak;
 	use keccak_hasher::KeccakHasher;
 	use ethtrie::{TrieDB, SecTrieDBMut, trie::{Trie, TrieMut}};
 	use ethereum_types::H256;
+	use DBValue;
 
 	#[test]
 	fn sectrie_to_trie() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		{
 			let mut t = SecTrieDBMut::new(&mut memdb, &mut root);

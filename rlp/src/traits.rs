@@ -7,7 +7,6 @@
 // except according to those terms.
 
 //! Common RLP traits
-use elastic_array::ElasticArray1024;
 use {DecoderError, Rlp, RlpStream};
 
 /// RLP decodable trait
@@ -22,7 +21,7 @@ pub trait Encodable {
 	fn rlp_append(&self, s: &mut RlpStream);
 
 	/// Get rlp-encoded bytes for this instance
-	fn rlp_bytes(&self) -> ElasticArray1024<u8> {
+	fn rlp_bytes(&self) -> Vec<u8> {
 		let mut s = RlpStream::new();
 		self.rlp_append(&mut s);
 		s.drain()
