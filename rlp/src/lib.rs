@@ -35,7 +35,6 @@
 extern crate byteorder;
 #[cfg(feature = "ethereum")]
 extern crate ethereum_types;
-extern crate elastic_array;
 extern crate rustc_hex;
 #[cfg(test)]
 #[macro_use]
@@ -47,7 +46,6 @@ mod rlpin;
 mod stream;
 mod impls;
 
-use elastic_array::ElasticArray1024;
 use std::borrow::Borrow;
 
 pub use error::DecoderError;
@@ -88,17 +86,17 @@ pub fn decode_list<T>(bytes: &[u8]) -> Vec<T> where T: Decodable {
 ///
 /// fn main () {
 /// 	let animal = "cat";
-/// 	let out = rlp::encode(&animal).into_vec();
+/// 	let out = rlp::encode(&animal);
 /// 	assert_eq!(out, vec![0x83, b'c', b'a', b't']);
 /// }
 /// ```
-pub fn encode<E>(object: &E) -> ElasticArray1024<u8> where E: Encodable {
+pub fn encode<E>(object: &E) -> Vec<u8> where E: Encodable {
 	let mut stream = RlpStream::new();
 	stream.append(object);
 	stream.drain()
 }
 
-pub fn encode_list<E, K>(object: &[K]) -> ElasticArray1024<u8> where E: Encodable, K: Borrow<E> {
+pub fn encode_list<E, K>(object: &[K]) -> Vec<u8> where E: Encodable, K: Borrow<E> {
 	let mut stream = RlpStream::new();
 	stream.append_list(object);
 	stream.drain()

@@ -20,9 +20,10 @@ use nibbleslice::NibbleSlice;
 use super::node::{Node, OwnedNode};
 use node_codec::NodeCodec;
 use super::lookup::Lookup;
-use super::{Result, Trie, TrieItem, TrieError, TrieIterator, Query};
+use super::{Result, DBValue, Trie, TrieItem, TrieError, TrieIterator, Query};
 use bytes::Bytes;
 use std::marker::PhantomData;
+use std::borrow::Cow;
 
 /// A `Trie` implementation using a generic `HashDB` backing database, a `Hasher`
 /// implementation to generate keys and a `NodeCodec` implementation to encode/decode
@@ -49,7 +50,7 @@ use std::marker::PhantomData;
 ///
 ///
 /// fn main() {
-///   let mut memdb = MemoryDB::<KeccakHasher>::new();
+///   let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 ///   let mut root = H256::new();
 ///   TrieDBMut::new(&mut memdb, &mut root).insert(b"foo", b"bar").unwrap();
 ///   let t = TrieDB::new(&memdb, &root).unwrap();
@@ -62,7 +63,7 @@ where
 	H: Hasher + 'db,
 	C: NodeCodec<H>
 {
-	db: &'db HashDB<H>,
+	db: &'db HashDB<H, DBValue>,
 	root: &'db H::Out,
 	/// The number of hashes performed so far in operations on this trie.
 	hash_count: usize,
@@ -76,7 +77,7 @@ where
 {
 	/// Create a new trie with the backing database `db` and `root`
 	/// Returns an error if `root` does not exist
-	pub fn new(db: &'db HashDB<H>, root: &'db H::Out) -> Result<Self, H::Out, C::Error> {
+	pub fn new(db: &'db HashDB<H, DBValue>, root: &'db H::Out) -> Result<Self, H::Out, C::Error> {
 		if !db.contains(root) {
 			Err(Box::new(TrieError::InvalidStateRoot(*root)))
 		} else {
@@ -85,10 +86,10 @@ where
 	}
 
 	/// Get the backing database.
-	pub fn db(&'db self) -> &'db HashDB<H> { self.db }
+	pub fn db(&'db self) -> &'db HashDB<H, DBValue> { self.db }
 
 	/// Get the data of the root node.
-	fn root_data(&self) -> Result<DBValue, H::Out, C::Error> {
+	fn root_data(&self) -> Result<&DBValue, H::Out, C::Error> {
 		self.db
 			.get(self.root)
 			.ok_or_else(|| Box::new(TrieError::InvalidStateRoot(*self.root)))
@@ -97,12 +98,15 @@ where
 	/// Given some node-describing data `node`, return the actual encoded node.
 	/// This could be a simple identity operation in the case that the node is sufficiently small, but
 	/// may require a database lookup.
-	fn get_raw_or_lookup(&'db self, node: &'db [u8]) -> Result<DBValue, H::Out, C::Error> {
+	fn get_raw_or_lookup(&'db self, node: &[u8]) -> Result<Cow<'db, DBValue>, H::Out, C::Error> {
 		match C::try_decode_hash(node) {
 			Some(key) => {
-				self.db.get(&key).ok_or_else(|| Box::new(TrieError::IncompleteDatabase(key)))
+				self.db
+					.get(&key)
+					.map(|v| Cow::Borrowed(v))
+					.ok_or_else(|| Box::new(TrieError::IncompleteDatabase(key)))
 			}
-			None => Ok(DBValue::from_slice(node))
+			None => Ok(Cow::Owned(DBValue::from_slice(node)))
 		}
 	}
 }
@@ -216,8 +220,8 @@ impl Crumb {
 		self.status = match (&self.status, &self.node) {
 			(_, &OwnedNode::Empty) => Status::Exiting,
 			(&Status::Entering, _) => Status::At,
-			(&Status::At, &OwnedNode::Branch(_, _)) => Status::AtChild(0),
-			(&Status::AtChild(x), &OwnedNode::Branch(_, _)) if x < 15 => Status::AtChild(x + 1),
+			(&Status::At, &OwnedNode::Branch(_)) => Status::AtChild(0),
+			(&Status::AtChild(x), &OwnedNode::Branch(_)) if x < 15 => Status::AtChild(x + 1),
 			_ => Status::Exiting,
 		}
 	}
@@ -238,7 +242,8 @@ impl<'a, H: Hasher, C: NodeCodec<H>> TrieDBIterator<'a, H, C> {
 		Ok(r)
 	}
 
-	fn seek<'key>(&mut self, mut node_data: DBValue, mut key: NibbleSlice<'key>) -> Result<(), H::Out, C::Error> {
+	fn seek<'key>(&mut self, node_data: &DBValue, mut key: NibbleSlice<'key>) -> Result<(), H::Out, C::Error> {
+		let mut node_data = Cow::Borrowed(node_data);
 		loop {
 			let (data, mid) = {
 				let node = C::decode(&node_data).expect("encoded data read from db; qed");
@@ -323,9 +328,9 @@ impl<'a, H: Hasher, C: NodeCodec<H>> TrieDBIterator<'a, H, C> {
 	fn key(&self) -> Bytes {
 		// collapse the key_nibbles down to bytes.
 		let nibbles = &self.key_nibbles;
-		let len = nibbles.len();
-		let mut result = Bytes::with_capacity(len / 2);
 		let mut i = 1;
+		let mut result = Bytes::with_capacity(nibbles.len() / 2);
+		let len = nibbles.len();
 		while i < len {
 			result.push(nibbles[i - 1] * 16 + nibbles[i]);
 			i += 2;
@@ -348,10 +353,10 @@ impl<'a, H: Hasher, C: NodeCodec<H>> Iterator for TrieDBIterator<'a, H, C> {
 	type Item = TrieItem<'a, H::Out, C::Error>;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		enum IterStep<O, E> {
+		enum IterStep<'b, O, E> {
 			Continue,
 			PopTrail,
-			Descend(Result<DBValue, O, E>),
+			Descend(Result<Cow<'b, DBValue>, O, E>),
 		}
 		loop {
 			let iter_step = {
@@ -365,27 +370,31 @@ impl<'a, H: Hasher, C: NodeCodec<H>> Iterator for TrieDBIterator<'a, H, C> {
 								let l = self.key_nibbles.len();
 								self.key_nibbles.truncate(l - n.len());
 							},
-							OwnedNode::Branch(_, _) => { self.key_nibbles.pop(); },
+							OwnedNode::Branch(_) => { self.key_nibbles.pop(); },
 							_ => {}
 						}
 						IterStep::PopTrail
 					},
-					(Status::At, &OwnedNode::Leaf(_, ref v)) | (Status::At, &OwnedNode::Branch(_, Some(ref v))) => {
+					(Status::At, &OwnedNode::Branch(ref branch)) if branch.has_value() => {
+						let value = branch.get_value().expect("already checked `has_value`");
+						return Some(Ok((self.key(), DBValue::from_slice(value))));
+					},
+					(Status::At, &OwnedNode::Leaf(_, ref v)) => {
 						return Some(Ok((self.key(), v.clone())));
 					},
 					(Status::At, &OwnedNode::Extension(_, ref d)) => {
 						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&*d))
 					},
-					(Status::At, &OwnedNode::Branch(_, _)) => IterStep::Continue,
-					(Status::AtChild(i), &OwnedNode::Branch(ref children, _)) if children[i].len() > 0 => {
+					(Status::At, &OwnedNode::Branch(_)) => IterStep::Continue,
+					(Status::AtChild(i), &OwnedNode::Branch(ref branch)) if !branch[i].is_empty() => {
 						match i {
 							0 => self.key_nibbles.push(0),
 							i => *self.key_nibbles.last_mut()
 								.expect("pushed as 0; moves sequentially; removed afterwards; qed") = i as u8,
 						}
-						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&*children[i]))
+						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&branch[i]))
 					},
-					(Status::AtChild(i), &OwnedNode::Branch(_, _)) => {
+					(Status::AtChild(i), &OwnedNode::Branch(_)) => {
 						if i == 0 {
 							self.key_nibbles.push(0);
 						}
@@ -414,7 +423,7 @@ impl<'a, H: Hasher, C: NodeCodec<H>> Iterator for TrieDBIterator<'a, H, C> {
 
 #[cfg(test)]
 mod tests {
-	use hashdb::DBValue;
+	use DBValue;
 	use keccak_hasher::KeccakHasher;
 	use memorydb::MemoryDB;
 	use ethtrie::{TrieDB, TrieDBMut, RlpCodec, trie::{Trie, TrieMut, Lookup}};
@@ -424,7 +433,7 @@ mod tests {
 	fn iterator() {
 		let d = vec![DBValue::from_slice(b"A"), DBValue::from_slice(b"AA"), DBValue::from_slice(b"AB"), DBValue::from_slice(b"B")];
 
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		{
 			let mut t = TrieDBMut::new(&mut memdb, &mut root);
@@ -442,7 +451,7 @@ mod tests {
 	fn iterator_seek() {
 		let d = vec![ DBValue::from_slice(b"A"), DBValue::from_slice(b"AA"), DBValue::from_slice(b"AB"), DBValue::from_slice(b"B") ];
 
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		{
 			let mut t = TrieDBMut::new(&mut memdb, &mut root);
@@ -481,7 +490,7 @@ mod tests {
 
 	#[test]
 	fn get_len() {
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		{
 			let mut t = TrieDBMut::new(&mut memdb, &mut root);
@@ -499,7 +508,7 @@ mod tests {
 	fn debug_output_supports_pretty_print() {
 		let d = vec![ DBValue::from_slice(b"A"), DBValue::from_slice(b"AA"), DBValue::from_slice(b"AB"), DBValue::from_slice(b"B") ];
 
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let root = {
 			let mut t = TrieDBMut::new(&mut memdb, &mut root);
@@ -609,7 +618,7 @@ mod tests {
 		use std::marker::PhantomData;
 		use ethtrie::trie::NibbleSlice;
 
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		{
 			let mut t = TrieDBMut::new(&mut memdb, &mut root);
