@@ -7,7 +7,6 @@ description = "kvdb implementation backed by rocksDB"
 license = "GPL-3.0"
 
 [dependencies]
-ethereum-types = "0.3"
 fs-swap = "0.2.4"
 interleaved-ordered = "0.1.0"
 kvdb = { version = "0.2", path = "../kvdb" }

@@ -35,7 +35,7 @@ use std::path::Path;
 
 use parking_lot::{Mutex, MutexGuard, RwLock};
 use parity_rocksdb::{
-	DB, Writable, WriteBatch, WriteOptions, IteratorMode, DBIterator,
+	DB, Writable, WriteBatch, WriteOptions, IteratorMode,
 	Options, BlockBasedOptions, Direction, Cache, Column, ReadOptions
 };
 use interleaved_ordered::interleave_ordered;
