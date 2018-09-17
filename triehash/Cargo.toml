@@ -9,14 +9,12 @@ license = "GPL-3.0"
 [dependencies]
 log = "0.4"
 hashdb = { version = "0.3", path = "../hashdb", default-features = false }
-rlp = { version = "0.3", path = "../rlp", default-features = false }
+triestream = { version = "0.1", path = "../triestream", default-features = false }
 
 [dev-dependencies]
 env_logger = "0.5"
-trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
+ethereum-types = "0.4" # Used in benches
+tiny-keccak = "1.4" # Used in benches
 keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
-tiny-keccak = "1.4.2"
-ethereum-types = "0.4"
-
-[features]
-ethereum = ["rlp/ethereum"]
+trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
+triestream = { version = "0.1", path = "../triestream", features = ["ethereum"] }

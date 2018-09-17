@@ -19,7 +19,7 @@
 //! This module should be used to generate trie root hash.
 
 extern crate hashdb;
-extern crate rlp;
+extern crate triestream;
 #[cfg(test)]
 extern crate keccak_hasher;
 #[macro_use]
@@ -29,13 +29,10 @@ extern crate env_logger;
 
 use std::collections::BTreeMap;
 use std::cmp;
-use std::iter::once;
 use std::fmt;
 use hashdb::Hasher;
 
-mod stream;
-pub use stream::TrieStream;
-pub use stream::RlpTrieStream; // TODO: test-only, or move to façade crate
+use triestream::TrieStream;
 
 fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
 	first.iter()
@@ -49,9 +46,10 @@ fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
 /// ```rust
 /// extern crate triehash;
 /// extern crate keccak_hasher;
-/// extern crate rlp;
-/// use triehash::{ordered_trie_root, RlpTrieStream};
+/// extern crate triestream;
+/// use triehash::ordered_trie_root;
 /// use keccak_hasher::KeccakHasher;
+/// use triestream::RlpTrieStream;
 ///
 /// fn main() {
 /// 	let v = &["doe", "reindeer"];
@@ -68,7 +66,7 @@ where
 	S: TrieStream,
 {
 	// TODO: uses `rlp::encode`
-	trie_root::<H, S, _, _, _>(input.into_iter().enumerate().map(|(i, v)| (rlp::encode(&i), v)))
+	trie_root::<H, S, _, _, _>(input.into_iter().enumerate().map(|(i, v)| (S::encode(&i), v)))
 }
 
 /// Generates a trie root hash for a vector of key-value tuples
@@ -76,8 +74,10 @@ where
 /// ```rust
 /// extern crate triehash;
 /// extern crate keccak_hasher;
-/// use triehash::{trie_root, RlpTrieStream};
+/// extern crate triestream;
+/// use triehash::trie_root;
 /// use keccak_hasher::KeccakHasher;
+/// use triestream::RlpTrieStream;
 ///
 /// fn main() {
 /// 	let v = vec![
@@ -130,8 +130,10 @@ pub fn trie_root<H, S, I, A, B>(input: I) -> H::Out
 /// ```rust
 /// extern crate triehash;
 /// extern crate keccak_hasher;
-/// use triehash::{sec_trie_root, RlpTrieStream};
+/// extern crate triestream;
+/// use triehash::sec_trie_root;
 /// use keccak_hasher::KeccakHasher;
+/// use triestream::RlpTrieStream;
 ///
 /// fn main() {
 /// 	let v = vec![
@@ -154,44 +156,6 @@ where
 	S: TrieStream,
 {
 	trie_root::<H, S, _, _, _>(input.into_iter().map(|(k, v)| (H::hash(k.as_ref()), v)))
-}
-
-/// Hex-prefix Encoding. Encodes a payload and a flag. The high nibble of the first
-/// bytes contains the flag; the lowest bit of the flag encodes the oddness of the
-/// length and the second-lowest bit encodes whether the node is a value node. The
-/// low nibble of the first byte is zero in the case of an even number of nibbles
-/// in the payload, otherwise it is set to the first nibble of the payload.
-/// All remaining nibbles (now an even number) fit properly into the remaining bytes.
-///
-/// The "termination marker" and "leaf-node" specifier are equivalent.
-///
-/// Input nibbles are in range `[0, 0xf]`.
-///
-/// ```markdown
-///  [0,0,1,2,3,4,5]   0x10_01_23_45	// length is odd (7) so the lowest bit of the high nibble of the first byte is `1`; it is not a leaf node, so the second-lowest bit of the high nibble is 0; given it's an odd length, the lower nibble of the first byte is set to the first nibble. All in all we get 0b0001_000 (oddness) + 0b0000_0000 (is leaf?) + 0b0000_0000 = 0b0001_0000 = 0x10 and then we append the other nibbles
-///  [0,1,2,3,4,5]     0x00_01_23_45	// length is even (6) and this is not a leaf node so the high nibble of the first byte is 0; the low nibble of the first byte is unused (0)
-///  [1,2,3,4,5]       0x11_23_45   	// odd length, not leaf => high nibble of 1st byte is 0b0001 and low nibble of 1st byte is set to the first payload nibble (1) so all in all: 0b00010001, 0x11
-///  [0,0,1,2,3,4]     0x00_00_12_34	// even length, not leaf => high nibble is 0 and the low nibble is unused so we get 0x00 and then the payload: 0x00_00_12…
-///  [0,1,2,3,4]       0x10_12_34		// odd length, not leaf => oddness flag + first nibble (0) => 0x10
-///  [1,2,3,4]         0x00_12_34
-///  [0,0,1,2,3,4,5,T] 0x30_01_23_45	// odd length (7), leaf => high nibble of 1st byte is 0b0011; low nibble is set to 1st payload nibble so the first encoded byte is 0b0011_0000, i.e. 0x30
-///  [0,0,1,2,3,4,T]   0x20_00_12_34	// even length (6), lead => high nibble of 1st byte is 0b0010; low nibble unused
-///  [0,1,2,3,4,5,T]   0x20_01_23_45
-///  [1,2,3,4,5,T]     0x31_23_45		// odd length (5), leaf => high nibble of 1st byte is 0b0011; low nibble of 1st byte is set to first payload nibble (1) so the 1st byte becomes 0b0011_0001, i.e. 0x31
-///  [1,2,3,4,T]       0x20_12_34
-/// ```
-fn hex_prefix_encode<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Item = u8> + 'a {
-	let inlen = nibbles.len();
-	let oddness_factor = inlen % 2;
-
-	let first_byte = {
-		let mut bits = ((inlen as u8 & 1) + (2 * leaf as u8)) << 4;
-		if oddness_factor == 1 {
-			bits += nibbles[0];
-		}
-		bits
-	};
-	once(first_byte).chain(nibbles[oddness_factor..].chunks(2).map(|ch| ch[0] << 4 | ch[1]))
 }
 
 /// Takes a slice of key/value tuples where the key is a slice of nibbles
@@ -310,10 +274,10 @@ where
 
 #[cfg(test)]
 mod tests {
-	use super::{trie_root, shared_prefix_len, hex_prefix_encode};
+	use super::{trie_root, shared_prefix_len};
 	use super::{sec_trie_root};
 	use keccak_hasher::KeccakHasher;
-	use super::RlpTrieStream;
+	use triestream::RlpTrieStream;
 
 	use std::sync::{Once, ONCE_INIT};
     static INIT: Once = ONCE_INIT;
@@ -358,38 +322,7 @@ mod tests {
 
 	// TODO: add a test for ordered_trie_root which is essentially the only thing `parity-ethereum` uses
 
-	#[test]
-	fn test_hex_prefix_encode() {
-		let v = vec![0, 0, 1, 2, 3, 4, 5];
-		let e = vec![0x10, 0x01, 0x23, 0x45];
-		let h = hex_prefix_encode(&v, false).collect::<Vec<_>>();
-		assert_eq!(h, e);
 
-		let v = vec![0, 1, 2, 3, 4, 5];
-		let e = vec![0x00, 0x01, 0x23, 0x45];
-		let h = hex_prefix_encode(&v, false).collect::<Vec<_>>();
-		assert_eq!(h, e);
-
-		let v = vec![0, 1, 2, 3, 4, 5];
-		let e = vec![0x20, 0x01, 0x23, 0x45];
-		let h = hex_prefix_encode(&v, true).collect::<Vec<_>>();
-		assert_eq!(h, e);
-
-		let v = vec![1, 2, 3, 4, 5];
-		let e = vec![0x31, 0x23, 0x45];
-		let h = hex_prefix_encode(&v, true).collect::<Vec<_>>();
-		assert_eq!(h, e);
-
-		let v = vec![1, 2, 3, 4];
-		let e = vec![0x00, 0x12, 0x34];
-		let h = hex_prefix_encode(&v, false).collect::<Vec<_>>();
-		assert_eq!(h, e);
-
-		let v = vec![4, 1];
-		let e = vec![0x20, 0x41];
-		let h = hex_prefix_encode(&v, true).collect::<Vec<_>>();
-		assert_eq!(h, e);
-	}
 
 	#[test]
 	fn test_triehash_out_of_order() {
