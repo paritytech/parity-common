@@ -1,0 +1,9 @@
+[package]
+name = "hex-prefix-encoding"
+version = "0.1.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+description = "Ethereum Hex-prefix Encoding"
+repository = "https://github.com/paritytech/parity-common"
+license = "GPL-3.0"
+
+[dependencies]

@@ -2,6 +2,7 @@
 members = [
 	"fixed-hash",
 	"hashdb",
+	"hex-prefix-encoding",
 	"keccak-hash",
 	"kvdb",
 	"kvdb-memorydb",
