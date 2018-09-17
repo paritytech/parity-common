@@ -253,13 +253,8 @@ mod tests {
 	use std::sync::{Once, ONCE_INIT};
     static INIT: Once = ONCE_INIT;
 
-	fn setup() {
-		INIT.call_once(|| { ::env_logger::init(); });
-	}
-
 	#[test]
 	fn sec_trie_root_works() {
-		setup();
 		let v = vec![
 			("doe", "reindeer"),
 			("dog", "puppy"),
@@ -273,7 +268,6 @@ mod tests {
 
 	#[test]
 	fn trie_root_works() {
-		setup();
 		let v = vec![
 			("doe", "reindeer"),
 			("dog", "puppy"),

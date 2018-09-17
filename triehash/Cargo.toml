@@ -7,12 +7,10 @@ repository = "https://github.com/paritytech/parity-common"
 license = "GPL-3.0"
 
 [dependencies]
-log = "0.4"
 hashdb = { version = "0.3", path = "../hashdb", default-features = false }
 triestream = { version = "0.1", path = "../triestream", default-features = false }
 
 [dev-dependencies]
-env_logger = "0.5"
 keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
 triestream = { version = "0.1", path = "../triestream", features = ["ethereum"] }
 
