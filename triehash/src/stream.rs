@@ -14,66 +14,90 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::borrow::Borrow;
 use rlp::RlpStream;
-use rlp::Encodable as RlpEncodable;
 use hex_prefix_encode;
+use hashdb::Hasher;
 
 pub trait TrieStream {
 	fn new() -> Self;
 	fn append_empty_data(&mut self);
-	// 17 item-long list
-	// fn append_branch(&mut self, ...)
-	// 2 item list with value
-	fn append_leaf(&mut self, key: &[u8], value: &[u8]);
-	// 2 item list with …?
-	// fn append_extension(&mut self, ...)
+	fn begin_branch(&mut self);
+	fn append_value(&mut self, value: &[u8]);
+	fn append_leaf<H: Hasher>(&mut self, key: &[u8], value: &[u8]) where H: Hasher;
+	fn append_extension(&mut self, key: &[u8]);
+	fn append_substream<H: Hasher>(&mut self, other: Self);
 	fn out(self) -> Vec<u8>;
+	fn as_raw(&self) -> &[u8];
 
 	// legacy
-	fn append_iter<'a, I>(&'a mut self, value: I) -> &'a mut Self where I: IntoIterator<Item = u8>;
-	fn new_list(len: usize) -> Self;
-	fn begin_list(&mut self, len: usize) -> &mut Self;
-	fn append_raw<'a>(&'a mut self, bytes: &[u8], item_count: usize) -> &'a mut Self;
-	fn append<'a, E>(&'a mut self, value: &E) -> &'a mut Self where E: RlpEncodable;
-	fn append_list<'a, E, K>(&'a mut self, values: &[K]) -> &'a mut Self where E: RlpEncodable, K: Borrow<E>;
+	// fn append_iter<'a, I>(&'a mut self, value: I) -> &'a mut Self where I: IntoIterator<Item = u8>;
+	// fn new_list(len: usize) -> Self;
+	// fn begin_list(&mut self, len: usize) -> &mut Self;
+	// fn append_raw<'a>(&'a mut self, bytes: &[u8], item_count: usize) -> &'a mut Self;
+	// fn append<'a, E>(&'a mut self, value: &E) -> &'a mut Self where E: RlpEncodable;
+	// fn append_list<'a, E, K>(&'a mut self, values: &[K]) -> &'a mut Self where E: RlpEncodable, K: Borrow<E>;
 }
 
 pub struct RlpTrieStream {
 	stream: RlpStream
 }
+impl RlpTrieStream {
+	fn append_hashed<H: Hasher>(&mut self, data: &[u8]) -> &mut Self {
+		// TODO: this is a hack to work around `append()` requiring `Encodable` – what is a better way?
+		let mut s = RlpStream::new();
+		s.encoder().encode_value(&H::hash(&data).as_ref());
+		let rlp_val = s.out();
+		self.stream.append_raw(&rlp_val, 1);
+		self
+	}
+}
 
 impl TrieStream for RlpTrieStream {
 	fn new() -> Self { Self { stream: RlpStream::new() } }
 	fn append_empty_data(&mut self) { self.stream.append_empty_data(); }
-	fn append_leaf(&mut self, key: &[u8], value: &[u8]) {
-		self.stream.begin_list(2);
-		// self.stream.append(&key);
-		self.stream.append_iter(hex_prefix_encode(&key, true));
+	fn begin_branch(&mut self) { self.stream.begin_list(17); }
+	fn append_value(&mut self, value: &[u8]) {
 		self.stream.append(&value);
 	}
-	fn out(self) -> Vec<u8> {
-		self.stream.out()
+	fn append_extension(&mut self, key: &[u8]) {
+		self.stream.begin_list(2);
+		self.stream.append_iter(hex_prefix_encode(key, false));
 	}
+	fn append_substream<H: Hasher>(&mut self, other: Self) {
+		let data = other.out();
+		match data.len() {
+			0...31 => {self.stream.append_raw(&data, 1);},
+			_ => {self.append_hashed::<H>(&data);}
+		};
+	}
+	fn append_leaf<H: Hasher>(&mut self, key: &[u8], value: &[u8]) {
+		self.stream.begin_list(2);
+		self.stream.append_iter(hex_prefix_encode(key, true));
+		self.stream.append(&value);
+	}
+
+	fn out(self) -> Vec<u8> { self.stream.out() }
+
+	fn as_raw(&self) -> &[u8] { &self.stream.as_raw() }
 
 	// legacy
-	fn append_iter<'a, I>(&'a mut self, value: I) -> &'a mut Self where I: IntoIterator<Item = u8> {
-		self.stream.append_iter(value);
-		self
-	}
+	// fn append_iter<'a, I>(&'a mut self, value: I) -> &'a mut Self where I: IntoIterator<Item = u8> {
+	// 	self.stream.append_iter(value);
+	// 	self
+	// }
 
-	fn new_list(len: usize) -> Self { Self { stream: RlpStream::new_list(len) } }
-	fn begin_list(&mut self, len: usize) -> &mut Self { self.stream.begin_list(len); self }
-	fn append_raw<'a>(&'a mut self, bytes: &[u8], item_count: usize) -> &'a mut Self {
-		self.stream.append_raw(bytes, item_count);
-		self
-	}
-	fn append<'a, E>(&'a mut self, value: &E) -> &'a mut Self where E: RlpEncodable{
-		self.stream.append(value);
-		self
-	}
-	fn append_list<'a, E, K>(&'a mut self, values: &[K]) -> &'a mut Self where E: RlpEncodable, K: Borrow<E> {
-		self.stream.append_list(values);
-		self
-	}
+	// fn new_list(len: usize) -> Self { Self { stream: RlpStream::new_list(len) } }
+	// fn begin_list(&mut self, len: usize) -> &mut Self { self.stream.begin_list(len); self }
+	// fn append_raw<'a>(&'a mut self, bytes: &[u8], item_count: usize) -> &'a mut Self {
+	// 	self.stream.append_raw(bytes, item_count);
+	// 	self
+	// }
+	// fn append<'a, E>(&'a mut self, value: &E) -> &'a mut Self where E: RlpEncodable{
+	// 	self.stream.append(value);
+	// 	self
+	// }
+	// fn append_list<'a, E, K>(&'a mut self, values: &[K]) -> &'a mut Self where E: RlpEncodable, K: Borrow<E> {
+	// 	self.stream.append_list(values);
+	// 	self
+	// }
 }
