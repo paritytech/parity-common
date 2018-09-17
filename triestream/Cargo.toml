@@ -1,0 +1,16 @@
+[package]
+name = "triestream"
+version = "0.1.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+description = "RLP flavoured TrieStream"
+repository = "https://github.com/paritytech/parity-common"
+license = "GPL-3.0"
+
+[dependencies]
+hashdb = { version = "0.3", path = "../hashdb" }
+hex-prefix-encoding = { version = "0.1", path = "../hex-prefix-encoding" }
+rlp = { version = "0.3", path = "../rlp", optional = true }
+
+[features]
+ethereum = ["rlp"]
+substrate = []
