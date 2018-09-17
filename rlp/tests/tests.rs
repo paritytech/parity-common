@@ -438,3 +438,27 @@ fn test_rlp_is_int() {
 		assert_eq!(rlp.is_int(), false);
 	}
 }
+
+/// test described in
+///
+/// https://github.com/paritytech/parity-common/issues/48
+#[test]
+fn test_inner_length_capping_for_short_lists() {
+	assert_eq!(Rlp::new(&vec![0xc0 + 0, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&vec![0xc0 + 1, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&vec![0xc0 + 2, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&vec![0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0), Ok("ab".to_owned()));
+	assert_eq!(Rlp::new(&vec![0xc0 + 4, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+}
+
+/// test described in
+///
+/// https://github.com/paritytech/parity-common/issues/48
+#[test]
+fn test_inner_length_capping_for_long_lists() {
+	assert_eq!(Rlp::new(&vec![0xf7 + 1, 0, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpDataLenWithZeroPrefix));
+	assert_eq!(Rlp::new(&vec![0xf7 + 1, 1, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&vec![0xf7 + 1, 2, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&vec![0xf7 + 1, 3, 0x82, b'a', b'b']).val_at::<String>(0), Ok("ab".to_owned()));
+	assert_eq!(Rlp::new(&vec![0xf7 + 1, 4, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+}
