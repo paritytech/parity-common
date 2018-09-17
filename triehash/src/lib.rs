@@ -65,7 +65,6 @@ where
 	H::Out: cmp::Ord,
 	S: TrieStream,
 {
-	// TODO: uses `rlp::encode`
 	trie_root::<H, S, _, _, _>(input.into_iter().enumerate().map(|(i, v)| (S::encode(&i), v)))
 }
 
