@@ -22,8 +22,6 @@ extern crate hashdb;
 extern crate triestream;
 #[cfg(test)]
 extern crate keccak_hasher;
-#[cfg(test)]
-extern crate env_logger;
 
 use std::collections::BTreeMap;
 use std::cmp;
@@ -36,33 +34,6 @@ fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
 		.zip(second.iter())
 		.position(|(f, s)| f != s)
 		.unwrap_or_else(|| cmp::min(first.len(), second.len()))
-}
-
-/// Generates a trie root hash for a vector of values
-///
-/// ```rust
-/// extern crate triehash;
-/// extern crate keccak_hasher;
-/// extern crate triestream;
-/// use triehash::ordered_trie_root;
-/// use keccak_hasher::KeccakHasher;
-/// use triestream::RlpTrieStream;
-///
-/// fn main() {
-/// 	let v = &["doe", "reindeer"];
-/// 	let root = "e766d5d51b89dc39d981b41bda63248d7abce4f0225eefd023792a540bcffee3";
-/// 	assert_eq!(ordered_trie_root::<KeccakHasher, RlpTrieStream, _>(v), root.into());
-/// }
-/// ```
-pub fn ordered_trie_root<H, S, I>(input: I) -> H::Out
-where
-	I: IntoIterator,
-	I::Item: AsRef<[u8]>,
-	H: Hasher,
-	H::Out: cmp::Ord,
-	S: TrieStream,
-{
-	trie_root::<H, S, _, _, _>(input.into_iter().enumerate().map(|(i, v)| (S::encode(&i), v)))
 }
 
 /// Generates a trie root hash for a vector of key-value tuples
@@ -249,9 +220,6 @@ mod tests {
 	use super::{sec_trie_root};
 	use keccak_hasher::KeccakHasher;
 	use triestream::RlpTrieStream;
-
-	use std::sync::{Once, ONCE_INIT};
-    static INIT: Once = ONCE_INIT;
 
 	#[test]
 	fn sec_trie_root_works() {
