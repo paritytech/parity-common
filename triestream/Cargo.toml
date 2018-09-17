@@ -9,7 +9,7 @@ license = "GPL-3.0"
 [dependencies]
 hashdb = { version = "0.3", path = "../hashdb" }
 hex-prefix-encoding = { version = "0.1", path = "../hex-prefix-encoding" }
-rlp = { version = "0.3", path = "../rlp", optional = true }
+rlp = { version = "0.3", path = "../rlp", optional = true, default-features = false }
 
 [features]
 ethereum = ["rlp"]
