@@ -64,9 +64,10 @@ where
 	I: IntoIterator + fmt::Debug,
 	I::Item: AsRef<[u8]> + fmt::Debug,
 	H: Hasher,
-	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
-S: TrieStream,
+	H::Out: cmp::Ord,
+	S: TrieStream,
 {
+	// TODO: uses `rlp::encode`
 	trie_root::<H, S, _, _, _>(input.into_iter().enumerate().map(|(i, v)| (rlp::encode(&i), v)))
 }
 
@@ -94,7 +95,6 @@ pub fn trie_root<H, S, I, A, B>(input: I) -> H::Out
 		  A: AsRef<[u8]> + Ord + std::fmt::Debug,
 		  B: AsRef<[u8]> + std::fmt::Debug,
 		  H: Hasher,
-		  <H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
 		  S: TrieStream,
 {
 
@@ -120,42 +120,8 @@ pub fn trie_root<H, S, I, A, B>(input: I) -> H::Out
 		.collect::<Vec<_>>();
 
 	let mut stream = S::new();
-	hash256rlp::<H, S, _, _>(&input, 0, &mut stream);
-	H::hash(&stream.out())
-}
-
-pub fn trie_root2<H, S, I, A, B>(input: I) -> H::Out
-	where I: IntoIterator<Item = (A, B)>,
-		  A: AsRef<[u8]> + Ord + std::fmt::Debug,
-		  B: AsRef<[u8]> + std::fmt::Debug,
-		  H: Hasher,
-		  <H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
-		  S: TrieStream,
-{
-
-	// first put elements into btree to sort them and to remove duplicates
-	let input = input
-		.into_iter()
-		.collect::<BTreeMap<_, _>>();
-
-	let mut nibbles = Vec::with_capacity(input.keys().map(|k| k.as_ref().len()).sum::<usize>() * 2);
-	let mut lens = Vec::with_capacity(input.len() + 1);
-	lens.push(0);
-	for k in input.keys() {
-		for &b in k.as_ref() {
-			nibbles.push(b >> 4);
-			nibbles.push(b & 0x0F);
-		}
-		lens.push(nibbles.len());
-	}
-
-	// then move them to a vector
-	let input = input.into_iter().zip(lens.windows(2))
-		.map(|((_, v), w)| (&nibbles[w[0]..w[1]], v))
-		.collect::<Vec<_>>();
-
-	let mut stream = S::new();
-	build_trie::<H, S, _, _>(&input, &mut stream);
+	build_trie::<H, S, _, _>(&input, 0, &mut stream);
+	trace!(target: "triehash", "[new, trie_root] Done building trie. Ready to flush.");
 	H::hash(&stream.out())
 }
 
@@ -184,7 +150,7 @@ where
 	A: AsRef<[u8]> + fmt::Debug,
 	B: AsRef<[u8]> + fmt::Debug,
 	H: Hasher,
-	<H as hashdb::Hasher>::Out: cmp::Ord + rlp::Encodable,
+	H::Out: Ord,
 	S: TrieStream,
 {
 	trie_root::<H, S, _, _, _>(input.into_iter().map(|(k, v)| (H::hash(k.as_ref()), v)))
@@ -228,192 +194,124 @@ fn hex_prefix_encode<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Item = 
 	once(first_byte).chain(nibbles[oddness_factor..].chunks(2).map(|ch| ch[0] << 4 | ch[1]))
 }
 
-/// Takes a vector of key/value tuples where the key is a slice of nibbles
+/// Takes a slice of key/value tuples where the key is a slice of nibbles
 /// and encodes it into the provided `Stream`.
-fn hash256rlp<H, S, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut S)
-	where
-		A: AsRef<[u8]> + std::fmt::Debug,
-		B: AsRef<[u8]> + std::fmt::Debug,
-		H: Hasher,
-		<H as hashdb::Hasher>::Out: rlp::Encodable,
-		S: TrieStream,
-{
-	let inlen = input.len();
-	trace!(target: "triehash", "[hash256rlp] START with input nibbles: {:?}, length: {:?}, shared prefix len: {:?}", input, inlen, pre_len);
-	// in case of empty slice, just append empty data
-	if inlen == 0 {
-		stream.append_empty_data();
-		trace!(target: "triehash", "[hash256rlp] no input. END.");
-		return;
-	}
-
-	// take slices
-	let key: &[u8] = &input[0].0.as_ref();
-	let value: &[u8] = &input[0].1.as_ref();
-
-	// if the slice contains just one item, append the suffix of the key
-	// and then append value
-	if inlen == 1 {
-		stream.begin_list(2);
-		stream.append_iter(hex_prefix_encode(&key[pre_len..], true));
-		stream.append(&value);
-		trace!(target: "triehash", "[hash256rlp] single item. END.");
-		return;
-	}
-
-	trace!(target: "triehash", "[hash256rlp] multiple items ({:?})", inlen);
-	// get length of the longest shared prefix in slice keys
-	let shared_prefix = input.iter()
-		// skip first tuple
-		.skip(1)
-		// get minimum number of shared nibbles between first and each successive
-		.fold(key.len(), | acc, &(ref k, _) | {
-			let o = cmp::min(shared_prefix_len(key, k.as_ref()), acc);
-			trace!(target: "triehash", "[hash256rlp] first key length: {:?}, k: {:?}, current acc: {:?}; shared prefix len: {:?}", key.len(), k, acc, o);
-			o
-		});
-
-	// if shared prefix is higher than current prefix append its
-	// new part of the key to the stream
-	// then recursively append suffixes of all items who had this key
-	if shared_prefix > pre_len {
-		stream.begin_list(2);
-		stream.append_iter(hex_prefix_encode(&key[pre_len..shared_prefix], false));
-		trace!(target: "triehash", "[hash256rlp] shared_prefix ({:?}) is longer than prefix len ({:?}); appending path {:?} to stream", shared_prefix, pre_len, &key[pre_len..shared_prefix]);
-		hash256aux::<H, S, _, _>(input, shared_prefix, stream);
-		trace!(target: "triehash", "[hash256rlp] back after recursing. END.");
-		return;
-	}
-	trace!(target: "triehash", "[hash256rlp] shared prefix ({:?}) is >= previous shared prefix ({})", shared_prefix, pre_len);
-	// One item for every possible nibble/suffix + 1 for data
-	stream.begin_list(17);
-
-	// if first key len is equal to prefix_len, move to next element
-	let mut begin = match pre_len == key.len() {
-		true => {
-			trace!(target: "triehash", "  starting list from 1 because pre_len == key.len() => {} == {}", pre_len, key.len());
-			1},
-		false => {
-			trace!(target: "triehash", "  starting list from 0 because pre_len != key.len() => {} != {}", pre_len, key.len());
-			0}
-	};
-
-	// iterate over all possible nibbles (4 bits => values between 0..16)
-	for i in 0..16 {
-		// count how many successive elements have same next nibble
-		let len = match begin < input.len() {
-			true => input[begin..].iter()
-				.inspect(|(k, v)| {
-					trace!(target: "triehash", "    slot {}, input item: ({:?}, {:?}), pre_len'th key nibble, k[{}]: {} (in this slot? {})", i, k, v, pre_len, k.as_ref()[pre_len], k.as_ref()[pre_len] == i)
-				})
-				.take_while(| (k, _) | k.as_ref()[pre_len] == i)
-				.count(),
-			false => 0
-		};
-
-		// if at least 1 successive element has the same nibble
-		// append their suffixes
-		match len {
-			0 => {
-				trace!(target: "triehash", "    slot {} No successive element has the same nibble. Appending empty data.", i);
-				stream.append_empty_data(); },
-			_ => {
-				trace!(target: "triehash", "    slot {} {} successive elements have the same nibble. Recursing with {:?}", i, len, &input[begin..(begin + len)]);
-				hash256aux::<H, S, _, _>(&input[begin..(begin + len)], pre_len + 1, stream)}
-		}
-		begin += len;
-	}
-	trace!(target: "triehash", "[hash256rlp] Done looping");
-	// if first key len is equal prefix, append its value
-	match pre_len == key.len() {
-		true => { stream.append(&value); },
-		false => { stream.append_empty_data(); }
-	};
-}
-
-fn hash256aux<H, S, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut S)
-	where
-		A: AsRef<[u8]> + std::fmt::Debug,
-		B: AsRef<[u8]> + std::fmt::Debug,
-		H: Hasher,
-		<H as hashdb::Hasher>::Out: rlp::Encodable,
-		S: TrieStream,
-{
-	let mut s = S::new();
-	trace!(target: "triehash", "[aux] START with input nibbles: {:?}, prefix length: {}", input, pre_len);
-	if input.len() == 1 {
-		trace!(target: "triehash", "[aux] single item. Appending k/v.");
-		s.begin_list(2);
-		s.append_iter(hex_prefix_encode(&input[0].0.as_ref()[pre_len..], true));
-		s.append(&input[0].1.as_ref());
-	} else {
-		trace!(target: "triehash", "[aux] multiple items. Recursing.");
-		hash256rlp::<H, S, _, _>(input, pre_len, &mut s);
-	}
-	let out = s.out();
-	match out.len() {
-		0...31 => {
-			trace!(target: "triehash", "[aux] short output: {}, appending raw: {:?}", out.len(), &out);
-			stream.append_raw(&out, 1)
-		},
-		_ => {
-			trace!(target: "triehash", "[aux] long output: {}, appending hash", out.len());
-			stream.append(&H::hash(&out))}
-	};
-	trace!(target: "triehash", "[aux] END.");
-}
-
-// fn encode<S: TrieStream>(input: Vec<(&[u8],&[u8])>) -> S {
-// 	let mut s = S::new();
-// 	let key: &[u8] = &input[0].0.as_ref();
-// 	let value: &[u8] = &input[0].1.as_ref();
-// /*
-// 1. iterate over list of k/v
-// 1.1 last value? append rest of the key and append value. Return.
-// 2. find the number of nibbles that the first key have in common with the remaining keys
-// 2.1 Yes? Append common nibbles to stream
-// 2.2 No? Add new list of 17 items
-// 3.
-// */
-// 	let shared_prefix = input.iter()
-// 		// skip first tuple
-// 		.skip(1)
-// 		// get the number of shared nibbles between first item and each successive
-// 		.fold(key.len(), | acc, &(ref k, _) | {
-// 			let o = cmp::min(shared_prefix_len(key, k.as_ref()), acc);
-// 			trace!(target: "triehash", "[hash256rlp] first key length: {:?}, k: {:?}, current acc: {:?}; shared prefix len: {:?}", key.len(), k, acc, o);
-// 			o
-// 		});
-// 	s.begin_list(2); s.append_iter(hex_prefix_encode(&key[..shared_prefix], false));
-// 	s
-// }
-
-
-fn build_trie<H, S, A, B>(input: &[(A, B)], stream: &mut S)
+fn build_trie<H, S, A, B>(input: &[(A, B)], cursor: usize, stream: &mut S)
 where
 	A: AsRef<[u8]> + std::fmt::Debug,
 	B: AsRef<[u8]> + std::fmt::Debug,
 	H: Hasher,
-	<H as hashdb::Hasher>::Out: rlp::Encodable,
 	S: TrieStream,
 {
-	let input_length = input.len();
-	match input_length {
-		0 => stream.append_empty_data(),
-		1 => stream.append_leaf(
-				// &hex_prefix_encode(input[0].0.as_ref(), true).collect::<Vec<_>>(),
-				&input[0].0.as_ref(),
-				&input[0].1.as_ref()
-			),
+	trace!(target: "triehash", "[new] START with input nibbles: {:?}, length: {:?}, shared prefix len: {:?}", input, input.len(), cursor);
+
+	match input.len() {
+		// No input, just append empty data.
+		0 => {
+			stream.append_empty_data();
+			trace!(target: "triehash", "[new] no input. END. stream={:x?}", stream.as_raw());
+		},
+		// Leaf node; append the remainder of the key and the value. Done.
+		1 => {
+			stream.append_leaf::<H>(&input[0].0.as_ref()[cursor..], &input[0].1.as_ref() );
+			trace!(target: "triehash", "[new] Single item (leaf). END. stream={:x?}", stream.as_raw());
+		},
+		// We have multiple items in the input. We need to figure out if we
+		// should add an extension node or a branch node.
 		_ => {
-			unreachable!();
+			let (key, value) = (&input[0].0.as_ref(), input[0].1.as_ref());
+			// Count the number of nibbles in the other elements that are
+			// shared with the first key.
+			// e.g. input = [ [1'7'3'10'12'13], [1'7'3'], [1'7'7'8'9'] ] => [1'7'] is common => 2
+			let shared_nibble_count = input.iter().skip(1).fold(key.len(), |acc, &(ref k, _)| {
+				cmp::min( shared_prefix_len(key, k.as_ref()), acc )
+			});
+			trace!(target: "triehash", "[new] Multiple items: {}. Length of prefix shared by all key nibbles: {}", input.len(), shared_nibble_count);
+			// Add an extension node if the number of shared nibbles is greater
+			// than what we saw on the last call (`cursor`): append the new part
+			// of the path then recursively append the remainder of all items
+			// who had this partial key.
+			if shared_nibble_count > cursor {
+				trace!(target: "triehash", "[new] {} nibbles are shared. We need an extension node. Current cursor: {}", shared_nibble_count, cursor);
+				stream.append_extension(&key[cursor..shared_nibble_count]);
+				trace!(target: "triehash", "[new] shared_prefix ({:?}) is longer than prefix len ({:?}); appending path {:x?} to stream", shared_nibble_count, cursor, &key[cursor..shared_nibble_count]);
+				build_trie_trampoline::<H, _, _, _>(input, shared_nibble_count, stream);
+				trace!(target: "triehash", "[new] back after recursing. END. stream: {:x?}", stream.as_raw());
+				return;
+			}
+			trace!(target: "triehash", "[new] Nothing is shared. We need a branch node");
+			trace!(target: "triehash", "[new] shared prefix ({:?}) is >= previous shared prefix ({})", shared_nibble_count, cursor);
+			// Add a branch node because the path is as long as it gets. The branch
+			// node has 17 entries, one for each possible nibble + 1 for data.
+			stream.begin_branch();
+			// If the length of the first key is equal to the current cursor, move
+			// to next element.
+			let mut begin = { if cursor == key.len() {1} else {0} };
+			// Fill in each slot in the branch node: an empty node if the slot
+			// is unoccupied, otherwise recurse and add more nodes.
+			for i in 0..16 {
+				// If we've reached the end of our input, fast-forward to the
+				// end filling in the slots with empty nodes. The input is sorted
+				// so we know there are no more elements we need to ponder.
+				if begin >= input.len() {
+					for _ in i..16 {
+						stream.append_empty_data();
+					}
+					break;
+				}
+				// Count how many successive elements have same next nibble.
+				let shared_nibble_count = input[begin..].iter()
+					.inspect(|(k, v)| {
+						trace!(target: "triehash", "    slot {}, input item: ({:?}, {:?}), pre_len'th key nibble, k[{}]: {} (in this slot? {})", i, k, v, cursor, k.as_ref()[cursor], k.as_ref()[cursor] == i)
+					})
+					.take_while(|(k, _)| k.as_ref()[cursor] == i)
+					.count();
+				// trace!(target: "triehash", "[new] slot {}: {} nibbles should go in this slot.", i, len);
+				match shared_nibble_count {
+					// If nothing is shared we're at the end of the path. Append
+					// an empty node (and we'll append the value in the 17th slot
+					// at the end of the method call).
+					0 => stream.append_empty_data(),
+					// If at least one successive element has the same nibble,
+					// recurse and add more nodes.
+					_ => {
+						trace!(target: "triehash", "    slot {} {} successive elements have the same nibble. Recursing with {:?} and cursor {}", i, shared_nibble_count, &input[begin..(begin + shared_nibble_count)], cursor + 1);
+						build_trie_trampoline::<H, S, _, _>(&input[begin..(begin + shared_nibble_count)], cursor + 1, stream);
+						trace!(target: "triehash", "    slot {} Done recursing with {:?} and pre_len {}; stream={:x?}", i, &input[begin..(begin + shared_nibble_count)], cursor + 1, stream.as_raw());
+					}
+				}
+				begin += shared_nibble_count;
+			}
+			trace!(target: "triehash", "[new] Done looping for branch node. Stream so far: {:x?}", stream.as_raw());
+			if cursor == key.len() {
+				trace!(target: "triehash", "[new] cursor {} == key.len() {}, so appending value={:x?}", cursor, key.len(), value);
+				stream.append_value(value);
+			} else {
+				stream.append_empty_data();
+			}
 		}
 	}
+	trace!(target: "triehash", "[new] Done. stream={:x?}", stream.as_raw());
+}
+
+fn build_trie_trampoline<H, S, A, B>(input: &[(A, B)], cursor: usize, stream: &mut S)
+where
+	A: AsRef<[u8]> + std::fmt::Debug,
+	B: AsRef<[u8]> + std::fmt::Debug,
+	H: Hasher,
+	S: TrieStream,
+{
+	trace!(target: "triehash", "[tra] START with input nibbles: {:?}, prefix length: {}", input, cursor);
+	let mut substream = S::new();
+	build_trie::<H, _, _, _>(input, cursor, &mut substream);
+	stream.append_substream::<H>(substream);
+	trace!(target: "triehash", "[tra] END. stream={:x?}", stream.as_raw());
 }
 
 #[cfg(test)]
 mod tests {
-	use super::{trie_root, trie_root2, shared_prefix_len, hex_prefix_encode};
+	use super::{trie_root, shared_prefix_len, hex_prefix_encode};
+	use super::{sec_trie_root};
 	use keccak_hasher::KeccakHasher;
 	use super::RlpTrieStream;
 
@@ -425,42 +323,40 @@ mod tests {
 	}
 
 	#[test]
-	fn xlearn() {
+	fn sec_trie_root_works() {
 		setup();
-		let empty_input : Vec<(&[u8], &[u8])>= vec![];
-		assert_eq!(
-			trie_root2::<KeccakHasher, RlpTrieStream, _, _, _>(empty_input.clone()),
-			trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(empty_input.clone()),
-		);
-		let input = vec![
-			(&[0x5, 0x1], b"a" as &[u8]),
-			(&[0x5, 0x3], b"c" as &[u8]),
-			(&[0x5, 0x40], b"d" as &[u8]),
-			(&[0x5, 0x2], b"b" as &[u8]), // out-of-order
-			(&[0x5, 0x41], b"b" as &[u8]),
+		let v = vec![
+			("doe", "reindeer"),
+			("dog", "puppy"),
+			("dogglesworth", "cat"),
 		];
-		// let input = vec![(&[0xffu8, 0x02], b"a" as &[u8])];
-		let _r = trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(input);
-	}
-	#[test]
-	fn single_item_works() {
-		setup();
-		let input : Vec<(&[u8], &[u8])>= vec![(&[0x11], &[0x22])];
 		assert_eq!(
-			trie_root2::<KeccakHasher, RlpTrieStream, _, _, _>(input.clone()),
-			trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(input.clone()),
+			sec_trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(v.clone()),
+			"d4cd937e4a4368d7931a9cf51686b7e10abb3dce38a39000fd7902a092b64585".into(),
 		);
 	}
 
 	#[test]
-	fn learn_nothing_shared() {
+	fn trie_root_works() {
 		setup();
-		let input = vec![
-			(&[0x16, 0x8], &[44]),
-			(&[0x55, 0x7], &[13]),
+		let v = vec![
+			("doe", "reindeer"),
+			("dog", "puppy"),
+			("dogglesworth", "cat"),
 		];
-		let _r = trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(input);
+		assert_eq!(
+			trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(v),
+			"8aad789dff2f538bca5d8ea56e8abe10f4c7ba3a5dea95fea4cd6e7c3a1168d3".into()
+		);
+		assert_eq!(
+			trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(vec![
+				(b"A", b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as &[u8])
+			]),
+			"d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab".into()
+		);
 	}
+
+	// TODO: add a test for ordered_trie_root which is essentially the only thing `parity-ethereum` uses
 
 	#[test]
 	fn test_hex_prefix_encode() {
@@ -493,13 +389,6 @@ mod tests {
 		let e = vec![0x20, 0x41];
 		let h = hex_prefix_encode(&v, true).collect::<Vec<_>>();
 		assert_eq!(h, e);
-	}
-
-	#[test]
-	fn simple_test() {
-		assert_eq!(trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(vec![
-			(b"A", b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as &[u8])
-		]), "d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab".into());
 	}
 
 	#[test]
