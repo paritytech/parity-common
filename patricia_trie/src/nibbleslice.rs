@@ -99,7 +99,7 @@ impl<'a> NibbleSlice<'a> {
 	/// Create a new nibble slice from the given HPE encoded data (e.g. output of `encoded()`).
 	pub fn from_encoded(data: &'a [u8]) -> (NibbleSlice, bool) {
 		(
-			Self::new_offset( data, if data[0] & 16 == 16 {1} else {2} ),
+			Self::new_offset(data, if data[0] & 16 == 16 { 1 } else { 2 } ),
 			data[0] & 32 == 32
 		)
 	}
@@ -159,7 +159,9 @@ impl<'a> NibbleSlice<'a> {
 			for i in 0..s/2 {
 				let mybyte = self.data[i + my_offset];
 				let theirbyte = them.data[i + their_offset];
-				if mybyte == theirbyte { eq_counter += 2 } else {
+				if mybyte == theirbyte {
+					eq_counter += 2
+				} else {
 					if mybyte & 0b_1111_0000 == theirbyte & 0b_1111_0000 {
 						eq_counter += 1;
 					}
