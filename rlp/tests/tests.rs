@@ -438,3 +438,29 @@ fn test_rlp_is_int() {
 		assert_eq!(rlp.is_int(), false);
 	}
 }
+
+#[test]
+fn test_canonical_string_encoding() {
+	assert_ne!(
+		Rlp::new(&vec![0xc0 + 4, 0xb7 + 1, 2, b'a', b'b']).val_at::<String>(0),
+		Rlp::new(&vec![0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0)
+	);
+
+	assert_eq!(
+		Rlp::new(&vec![0xc0 + 4, 0xb7 + 1, 2, b'a', b'b']).val_at::<String>(0),
+		Err(DecoderError::RlpInvalidIndirection)
+	);
+}
+
+#[test]
+fn test_canonical_list_encoding() {
+	assert_ne!(
+		Rlp::new(&vec![0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0),
+		Rlp::new(&vec![0xf7 + 1, 3, 0x82, b'a', b'b']).val_at::<String>(0)
+	);
+
+	assert_eq!(
+		Rlp::new(&vec![0xf7 + 1, 3, 0x82, b'a', b'b']).val_at::<String>(0),
+		Err(DecoderError::RlpInvalidIndirection)
+	);
+}
