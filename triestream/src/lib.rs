@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Defines the `TrieStream` trait used to build a byte-stream to calculate
-//!  a trieroot. Comes in two flavours: rlp and substrate codec.
+//! a trieroot. Comes in two flavours: rlp and substrate codec.
 
 extern crate hashdb;
 extern crate hex_prefix_encoding;

@@ -2,7 +2,7 @@
 name = "triestream"
 version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>"]
-description = "RLP flavoured TrieStream"
+description = "Trait used to build a byte-stream to calculate trie roots"
 repository = "https://github.com/paritytech/parity-common"
 license = "GPL-3.0"
 
@@ -13,4 +13,4 @@ rlp = { version = "0.3", path = "../rlp", optional = true, default-features = fa
 
 [features]
 ethereum = ["rlp"]
-substrate = []
+substrate = [] # TODO:

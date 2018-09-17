@@ -13,11 +13,14 @@ triestream = { version = "0.1", path = "../triestream", default-features = false
 
 [dev-dependencies]
 env_logger = "0.5"
-ethereum-types = "0.4" # Used in benches
-tiny-keccak = "1.4" # Used in benches
 keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
-trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
 triestream = { version = "0.1", path = "../triestream", features = ["ethereum"] }
+
+# Used in benches
+ethereum-types = "0.4"
+tiny-keccak = "1.4"
+trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
+
 
 [features]
 ethereum = ["triestream/ethereum"]
