@@ -121,7 +121,7 @@ pub trait KeyValueDB<K: AsRef<[u8]>, V>: Sync + Send {
 	fn transaction(&self) -> DBTransaction<K, V> { DBTransaction::new() }
 
 	/// Get a value by key.
-	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<V>>;
+	fn get(&self, col: Option<u32>, key: &K) -> io::Result<Option<V>>;
 
 	/// Get a value by partial key. Only works for flushed data.
 	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<V>;

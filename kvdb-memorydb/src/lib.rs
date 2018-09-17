@@ -49,7 +49,7 @@ pub fn create(num_cols: u32) -> InMemory {
 }
 
 impl KeyValueDB<DBKey, DBValue> for InMemory {
-	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
+	fn get(&self, col: Option<u32>, key: &DBKey) -> io::Result<Option<DBValue>> {
 		let columns = self.columns.read();
 		match columns.get(&col) {
 			None => Err(io::Error::new(io::ErrorKind::Other, format!("No such column family: {:?}", col))),
@@ -105,7 +105,8 @@ impl KeyValueDB<DBKey, DBValue> for InMemory {
 	{
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
-				map.clone().into_iter()
+				map.clone()
+					.into_iter()
 					.skip_while(move |&(ref k, _)| !k.starts_with(prefix))
 			),
 			None => Box::new(None.into_iter()),

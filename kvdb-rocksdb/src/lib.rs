@@ -556,8 +556,7 @@ impl Database {
 		&'a self,
 		col: Option<u32>,
 		prefix: &[u8]
-	) -> Option<impl Iterator<Item=(DBKey, DBValue)> + 'a>
-	{
+	) -> Option<impl Iterator<Item=(DBKey, DBValue)> + 'a> {
 		match *self.db.read() {
 			Some(DBAndColumns { ref db, ref cfs }) => {
 				let iter = col.map_or_else(
@@ -568,7 +567,7 @@ impl Database {
 							&self.read_opts,
 						).expect("iterator params are valid; qed"));
 
-				Some(interleave_ordered(Vec::new(), iter.map(|(k, v)| (k.into(), v.into()))))
+				Some(iter.map(|(k, v)| (k.into(), v.into())))
 			}
 			None => None,
 		}
@@ -655,7 +654,7 @@ impl Database {
 // duplicate declaration of methods here to avoid trait import in certain existing cases
 // at time of addition.
 impl KeyValueDB<DBKey, DBValue> for Database {
-	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
+	fn get(&self, col: Option<u32>, key: &DBKey) -> io::Result<Option<DBValue>> {
 		Database::get(self, col, key)
 	}
 
