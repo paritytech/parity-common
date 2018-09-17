@@ -34,8 +34,6 @@ pub trait TrieStream {
 	fn append_substream<H: Hasher>(&mut self, other: Self);
 	fn out(self) -> Vec<u8>;
 	fn as_raw(&self) -> &[u8];
-
-    fn encode(k: &usize) -> Vec<u8>; // Arrgh – `ordered_trie_root` enumerates and rlp-encodes items with `rlp::encode()` so need something similar here. :/
 }
 
 #[cfg(feature = "ethereum")]

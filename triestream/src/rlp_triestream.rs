@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use hex_prefix_encoding::hex_prefix_encode;
-use rlp::{RlpStream, encode as rlp_encode};
+use rlp::RlpStream;
 use hashdb::Hasher;
 use super::TrieStream;
 
@@ -62,8 +62,4 @@ impl TrieStream for RlpTrieStream {
 	fn out(self) -> Vec<u8> { self.stream.out() }
 
 	fn as_raw(&self) -> &[u8] { &self.stream.as_raw() }
-
-	fn encode(k: &usize) -> Vec<u8> {
-		rlp_encode(k)
-	}
 }
