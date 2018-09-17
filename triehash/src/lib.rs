@@ -22,14 +22,11 @@ extern crate hashdb;
 extern crate triestream;
 #[cfg(test)]
 extern crate keccak_hasher;
-#[macro_use]
-extern crate log;
 #[cfg(test)]
 extern crate env_logger;
 
 use std::collections::BTreeMap;
 use std::cmp;
-use std::fmt;
 use hashdb::Hasher;
 
 use triestream::TrieStream;
@@ -59,8 +56,8 @@ fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
 /// ```
 pub fn ordered_trie_root<H, S, I>(input: I) -> H::Out
 where
-	I: IntoIterator + fmt::Debug,
-	I::Item: AsRef<[u8]> + fmt::Debug,
+	I: IntoIterator,
+	I::Item: AsRef<[u8]>,
 	H: Hasher,
 	H::Out: cmp::Ord,
 	S: TrieStream,
@@ -91,8 +88,8 @@ where
 /// ```
 pub fn trie_root<H, S, I, A, B>(input: I) -> H::Out
 	where I: IntoIterator<Item = (A, B)>,
-		  A: AsRef<[u8]> + Ord + std::fmt::Debug,
-		  B: AsRef<[u8]> + std::fmt::Debug,
+		  A: AsRef<[u8]> + Ord,
+		  B: AsRef<[u8]>,
 		  H: Hasher,
 		  S: TrieStream,
 {
@@ -120,7 +117,7 @@ pub fn trie_root<H, S, I, A, B>(input: I) -> H::Out
 
 	let mut stream = S::new();
 	build_trie::<H, S, _, _>(&input, 0, &mut stream);
-	trace!(target: "triehash", "[new, trie_root] Done building trie. Ready to flush.");
+	// trace!(target: "triehash", "[new, trie_root] Done building trie. Ready to flush.");
 	H::hash(&stream.out())
 }
 
@@ -147,9 +144,9 @@ pub fn trie_root<H, S, I, A, B>(input: I) -> H::Out
 /// ```
 pub fn sec_trie_root<H, S, I, A, B>(input: I) -> H::Out
 where
-	I: IntoIterator<Item = (A, B)> + fmt::Debug,
-	A: AsRef<[u8]> + fmt::Debug,
-	B: AsRef<[u8]> + fmt::Debug,
+	I: IntoIterator<Item = (A, B)>,
+	A: AsRef<[u8]>,
+	B: AsRef<[u8]>,
 	H: Hasher,
 	H::Out: Ord,
 	S: TrieStream,
@@ -161,24 +158,16 @@ where
 /// and encodes it into the provided `Stream`.
 fn build_trie<H, S, A, B>(input: &[(A, B)], cursor: usize, stream: &mut S)
 where
-	A: AsRef<[u8]> + std::fmt::Debug,
-	B: AsRef<[u8]> + std::fmt::Debug,
+	A: AsRef<[u8]>,
+	B: AsRef<[u8]>,
 	H: Hasher,
 	S: TrieStream,
 {
-	trace!(target: "triehash", "[new] START with input nibbles: {:?}, length: {:?}, shared prefix len: {:?}", input, input.len(), cursor);
-
 	match input.len() {
 		// No input, just append empty data.
-		0 => {
-			stream.append_empty_data();
-			trace!(target: "triehash", "[new] no input. END. stream={:x?}", stream.as_raw());
-		},
+		0 => stream.append_empty_data(),
 		// Leaf node; append the remainder of the key and the value. Done.
-		1 => {
-			stream.append_leaf::<H>(&input[0].0.as_ref()[cursor..], &input[0].1.as_ref() );
-			trace!(target: "triehash", "[new] Single item (leaf). END. stream={:x?}", stream.as_raw());
-		},
+		1 => stream.append_leaf::<H>(&input[0].0.as_ref()[cursor..], &input[0].1.as_ref() ),
 		// We have multiple items in the input. We need to figure out if we
 		// should add an extension node or a branch node.
 		_ => {
@@ -189,21 +178,15 @@ where
 			let shared_nibble_count = input.iter().skip(1).fold(key.len(), |acc, &(ref k, _)| {
 				cmp::min( shared_prefix_len(key, k.as_ref()), acc )
 			});
-			trace!(target: "triehash", "[new] Multiple items: {}. Length of prefix shared by all key nibbles: {}", input.len(), shared_nibble_count);
 			// Add an extension node if the number of shared nibbles is greater
 			// than what we saw on the last call (`cursor`): append the new part
 			// of the path then recursively append the remainder of all items
 			// who had this partial key.
 			if shared_nibble_count > cursor {
-				trace!(target: "triehash", "[new] {} nibbles are shared. We need an extension node. Current cursor: {}", shared_nibble_count, cursor);
 				stream.append_extension(&key[cursor..shared_nibble_count]);
-				trace!(target: "triehash", "[new] shared_prefix ({:?}) is longer than prefix len ({:?}); appending path {:x?} to stream", shared_nibble_count, cursor, &key[cursor..shared_nibble_count]);
 				build_trie_trampoline::<H, _, _, _>(input, shared_nibble_count, stream);
-				trace!(target: "triehash", "[new] back after recursing. END. stream: {:x?}", stream.as_raw());
 				return;
 			}
-			trace!(target: "triehash", "[new] Nothing is shared. We need a branch node");
-			trace!(target: "triehash", "[new] shared prefix ({:?}) is >= previous shared prefix ({})", shared_nibble_count, cursor);
 			// Add a branch node because the path is as long as it gets. The branch
 			// node has 17 entries, one for each possible nibble + 1 for data.
 			stream.begin_branch();
@@ -224,12 +207,8 @@ where
 				}
 				// Count how many successive elements have same next nibble.
 				let shared_nibble_count = input[begin..].iter()
-					.inspect(|(k, v)| {
-						trace!(target: "triehash", "    slot {}, input item: ({:?}, {:?}), pre_len'th key nibble, k[{}]: {} (in this slot? {})", i, k, v, cursor, k.as_ref()[cursor], k.as_ref()[cursor] == i)
-					})
 					.take_while(|(k, _)| k.as_ref()[cursor] == i)
 					.count();
-				// trace!(target: "triehash", "[new] slot {}: {} nibbles should go in this slot.", i, len);
 				match shared_nibble_count {
 					// If nothing is shared we're at the end of the path. Append
 					// an empty node (and we'll append the value in the 17th slot
@@ -238,37 +217,30 @@ where
 					// If at least one successive element has the same nibble,
 					// recurse and add more nodes.
 					_ => {
-						trace!(target: "triehash", "    slot {} {} successive elements have the same nibble. Recursing with {:?} and cursor {}", i, shared_nibble_count, &input[begin..(begin + shared_nibble_count)], cursor + 1);
 						build_trie_trampoline::<H, S, _, _>(&input[begin..(begin + shared_nibble_count)], cursor + 1, stream);
-						trace!(target: "triehash", "    slot {} Done recursing with {:?} and pre_len {}; stream={:x?}", i, &input[begin..(begin + shared_nibble_count)], cursor + 1, stream.as_raw());
 					}
 				}
 				begin += shared_nibble_count;
 			}
-			trace!(target: "triehash", "[new] Done looping for branch node. Stream so far: {:x?}", stream.as_raw());
 			if cursor == key.len() {
-				trace!(target: "triehash", "[new] cursor {} == key.len() {}, so appending value={:x?}", cursor, key.len(), value);
 				stream.append_value(value);
 			} else {
 				stream.append_empty_data();
 			}
 		}
 	}
-	trace!(target: "triehash", "[new] Done. stream={:x?}", stream.as_raw());
 }
 
 fn build_trie_trampoline<H, S, A, B>(input: &[(A, B)], cursor: usize, stream: &mut S)
 where
-	A: AsRef<[u8]> + std::fmt::Debug,
-	B: AsRef<[u8]> + std::fmt::Debug,
+	A: AsRef<[u8]>,
+	B: AsRef<[u8]>,
 	H: Hasher,
 	S: TrieStream,
 {
-	trace!(target: "triehash", "[tra] START with input nibbles: {:?}, prefix length: {}", input, cursor);
 	let mut substream = S::new();
 	build_trie::<H, _, _, _>(input, cursor, &mut substream);
 	stream.append_substream::<H>(substream);
-	trace!(target: "triehash", "[tra] END. stream={:x?}", stream.as_raw());
 }
 
 #[cfg(test)]
@@ -318,10 +290,6 @@ mod tests {
 			"d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab".into()
 		);
 	}
-
-	// TODO: add a test for ordered_trie_root which is essentially the only thing `parity-ethereum` uses
-
-
 
 	#[test]
 	fn test_triehash_out_of_order() {
