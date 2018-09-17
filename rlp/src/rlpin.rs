@@ -40,6 +40,7 @@ pub enum Prototype {
 }
 
 /// Stores basic information about item
+#[derive(Debug)]
 pub struct PayloadInfo {
 	/// Header length in bytes
 	pub header_len: usize,
@@ -261,8 +262,10 @@ impl<'a> Rlp<'a> {
 	/// consumes first found prefix
 	fn consume_list_payload(&self) -> Result<&'a [u8], DecoderError> {
 		let item = BasicDecoder::payload_info(self.bytes)?;
-		let bytes = Rlp::consume(self.bytes, item.header_len)?;
-		Ok(bytes)
+		if self.bytes.len() < (item.header_len + item.value_len) {
+			return Err(DecoderError::RlpIsTooShort);
+		}
+		Ok(&self.bytes[item.header_len..item.header_len + item.value_len])
 	}
 
 	/// consumes fixed number of items
