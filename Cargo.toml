@@ -16,7 +16,8 @@ members = [
 	"rlp",
 	"transaction-pool",
 	"trace-time",
-	"trie-standardmap",
 	"triehash",
+	"trie-standardmap",
+	"triestream",
 	"uint"
 ]
