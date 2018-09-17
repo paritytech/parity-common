@@ -39,6 +39,8 @@ extern crate keccak_hash as keccak;
 #[cfg(test)]
 extern crate keccak_hasher;
 #[cfg(test)]
+extern crate triestream;
+#[cfg(test)]
 extern crate triehash;
 
 use std::{fmt, error};

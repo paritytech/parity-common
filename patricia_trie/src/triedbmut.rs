@@ -977,7 +977,8 @@ mod tests {
 	use keccak_hasher::KeccakHasher;
 	use memorydb::MemoryDB;
 	use rlp::{Decodable, Encodable};
-	use triehash::{trie_root, RlpTrieStream};
+	use triehash::trie_root;
+	use triestream::RlpTrieStream;
 	use standardmap::*;
 	use ethtrie::{TrieDBMut, RlpCodec, trie::{TrieMut, NodeCodec}};
 	use env_logger;
