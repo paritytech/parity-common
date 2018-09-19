@@ -439,9 +439,41 @@ fn test_rlp_is_int() {
 	}
 }
 
-/// test described in
-///
-/// https://github.com/paritytech/parity-common/issues/48
+// test described in
+//
+// https://github.com/paritytech/parity-common/issues/49
+#[test]
+fn test_canonical_string_encoding() {
+	assert_ne!(
+		Rlp::new(&vec![0xc0 + 4, 0xb7 + 1, 2, b'a', b'b']).val_at::<String>(0),
+		Rlp::new(&vec![0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0)
+	);
+
+	assert_eq!(
+		Rlp::new(&vec![0xc0 + 4, 0xb7 + 1, 2, b'a', b'b']).val_at::<String>(0),
+		Err(DecoderError::RlpInvalidIndirection)
+	);
+}
+
+// test described in
+//
+// https://github.com/paritytech/parity-common/issues/49
+#[test]
+fn test_canonical_list_encoding() {
+	assert_ne!(
+		Rlp::new(&vec![0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0),
+		Rlp::new(&vec![0xf7 + 1, 3, 0x82, b'a', b'b']).val_at::<String>(0)
+	);
+
+	assert_eq!(
+		Rlp::new(&vec![0xf7 + 1, 3, 0x82, b'a', b'b']).val_at::<String>(0),
+		Err(DecoderError::RlpInvalidIndirection)
+	);
+}
+
+// test described in
+//
+// https://github.com/paritytech/parity-common/issues/48
 #[test]
 fn test_inner_length_capping_for_short_lists() {
 	assert_eq!(Rlp::new(&vec![0xc0 + 0, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
@@ -449,16 +481,4 @@ fn test_inner_length_capping_for_short_lists() {
 	assert_eq!(Rlp::new(&vec![0xc0 + 2, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
 	assert_eq!(Rlp::new(&vec![0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0), Ok("ab".to_owned()));
 	assert_eq!(Rlp::new(&vec![0xc0 + 4, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
-}
-
-/// test described in
-///
-/// https://github.com/paritytech/parity-common/issues/48
-#[test]
-fn test_inner_length_capping_for_long_lists() {
-	assert_eq!(Rlp::new(&vec![0xf7 + 1, 0, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpDataLenWithZeroPrefix));
-	assert_eq!(Rlp::new(&vec![0xf7 + 1, 1, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
-	assert_eq!(Rlp::new(&vec![0xf7 + 1, 2, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
-	assert_eq!(Rlp::new(&vec![0xf7 + 1, 3, 0x82, b'a', b'b']).val_at::<String>(0), Ok("ab".to_owned()));
-	assert_eq!(Rlp::new(&vec![0xf7 + 1, 4, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
 }

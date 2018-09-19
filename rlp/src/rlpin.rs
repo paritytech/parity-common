@@ -57,6 +57,9 @@ fn calculate_payload_info(header_bytes: &[u8], len_of_len: usize) -> Result<Payl
 	}
 	if header_bytes.len() < header_len { return Err(DecoderError::RlpIsTooShort); }
 	let value_len = decode_usize(&header_bytes[1..header_len])?;
+	if value_len <= 55 {
+		return Err(DecoderError::RlpInvalidIndirection);
+	}
 	Ok(PayloadInfo::new(header_len, value_len))
 }
 
