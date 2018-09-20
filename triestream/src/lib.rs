@@ -22,6 +22,9 @@ extern crate hex_prefix_encoding;
 #[cfg(feature = "ethereum")]
 extern crate rlp;
 
+#[cfg(feature = "codec")]
+extern crate parity_codec;
+
 use hashdb::Hasher;
 
 pub trait TrieStream {
@@ -44,3 +47,8 @@ pub trait TrieStream {
 mod rlp_triestream;
 #[cfg(feature = "ethereum")]
 pub use rlp_triestream::RlpTrieStream;
+
+#[cfg(feature = "codec")]
+mod codec_triestream;
+#[cfg(feature = "codec")]
+pub use codec_triestream::CodecTrieStream;

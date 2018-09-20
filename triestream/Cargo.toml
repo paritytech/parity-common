@@ -10,7 +10,8 @@ license = "GPL-3.0"
 hashdb = { version = "0.3", path = "../hashdb" }
 hex-prefix-encoding = { version = "0.1", path = "../hex-prefix-encoding" }
 rlp = { version = "0.3", path = "../rlp", optional = true, default-features = false }
+parity-codec = { version = "1.1", path = "../../parity-codec", optional = true }
 
 [features]
 ethereum = ["rlp"]
-substrate = [] # TODO:
+codec = ["parity-codec"]
