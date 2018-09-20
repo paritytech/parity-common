@@ -29,7 +29,7 @@ use keccak_hasher::KeccakHasher;
 use test::Bencher;
 use tiny_keccak::keccak256;
 use trie_standardmap::{Alphabet, ValueMode, StandardMap};
-use triehash::{trie_root, ordered_trie_root};
+use triehash::trie_root;
 use triestream::RlpTrieStream;
 
 fn random_word(alphabet: &[u8], min_count: usize, diff_count: usize, seed: &mut H256) -> Vec<u8> {
