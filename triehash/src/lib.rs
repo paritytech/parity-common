@@ -25,6 +25,8 @@ extern crate keccak_hasher;
 
 use std::collections::BTreeMap;
 use std::cmp;
+use std::fmt::Debug; // TODO: remove when done here along with all the `Debug` bounds
+
 use hashdb::Hasher;
 
 use triestream::TrieStream;
@@ -59,8 +61,8 @@ fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
 /// ```
 pub fn trie_root<H, S, I, A, B>(input: I) -> H::Out
 	where I: IntoIterator<Item = (A, B)>,
-		  A: AsRef<[u8]> + Ord,
-		  B: AsRef<[u8]>,
+		  A: AsRef<[u8]> + Ord + Debug,
+		  B: AsRef<[u8]> + Debug,
 		  H: Hasher,
 		  S: TrieStream,
 {
@@ -88,8 +90,43 @@ pub fn trie_root<H, S, I, A, B>(input: I) -> H::Out
 
 	let mut stream = S::new();
 	build_trie::<H, S, _, _>(&input, 0, &mut stream);
-	// trace!(target: "triehash", "[new, trie_root] Done building trie. Ready to flush.");
 	H::hash(&stream.out())
+}
+
+#[cfg(test)]
+pub fn unhashed_trie<H, S, I, A, B>(input: I) -> Vec<u8>
+	where I: IntoIterator<Item = (A, B)> + Debug,
+		  A: AsRef<[u8]> + Ord + Debug,
+		  B: AsRef<[u8]> + Debug,
+		  H: Hasher,
+		  S: TrieStream,
+{
+
+	// first put elements into btree to sort them and to remove duplicates
+	let input = input
+		.into_iter()
+		.collect::<BTreeMap<_, _>>();
+
+	let mut nibbles = Vec::with_capacity(input.keys().map(|k| k.as_ref().len()).sum::<usize>() * 2);
+	let mut lens = Vec::with_capacity(input.len() + 1);
+	lens.push(0);
+	for k in input.keys() {
+		for &b in k.as_ref() {
+			nibbles.push(b >> 4);
+			nibbles.push(b & 0x0F);
+		}
+		lens.push(nibbles.len());
+	}
+
+	// then move them to a vector
+	let input = input.into_iter().zip(lens.windows(2))
+		.map(|((_, v), w)| (&nibbles[w[0]..w[1]], v))
+		.collect::<Vec<_>>();
+
+	println!("as nibbles: {:#x?}", input);
+	let mut stream = S::new();
+	build_trie::<H, S, _, _>(&input, 0, &mut stream);
+	stream.out()
 }
 
 /// Generates a key-hashed (secure) trie root hash for a vector of key-value tuples.
@@ -116,8 +153,8 @@ pub fn trie_root<H, S, I, A, B>(input: I) -> H::Out
 pub fn sec_trie_root<H, S, I, A, B>(input: I) -> H::Out
 where
 	I: IntoIterator<Item = (A, B)>,
-	A: AsRef<[u8]>,
-	B: AsRef<[u8]>,
+	A: AsRef<[u8]> + Debug,
+	B: AsRef<[u8]> + Debug,
 	H: Hasher,
 	H::Out: Ord,
 	S: TrieStream,
@@ -127,18 +164,25 @@ where
 
 /// Takes a slice of key/value tuples where the key is a slice of nibbles
 /// and encodes it into the provided `Stream`.
+// pub fn build_trie<H, S, A, B>(input: &[(A, B)], cursor: usize, stream: &mut S)
 fn build_trie<H, S, A, B>(input: &[(A, B)], cursor: usize, stream: &mut S)
 where
-	A: AsRef<[u8]>,
-	B: AsRef<[u8]>,
+	A: AsRef<[u8]> + Debug,
+	B: AsRef<[u8]> + Debug,
 	H: Hasher,
 	S: TrieStream,
 {
 	match input.len() {
 		// No input, just append empty data.
-		0 => stream.append_empty_data(),
+		0 => {
+			println!("[build_trie] no input; appending empty, cursor={}, stream={:?}", cursor, stream.as_raw());
+			stream.append_empty_data()
+		},
 		// Leaf node; append the remainder of the key and the value. Done.
-		1 => stream.append_leaf::<H>(&input[0].0.as_ref()[cursor..], &input[0].1.as_ref() ),
+		1 => {
+			println!("[build_trie] appending leaf, cursor={}, stream={:?}, partial key={:?}", cursor, stream.as_raw(), &input[0].0.as_ref()[cursor..]);
+			stream.append_leaf::<H>(&input[0].0.as_ref()[cursor..], &input[0].1.as_ref() )
+		},
 		// We have multiple items in the input. We need to figure out if we
 		// should add an extension node or a branch node.
 		_ => {
@@ -154,13 +198,16 @@ where
 			// of the path then recursively append the remainder of all items
 			// who had this partial key.
 			if shared_nibble_count > cursor {
+				println!("[build_trie] appending ext and recursing, cursor={}, stream={:?}, partial key={:?}", cursor, stream.as_raw(), &key[cursor..shared_nibble_count]);
 				stream.append_extension(&key[cursor..shared_nibble_count]);
 				build_trie_trampoline::<H, _, _, _>(input, shared_nibble_count, stream);
+				println!("[build_trie] returning after recursing, cursor={}, stream={:?}, partial key={:?}", cursor, stream.as_raw(), &key[cursor..shared_nibble_count]);
 				return;
 			}
 			// Add a branch node because the path is as long as it gets. The branch
 			// node has 17 entries, one for each possible nibble + 1 for data.
 			stream.begin_branch();
+			println!("[build_trie] started branch node, cursor={}, stream={:?}", cursor, stream.as_raw());
 			// If the length of the first key is equal to the current cursor, move
 			// to next element.
 			let mut begin = { if cursor == key.len() {1} else {0} };
@@ -172,6 +219,7 @@ where
 				// so we know there are no more elements we need to ponder.
 				if begin >= input.len() {
 					for _ in i..16 {
+						println!("[build_trie] branch slot {}; fast forward, stream={:?}", i, stream.as_raw());
 						stream.append_empty_data();
 					}
 					break;
@@ -188,14 +236,19 @@ where
 					// If at least one successive element has the same nibble,
 					// recurse and add more nodes.
 					_ => {
+						println!("[build_trie] branch slot {}; recursing with cursor={}, begin={}, shared nibbles={}, input={:?}", i, cursor, begin, shared_nibble_count, &input[begin..(begin + shared_nibble_count)]);
 						build_trie_trampoline::<H, S, _, _>(&input[begin..(begin + shared_nibble_count)], cursor + 1, stream);
 					}
 				}
 				begin += shared_nibble_count;
 			}
+			println!("[build_trie] ending branch node, cursor={}, stream={:?}", cursor, stream.as_raw());
+
 			if cursor == key.len() {
+				println!("[build_trie] branch slot 17; cursor={}, appending value {:?}", cursor, value);
 				stream.append_value(value);
 			} else {
+				println!("[build_trie] branch slot 17; no value; cursor={}", cursor);
 				stream.append_empty_data();
 			}
 		}
@@ -204,8 +257,8 @@ where
 
 fn build_trie_trampoline<H, S, A, B>(input: &[(A, B)], cursor: usize, stream: &mut S)
 where
-	A: AsRef<[u8]>,
-	B: AsRef<[u8]>,
+	A: AsRef<[u8]> + Debug,
+	B: AsRef<[u8]> + Debug,
 	H: Hasher,
 	S: TrieStream,
 {
@@ -216,10 +269,10 @@ where
 
 #[cfg(test)]
 mod tests {
-	use super::{trie_root, shared_prefix_len};
-	use super::{sec_trie_root};
+	use super::{trie_root, sec_trie_root, shared_prefix_len};
+	use super::unhashed_trie;
 	use keccak_hasher::KeccakHasher;
-	use triestream::RlpTrieStream;
+	use triestream::{RlpTrieStream, CodecTrieStream};
 
 	#[test]
 	fn sec_trie_root_works() {
@@ -286,5 +339,319 @@ mod tests {
 		let a = vec![1,2,3,4,5,6];
 		let b = vec![1,2,3,4,5,6];
 		assert_eq!(shared_prefix_len(&a, &b), 6);
+	}
+
+	#[test]
+	fn learn_rlp_trie_empty() {
+		let input: Vec<(&[u8], &[u8])> = vec![];
+		let trie = unhashed_trie::<KeccakHasher, RlpTrieStream, _, _, _>(input);
+		println!("[learn_rlp_trie_empty] 1st byte of trie:\n{:#010b}\n trie: {:#x?}", trie[0], trie );
+		assert_eq!(trie, vec![0x80]);
+	}
+
+	#[test]
+	fn learn_rlp_trie_single_item() {
+		let input: Vec<(&[u8], &[u8])> = vec![(&[0x13], &[0x14])];
+		let trie = unhashed_trie::<KeccakHasher, RlpTrieStream, _, _, _>(input);
+		println!("[learn_rlp_trie_single_item] 1st byte of trie:\n{:#010b}\n trie: {:#x?}", trie[0], trie );
+		assert_eq!(trie, vec![0xc4, 0x82, 0x20, 0x13, 0x14]);
+		// The key, 0x13, as nibbles: [ 0x1, 0x3 ]
+		// build_trie will call append_leaf with k/v: [ 0x1, 0x3 ], [0x14]
+		// 	append_leaf will call rlp begin_list(2)
+		// 		begin_list adds 0 to buffer - modified later when list is closed
+		//	key is hpe'd: even length, leaf (terminated) => high nibble sets termination bit, low nibble is zero => 0b0010_0000 => 0x20 => 32
+		// 	append_iter() is called with hpe byte + key byte => 0x20, 0x13; adds 0x80 + length of items (2) => 0x82
+		//	buffer is now: 0, 0x82, 0x20, 0x13, 0x14
+		//	append() adds the value bytes => 0x14 and closes the list: 0xc0 + length of payload => 0xc0 + 4
+		// final buffer: 0xc4 0x82 0x20 0x13 0x14
+	}
+
+	#[test]
+	fn learn_rlp_trie_single_item2() {
+		let input = vec![(
+			vec![0x12, 0x12, 0x12, 0x12, 0x13, 0x13], 	// key
+			vec![0xff, 0xfe, 0xfd, 0xfc]				// val
+		)];
+		let trie = unhashed_trie::<KeccakHasher, RlpTrieStream, _, _, _>(input);
+		// println!("[learn_rlp_trie_single_item] 1st byte of trie:\n{:#010b}\n trie: {:#x?}", trie[0], trie );
+		assert_eq!(trie, vec![
+			0xc0 + 13,	// list marker + 13 bytes long payload
+			0x80 + 7,	// value marker + 7 bytes long payload
+			0x20, 		// HPE byte
+			0x12, 0x12, 0x12, 0x12, 0x13, 0x13,
+			0x80 + 4, 	// value marker + 4 bytes long payload
+			0xff, 0xfe, 0xfd, 0xfc
+		]);
+	}
+
+	#[test]
+	fn learn_codec_trie_empty() {
+		let input: Vec<(&[u8], &[u8])> = vec![];
+		let trie = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input);
+		// println!("[learn_codec_trie_empty] 1st byte of trie:\n{:#010b}\n trie: {:#x?}", trie[0], trie );
+		println!("trie: {:#x?}", trie);
+		assert_eq!(trie, vec![0x0]);
+	}
+
+	#[test]
+	fn learn_codec_trie_single_tuple() {
+		let input = vec![
+			(vec![0xaa], vec![0xbb])
+		];
+		let trie = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input);
+		println!("trie: {:#x?}", trie);
+		assert_eq!(trie, vec![
+			0b1010_0000,			// leaf
+			0x01, 0x00, 0x00, 0x00,	// length
+			0xaa,					// key
+			0x01, 0x00, 0x00, 0x00,	// length
+			0xbb					// value
+		]);
+	}
+
+	#[test]
+	fn learn_codec_trie_two_tuples_disjoint_keys() {
+		let input = vec![(&[0x48, 0x19], &[0xfe]), (&[0x13, 0x14], &[0xff])];
+		let trie = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input);
+		println!("trie: {:#x?}", trie);
+		assert_eq!(trie, vec![
+										// <–– TODO: why is there no length here?
+			0b0100_0000,				// BRANCH
+			0x00, 						// slot 0
+			0x0b, 0x00, 0x00, 0x00,		// 11 – length in bytes of the following node
+			0b1011_0000 + 3, 			// slot 1 LEAF; 176 + 3, i.e. the first of the remaining key nibbles (3'1'4')
+				0x01, 0x00, 0x00, 0x00, // key length: 1 bytes
+				0x14,					// key
+				0x01, 0x00, 0x00, 0x00, // value length: 1 byte
+				0xff,					// value
+			0x00, 0x00, 				// slots 2,3
+			0x0b, 0x00, 0x00, 0x00, 	// 11 – length in bytes of the following node
+			0b1011_0000 + 8, 			// slot 4 LEAF; remaining nibbles: 8'1'9'; odd, so 8 goes into lower nibble
+				0x01, 0x00, 0x00, 0x00, // key length: 1 bytes
+				0x19,					// key
+				0x01, 0x00, 0x00, 0x00, // value length: 1 byte
+				0xfe,					// value
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // slots 5..15
+			0x00, 						// slot 16,
+		]);
+	}
+
+	#[test]
+	fn learn_codec_trie_single_item() {
+		let input: Vec<(&[u8], &[u8])> = vec![(&[0x13], &[0x14])];
+		let trie = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input);
+		println!("[learn_codec_trie_single_item] 1st byte of trie:\n{:#010b}\n trie: {:#x?}", trie[0], trie );
+		assert_eq!(trie, vec![
+			0b10_10_0000, 			// variant: leaf, even payload length
+			0x01,0x00,0x00,0x00,	// key length: 1 byte
+			0x13,					// key
+			0x01,0x00,0x00,0x00,	// value length: 1 byte
+			0x14					// value
+		]);
+
+		let input = vec![(
+			vec![0x12, 0x12, 0x12, 0x12, 0x13],	// key
+			vec![0xff, 0xfe, 0xfd, 0xfc]		// val
+		)];
+		let trie = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input);
+		assert_eq!(trie, vec![
+			0b10_10_0000, 			// variant: leaf, even payload length
+			0x05, 0x0, 0x0, 0x0,
+			0x12, 0x12, 0x12, 0x12, 0x13,
+			0x04, 0x0, 0x0, 0x0,
+			0xff, 0xfe, 0xfd, 0xfc
+		]);
+	}
+
+	#[test]
+	fn learn_rlp_trie_full_example() {
+		let input = vec![
+			(vec![0xa7, 0x11, 0x35, 0x5], vec![45]),
+			(vec![0xa7, 0x7d, 0x33, 0x7], vec![1]),
+			(vec![0xa7, 0xf9, 0x36, 0x5], vec![11]),
+			(vec![0xa7, 0x7d, 0x39, 0x7], vec![12]),
+		];
+		/*
+		Expected trie:
+			Extension, 0xa7
+			Branch
+				1: Leaf ([0x01, 0x35, 0x5], 45)
+				7: Extension, d3
+					Branch
+						3: Leaf ([0x03, 0x07], 1)
+						9: Leaf ([0x09, 0x07], 12)
+				f: Leaf (0x09, 0x36, 0x5, 11)
+		*/
+		let rlp_trie = unhashed_trie::<KeccakHasher, RlpTrieStream, _, _, _>(input);
+		println!("rlp trie: {:#x?}", rlp_trie);
+		// TODO: finish
+		// assert_eq!(rlp_trie, vec![
+		// 	0xc0 + 36,
+		// 	0x80 + 2,
+		// 	0b0000_0000,	// HPE flag-byte
+		// 	0xa7,			// partial key; end ext
+		// 	0x80 + 32, 		// begin_list(17) - why 32? hash len?
+		// 	0x80,			// slot 0: empty
+		// 	0xc0 + 7,		// slot 1: start list(2) to build leaf
+		// 	0x80 + 3,		// value marker + length
+		// 	0x31, 			// HPE byte 0b00_11_0001 (leaf, odd, 1 in lower nibble)
+		// 	0x35, 0x05,		// rest of key,
+		// 	0x80 + 1,		// value marker
+		// 	45,				// value
+		// 	0x80,			// slot 2: empty
+		// 	0x80,			// slot 3: empty
+		// 	0x80,			// slot 4: empty
+		// 	0x80,			// slot 5: empty
+		// 	0x80,			// slot 6: empty
+		// 	0xc0 + 0,		// slot 7: extension, begin_list(2)
+		// 	0b0000_0000,	// HPE flag-byte
+		// 	0x80 + 2,		// value marker + length
+		// 	0xd3,			// partial key; end ext
+		// 	0xc0 + 0		// branch node; begin list
+		// … … …
+		// ]);
+
+	}
+
+	#[test]
+	fn learn_codec_trie_full_example() {
+		let input = vec![
+			(vec![0xa7, 0x11, 0x35, 0x5], vec![45]),
+			(vec![0xa7, 0x7d, 0x33, 0x7], vec![1]),
+			(vec![0xa7, 0xf9, 0x36, 0x5], vec![11]),
+			(vec![0xa7, 0x7d, 0x39, 0x7], vec![12]),
+		];
+		/*
+		Expected trie:
+			Extension, 0xa7
+			Branch
+				1: Leaf ([0x01, 0x35, 0x5], 45)
+				7: Extension, d3
+					Branch
+						3: Leaf ([0x03, 0x07], 1)
+						9: Leaf ([0x09, 0x07], 12)
+				f: Leaf (0x09, 0x36, 0x5, 11)
+		*/
+		let codec_trie = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input.clone());
+		println!("codec trie: {:#x?}", codec_trie);
+		assert_eq!(codec_trie, vec![
+			0x80,	// 0b10000000 => extension
+			0x1,	// length 1
+			0x0,
+			0x0,
+			0x0,
+			0xa7,	// payload: a7
+			0x6b,	// length 107 bytes
+			0x0,
+			0x0,
+			0x0,
+			0x40,	// Branch node: 0b01_00_0000
+			0x0,	// slot 0: empty node
+			0xc,	// slot 1: 12 bytes follow
+			0x0,
+			0x0,
+			0x0,
+			0xb1,	// 0xb1 == 177 == 0b1011_0001 => 0b10_11_xxxx, leaf, odd length + 0001
+			0x2,	// length: 2 bytes
+			0x0,
+			0x0,
+			0x0,
+			0x35,	// key payload
+			0x5,	// key payload
+			0x1,	// value length: 1 byte
+			0x0,
+			0x0,
+			0x0,
+			0x2d,	// value: 45; 12th byte, ends slot 1
+			0x0,	// slot 2
+			0x0,	// slot 3
+			0x0,	// slot 4
+			0x0,	// slot 5
+			0x0,	// slot 6
+			0x38,	// slot 7; item of length 56
+			0x0,
+			0x0,
+			0x0,
+			0x80,	// extension node, 0b10000000
+			0x1,	// key length: 1 byte
+			0x0,
+			0x0,
+			0x0,
+			0xd3,	// key payload, 0xd3
+			0x2e,	// item of length 46
+			0x0,
+			0x0,
+			0x0,
+			0x40,	// Branch node: 0b01_00_0000
+			0x0,	// slot 0
+			0x0,	// slot 1
+			0x0,	// slot 2
+			0xb,	// slot 3, item of length 11
+			0x0,
+			0x0,
+			0x0,
+			0xa0,	// payload, 0b1010_0000: leaf node, even length
+			0x1,	// key length: 1 byte
+			0x0,
+			0x0,
+			0x0,
+			0x7,	// partial key payload: 7
+			0x1,	// value length: 1 byte
+			0x0,
+			0x0,
+			0x0,
+			0x1,	// value payload: 1
+			0x0,	// slot 4
+			0x0,	// slot 5
+			0x0,	// slot 6
+			0x0,	// slot 7
+			0x0,	// slot 8
+			0xb,	// slot 9,  item of length 11
+			0x0,
+			0x0,
+			0x0,
+			0xa0,	// payload, 0b1010_0000: lead node, even length
+			0x1,	// key length 1 byte
+			0x0,
+			0x0,
+			0x0,
+			0x7,	// key payload: 7
+			0x1,	// value length: 1 byte
+			0x0,
+			0x0,
+			0x0,
+			0xc,	// value payload: 12
+			0x0,	// slot 11
+			0x0,	// slot 12
+			0x0,	// slot 13
+			0x0,	// slot 14
+			0x0,	// slot 15; end second branch node
+			0x0,	// slot 16; second branch value slot
+			0x0,	// slot 8 (first branch)
+			0x0,	// slot 9
+			0x0,	// slot 10
+			0x0,	// slot 11
+			0x0,	// slot 12
+			0x0,	// slot 13
+			0x0,	// slot 14
+			0x0,	// slot 15
+			0xc,	// slot 16; first branch value slot; item of length 12
+			0x0,
+			0x0,
+			0x0,
+			0xb9,	// 0xb9 == 185 == 0b1011_1001 => Leaf node, odd number, partial key payload = 9
+			0x2,	// length: 2 bytes
+			0x0,
+			0x0,
+			0x0,
+			0x36,	// payload: 0x36, 0x5
+			0x5,
+			0x1,	// length: 1 byte
+			0x0,
+			0x0,
+			0x0,
+			0xb,	// value: 11
+			0x0 // 107
+		]);
 	}
 }
