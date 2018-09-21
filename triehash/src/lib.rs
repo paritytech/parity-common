@@ -22,6 +22,8 @@ extern crate hashdb;
 extern crate triestream;
 #[cfg(test)]
 extern crate keccak_hasher;
+#[cfg(test)]
+extern crate parity_codec;
 
 use std::collections::BTreeMap;
 use std::cmp;
@@ -274,6 +276,11 @@ mod tests {
 	use super::unhashed_trie;
 	use keccak_hasher::KeccakHasher;
 	use triestream::{RlpTrieStream, CodecTrieStream};
+	use parity_codec::{Encode, Compact};
+
+	fn to_compact(num: u8) -> u8 {
+		Compact(num).encode()[0]
+	}
 
 	#[test]
 	fn sec_trie_root_works() {
@@ -389,7 +396,6 @@ mod tests {
 	fn learn_codec_trie_empty() {
 		let input: Vec<(&[u8], &[u8])> = vec![];
 		let trie = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input);
-		// println!("[learn_codec_trie_empty] 1st byte of trie:\n{:#010b}\n trie: {:#x?}", trie[0], trie );
 		println!("trie: {:#x?}", trie);
 		assert_eq!(trie, vec![0x0]);
 	}
@@ -401,11 +407,18 @@ mod tests {
 		];
 		let trie = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input);
 		println!("trie: {:#x?}", trie);
+
+		let mut expected: Vec<u8> = vec![];
+		expected.push(0b1010_0000);
+		expected.extend(vec![0xaau8].encode());
+		expected.extend(vec![0xbbu8].encode());
+		assert_eq!(trie, expected);
+
 		assert_eq!(trie, vec![
 			0b1010_0000,			// leaf
-			0x01, 0x00, 0x00, 0x00,	// length
+			to_compact(1),			// length
 			0xaa,					// key
-			0x01, 0x00, 0x00, 0x00,	// length
+			to_compact(1),			// length
 			0xbb					// value
 		]);
 	}
@@ -415,22 +428,40 @@ mod tests {
 		let input = vec![(&[0x48, 0x19], &[0xfe]), (&[0x13, 0x14], &[0xff])];
 		let trie = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input);
 		println!("trie: {:#x?}", trie);
+
+		let mut ex = Vec::<u8>::new();
+		ex.push(0b0100_0000);							// branch
+		ex.push(0);										// slot 0
+		let mut sub = vec![0b1011_0000 + 3];			// slot 1 LEAF; 176 + 3, i.e. the first of the remaining key nibbles (3'1'4')
+		sub.extend(vec![0x14u8].encode());				// key
+		sub.extend(vec![0xffu8].encode());				// value
+		ex.extend( sub.encode() );
+		ex.push(0);										// slot 2, 3
+		ex.push(0);
+		let mut sub = vec![0b1011_0000 + 8];			// slot 4 LEAF; remaining nibbles: 8'1'9'; odd, so 8 goes into lower nibble
+		sub.extend(vec![0x19u8].encode());				// key
+		sub.extend(vec![0xfeu8].encode());				// value
+		ex.extend( sub.encode() );
+		ex.extend(vec![0u8,0,0,0,0,0,0,0,0,0,0, 0]);	// slots 5..15 + value slot
+
+		assert_eq!(trie, ex);
+
 		assert_eq!(trie, vec![
 										// <–– TODO: why is there no length here?
 			0b0100_0000,				// BRANCH
 			0x00, 						// slot 0
-			0x0b, 0x00, 0x00, 0x00,		// 11 – length in bytes of the following node
+			to_compact(0x05),			// 5 – length in bytes of the following node
 			0b1011_0000 + 3, 			// slot 1 LEAF; 176 + 3, i.e. the first of the remaining key nibbles (3'1'4')
-				0x01, 0x00, 0x00, 0x00, // key length: 1 bytes
+				to_compact(0x01), 		// key length: 1 bytes
 				0x14,					// key
-				0x01, 0x00, 0x00, 0x00, // value length: 1 byte
+				to_compact(0x01), 		// key length: 1 bytes
 				0xff,					// value
 			0x00, 0x00, 				// slots 2,3
-			0x0b, 0x00, 0x00, 0x00, 	// 11 – length in bytes of the following node
+			to_compact(0x05),			// 5 – length in bytes of the following node
 			0b1011_0000 + 8, 			// slot 4 LEAF; remaining nibbles: 8'1'9'; odd, so 8 goes into lower nibble
-				0x01, 0x00, 0x00, 0x00, // key length: 1 bytes
+				to_compact(0x01), 		// key length: 1 bytes
 				0x19,					// key
-				0x01, 0x00, 0x00, 0x00, // value length: 1 byte
+				to_compact(0x01), 		// value length: 1 bytes
 				0xfe,					// value
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // slots 5..15
 			0x00, 						// slot 16,
@@ -444,9 +475,9 @@ mod tests {
 		println!("[learn_codec_trie_single_item] 1st byte of trie:\n{:#010b}\n trie: {:#x?}", trie[0], trie );
 		assert_eq!(trie, vec![
 			0b10_10_0000, 			// variant: leaf, even payload length
-			0x01,0x00,0x00,0x00,	// key length: 1 byte
+			to_compact(0x01), 		// key length: 1 bytes
 			0x13,					// key
-			0x01,0x00,0x00,0x00,	// value length: 1 byte
+			to_compact(0x01), 		// value length: 1 bytes
 			0x14					// value
 		]);
 
@@ -457,9 +488,9 @@ mod tests {
 		let trie = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input);
 		assert_eq!(trie, vec![
 			0b10_10_0000, 			// variant: leaf, even payload length
-			0x05, 0x0, 0x0, 0x0,
+			to_compact(0x05), 		// key length: 5 bytes
 			0x12, 0x12, 0x12, 0x12, 0x13,
-			0x04, 0x0, 0x0, 0x0,
+			to_compact(0x04), 		// value length: 4 bytes
 			0xff, 0xfe, 0xfd, 0xfc
 		]);
 	}
@@ -535,124 +566,74 @@ mod tests {
 		*/
 		let codec_trie = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input.clone());
 		println!("codec trie: {:#x?}", codec_trie);
+
 		assert_eq!(codec_trie, vec![
-			0x80,	// 0b10000000 => extension
-			0x1,	// length 1
-			0x0,
-			0x0,
-			0x0,
-			0xa7,	// payload: a7
-			0x6b,	// length 107 bytes
-			0x0,
-			0x0,
-			0x0,
-			0x40,	// Branch node: 0b01_00_0000
-			0x0,	// slot 0: empty node
-			0xc,	// slot 1: 12 bytes follow
-			0x0,
-			0x0,
-			0x0,
-			0xb1,	// 0xb1 == 177 == 0b1011_0001 => 0b10_11_xxxx, leaf, odd length + 0001
-			0x2,	// length: 2 bytes
-			0x0,
-			0x0,
-			0x0,
-			0x35,	// key payload
-			0x5,	// key payload
-			0x1,	// value length: 1 byte
-			0x0,
-			0x0,
-			0x0,
-			0x2d,	// value: 45; 12th byte, ends slot 1
-			0x0,	// slot 2
-			0x0,	// slot 3
-			0x0,	// slot 4
-			0x0,	// slot 5
-			0x0,	// slot 6
-			0x38,	// slot 7; item of length 56
-			0x0,
-			0x0,
-			0x0,
-			0x80,	// extension node, 0b10000000
-			0x1,	// key length: 1 byte
-			0x0,
-			0x0,
-			0x0,
-			0xd3,	// key payload, 0xd3
-			0x2e,	// item of length 46
-			0x0,
-			0x0,
-			0x0,
-			0x40,	// Branch node: 0b01_00_0000
-			0x0,	// slot 0
-			0x0,	// slot 1
-			0x0,	// slot 2
-			0xb,	// slot 3, item of length 11
-			0x0,
-			0x0,
-			0x0,
-			0xa0,	// payload, 0b1010_0000: leaf node, even length
-			0x1,	// key length: 1 byte
-			0x0,
-			0x0,
-			0x0,
-			0x7,	// partial key payload: 7
-			0x1,	// value length: 1 byte
-			0x0,
-			0x0,
-			0x0,
-			0x1,	// value payload: 1
-			0x0,	// slot 4
-			0x0,	// slot 5
-			0x0,	// slot 6
-			0x0,	// slot 7
-			0x0,	// slot 8
-			0xb,	// slot 9,  item of length 11
-			0x0,
-			0x0,
-			0x0,
-			0xa0,	// payload, 0b1010_0000: lead node, even length
-			0x1,	// key length 1 byte
-			0x0,
-			0x0,
-			0x0,
-			0x7,	// key payload: 7
-			0x1,	// value length: 1 byte
-			0x0,
-			0x0,
-			0x0,
-			0xc,	// value payload: 12
-			0x0,	// slot 11
-			0x0,	// slot 12
-			0x0,	// slot 13
-			0x0,	// slot 14
-			0x0,	// slot 15; end second branch node
-			0x0,	// slot 16; second branch value slot
-			0x0,	// slot 8 (first branch)
-			0x0,	// slot 9
-			0x0,	// slot 10
-			0x0,	// slot 11
-			0x0,	// slot 12
-			0x0,	// slot 13
-			0x0,	// slot 14
-			0x0,	// slot 15
-			0xc,	// slot 16; first branch value slot; item of length 12
-			0x0,
-			0x0,
-			0x0,
-			0xb9,	// 0xb9 == 185 == 0b1011_1001 => Leaf node, odd number, partial key payload = 9
-			0x2,	// length: 2 bytes
-			0x0,
-			0x0,
-			0x0,
-			0x36,	// payload: 0x36, 0x5
+			0x80,				// 0b10000000 => extension
+			to_compact(0x1),	// length 1
+			0xa7,				// payload: a7
+			to_compact(62),		// length 62 bytes
+			0x40,				// Branch node: 0b01_00_0000
+			0x0,				// slot 0: empty node
+			to_compact(0x6),	// slot 1: 6 bytes follow
+			0xb1,				// 0xb1 == 177 == 0b1011_0001 => 0b10_11_xxxx, leaf, odd length + 0001
+			to_compact(0x2),	// length: 2 bytes
+			0x35,				// key payload
 			0x5,
-			0x1,	// length: 1 byte
-			0x0,
-			0x0,
-			0x0,
-			0xb,	// value: 11
-			0x0 // 107
+			to_compact(0x1),	// value length: 1 byte
+			0x2d,				// value: 45; 12th byte, ends slot 1
+			0x0,				// slot 2
+			0x0,				// slot 3
+			0x0,				// slot 4
+			0x0,				// slot 5
+			0x0,				// slot 6
+			to_compact(32),		// slot 7; item of length 32
+			0x80,				// extension node, 0b10000000
+			to_compact(0x1),	// key length: 1 byte
+			0xd3,				// key payload, 0xd3
+			to_compact(28),		// item of length 28
+			0x40,				// Branch node: 0b01_00_0000
+			0x0,				// slot 0
+			0x0,				// slot 1
+			0x0,				// slot 2
+			to_compact(0x5),	// slot 3, item of length 5
+			0xa0,				// payload, 0b1010_0000: leaf node, even length
+			to_compact(0x1),	// key length: 1 byte
+			0x7,				// partial key payload: 7
+			to_compact(0x1),	// value length: 1 byte
+			0x1,				// value payload: 1
+			0x0,				// slot 4
+			0x0,				// slot 5
+			0x0,				// slot 6
+			0x0,				// slot 7
+			0x0,				// slot 8
+			to_compact(0x5),	// slot 9,  item of length 11
+			0xa0,				// payload, 0b1010_0000: lead node, even length
+			to_compact(0x1),	// key length 1 byte
+			0x7,				// key payload: 7
+			to_compact(0x1),	// value length: 1 byte
+			0xc,				// value payload: 12
+			0x0,				// slot 11
+			0x0,				// slot 12
+			0x0,				// slot 13
+			0x0,				// slot 14
+			0x0,				// slot 15; end second branch node
+			0x0,				// slot 16; second branch value slot
+			0x0,				// slot 8 (first branch)
+			0x0,				// slot 9
+			0x0,				// slot 10
+			0x0,				// slot 11
+			0x0,				// slot 12
+			0x0,				// slot 13
+			0x0,				// slot 14
+			0x0,				// slot 15
+			to_compact(0x6),	// slot 16; first branch value slot; item of length 12
+			0xb9,				// 0xb9 == 185 == 0b1011_1001 => Leaf node, odd number, partial key payload = 9
+			to_compact(0x2),	// length: 2 bytes
+			0x36,				// payload: 0x36, 0x5
+			0x5,
+			to_compact(0x1),	// length: 1 byte
+			0xb,				// value: 11
+			0x0
 		]);
 	}
 }
