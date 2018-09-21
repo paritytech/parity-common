@@ -25,15 +25,18 @@ pub struct CodecTrieStream {
 
 const BRANCH_NODE:u8 = 0b01_00_0000;
 const EMPTY_NODE:u8 = 0;
-impl CodecTrieStream { }
+impl CodecTrieStream {
+	// useful for debugging but not used otherwise
+	pub fn as_raw(&self) -> &[u8] { &self.buffer }
+}
+
 impl TrieStream for CodecTrieStream {
 	fn new() -> Self { Self {buffer: Vec::new() } }
 	fn append_empty_data(&mut self) {
 		self.buffer.push(EMPTY_NODE);
 	}
 
-	// TODO: why `Hasher` here; it was needed for rlp_triestream but why?
-	fn append_leaf<H: Hasher>(&mut self, key: &[u8], value: &[u8]) {
+	fn append_leaf(&mut self, key: &[u8], value: &[u8]) {
 		let mut hpe = hex_prefix_encode_substrate(key, true);
 		self.buffer.push(hpe.next().expect("key is not empty; qed"));
 		// TODO: I'd like to do `hpe.encode_to(&mut self.buffer);` here; need an `impl<'a> Encode for impl Iterator<Item = u8> + 'a`?
@@ -75,5 +78,4 @@ impl TrieStream for CodecTrieStream {
 	}
 
 	fn out(self) -> Vec<u8> { self.buffer }
-	fn as_raw(&self) -> &[u8] { &self.buffer }
 }

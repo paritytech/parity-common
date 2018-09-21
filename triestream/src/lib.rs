@@ -32,11 +32,10 @@ pub trait TrieStream {
 	fn append_empty_data(&mut self);
 	fn begin_branch(&mut self);
 	fn append_value(&mut self, value: &[u8]);
-	fn append_leaf<H: Hasher>(&mut self, key: &[u8], value: &[u8]);
+	fn append_leaf(&mut self, key: &[u8], value: &[u8]);
 	fn append_extension(&mut self, key: &[u8]);
 	fn append_substream<H: Hasher>(&mut self, other: Self);
 	fn out(self) -> Vec<u8>;
-	fn as_raw(&self) -> &[u8];
 }
 
 // The `RlpTrieStream` type could have gone into the `triehash-ethereum` crate
