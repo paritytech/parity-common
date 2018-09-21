@@ -53,13 +53,17 @@ impl TrieStream for RlpTrieStream {
 			_ => {self.append_hashed::<H>(&data);}
 		};
 	}
+	// TODO: why is Hasher needed here?
 	fn append_leaf<H: Hasher>(&mut self, key: &[u8], value: &[u8]) {
 		self.stream.begin_list(2);
+		println!("[rlp_triestream, append_leaf] hpe'd key: {:#x?}", hex_prefix_encode(key, true).collect::<Vec<u8>>());
 		self.stream.append_iter(hex_prefix_encode(key, true));
+		println!("[rlp_triestream, append_leaf] stream after appending key: {:#x?}", self.stream.as_raw());
 		self.stream.append(&value);
 	}
 
+	// TODO: one of these is enough – which one?
 	fn out(self) -> Vec<u8> { self.stream.out() }
-
+	// TODO: one of these is enough – which one?
 	fn as_raw(&self) -> &[u8] { &self.stream.as_raw() }
 }
