@@ -61,6 +61,27 @@ pub fn hex_prefix_encode<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Ite
 		.map(|ch| ch[0] << 4 | ch[1]))
 }
 
+/// Modified version of HPN that uses the two high bits of the hight nibble to
+/// indicate Leaf|Extension, which in combination with the second-lowest bit
+/// (aka "termination marker"), lets parity-codec determine the node type. This
+/// version of hex_prefix_encode always set the high bit to `1` as we assume
+/// that only Leaf|Extension nodes use HPN.
+/// (Yes, this is a horrible hack and will be improved upon.)
+pub fn hex_prefix_encode_substrate<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Item = u8> + 'a {
+	let inlen = nibbles.len();
+	let oddness_factor = inlen % 2;
+
+	let first_byte = {
+		let mut bits = (8 + (inlen as u8 & 1) + (2 * leaf as u8)) << 4;
+		if oddness_factor == 1 {
+			bits += nibbles[0];
+		}
+		bits
+	};
+	once(first_byte).chain(nibbles[oddness_factor..].chunks(2).map(|ch| ch[0] << 4 | ch[1]))
+}
+
+
 #[cfg(test)]
 mod test_super {
     use super::hex_prefix_encode;
