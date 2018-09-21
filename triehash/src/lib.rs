@@ -123,7 +123,7 @@ pub fn unhashed_trie<H, S, I, A, B>(input: I) -> Vec<u8>
 		.map(|((_, v), w)| (&nibbles[w[0]..w[1]], v))
 		.collect::<Vec<_>>();
 
-	println!("as nibbles: {:#x?}", input);
+	// println!("as nibbles: {:#x?}", input);
 	let mut stream = S::new();
 	build_trie::<H, S, _, _>(&input, 0, &mut stream);
 	stream.out()
@@ -175,13 +175,14 @@ where
 	match input.len() {
 		// No input, just append empty data.
 		0 => {
-			println!("[build_trie] no input; appending empty, cursor={}, stream={:?}", cursor, stream.as_raw());
+			// println!("[build_trie] no input; appending empty, cursor={}, stream={:?}", cursor, stream.as_raw());
 			stream.append_empty_data()
 		},
 		// Leaf node; append the remainder of the key and the value. Done.
 		1 => {
-			println!("[build_trie] appending leaf, cursor={}, stream={:?}, partial key={:?}", cursor, stream.as_raw(), &input[0].0.as_ref()[cursor..]);
-			stream.append_leaf::<H>(&input[0].0.as_ref()[cursor..], &input[0].1.as_ref() )
+			// println!("[build_trie] appending leaf, cursor={}, stream={:?}, partial key={:?}", cursor, stream.as_raw(), &input[0].0.as_ref()[cursor..]);
+			// stream.append_leaf::<H>(&input[0].0.as_ref()[cursor..], &input[0].1.as_ref() )
+			stream.append_leaf(&input[0].0.as_ref()[cursor..], &input[0].1.as_ref() )
 		},
 		// We have multiple items in the input. We need to figure out if we
 		// should add an extension node or a branch node.
@@ -198,16 +199,16 @@ where
 			// of the path then recursively append the remainder of all items
 			// who had this partial key.
 			if shared_nibble_count > cursor {
-				println!("[build_trie] appending ext and recursing, cursor={}, stream={:?}, partial key={:?}", cursor, stream.as_raw(), &key[cursor..shared_nibble_count]);
+				// println!("[build_trie] appending ext and recursing, cursor={}, stream={:?}, partial key={:?}", cursor, stream.as_raw(), &key[cursor..shared_nibble_count]);
 				stream.append_extension(&key[cursor..shared_nibble_count]);
 				build_trie_trampoline::<H, _, _, _>(input, shared_nibble_count, stream);
-				println!("[build_trie] returning after recursing, cursor={}, stream={:?}, partial key={:?}", cursor, stream.as_raw(), &key[cursor..shared_nibble_count]);
+				// println!("[build_trie] returning after recursing, cursor={}, stream={:?}, partial key={:?}", cursor, stream.as_raw(), &key[cursor..shared_nibble_count]);
 				return;
 			}
 			// Add a branch node because the path is as long as it gets. The branch
 			// node has 17 entries, one for each possible nibble + 1 for data.
 			stream.begin_branch();
-			println!("[build_trie] started branch node, cursor={}, stream={:?}", cursor, stream.as_raw());
+			// println!("[build_trie] started branch node, cursor={}, stream={:?}", cursor, stream.as_raw());
 			// If the length of the first key is equal to the current cursor, move
 			// to next element.
 			let mut begin = { if cursor == key.len() {1} else {0} };
@@ -219,7 +220,7 @@ where
 				// so we know there are no more elements we need to ponder.
 				if begin >= input.len() {
 					for _ in i..16 {
-						println!("[build_trie] branch slot {}; fast forward, stream={:?}", i, stream.as_raw());
+						// println!("[build_trie] branch slot {}; fast forward, stream={:?}", i, stream.as_raw());
 						stream.append_empty_data();
 					}
 					break;
@@ -236,19 +237,19 @@ where
 					// If at least one successive element has the same nibble,
 					// recurse and add more nodes.
 					_ => {
-						println!("[build_trie] branch slot {}; recursing with cursor={}, begin={}, shared nibbles={}, input={:?}", i, cursor, begin, shared_nibble_count, &input[begin..(begin + shared_nibble_count)]);
+						// println!("[build_trie] branch slot {}; recursing with cursor={}, begin={}, shared nibbles={}, input={:?}", i, cursor, begin, shared_nibble_count, &input[begin..(begin + shared_nibble_count)]);
 						build_trie_trampoline::<H, S, _, _>(&input[begin..(begin + shared_nibble_count)], cursor + 1, stream);
 					}
 				}
 				begin += shared_nibble_count;
 			}
-			println!("[build_trie] ending branch node, cursor={}, stream={:?}", cursor, stream.as_raw());
+			// println!("[build_trie] ending branch node, cursor={}, stream={:?}", cursor, stream.as_raw());
 
 			if cursor == key.len() {
-				println!("[build_trie] branch slot 17; cursor={}, appending value {:?}", cursor, value);
+				// println!("[build_trie] branch slot 17; cursor={}, appending value {:?}", cursor, value);
 				stream.append_value(value);
 			} else {
-				println!("[build_trie] branch slot 17; no value; cursor={}", cursor);
+				// println!("[build_trie] branch slot 17; no value; cursor={}", cursor);
 				stream.append_empty_data();
 			}
 		}
