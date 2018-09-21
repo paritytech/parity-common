@@ -13,21 +13,34 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
-use hex_prefix_encoding::hex_prefix_encode_substrate;
 use hashdb::Hasher;
 use super::TrieStream;
 use parity_codec::Encode;
+use std::iter::once;
 
 /// Codec-flavoured TrieStream
 pub struct CodecTrieStream {
 	buffer: Vec<u8>
 }
 
-const BRANCH_NODE:u8 = 0b01_00_0000;
-const EMPTY_NODE:u8 = 0;
+const LEAF_NODE_OFFSET: u8 = 128;
+const BRANCH_NODE: u8 = 128;
+const EXTENSION_NODE_OFFSET: u8 = 0;
+const EMPTY_NODE: u8 = 0;
 impl CodecTrieStream {
 	// useful for debugging but not used otherwise
 	pub fn as_raw(&self) -> &[u8] { &self.buffer }
+}
+
+/// Create a leaf/extension node, encoding a number of nibbles. Note that this
+/// cannot handle a number of nibbles that is zero or greater than 127 and if
+/// you attempt to do so *IT WILL PANIC*.
+pub fn fuse_nibbles_node<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Item = u8> + 'a {
+	// There's currently no
+	assert!(nibbles.len() > 0, "Attempt to fuse zero nibbles into a node: this breaks an interface requirement.");
+	assert!(nibbles.len() < 128, "Attempt to fuse more than 127 nibbles into a node: this breaks an interface requirement.");
+	let first_byte = if leaf { LEAF_NODE_OFFSET } else { EXTENSION_NODE_OFFSET } + nibbles.len() as u8;
+	once(first_byte).chain(nibbles.chunks(2).map(|ch| ch[0] << 4 | if ch.len() == 2 { ch[1] } else { 0 }))
 }
 
 impl TrieStream for CodecTrieStream {
@@ -37,26 +50,22 @@ impl TrieStream for CodecTrieStream {
 	}
 
 	fn append_leaf(&mut self, key: &[u8], value: &[u8]) {
-		let mut hpe = hex_prefix_encode_substrate(key, true);
-		self.buffer.push(hpe.next().expect("key is not empty; qed"));
+		assert!(key.len() > 0, "Empty key for a leaf or extension would result in a redundant node; Merkle tries don't have redundant nodes; qed");
+		assert!(key.len() < 128, "Trie code allows keys to be added with maximum 63 bytes; max key nibbles must be 126; qed");
+		self.buffer.extend(fuse_nibbles_node(key, true));
 		// TODO: I'd like to do `hpe.encode_to(&mut self.buffer);` here; need an `impl<'a> Encode for impl Iterator<Item = u8> + 'a`?
-		hpe.collect::<Vec<u8>>().encode_to(&mut self.buffer);
 		value.encode_to(&mut self.buffer);
 	}
 	fn begin_branch(&mut self) {
 		println!("[begin_branch] pushing BRANCH_NODE: {}, {:#x?}, {:#010b}", BRANCH_NODE, BRANCH_NODE, BRANCH_NODE);
 		self.buffer.push(BRANCH_NODE);
 		println!("[begin_branch] buffer so far: {:#x?}", self.buffer);
-		// TODO: I think this is wrong. I need to know how long the full branch node is I think and
-		// this does not keep track of that.
 	}
 	fn append_value(&mut self, value: &[u8]) {
 		value.encode_to(&mut self.buffer);
 	}
 	fn append_extension(&mut self, key: &[u8]) {
-		let mut hpe = hex_prefix_encode_substrate(key, false);
-		self.buffer.push(hpe.next().expect("key is not empty; qed"));
-		hpe.collect::<Vec<u8>>().encode_to(&mut self.buffer);
+		self.buffer.extend(fuse_nibbles_node(key, false));
 	}
 	fn append_substream<H: Hasher>(&mut self, other: Self) {
 		let data = other.out();
