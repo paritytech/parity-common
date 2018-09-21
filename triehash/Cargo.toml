@@ -18,6 +18,7 @@ triestream = { version = "0.1", path = "../triestream", features = ["ethereum", 
 ethereum-types = "0.4"
 tiny-keccak = "1.4"
 trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
+rlp = { version = "0.3", path = "../rlp" }
 
 
 [features]
