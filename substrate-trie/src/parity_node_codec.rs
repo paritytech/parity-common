@@ -17,12 +17,11 @@
 //! `NodeCodec` implementation for Rlp
 
 use std::marker::PhantomData;
-use elastic_array::ElasticArray128;
-use hashdb::Hasher;
-use triestream::codec_triestream::{EMPTY_TRIE, LEAF_NODE_OFFSET, LEAF_NODE_BIG, EXTENSION_NODE_OFFSET,
-	EXTENSION_NODE_BIG, BRANCH_NODE_NO_VALUE, BRANCH_NODE_WITH_VALUE, branch_node};
+use patricia_trie::{DBValue, NibbleSlice, NodeCodec, node::Node, ChildReference, Hasher};
 use codec::{Encode, Decode, Input, Output, Compact};
-use {codec_error::CodecError, NibbleSlice, NodeCodec, node::Node, ChildReference};
+use codec_error::CodecError;
+use codec_triestream::{EMPTY_TRIE, LEAF_NODE_OFFSET, LEAF_NODE_BIG, EXTENSION_NODE_OFFSET,
+	EXTENSION_NODE_BIG, BRANCH_NODE_NO_VALUE, BRANCH_NODE_WITH_VALUE, branch_node};
 
 /// Concrete implementation of a `NodeCodec` with Parity Codec encoding, generic over the `Hasher`
 #[derive(Default, Clone)]
@@ -197,7 +196,7 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodec<H> {
 		output
 	}
 
-	fn branch_node<I>(mut children: I, maybe_value: Option<ElasticArray128<u8>>) -> Vec<u8>
+	fn branch_node<I>(mut children: I, maybe_value: Option<DBValue>) -> Vec<u8>
 		where I: IntoIterator<Item=Option<ChildReference<H::Out>>> + Iterator<Item=Option<ChildReference<H::Out>>>
 	{
 		let mut output = vec![];

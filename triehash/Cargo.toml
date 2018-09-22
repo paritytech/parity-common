@@ -8,18 +8,12 @@ license = "GPL-3.0"
 
 [dependencies]
 hashdb = { version = "0.3", path = "../hashdb", default-features = false }
-triestream = { version = "0.1", path = "../triestream", default-features = false }
 
 [dev-dependencies]
 keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
-triestream = { version = "0.1", path = "../triestream", features = ["ethereum", "codec"] }
 
 # Used in benches
 ethereum-types = "0.4"
 tiny-keccak = "1.4"
 trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
 rlp = { version = "0.3", path = "../rlp" }
-parity-codec = { version = "2", path = "../../parity-codec" }
-
-[features]
-ethereum = ["triestream/ethereum"]

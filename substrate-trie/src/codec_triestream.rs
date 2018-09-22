@@ -13,10 +13,9 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
-use hashdb::Hasher;
-use super::TrieStream;
-use parity_codec::Encode;
 use std::iter::once;
+use triehash::{Hasher, TrieStream};
+use codec::Encode;
 
 /// Codec-flavoured TrieStream
 pub struct CodecTrieStream {
@@ -30,6 +29,7 @@ pub const EXTENSION_NODE_OFFSET: u8 = 128;
 pub const EXTENSION_NODE_BIG: u8 = 253;
 pub const BRANCH_NODE_NO_VALUE: u8 = 254;
 pub const BRANCH_NODE_WITH_VALUE: u8 = 255;
+
 impl CodecTrieStream {
 	// useful for debugging but not used otherwise
 	pub fn as_raw(&self) -> &[u8] { &self.buffer }

@@ -18,7 +18,6 @@
 
 extern crate ethereum_types;
 extern crate keccak_hasher;
-extern crate patricia_trie_ethereum;
 extern crate test;
 extern crate tiny_keccak;
 extern crate trie_standardmap;
