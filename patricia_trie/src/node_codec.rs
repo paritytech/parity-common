@@ -28,8 +28,8 @@ pub trait NodeCodec<H: Hasher>: Sized {
 	/// Codec error type
 	type Error: ::std::error::Error;
 
-	/// Null node type
-	const HASHED_NULL_NODE: H::Out;
+	/// Get the hashed null node.
+	fn hashed_null_node() -> H::Out;
 
 	/// Decode bytes to a `Node`. Returns `Self::E` on failure.
 	fn decode(data: &[u8]) -> Result<Node, Self::Error>;

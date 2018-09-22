@@ -160,7 +160,7 @@ pub trait Trie<H: Hasher, C: NodeCodec<H>> {
 	fn root(&self) -> &H::Out;
 
 	/// Is the trie empty?
-	fn is_empty(&self) -> bool { *self.root() == C::HASHED_NULL_NODE }
+	fn is_empty(&self) -> bool { *self.root() == C::hashed_null_node() }
 
 	/// Does the trie contain a given key?
 	fn contains(&self, key: &[u8]) -> Result<bool, H::Out, C::Error> {

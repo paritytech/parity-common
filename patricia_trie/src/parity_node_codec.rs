@@ -16,28 +16,43 @@
 
 //! `NodeCodec` implementation for Rlp
 
+use std::marker::PhantomData;
 use elastic_array::ElasticArray128;
 use ethereum_types::H256;
 use hashdb::Hasher;
-use keccak_hasher::KeccakHasher;
-use rlp::{DecoderError, RlpStream, Rlp, Prototype};
-use std::marker::PhantomData;
-use trie::{NibbleSlice, NodeCodec, node::Node, ChildReference};
+use {codec_error::Error as CodecError, NibbleSlice, NodeCodec, node::Node, ChildReference};
 
-/// Concrete implementation of a `NodeCodec` with Rlp encoding, generic over the `Hasher`
+/// Concrete implementation of a `NodeCodec` with Parity Codec encoding, generic over the `Hasher`
 #[derive(Default, Clone)]
-pub struct RlpNodeCodec<H: Hasher> {mark: PhantomData<H>}
+pub struct ParityNodeCodec<H: Hasher>(PhantomData<H>);
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+enum NodeHeader {
+	Null,
+	Branch,
+	Extension(usize),
+	Leaf(usize),
+}
+
+impl Decode for NodeHeader {
+
+}
+
+// TODO: encode branch as 3 bytes: header including value existence + 16-bit bitmap for branch existence
 
 // NOTE: what we'd really like here is:
 // `impl<H: Hasher> NodeCodec<H> for RlpNodeCodec<H> where H::Out: Decodable`
 // but due to the current limitations of Rust const evaluation we can't
 // do `const HASHED_NULL_NODE: H::Out = H::Out( … … )`. Perhaps one day soon?
-impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
+impl<H: Hasher> NodeCodec<H> for ParityNodeCodec<H> {
 	type Error = DecoderError;
+
 	fn hashed_null_node() -> H::Out {
-		KeccakHasher::hash(&[80u8][..])
+		H::hash(&[0u8][..])
 	}
+
 	fn decode(data: &[u8]) -> ::std::result::Result<Node, Self::Error> {
+		
 		let r = Rlp::new(data);
 		match r.prototype()? {
 			// either leaf or extension - decode first item with NibbleSlice::???

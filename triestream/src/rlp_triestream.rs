@@ -40,9 +40,16 @@ impl RlpTrieStream {
 impl TrieStream for RlpTrieStream {
 	fn new() -> Self { Self { stream: RlpStream::new() } }
 	fn append_empty_data(&mut self) { self.stream.append_empty_data(); }
-	fn begin_branch(&mut self) { self.stream.begin_list(17); }
-	fn append_value(&mut self, value: &[u8]) {
-		self.stream.append(&value);
+	fn begin_branch(&mut self, _maybe_value: Option<&[u8]>, _has_children: impl Iterator<Item = bool>) {
+		self.stream.begin_list(17);
+	}
+	fn append_empty_child(&mut self) { self.stream.append_empty_data(); }
+	fn end_branch(&mut self, maybe_value: Option<&[u8]>) {
+		if let Some(value) = maybe_value {
+			self.stream.append(&value);
+		} else {
+			self.stream.append_empty_data();
+		}
 	}
 	fn append_extension(&mut self, key: &[u8]) {
 		self.stream.begin_list(2);

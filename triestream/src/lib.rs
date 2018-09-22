@@ -30,8 +30,9 @@ use hashdb::Hasher;
 pub trait TrieStream {
 	fn new() -> Self;
 	fn append_empty_data(&mut self);
-	fn begin_branch(&mut self);
-	fn append_value(&mut self, value: &[u8]);
+	fn begin_branch(&mut self, maybe_value: Option<&[u8]>, has_children: impl Iterator<Item = bool>);
+	fn append_empty_child(&mut self) {}
+	fn end_branch(&mut self, _value: Option<&[u8]>) {}
 	fn append_leaf(&mut self, key: &[u8], value: &[u8]);
 	fn append_extension(&mut self, key: &[u8]);
 	fn append_substream<H: Hasher>(&mut self, other: Self);

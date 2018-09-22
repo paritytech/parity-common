@@ -23,10 +23,13 @@ pub struct CodecTrieStream {
 	buffer: Vec<u8>
 }
 
-const LEAF_NODE_OFFSET: u8 = 128;
-const BRANCH_NODE: u8 = 128;
-const EXTENSION_NODE_OFFSET: u8 = 0;
 const EMPTY_NODE: u8 = 0;
+const LEAF_NODE_OFFSET: u8 = 1;
+const LEAF_NODE_BIG: u8 = 127;
+const EXTENSION_NODE_OFFSET: u8 = 128;
+const EXTENSION_NODE_BIG: u8 = 253;
+const BRANCH_NODE_NO_VALUE: u8 = 254;
+const BRANCH_NODE_WITH_VALUE: u8 = 255;
 impl CodecTrieStream {
 	// useful for debugging but not used otherwise
 	pub fn as_raw(&self) -> &[u8] { &self.buffer }
@@ -36,11 +39,24 @@ impl CodecTrieStream {
 /// cannot handle a number of nibbles that is zero or greater than 127 and if
 /// you attempt to do so *IT WILL PANIC*.
 pub fn fuse_nibbles_node<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Item = u8> + 'a {
-	// There's currently no
-	assert!(nibbles.len() > 0, "Attempt to fuse zero nibbles into a node: this breaks an interface requirement.");
-	assert!(nibbles.len() < 128, "Attempt to fuse more than 127 nibbles into a node: this breaks an interface requirement.");
-	let first_byte = if leaf { LEAF_NODE_OFFSET } else { EXTENSION_NODE_OFFSET } + nibbles.len() as u8;
-	once(first_byte).chain(nibbles.chunks(2).map(|ch| ch[0] << 4 | if ch.len() == 2 { ch[1] } else { 0 }))
+	debug_assert!(nibbles.len() < 255 + 126, "nibbles length too long. what kind of size of key are you trying to include in the trie!?!");
+	// We use two ranges of possible values; one for leafs and the other for extensions.
+	// Each range encodes zero following nibbles up to some maximum. If the maximum is
+	// reached, then it is considered "big" and a second byte follows it in order to
+	// encode a further offset to the number of nibbles of up to 255. Beyond that, we
+	// cannot encode. This shouldn't be a problem though since that allows for keys of
+	// up to 380 nibbles (190 bytes) and we expect key sizes to be generally 128-bit (16
+	// bytes) or, at a push, 384-bit (48 bytes).
+
+	let (first_byte_small, big_threshold) = if leaf {
+		(LEAF_NODE_OFFSET, (LEAF_NODE_BIG - LEAF_NODE_OFFSET) as usize)
+	} else {
+		(EXTENSION_NODE_OFFSET, (EXTENSION_NODE_BIG - EXTENSION_NODE_OFFSET) as usize)
+	};
+	let first_byte = first_byte_small + nibbles.len().min(big_threshold) as u8;
+	once(first_byte)
+		.chain(if nibbles.len() >= big_threshold { Some((nibbles.len() - big_threshold) as u8) } else { None })
+		.chain(nibbles.chunks(2).map(|ch| ch[0] << 4 | if ch.len() == 2 { ch[1] } else { 0 }))
 }
 
 impl TrieStream for CodecTrieStream {
@@ -50,19 +66,28 @@ impl TrieStream for CodecTrieStream {
 	}
 
 	fn append_leaf(&mut self, key: &[u8], value: &[u8]) {
-		assert!(key.len() > 0, "Empty key for a leaf or extension would result in a redundant node; Merkle tries don't have redundant nodes; qed");
-		assert!(key.len() < 128, "Trie code allows keys to be added with maximum 63 bytes; max key nibbles must be 126; qed");
 		self.buffer.extend(fuse_nibbles_node(key, true));
-		// TODO: I'd like to do `hpe.encode_to(&mut self.buffer);` here; need an `impl<'a> Encode for impl Iterator<Item = u8> + 'a`?
+		// OPTIMISATION: I'd like to do `hpe.encode_to(&mut self.buffer);` here; need an `impl<'a> Encode for impl Iterator<Item = u8> + 'a`?
 		value.encode_to(&mut self.buffer);
 	}
-	fn begin_branch(&mut self) {
-		println!("[begin_branch] pushing BRANCH_NODE: {}, {:#x?}, {:#010b}", BRANCH_NODE, BRANCH_NODE, BRANCH_NODE);
-		self.buffer.push(BRANCH_NODE);
+	fn begin_branch(&mut self, maybe_value: Option<&[u8]>, has_children: impl Iterator<Item = bool>) {
+		println!("[begin_branch] pushing BRANCH_NODE");
+		self.buffer.push(if maybe_value.is_some() { BRANCH_NODE_WITH_VALUE } else { BRANCH_NODE_NO_VALUE });
+		let mut bitmap: u16 = 0;
+		let mut cursor: u16 = 1;
+		for v in has_children {
+			if v { bitmap |= cursor }
+			cursor <<= 1;
+		}
+		// Push LE.
+		self.buffer.push((bitmap % 256 ) as u8);
+		self.buffer.push((bitmap / 256 ) as u8);
+
+		// Push the value if one exists.
+		if let Some(value) = maybe_value {
+			value.encode_to(&mut self.buffer);
+		}
 		println!("[begin_branch] buffer so far: {:#x?}", self.buffer);
-	}
-	fn append_value(&mut self, value: &[u8]) {
-		value.encode_to(&mut self.buffer);
 	}
 	fn append_extension(&mut self, key: &[u8]) {
 		self.buffer.extend(fuse_nibbles_node(key, false));
@@ -78,10 +103,9 @@ impl TrieStream for CodecTrieStream {
 			},
 			_ => {
 				println!("[append_substream] would have hashed, because data.len() = {}", data.len());
-				data.encode_to(&mut self.buffer)
+//				data.encode_to(&mut self.buffer)
 				// TODO: re-enable hashing before merging
-				// let hash = H::hash(&data);
-				// hash.as_ref().encode_to(&mut self.buffer)
+				H::hash(&data).as_ref().encode_to(&mut self.buffer)
 			}
 		}
 	}
