@@ -44,12 +44,12 @@ mod tests {
 	use memorydb::MemoryDB;
 	use patricia_trie::{Hasher, DBValue, TrieMut, TrieDBMut};
 
-	#[test]
-	fn empty_trie_hash_is_equivalent_between_persistent_and_closed_form() {
-		let input: Vec<(&[u8], &[u8])> = vec![];
+	fn check_equivalent(input: Vec<(&[u8], &[u8])>) {
 		let closed_form = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(input.clone());
+		let d = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input.clone());
+		println!("Data: {:#x?}, {:#x?}", d, KeccakHasher::hash(&d[..]));
 		let persistent = {
-			let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
+			let mut memdb = MemoryDB::<KeccakHasher, DBValue>::from_null_node(&[0u8][..], [0u8][..].into());
 			let mut root = <KeccakHasher as Hasher>::Out::default();
 			let mut t = TrieDBMut::<KeccakHasher, ParityNodeCodec<KeccakHasher>>::new(&mut memdb, &mut root);
 			for (x, y) in input {
@@ -58,6 +58,36 @@ mod tests {
 			t.root().clone()
 		};
 		assert_eq!(closed_form, persistent);
+	}
+
+	#[test]
+	fn empty_is_equivalent() {
+		let input: Vec<(&[u8], &[u8])> = vec![];
+		check_equivalent(input);
+	}
+
+	#[test]
+	fn leaf_is_equivalent() {
+		let input: Vec<(&[u8], &[u8])> = vec![(&[0xaa][..], &[0xbb][..])];
+		check_equivalent(input);
+	}
+
+	#[test]
+	fn branch_is_equivalent() {
+		let input: Vec<(&[u8], &[u8])> = vec![(&[0xaa][..], &[0x10][..]), (&[0xba][..], &[0x11][..])];
+		check_equivalent(input);
+	}
+
+	#[test]
+	fn extension_and_branch_is_equivalent() {
+		let input: Vec<(&[u8], &[u8])> = vec![(&[0xaa][..], &[0x10][..]), (&[0xab][..], &[0x11][..])];
+		check_equivalent(input);
+	}
+
+	#[test]
+	fn single_long_leaf_is_equivalent() {
+		let input: Vec<(&[u8], &[u8])> = vec![(&[0xaa][..], &b"ABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABC"[..]), (&[0xba][..], &[0x11][..])];
+		check_equivalent(input);
 	}
 
 	fn to_compact(n: u8) -> u8 {

@@ -100,16 +100,14 @@ fn take<'a>(input: &mut &'a[u8], count: usize) -> Option<&'a[u8]> {
 }
 
 fn partial_to_key(partial: &[u8], offset: u8, big: u8) -> Vec<u8> {
-	let nibble_count = partial.len() * 2 + if partial[0] & 16 == 16 { 1 } else { 0 };
+	let nibble_count = (partial.len() - 1) * 2 + if partial[0] & 16 == 16 { 1 } else { 0 };
 	let (first_byte_small, big_threshold) = (offset, (big - offset) as usize);
 	let mut output = vec![first_byte_small + nibble_count.min(big_threshold) as u8];
 	if nibble_count >= big_threshold { output.push((nibble_count - big_threshold) as u8) }
 	if nibble_count % 2 == 1 {
 		output.push(partial[0] & 0x0f);
-		output.extend_from_slice(&partial[1..]);
-	} else {
-		output.extend_from_slice(partial);
 	}
+	output.extend_from_slice(&partial[1..]);
 	output
 }
 
@@ -161,6 +159,7 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodec<H> {
 			}
 		}
 	}
+
 	fn try_decode_hash(data: &[u8]) -> Option<H::Out> {
 		if data.len() == H::LENGTH {
 			let mut r = H::Out::default();
@@ -170,8 +169,9 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodec<H> {
 			None
 		}
 	}
+
 	fn is_empty_node(data: &[u8]) -> bool {
-		data[0] == EMPTY_TRIE
+		data == &[EMPTY_TRIE][..]
 	}
 	fn empty_node() -> Vec<u8> {
 		vec![EMPTY_TRIE]
@@ -181,7 +181,9 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodec<H> {
 	fn leaf_node(partial: &[u8], value: &[u8]) -> Vec<u8> {
 		let mut output = partial_to_key(partial, LEAF_NODE_OFFSET, LEAF_NODE_BIG);
 		value.encode_to(&mut output);
+		println!("leaf_node: {:#x?}", output);
 		output
+
 	}
 
 	// TODO: refactor this so that `partial` isn't already encoded with HPE. Should just be an `impl Iterator<Item=u8>`.
@@ -193,26 +195,33 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodec<H> {
 			ChildReference::Inline(inline_data, len) =>
 				(&AsRef::<[u8]>::as_ref(&inline_data)[..len]).encode_to(&mut output),
 		};
+		println!("ext_node: {:#x?}", output);
 		output
 	}
 
-	fn branch_node<I>(mut children: I, maybe_value: Option<DBValue>) -> Vec<u8>
+	fn branch_node<I>(children: I, maybe_value: Option<DBValue>) -> Vec<u8>
 		where I: IntoIterator<Item=Option<ChildReference<H::Out>>> + Iterator<Item=Option<ChildReference<H::Out>>>
 	{
-		let mut output = vec![];
-		output.extend_from_slice(&branch_node(maybe_value.is_some(), children.by_ref().map(|n| n.is_some()))[..]);
-		if let Some(value) = maybe_value {
+		let mut output = vec![0, 0, 0];
+		let have_value = if let Some(value) = maybe_value {
 			(&*value).encode_to(&mut output);
-		}
-		for maybe_child in children {
-			match maybe_child {
-				Some(ChildReference::Hash(h)) => 
-					h.as_ref().encode_to(&mut output),
-				Some(ChildReference::Inline(inline_data, len)) =>
-					(&AsRef::<[u8]>::as_ref(&inline_data)[..len]).encode_to(&mut output),
-				None => {}
-			};
-		}
+			true
+		} else {
+			false
+		};
+		let prefix = branch_node(have_value, children.map(|maybe_child| match maybe_child {
+			Some(ChildReference::Hash(h)) => {
+				h.as_ref().encode_to(&mut output);
+				true
+			}
+			Some(ChildReference::Inline(inline_data, len)) => {
+				(&AsRef::<[u8]>::as_ref(&inline_data)[..len]).encode_to(&mut output);
+				true
+			}
+			None => false,
+		}));
+		output[0..3].copy_from_slice(&prefix[..]);
+		println!("branch_node: {:#x?}", output);
 		output
 	}
 }
