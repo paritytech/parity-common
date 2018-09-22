@@ -21,7 +21,8 @@ use elastic_array::ElasticArray128;
 use ethereum_types::H256;
 use hashdb::Hasher;
 use triestream::{EMPTY_TRIE, LEAF_NODE_OFFSET, LEAF_NODE_BIG, EXTENSION_NODE_OFFSET,
-	EXTENSION_NODE_BIG, BRANCH_NODE_NO_VALUE, BRANCH_NODE_WITH_VALUE};
+	EXTENSION_NODE_BIG, BRANCH_NODE_NO_VALUE, BRANCH_NODE_WITH_VALUE, branch_node,
+	fuse_nibbles_node};
 use codec::{Encode, Decode, Input, Output, Compact};
 use {codec_error::Error as CodecError, NibbleSlice, NodeCodec, node::Node, ChildReference};
 
@@ -99,6 +100,19 @@ fn take(input: &mut &[u8], count: usize) -> Option<&[u8]> {
 	Some(r)
 }
 
+fn partial_to_key(partial: &[u8], offset: u8, big: u8) -> Vec<u8> {
+	let nibble_count = partial.len() * 2 + if data[0] & 16 == 16 { 1 } else { 0 };
+	let (first_byte_small, big_threshold) = (offset, (big - offset) as usize);
+	let mut output = vec![first_byte_small + nibble_count.min(big_threshold) as u8];
+	if nibble_count >= big_threshold { output.push((nibble_count - big_threshold) as u8) }
+	if nibble_count % 2 == 1 {
+		output.push(partial[0] & 0x0f);
+		output.extend_by_slice(&partial[1..]);
+	} else {
+		output.extend_by_slice(partial);
+	}
+}
+
 // NOTE: what we'd really like here is:
 // `impl<H: Hasher> NodeCodec<H> for RlpNodeCodec<H> where H::Out: Decodable`
 // but due to the current limitations of Rust const evaluation we can't
@@ -162,24 +176,23 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodec<H> {
 		vec![EMPTY_TRIE]
 	}
 
+	// TODO: refactor this so that `partial` isn't already encoded with HPE. Should just be an `impl Iterator<Item=u8>`.
 	fn leaf_node(partial: &[u8], value: &[u8]) -> Vec<u8> {
-		let mut stream = RlpStream::new_list(2);
-		stream.append(&partial);
-		stream.append(&value);
-		stream.drain()
+		let mut output = partial_to_key(partial, LEAF_NODE_OFFSET, LEAF_NODE_BIG);
+		value.encode_to(&mut output);
+		output
 	}
 
-	fn ext_node(partial: &[u8], child_ref: ChildReference<<KeccakHasher as Hasher>::Out>) -> Vec<u8> {
-		let mut stream = RlpStream::new_list(2);
-		stream.append(&partial);
-		match child_ref {
-			ChildReference::Hash(h) => stream.append(&h),
-			ChildReference::Inline(inline_data, len) => {
-				let bytes = &AsRef::<[u8]>::as_ref(&inline_data)[..len];
-				stream.append_raw(bytes, 1)
-			},
+	// TODO: refactor this so that `partial` isn't already encoded with HPE. Should just be an `impl Iterator<Item=u8>`.
+	fn ext_node(partial: &[u8], child: ChildReference<<KeccakHasher as Hasher>::Out>) -> Vec<u8> {
+		let mut output = partial_to_key(partial, EXTENSION_NODE_OFFSET, EXTENSION_NODE_BIG);
+		match child {
+			ChildReference::Hash(h) => 
+				h.as_ref().encode_to(&mut output),
+			ChildReference::Inline(inline_data, len) =>
+				(&AsRef::<[u8]>::as_ref(&inline_data)[..len]).encode_to(&mut output),
 		};
-		stream.drain()
+		output
 	}
 
 	fn branch_node<I>(mut children: I, maybe_value: Option<ElasticArray128<u8>>) -> Vec<u8>
