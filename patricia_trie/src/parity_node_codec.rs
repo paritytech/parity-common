@@ -20,6 +20,9 @@ use std::marker::PhantomData;
 use elastic_array::ElasticArray128;
 use ethereum_types::H256;
 use hashdb::Hasher;
+use triestream::{EMPTY_TRIE, LEAF_NODE_OFFSET, LEAF_NODE_BIG, EXTENSION_NODE_OFFSET,
+	EXTENSION_NODE_BIG, BRANCH_NODE_NO_VALUE, BRANCH_NODE_WITH_VALUE};
+use codec::{Encode, Decode, Input, Output, Compact};
 use {codec_error::Error as CodecError, NibbleSlice, NodeCodec, node::Node, ChildReference};
 
 /// Concrete implementation of a `NodeCodec` with Parity Codec encoding, generic over the `Hasher`
@@ -29,70 +32,134 @@ pub struct ParityNodeCodec<H: Hasher>(PhantomData<H>);
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 enum NodeHeader {
 	Null,
-	Branch,
+	Branch(bool),
 	Extension(usize),
 	Leaf(usize),
 }
 
-impl Decode for NodeHeader {
+const LEAF_NODE_THRESHOLD = LEAF_NODE_BIG - LEAF_NODE_OFFSET;
+const EXTENSION_NODE_THRESHOLD = EXTENSION_NODE_BIG - EXTENSION_NODE_OFFSET;
+const LEAF_NODE_SMALL_MAX = LEAF_NODE_THRESHOLD - 1;
+const EXTENSION_NODE_SMALL_MAX = EXTENSION_NODE_THRESHOLD - 1;
 
+impl Encode for NodeHeader {
+	fn encode_to<T: Output>(&self, output: &mut T) {
+		match self {
+			NodeHeader::Null => output.push_byte(EMPTY_TRIE),
+			
+			NodeHeader::Branch(true) => output.push_byte(BRANCH_NODE_WITH_VALUE),
+			NodeHeader::Branch(false) => output.push_byte(BRANCH_NODE_NO_VALUE),
+			
+			NodeHeader::Leaf(nibble_count) if nibble_count < LEAF_NODE_THRESHOLD =>
+				output.push_byte((LEAF_NODE_OFFSET + nibble_count) as u8),
+			NodeHeader::Leaf(nibble_count) => {
+				output.push_byte(LEAF_NODE_BIG);
+				output.push_byte((nibble_count - LEAF_NODE_THRESHOLD) as u8);
+			}
+
+			NodeHeader::Extension(nibble_count) if nibble_count < EXTENSION_NODE_THRESHOLD =>
+				output.push_byte((EXTENSION_NODE_OFFSET + nibble_count) as u8),
+			NodeHeader::Extension(nibble_count) => {
+				output.push_byte(EXTENSION_NODE_BIG);
+				output.push_byte((nibble_count - EXTENSION_NODE_THRESHOLD) as u8);
+			}
+		}
+	}
 }
 
-// TODO: encode branch as 3 bytes: header including value existence + 16-bit bitmap for branch existence
+impl Decode for NodeHeader {
+	fn decode<I: Input>(input: &mut I) -> Option<Self> {
+		match input.read_byte()? {
+			0 => NodeHeader::Null,
+
+			BRANCH_NODE_WITH_VALUE => NodeHeader::Branch(true),
+			BRANCH_NODE_NO_VALUE => NodeHeader::Branch(false),
+			
+			i @ EXTENSION_NODE_OFFSET ... EXTENSION_NODE_SMALL_MAX =>
+				NodeHeader::Extension((i - EXTENSION_NODE_OFFSET) as usize),
+			EXTENSION_NODE_THRESHOLD =>
+				NodeHeader::Extension(input.read_byte()? as usize + EXTENSION_NODE_THRESHOLD)
+
+			i @ LEAF_NODE_OFFSET ... LEAF_NODE_SMALL_MAX =>
+				NodeHeader::Leaf((i - LEAF_NODE_OFFSET) as usize),
+			LEAF_NODE_THRESHOLD =>
+				NodeHeader::Leaf(input.read_byte()? as usize + LEAF_NODE_THRESHOLD)
+		}
+	}
+}
+
+// encode branch as 3 bytes: header including value existence + 16-bit bitmap for branch existence
+
+fn take(input: &mut &[u8], count: usize) -> Option<&[u8]> {
+	if input.len() < count {
+		return None
+	}
+	let r = (*input)[..count];
+	*input = &(*input)[count..];
+	Some(r)
+}
 
 // NOTE: what we'd really like here is:
 // `impl<H: Hasher> NodeCodec<H> for RlpNodeCodec<H> where H::Out: Decodable`
 // but due to the current limitations of Rust const evaluation we can't
 // do `const HASHED_NULL_NODE: H::Out = H::Out( … … )`. Perhaps one day soon?
 impl<H: Hasher> NodeCodec<H> for ParityNodeCodec<H> {
-	type Error = DecoderError;
+	type Error = CodecError;
 
 	fn hashed_null_node() -> H::Out {
 		H::hash(&[0u8][..])
 	}
 
 	fn decode(data: &[u8]) -> ::std::result::Result<Node, Self::Error> {
-		
-		let r = Rlp::new(data);
-		match r.prototype()? {
-			// either leaf or extension - decode first item with NibbleSlice::???
-			// and use is_leaf return to figure out which.
-			// if leaf, second item is a value (is_data())
-			// if extension, second item is a node (either SHA3 to be looked up and
-			// fed back into this function or inline RLP which can be fed back into this function).
-			Prototype::List(2) => match NibbleSlice::from_encoded(r.at(0)?.data()?) {
-				(slice, true) => Ok(Node::Leaf(slice, r.at(1)?.data()?)),
-				(slice, false) => Ok(Node::Extension(slice, r.at(1)?.as_raw())),
-			},
-			// branch - first 16 are nodes, 17th is a value (or empty).
-			Prototype::List(17) => {
-				let mut nodes = [&[] as &[u8]; 16];
+		let input = &mut data;
+		match NodeHeader::decode(input).ok_or(CodecError::BadFormat)? {
+			NodeHeader::Null => Ok(Node::Empty),
+			NodeHeader::Branch(has_value) => {
+				let bitmap = u16::decode(input)?;
+				let value = if has_value {
+					let count = Compact<u32>::decode(input)?;
+					Some(take(input, count)?)
+				} else {
+					None
+				};
+				let mut children = [None; 16];
+				let pot_cursor = 1;
 				for i in 0..16 {
-					nodes[i] = r.at(i)?.as_raw();
+					if bitmap & pot_cursor != 0 {
+						let count = Compact<u32>::decode(input)?;
+						children[i] = Some(take(input, count)?);
+					}
+					pot_cursor <<= 1;
 				}
-				Ok(Node::Branch(nodes, if r.at(16)?.is_empty() { None } else { Some(r.at(16)?.data()?) }))
-			},
-			// an empty branch index.
-			Prototype::Data(0) => Ok(Node::Empty),
-			// something went wrong.
-			_ => Err(DecoderError::Custom("Rlp is not valid."))
+			}
+			NodeHeader::Extension(nibble_count) => {
+				let nibble_data = take(input, (nibble_count + 1) / 2)?;
+				let nibble_slice = NibbleSlice::new_offset(nibble_data, nibble_count % 2);
+				let count = Compact<u32>::decode(input)?;
+				Node::Extension(nibble_slice, take(input, count)?);
+			}
+			NodeHeader::Leaf(nibble_count) => {
+				let nibble_data = take(input, (nibble_count + 1) / 2)?;
+				let nibble_slice = NibbleSlice::new_offset(nibble_data, nibble_count % 2);
+				let count = Compact<u32>::decode(input)?;
+				Node::Leaf(nibble_slice, take(input, count)?);
+			}
 		}
 	}
-	fn try_decode_hash(data: &[u8]) -> Option<<KeccakHasher as Hasher>::Out> {
-		let r = Rlp::new(data);
-		if r.is_data() && r.size() == KeccakHasher::LENGTH {
-			Some(r.as_val().expect("Hash is the correct size; qed"))
+	fn try_decode_hash(data: &[u8]) -> Option<H::Out> {
+		if data.len() == H::LENGTH {
+			let mut r: H::Out::default();
+			r.as_mut().copy_from_slice(data);
+			Some(r)
 		} else {
 			None
 		}
 	}
 	fn is_empty_node(data: &[u8]) -> bool {
-		Rlp::new(data).is_empty()
+		data[0] == EMPTY_TRIE
 	}
 	fn empty_node() -> Vec<u8> {
-		let mut stream = RlpStream::new();
-		stream.append_empty_data();
-		stream.drain()
+		vec![EMPTY_TRIE]
 	}
 
 	fn leaf_node(partial: &[u8], value: &[u8]) -> Vec<u8> {
@@ -115,27 +182,23 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodec<H> {
 		stream.drain()
 	}
 
-	fn branch_node<I>(children: I, value: Option<ElasticArray128<u8>>) -> Vec<u8>
-		where I: IntoIterator<Item=Option<ChildReference<<KeccakHasher as Hasher>::Out>>>
+	fn branch_node<I>(mut children: I, maybe_value: Option<ElasticArray128<u8>>) -> Vec<u8>
+		where I: IntoIterator<Item=Option<ChildReference<H::Out>>>
 	{
-		let mut stream = RlpStream::new_list(17);
-		for child_ref in children {
-			match child_ref {
-				Some(c) => match c {
-					ChildReference::Hash(h) => stream.append(&h),
-					ChildReference::Inline(inline_data, len) => {
-						let bytes = &AsRef::<[u8]>::as_ref(&inline_data)[..len];
-						stream.append_raw(bytes, 1)
-					},
-				},
-				None => stream.append_empty_data()
+		let mut output = vec![];
+		output.extend_from_slice(&branch_node(maybe_value.is_some(), children.by_ref().map(|n| n.is_some()))[..]);
+		if let Some(value) = maybe_value {
+			(&*value).encode_to(&mut output);
+		}
+		for maybe_child in children {
+			match maybe_child {
+				Some(ChildReference::Hash(h)) => 
+					h.as_ref().encode_to(&mut output),
+				Some(ChildReference::Inline(inline_data, len)) =>
+					(&AsRef::<[u8]>::as_ref(&inline_data)[..len]).encode_to(&mut output),
+				None => {}
 			};
 		}
-		if let Some(value) = value {
-			stream.append(&&*value);
-		} else {
-			stream.append_empty_data();
-		}
-		stream.drain()
+		output
 	}
 }

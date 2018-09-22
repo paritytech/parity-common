@@ -27,6 +27,7 @@ extern crate parity_codec;
 
 use hashdb::Hasher;
 
+/// TODO: DOCUMENT!!!!
 pub trait TrieStream {
 	fn new() -> Self;
 	fn append_empty_data(&mut self);
@@ -49,6 +50,6 @@ mod rlp_triestream;
 pub use rlp_triestream::RlpTrieStream;
 
 #[cfg(feature = "codec")]
-mod codec_triestream;
+pub mod codec_triestream;
 #[cfg(feature = "codec")]
 pub use codec_triestream::CodecTrieStream;

@@ -12,6 +12,8 @@ log = "0.3"
 rand = "0.4"
 hashdb = { version = "0.3", path = "../hashdb" }
 parity-bytes = { version = "0.1", path = "../parity-bytes" }
+triestream = { path = "../triestream", features = ["codec"] }
+parity-codec = "2.0"
 
 [dev-dependencies]
 env_logger = "0.5"

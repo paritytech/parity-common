@@ -114,12 +114,9 @@ where
 			}
 			EncodedNode::Branch(ref encoded_children, val) => {
 				let mut child = |i:usize| {
-					let raw = encoded_children[i];
-					if !C::is_empty_node(raw) {
-						Some(Self::inline_or_hash::<C, H>(raw, db, storage))
-					} else {
-						None
-					}
+					encoded_children[i].map(|data|
+						Self::inline_or_hash::<C, H>(data, db, storage)
+					)
 				};
 
 				let children = Box::new([

@@ -23,13 +23,13 @@ pub struct CodecTrieStream {
 	buffer: Vec<u8>
 }
 
-const EMPTY_NODE: u8 = 0;
-const LEAF_NODE_OFFSET: u8 = 1;
-const LEAF_NODE_BIG: u8 = 127;
-const EXTENSION_NODE_OFFSET: u8 = 128;
-const EXTENSION_NODE_BIG: u8 = 253;
-const BRANCH_NODE_NO_VALUE: u8 = 254;
-const BRANCH_NODE_WITH_VALUE: u8 = 255;
+pub const EMPTY_TRIE: u8 = 0;
+pub const LEAF_NODE_OFFSET: u8 = 1;
+pub const LEAF_NODE_BIG: u8 = 127;
+pub const EXTENSION_NODE_OFFSET: u8 = 128;
+pub const EXTENSION_NODE_BIG: u8 = 253;
+pub const BRANCH_NODE_NO_VALUE: u8 = 254;
+pub const BRANCH_NODE_WITH_VALUE: u8 = 255;
 impl CodecTrieStream {
 	// useful for debugging but not used otherwise
 	pub fn as_raw(&self) -> &[u8] { &self.buffer }
@@ -38,7 +38,7 @@ impl CodecTrieStream {
 /// Create a leaf/extension node, encoding a number of nibbles. Note that this
 /// cannot handle a number of nibbles that is zero or greater than 127 and if
 /// you attempt to do so *IT WILL PANIC*.
-pub fn fuse_nibbles_node<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Item = u8> + 'a {
+fn fuse_nibbles_node<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Item = u8> + 'a {
 	debug_assert!(nibbles.len() < 255 + 126, "nibbles length too long. what kind of size of key are you trying to include in the trie!?!");
 	// We use two ranges of possible values; one for leafs and the other for extensions.
 	// Each range encodes zero following nibbles up to some maximum. If the maximum is
@@ -56,13 +56,29 @@ pub fn fuse_nibbles_node<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Ite
 	let first_byte = first_byte_small + nibbles.len().min(big_threshold) as u8;
 	once(first_byte)
 		.chain(if nibbles.len() >= big_threshold { Some((nibbles.len() - big_threshold) as u8) } else { None })
-		.chain(nibbles.chunks(2).map(|ch| ch[0] << 4 | if ch.len() == 2 { ch[1] } else { 0 }))
+		.chain(if nibbles.len() % 2 == 1 { Some(nibbles[0]) } else { None })
+		.chain(nibbles.skip(nibbles.len() % 2).chunks(2).map(|ch| ch[0] << 4 | ch[1]))
+}
+
+fn branch_node(has_value: bool, has_children: impl Iterator<Item = bool>) -> [u8; 3] {
+	let first = if has_value {
+		BRANCH_NODE_WITH_VALUE
+	} else {
+		BRANCH_NODE_NO_VALUE
+	};
+	let mut bitmap: u16 = 0;
+	let mut cursor: u16 = 1;
+	for v in has_children {
+		if v { bitmap |= cursor }
+		cursor <<= 1;
+	}
+	[first, (bitmap % 256 ) as u8, (bitmap / 256 ) as u8]
 }
 
 impl TrieStream for CodecTrieStream {
 	fn new() -> Self { Self {buffer: Vec::new() } }
 	fn append_empty_data(&mut self) {
-		self.buffer.push(EMPTY_NODE);
+		self.buffer.push(EMPTY_TRIE);
 	}
 
 	fn append_leaf(&mut self, key: &[u8], value: &[u8]) {
@@ -72,17 +88,7 @@ impl TrieStream for CodecTrieStream {
 	}
 	fn begin_branch(&mut self, maybe_value: Option<&[u8]>, has_children: impl Iterator<Item = bool>) {
 		println!("[begin_branch] pushing BRANCH_NODE");
-		self.buffer.push(if maybe_value.is_some() { BRANCH_NODE_WITH_VALUE } else { BRANCH_NODE_NO_VALUE });
-		let mut bitmap: u16 = 0;
-		let mut cursor: u16 = 1;
-		for v in has_children {
-			if v { bitmap |= cursor }
-			cursor <<= 1;
-		}
-		// Push LE.
-		self.buffer.push((bitmap % 256 ) as u8);
-		self.buffer.push((bitmap / 256 ) as u8);
-
+		self.buffer.extend(&branch_node(maybe_value.is_some(), has_children));
 		// Push the value if one exists.
 		if let Some(value) = maybe_value {
 			value.encode_to(&mut self.buffer);

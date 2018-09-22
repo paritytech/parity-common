@@ -32,7 +32,7 @@ pub enum Node<'a> {
 	/// Extension node; has key slice and node data. Data may not be null.
 	Extension(NibbleSlice<'a>, &'a [u8]),
 	/// Branch node; has array of 16 child nodes (each possibly null) and an optional immediate node data.
-	Branch([&'a [u8]; 16], Option<&'a [u8]>),
+	Branch([Option<&'a [u8]>; 16], Option<&'a [u8]>),
 }
 
 /// A Sparse (non mutable) owned vector struct to hold branch keys and value
@@ -44,15 +44,21 @@ pub struct Branch {
 }
 
 impl Branch {
-	fn new(a: [&[u8]; 16], value: Option<&[u8]>) -> Self {
-		let mut data = Vec::with_capacity(a.iter().map(|inner| inner.len()).sum());
+	fn new(children: [Option<&[u8]>; 16], maybe_value: Option<&[u8]>) -> Self {
+		let mut data = Vec::with_capacity(children.iter()
+			.filter(|n| n)
+			.map(|child| child.len())
+			.sum()
+		);
 		let mut ubounds = [0; 18];
-		for (inner, ub) in a.iter().zip(ubounds.iter_mut().skip(1)) {
-			data.extend_from_slice(inner);
+		for (maybe_child, ub) in children.iter().zip(ubounds.iter_mut().skip(1)) {
+			if let Some(child) = maybe_child {
+				data.extend_from_slice(child);
+			}
 			*ub = data.len();
 		}
-		if let Some(value) = value {
-			data.extend(value);
+		if let Some(value) = maybe_value {
+			data.extend_from_slice(value);
 			ubounds[17] = data.len();
 		}
 		Branch { data, ubounds, has_value: value.is_some() }
@@ -75,9 +81,13 @@ impl Branch {
 
 impl ::std::ops::Index<usize> for Branch {
 	type Output = [u8];
-	fn index(&self, index: usize) -> &[u8] {
+	fn index(&self, index: usize) -> Option<&[u8]> {
 		assert!(index < 16);
-		&self.data[self.ubounds[index]..self.ubounds[index + 1]]
+		if self.ubounds[index] == self.ubounds[index + 1] {
+			None
+		} else {
+			&self.data[self.ubounds[index]..self.ubounds[index + 1]]
+		}
 	}
 }
 

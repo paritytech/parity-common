@@ -19,6 +19,8 @@ extern crate elastic_array;
 extern crate parity_bytes as bytes; // TODO: name changed; update upstream when `parity-common` is available
 extern crate hashdb;
 extern crate rand;
+extern crate parity_codec as codec;
+extern crate triestream;
 #[macro_use]
 extern crate log;
 
