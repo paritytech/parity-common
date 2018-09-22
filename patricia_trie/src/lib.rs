@@ -41,8 +41,6 @@ extern crate keccak_hash as keccak;
 #[cfg(test)]
 extern crate keccak_hasher;
 #[cfg(test)]
-extern crate triestream;
-#[cfg(test)]
 extern crate triehash;
 
 use std::{fmt, error};
@@ -62,6 +60,8 @@ mod lookup;
 mod nibblevec;
 mod nibbleslice;
 mod node_codec;
+mod codec_error;
+mod parity_node_codec;
 
 pub use self::triedb::{TrieDB, TrieDBIterator};
 pub use self::triedbmut::{TrieDBMut, ChildReference};

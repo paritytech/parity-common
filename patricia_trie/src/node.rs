@@ -46,7 +46,7 @@ pub struct Branch {
 impl Branch {
 	fn new(children: [Option<&[u8]>; 16], maybe_value: Option<&[u8]>) -> Self {
 		let mut data = Vec::with_capacity(children.iter()
-			.filter(|n| n)
+			.filter_map(|n| n.clone())
 			.map(|child| child.len())
 			.sum()
 		);
@@ -61,7 +61,7 @@ impl Branch {
 			data.extend_from_slice(value);
 			ubounds[17] = data.len();
 		}
-		Branch { data, ubounds, has_value: value.is_some() }
+		Branch { data, ubounds, has_value: maybe_value.is_some() }
 	}
 
 	/// Get the node value, if any
@@ -77,16 +77,13 @@ impl Branch {
 	pub fn has_value(&self) -> bool {
 		self.has_value
 	}
-}
 
-impl ::std::ops::Index<usize> for Branch {
-	type Output = [u8];
-	fn index(&self, index: usize) -> Option<&[u8]> {
+	pub fn index(&self, index: usize) -> Option<&[u8]> {
 		assert!(index < 16);
 		if self.ubounds[index] == self.ubounds[index + 1] {
 			None
 		} else {
-			&self.data[self.ubounds[index]..self.ubounds[index + 1]]
+			Some(&self.data[self.ubounds[index]..self.ubounds[index + 1]])
 		}
 	}
 }

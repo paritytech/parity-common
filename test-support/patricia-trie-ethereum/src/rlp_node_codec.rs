@@ -17,10 +17,9 @@
 //! `NodeCodec` implementation for Rlp
 
 use elastic_array::ElasticArray128;
-use ethereum_types::H256;
 use hashdb::Hasher;
 use keccak_hasher::KeccakHasher;
-use rlp::{DecoderError, RlpStream, Rlp, Prototype};
+use rlp::{DecoderError, RlpStream, Rlp, Prototype, Decodable, Encodable};
 use std::marker::PhantomData;
 use trie::{NibbleSlice, NodeCodec, node::Node, ChildReference};
 
@@ -32,10 +31,12 @@ pub struct RlpNodeCodec<H: Hasher> {mark: PhantomData<H>}
 // `impl<H: Hasher> NodeCodec<H> for RlpNodeCodec<H> where H::Out: Decodable`
 // but due to the current limitations of Rust const evaluation we can't
 // do `const HASHED_NULL_NODE: H::Out = H::Out( … … )`. Perhaps one day soon?
-impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
+impl<H: Hasher> NodeCodec<H> for RlpNodeCodec<H> where
+	H::Out: Decodable + Encodable
+{
 	type Error = DecoderError;
 	fn hashed_null_node() -> H::Out {
-		KeccakHasher::hash(&[80u8][..])
+		H::hash(&[80u8][..])
 	}
 	fn decode(data: &[u8]) -> ::std::result::Result<Node, Self::Error> {
 		let r = Rlp::new(data);
@@ -51,9 +52,14 @@ impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
 			},
 			// branch - first 16 are nodes, 17th is a value (or empty).
 			Prototype::List(17) => {
-				let mut nodes = [&[] as &[u8]; 16];
+				let mut nodes = [None; 16];
 				for i in 0..16 {
-					nodes[i] = r.at(i)?.as_raw();
+					let d = r.at(i)?.as_raw();
+					nodes[i] = if d != &[80u8][..] {
+						Some(d)
+					} else {
+						None
+					};
 				}
 				Ok(Node::Branch(nodes, if r.at(16)?.is_empty() { None } else { Some(r.at(16)?.data()?) }))
 			},
@@ -63,7 +69,7 @@ impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
 			_ => Err(DecoderError::Custom("Rlp is not valid."))
 		}
 	}
-	fn try_decode_hash(data: &[u8]) -> Option<<KeccakHasher as Hasher>::Out> {
+	fn try_decode_hash(data: &[u8]) -> Option<H::Out> {
 		let r = Rlp::new(data);
 		if r.is_data() && r.size() == KeccakHasher::LENGTH {
 			Some(r.as_val().expect("Hash is the correct size; qed"))
@@ -87,7 +93,7 @@ impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
 		stream.drain()
 	}
 
-	fn ext_node(partial: &[u8], child_ref: ChildReference<<KeccakHasher as Hasher>::Out>) -> Vec<u8> {
+	fn ext_node(partial: &[u8], child_ref: ChildReference<H::Out>) -> Vec<u8> {
 		let mut stream = RlpStream::new_list(2);
 		stream.append(&partial);
 		match child_ref {
@@ -101,7 +107,7 @@ impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
 	}
 
 	fn branch_node<I>(children: I, value: Option<ElasticArray128<u8>>) -> Vec<u8>
-		where I: IntoIterator<Item=Option<ChildReference<<KeccakHasher as Hasher>::Out>>>
+		where I: IntoIterator<Item=Option<ChildReference<H::Out>>>
 	{
 		let mut stream = RlpStream::new_list(17);
 		for child_ref in children {

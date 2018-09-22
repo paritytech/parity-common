@@ -269,7 +269,7 @@ mod tests {
 	use super::unhashed_trie;
 	use keccak_hasher::KeccakHasher;
 	use triestream::{RlpTrieStream, CodecTrieStream};
-	use parity_codec::Encode;
+	use parity_codec::{Encode, Compact};
 
 	#[test]
 	fn sec_trie_root_works() {
@@ -380,13 +380,17 @@ mod tests {
 			0xff, 0xfe, 0xfd, 0xfc
 		]);
 	}
-/*
+
 	#[test]
 	fn learn_codec_trie_empty() {
 		let input: Vec<(&[u8], &[u8])> = vec![];
 		let trie = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input);
 		println!("trie: {:#x?}", trie);
 		assert_eq!(trie, vec![0x0]);
+	}
+
+	fn to_compact(n: u8) -> u8 {
+		Compact(n).encode()[0]
 	}
 
 	#[test]
@@ -397,18 +401,11 @@ mod tests {
 		let trie = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input);
 		println!("trie: {:#x?}", trie);
 
-		let mut expected: Vec<u8> = vec![];
-		expected.push(0b1010_0000);
-		expected.extend(vec![0xaau8].encode());
-		expected.extend(vec![0xbbu8].encode());
-		assert_eq!(trie, expected);
-
 		assert_eq!(trie, vec![
-			0b1010_0000,			// leaf
-			to_compact(1),			// length
-			0xaa,					// key
-			to_compact(1),			// length
-			0xbb					// value
+			0x03,					// leaf (0x01) with (+) key of 2 nibbles (0x02)
+			0xaa,					// key data
+			to_compact(1),			// length of value in bytes as Compact
+			0xbb					// value data
 		]);
 	}
 
@@ -419,44 +416,27 @@ mod tests {
 		println!("trie: {:#x?}", trie);
 
 		let mut ex = Vec::<u8>::new();
-		ex.push(0b0100_0000);							// branch
-		ex.push(0);										// slot 0
-		let mut sub = vec![0b1011_0000 + 3];			// slot 1 LEAF; 176 + 3, i.e. the first of the remaining key nibbles (3'1'4')
-		sub.extend(vec![0x14u8].encode());				// key
-		sub.extend(vec![0xffu8].encode());				// value
-		ex.extend( sub.encode() );
-		ex.push(0);										// slot 2, 3
-		ex.push(0);
-		let mut sub = vec![0b1011_0000 + 8];			// slot 4 LEAF; remaining nibbles: 8'1'9'; odd, so 8 goes into lower nibble
-		sub.extend(vec![0x19u8].encode());				// key
-		sub.extend(vec![0xfeu8].encode());				// value
-		ex.extend( sub.encode() );
-		ex.extend(vec![0u8,0,0,0,0,0,0,0,0,0,0, 0]);	// slots 5..15 + value slot
+		ex.push(0xfe);									// branch, no value
+		ex.push(0x12);									// slots 1 & 4 are taken from 0-7
+		ex.push(0x00);									// no slots from 8-15
+		ex.push(to_compact(0x05));						// first slot: LEAF, 5 bytes long.
+		ex.push(0x04);									// leaf with 3 nibbles
+		ex.push(0x03);									// first nibble
+		ex.push(0x14);									// second & third nibble
+		ex.push(to_compact(0x01));						// 1 byte data
+		ex.push(0xff);									// value data
+		ex.push(to_compact(0x05));						// second slot: LEAF, 5 bytes long.
+		ex.push(0x04);									// leaf with 3 nibbles
+		ex.push(0x08);									// first nibble
+		ex.push(0x19);									// second & third nibble
+		ex.push(to_compact(0x01));						// 1 byte data
+		ex.push(0xfe);									// value data
 
 		assert_eq!(trie, ex);
-
-		assert_eq!(trie, vec![
-										// <–– TODO: why is there no length here?
-			0b0100_0000,				// BRANCH
-			0x00, 						// slot 0
-			to_compact(0x05),			// 5 – length in bytes of the following node
-			0b1011_0000 + 3, 			// slot 1 LEAF; 176 + 3, i.e. the first of the remaining key nibbles (3'1'4')
-				to_compact(0x01), 		// key length: 1 bytes
-				0x14,					// key
-				to_compact(0x01), 		// key length: 1 bytes
-				0xff,					// value
-			0x00, 0x00, 				// slots 2,3
-			to_compact(0x05),			// 5 – length in bytes of the following node
-			0b1011_0000 + 8, 			// slot 4 LEAF; remaining nibbles: 8'1'9'; odd, so 8 goes into lower nibble
-				to_compact(0x01), 		// key length: 1 bytes
-				0x19,					// key
-				to_compact(0x01), 		// value length: 1 bytes
-				0xfe,					// value
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // slots 5..15
-			0x00, 						// slot 16,
-		]);
 	}
 
+	// TODO: make other tests work.
+/*
 	#[test]
 	fn learn_codec_trie_single_item() {
 		let input: Vec<(&[u8], &[u8])> = vec![(&[0x13], &[0x14])];

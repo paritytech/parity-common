@@ -57,10 +57,10 @@ fn fuse_nibbles_node<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Item = 
 	once(first_byte)
 		.chain(if nibbles.len() >= big_threshold { Some((nibbles.len() - big_threshold) as u8) } else { None })
 		.chain(if nibbles.len() % 2 == 1 { Some(nibbles[0]) } else { None })
-		.chain(nibbles.skip(nibbles.len() % 2).chunks(2).map(|ch| ch[0] << 4 | ch[1]))
+		.chain(nibbles[nibbles.len() % 2..].chunks(2).map(|ch| ch[0] << 4 | ch[1]))
 }
 
-fn branch_node(has_value: bool, has_children: impl Iterator<Item = bool>) -> [u8; 3] {
+pub fn branch_node(has_value: bool, has_children: impl Iterator<Item = bool>) -> [u8; 3] {
 	let first = if has_value {
 		BRANCH_NODE_WITH_VALUE
 	} else {

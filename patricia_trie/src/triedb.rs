@@ -161,7 +161,10 @@ where
 						.field("item", &TrieAwareDebugNode{trie: self.trie, key: item})
 					.finish(),
 				Ok(Node::Branch(ref nodes, ref value)) => {
-					let nodes: Vec<TrieAwareDebugNode<H, C>> = nodes.into_iter().filter(|n| n).map(|n| TrieAwareDebugNode{trie: self.trie, key: n} ).collect();
+					let nodes: Vec<TrieAwareDebugNode<H, C>> = nodes.into_iter()
+						.filter_map(|&n| n)
+						.map(|n| TrieAwareDebugNode { trie: self.trie, key: n })
+						.collect();
 					f.debug_struct("Node::Branch")
 						.field("nodes", &nodes)
 						.field("value", &value)
@@ -390,13 +393,13 @@ impl<'a, H: Hasher, C: NodeCodec<H>> Iterator for TrieDBIterator<'a, H, C> {
 						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&*d))
 					},
 					(Status::At, &OwnedNode::Branch(_)) => IterStep::Continue,
-					(Status::AtChild(i), &OwnedNode::Branch(ref branch)) if branch[i].is_some() => {
+					(Status::AtChild(i), &OwnedNode::Branch(ref branch)) if branch.index(i).is_some() => {
 						match i {
 							0 => self.key_nibbles.push(0),
 							i => *self.key_nibbles.last_mut()
 								.expect("pushed as 0; moves sequentially; removed afterwards; qed") = i as u8,
 						}
-						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&branch[i].expect("this arm guarded by branch[i].is_some(); qed")))
+						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&branch.index(i).expect("this arm guarded by branch[i].is_some(); qed")))
 					},
 					(Status::AtChild(i), &OwnedNode::Branch(_)) => {
 						if i == 0 {
