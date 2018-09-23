@@ -29,6 +29,10 @@ pub const EXTENSION_NODE_OFFSET: u8 = 128;
 pub const EXTENSION_NODE_BIG: u8 = 253;
 pub const BRANCH_NODE_NO_VALUE: u8 = 254;
 pub const BRANCH_NODE_WITH_VALUE: u8 = 255;
+pub const LEAF_NODE_THRESHOLD: u8 = LEAF_NODE_BIG - LEAF_NODE_OFFSET;
+pub const EXTENSION_NODE_THRESHOLD: u8 = EXTENSION_NODE_BIG - EXTENSION_NODE_OFFSET;	//125
+pub const LEAF_NODE_SMALL_MAX: u8 = LEAF_NODE_BIG - 1;
+pub const EXTENSION_NODE_SMALL_MAX: u8 = EXTENSION_NODE_BIG - 1;
 
 impl CodecTrieStream {
 	// useful for debugging but not used otherwise

@@ -22,7 +22,7 @@ use codec::{Encode, Decode, Compact};
 use codec_error::CodecError;
 use codec_triestream::{EMPTY_TRIE, LEAF_NODE_OFFSET, LEAF_NODE_BIG, EXTENSION_NODE_OFFSET,
 	EXTENSION_NODE_BIG, branch_node};
-use super::{take, partial_to_key, node_header::NodeHeader};
+use super::{take, partial_to_key, node_len, node_header::NodeHeader};
 
 /// Concrete implementation of a `NodeCodec` with Parity Codec encoding, generic over the `Hasher`
 #[derive(Default, Clone)]
@@ -40,10 +40,12 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodecAlt<H> {
 	}
 
 	fn decode(data: &[u8]) -> ::std::result::Result<Node, Self::Error> {
+		//println!("decoding... {:#x?}", data);
 		let input = &mut &*data;
-		match NodeHeader::decode(input).ok_or(CodecError::BadFormat)? {
+		let r = match NodeHeader::decode(input).ok_or(CodecError::BadFormat)? {
 			NodeHeader::Null => Ok(Node::Empty),
 			NodeHeader::Branch(has_value) => {
+//				//println!("decode: branch({})", has_value);
 				let bitmap = u16::decode(input).ok_or(CodecError::BadFormat)?;
 				let value = if has_value {
 					let count = <Compact<u32>>::decode(input).ok_or(CodecError::BadFormat)?.0 as usize;
@@ -55,7 +57,7 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodecAlt<H> {
 				let mut pot_cursor = 1;
 				for i in 0..16 {
 					if bitmap & pot_cursor != 0 {
-						let count = <Compact<u32>>::decode(input).ok_or(CodecError::BadFormat)?.0 as usize;
+						let count = node_len(*input, H::LENGTH).ok_or(CodecError::BadFormat)?.0;
 						children[i] = Some(take(input, count).ok_or(CodecError::BadFormat)?);
 					}
 					pot_cursor <<= 1;
@@ -63,28 +65,36 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodecAlt<H> {
 				Ok(Node::Branch(children, value))
 			}
 			NodeHeader::Extension(nibble_count) => {
+//				//println!("decode: ext({})", nibble_count);
 				let nibble_data = take(input, (nibble_count + 1) / 2).ok_or(CodecError::BadFormat)?;
 				let nibble_slice = NibbleSlice::new_offset(nibble_data, nibble_count % 2);
-				let count = <Compact<u32>>::decode(input).ok_or(CodecError::BadFormat)?.0 as usize;
+//				//println!("decode: ext: nibble_slice({:?})", nibble_slice);
+				let count = node_len(*input, H::LENGTH).ok_or(CodecError::BadFormat)?.0;
+//				//println!("decode: ext: node_len {}", count);
 				Ok(Node::Extension(nibble_slice, take(input, count).ok_or(CodecError::BadFormat)?))
 			}
 			NodeHeader::Leaf(nibble_count) => {
+//				//println!("decode: leaf({})", nibble_count);
 				let nibble_data = take(input, (nibble_count + 1) / 2).ok_or(CodecError::BadFormat)?;
 				let nibble_slice = NibbleSlice::new_offset(nibble_data, nibble_count % 2);
 				let count = <Compact<u32>>::decode(input).ok_or(CodecError::BadFormat)?.0 as usize;
 				Ok(Node::Leaf(nibble_slice, take(input, count).ok_or(CodecError::BadFormat)?))
 			}
-		}
+		};
+		//println!("decode: {:#x?} -> {:#x?}", data, r);
+		r
 	}
 
 	fn try_decode_hash(data: &[u8]) -> Option<H::Out> {
-		if data.len() == H::LENGTH {
+		let r = if data.len() == H::LENGTH + 1 && data[0] == EMPTY_TRIE {
 			let mut r = H::Out::default();
-			r.as_mut().copy_from_slice(data);
+			r.as_mut().copy_from_slice(&data[1..]);
 			Some(r)
 		} else {
 			None
-		}
+		};
+		//println!("try_decode_hash: {:#x?} -> {:#x?}", data, r);
+		r
 	}
 
 	fn is_empty_node(data: &[u8]) -> bool {
@@ -98,7 +108,7 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodecAlt<H> {
 	fn leaf_node(partial: &[u8], value: &[u8]) -> Vec<u8> {
 		let mut output = partial_to_key(partial, LEAF_NODE_OFFSET, LEAF_NODE_BIG);
 		value.encode_to(&mut output);
-//		println!("leaf_node: {:#x?}", output);
+		//println!("leaf_node: {:#x?}", output);
 		output
 	}
 
@@ -106,12 +116,14 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodecAlt<H> {
 	fn ext_node(partial: &[u8], child: ChildReference<H::Out>) -> Vec<u8> {
 		let mut output = partial_to_key(partial, EXTENSION_NODE_OFFSET, EXTENSION_NODE_BIG);
 		match child {
-			ChildReference::Hash(h) => 
-				h.as_ref().encode_to(&mut output),
+			ChildReference::Hash(h) => {
+				output.push(EMPTY_TRIE);
+				output.extend_from_slice(h.as_ref());
+			}
 			ChildReference::Inline(inline_data, len) =>
-				(&AsRef::<[u8]>::as_ref(&inline_data)[..len]).encode_to(&mut output),
+				output.extend_from_slice(&AsRef::<[u8]>::as_ref(&inline_data)[..len]),
 		};
-//		println!("ext_node: {:#x?}", output);
+		//println!("ext_node: {:#x?}", output);
 		output
 	}
 
@@ -127,17 +139,18 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodecAlt<H> {
 		};
 		let prefix = branch_node(have_value, children.map(|maybe_child| match maybe_child {
 			Some(ChildReference::Hash(h)) => {
-				h.as_ref().encode_to(&mut output);
+				output.push(EMPTY_TRIE);
+				output.extend_from_slice(h.as_ref());
 				true
 			}
 			Some(ChildReference::Inline(inline_data, len)) => {
-				(&AsRef::<[u8]>::as_ref(&inline_data)[..len]).encode_to(&mut output);
+				output.extend_from_slice(&AsRef::<[u8]>::as_ref(&inline_data)[..len]);
 				true
 			}
 			None => false,
 		}));
 		output[0..3].copy_from_slice(&prefix[..]);
-//		println!("branch_node: {:#x?}", output);
+		//println!("branch_node: {:#x?}", output);
 		output
 	}
 }

@@ -18,7 +18,8 @@
 
 use codec::{Encode, Decode, Input, Output};
 use codec_triestream::{EMPTY_TRIE, LEAF_NODE_OFFSET, LEAF_NODE_BIG, EXTENSION_NODE_OFFSET,
-	EXTENSION_NODE_BIG, BRANCH_NODE_NO_VALUE, BRANCH_NODE_WITH_VALUE};
+	EXTENSION_NODE_BIG, BRANCH_NODE_NO_VALUE, BRANCH_NODE_WITH_VALUE, LEAF_NODE_THRESHOLD,
+	EXTENSION_NODE_THRESHOLD, LEAF_NODE_SMALL_MAX, EXTENSION_NODE_SMALL_MAX};
 
 /// A node header.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -28,11 +29,6 @@ pub enum NodeHeader {
 	Extension(usize),
 	Leaf(usize),
 }
-
-const LEAF_NODE_THRESHOLD: u8 = LEAF_NODE_BIG - LEAF_NODE_OFFSET;
-const EXTENSION_NODE_THRESHOLD: u8 = EXTENSION_NODE_BIG - EXTENSION_NODE_OFFSET;	//125
-const LEAF_NODE_SMALL_MAX: u8 = LEAF_NODE_BIG - 1;
-const EXTENSION_NODE_SMALL_MAX: u8 = EXTENSION_NODE_BIG - 1;
 
 impl Encode for NodeHeader {
 	fn encode_to<T: Output>(&self, output: &mut T) {

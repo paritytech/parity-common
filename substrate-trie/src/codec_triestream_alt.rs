@@ -105,13 +105,14 @@ impl TrieStream for CodecTrieStreamAlt {
 		match data.len() {
 			0...31 => {
 //				println!("[append_substream] appending data, because data.len() = {}", data.len());
-				data.encode_to(&mut self.buffer)
+				self.buffer.extend_from_slice(&data[..]);
 			},
 			_ => {
 //				println!("[append_substream] would have hashed, because data.len() = {}", data.len());
 //				data.encode_to(&mut self.buffer)
 				// TODO: re-enable hashing before merging
-				H::hash(&data).as_ref().encode_to(&mut self.buffer)
+				self.buffer.push(EMPTY_TRIE);
+				self.buffer.extend_from_slice(H::hash(&data).as_ref());
 			}
 		}
 	}

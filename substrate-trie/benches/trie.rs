@@ -89,7 +89,7 @@ fn bench_contents(b: &mut Criterion, name: &str, d: Vec<(Vec<u8>, Vec<u8>)>) {
 	{
 		let mut rlp_t = RlpTrieDBMut::new(&mut rlp_memdb, &mut rlp_root);
 		let mut codec_t = TrieDBMut::new(&mut codec_memdb, &mut codec_root);
-		let mut alt_t = TrieDBMut::new(&mut alt_memdb, &mut alt_root);
+		let mut alt_t = AltTrieDBMut::new(&mut alt_memdb, &mut alt_root);
 		for i in d.iter() {
 			rlp_t.insert(&i.0, &i.1).unwrap();
 			codec_t.insert(&i.0, &i.1).unwrap();
@@ -98,13 +98,14 @@ fn bench_contents(b: &mut Criterion, name: &str, d: Vec<(Vec<u8>, Vec<u8>)>) {
 	}
 
 	let funs = vec![
-		Fun::new("Rlp", |b, d: &TrieInsertionList| b.iter(&mut ||{
-			let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
-			let mut root = H256::default();
-			let mut t = RlpTrieDBMut::new(&mut memdb, &mut root);
-			for i in d.0.iter() {
-				t.insert(&i.0, &i.1).unwrap();
-			}
+		Fun::new("ClosedCodec", |b, d: &TrieInsertionList| b.iter(&mut ||{
+			trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.0.clone())
+		})),
+		Fun::new("ClosedAlt", |b, d: &TrieInsertionList| b.iter(&mut ||{
+			trie_root::<KeccakHasher, CodecTrieStreamAlt, _, _, _>(d.0.clone())
+		})),
+		Fun::new("ClosedRlp", |b, d: &TrieInsertionList| b.iter(&mut ||{
+			trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(d.0.clone())
 		})),
 		Fun::new("Codec", |b, d: &TrieInsertionList| b.iter(&mut ||{
 			let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new_codec();
@@ -122,10 +123,12 @@ fn bench_contents(b: &mut Criterion, name: &str, d: Vec<(Vec<u8>, Vec<u8>)>) {
 				t.insert(&i.0, &i.1).unwrap();
 			}
 		})),
-		Fun::new("IterRlp", move |b, _d| b.iter(&mut ||{
-			let t = RlpTrieDB::new(&rlp_memdb, &rlp_root).unwrap();
-			for n in t.iter().unwrap() {
-				black_box(n).unwrap();
+		Fun::new("Rlp", |b, d: &TrieInsertionList| b.iter(&mut ||{
+			let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
+			let mut root = H256::default();
+			let mut t = RlpTrieDBMut::new(&mut memdb, &mut root);
+			for i in d.0.iter() {
+				t.insert(&i.0, &i.1).unwrap();
 			}
 		})),
 		Fun::new("IterCodec", move |b, _d| b.iter(&mut ||{
@@ -135,19 +138,16 @@ fn bench_contents(b: &mut Criterion, name: &str, d: Vec<(Vec<u8>, Vec<u8>)>) {
 			}
 		})),
 		Fun::new("IterAlt", move |b, _d| b.iter(&mut ||{
-			let t = AltTrieDB::new(&alt_memdb, &codec_root).unwrap();
+			let t = AltTrieDB::new(&alt_memdb, &alt_root).unwrap();
 			for n in t.iter().unwrap() {
 				black_box(n).unwrap();
 			}
 		})),
-		Fun::new("ClosedRlp", |b, d: &TrieInsertionList| b.iter(&mut ||{
-			trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(d.0.clone())
-		})),
-		Fun::new("ClosedCodec", |b, d: &TrieInsertionList| b.iter(&mut ||{
-			trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.0.clone())
-		})),
-		Fun::new("ClosedAlt", |b, d: &TrieInsertionList| b.iter(&mut ||{
-			trie_root::<KeccakHasher, CodecTrieStreamAlt, _, _, _>(d.0.clone())
+		Fun::new("IterRlp", move |b, _d| b.iter(&mut ||{
+			let t = RlpTrieDB::new(&rlp_memdb, &rlp_root).unwrap();
+			for n in t.iter().unwrap() {
+				black_box(n).unwrap();
+			}
 		}))
 	];
 
