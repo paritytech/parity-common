@@ -104,6 +104,7 @@ where
 	T: From<&'a [u8]>,
 {
 	/// Create a new instance of the memory DB.
+	// TODO: REMOVE or at least rename to from_empty_rlp
 	pub fn new() -> Self {
 		MemoryDB::from_null_node(&NULL_RLP, NULL_RLP.as_ref().into())
 	}
@@ -146,6 +147,10 @@ impl<H: KeyHasher, T> MemoryDB<H, T> {
 			hashed_null_node: H::hash(null_key),
 			null_node_data,
 		}
+	}
+
+	pub fn new_codec() -> Self where for<'a> T: From<&'a [u8]> {
+		Self::from_null_node(&[0u8][..], [0u8][..].into())
 	}
 
 	/// Clear all data from the database.

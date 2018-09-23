@@ -2,6 +2,7 @@
 members = [
 	"fixed-hash",
 	"hashdb",
+	"hex-prefix-encoding",
 	"keccak-hash",
 	"kvdb",
 	"kvdb-memorydb",
@@ -10,12 +11,14 @@ members = [
 	"parity-bytes",
 	"parity-crypto",
 	"parity-path",
-	"patricia_trie",
+	"patricia-trie",
 	"plain_hasher",
 	"rlp",
+	"substrate-trie",
 	"transaction-pool",
 	"trace-time",
-	"trie-standardmap",
 	"triehash",
-	"uint"
+	"trie-standardmap",
+	"uint",
+	"test-support/patricia-trie-ethereum"
 ]

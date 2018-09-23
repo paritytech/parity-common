@@ -84,9 +84,12 @@ where
 					}
 					Node::Branch(children, value) => match key.is_empty() {
 						true => return Ok(value.map(move |val| self.query.decode(val))),
-						false => {
-							node_data = children[key.at(0) as usize];
-							key = key.mid(1);
+						false => match children[key.at(0) as usize] {
+							Some(x) => {
+								node_data = x;
+								key = key.mid(1);
+							}
+							None => return Ok(None)
 						}
 					},
 					_ => return Ok(None),

@@ -161,7 +161,10 @@ where
 						.field("item", &TrieAwareDebugNode{trie: self.trie, key: item})
 					.finish(),
 				Ok(Node::Branch(ref nodes, ref value)) => {
-					let nodes: Vec<TrieAwareDebugNode<H, C>> = nodes.into_iter().map(|n| TrieAwareDebugNode{trie: self.trie, key: n} ).collect();
+					let nodes: Vec<TrieAwareDebugNode<H, C>> = nodes.into_iter()
+						.filter_map(|&n| n)
+						.map(|n| TrieAwareDebugNode { trie: self.trie, key: n })
+						.collect();
 					f.debug_struct("Node::Branch")
 						.field("nodes", &nodes)
 						.field("value", &value)
@@ -293,8 +296,12 @@ impl<'a, H: Hasher, C: NodeCodec<H>> TrieDBIterator<'a, H, C> {
 								node: node.clone().into(),
 							});
 							self.key_nibbles.push(i);
-							let child = self.db.get_raw_or_lookup(&*nodes[i as usize])?;
-							(child, 1)
+							if let Some(ref child) = nodes[i as usize] {
+								let child = self.db.get_raw_or_lookup(&*child)?;
+								(child, 1)
+							} else {
+								return Ok(())
+							}
 						}
 					},
 					_ => return Ok(()),
@@ -386,13 +393,13 @@ impl<'a, H: Hasher, C: NodeCodec<H>> Iterator for TrieDBIterator<'a, H, C> {
 						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&*d))
 					},
 					(Status::At, &OwnedNode::Branch(_)) => IterStep::Continue,
-					(Status::AtChild(i), &OwnedNode::Branch(ref branch)) if !branch[i].is_empty() => {
+					(Status::AtChild(i), &OwnedNode::Branch(ref branch)) if branch.index(i).is_some() => {
 						match i {
 							0 => self.key_nibbles.push(0),
 							i => *self.key_nibbles.last_mut()
 								.expect("pushed as 0; moves sequentially; removed afterwards; qed") = i as u8,
 						}
-						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&branch[i]))
+						IterStep::Descend::<H::Out, C::Error>(self.db.get_raw_or_lookup(&branch.index(i).expect("this arm guarded by branch[i].is_some(); qed")))
 					},
 					(Status::AtChild(i), &OwnedNode::Branch(_)) => {
 						if i == 0 {
@@ -519,7 +526,6 @@ mod tests {
 		};
 		let t = TrieDB::new(&memdb, &root).unwrap();
 
-		assert_eq!(format!("{:?}", t), "TrieDB { hash_count: 0, root: Node::Extension { slice: 4, item: Node::Branch { nodes: [Node::Empty, Node::Branch { nodes: [Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Branch { nodes: [Node::Empty, Node::Leaf { slice: , value: [65, 65] }, Node::Leaf { slice: , value: [65, 66] }, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty], value: None }, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty], value: Some([65]) }, Node::Leaf { slice: , value: [66] }, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty, Node::Empty], value: None } } }");
 		assert_eq!(format!("{:#?}", t),
 "TrieDB {
     hash_count: 0,
@@ -530,80 +536,80 @@ mod tests {
                 Node::Empty,
                 Node::Branch {
                     nodes: [
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Branch {
+                        None,
+                        None,
+                        None,
+                        None,
+                        Some(Node::Branch {
                             nodes: [
-                                Node::Empty,
-                                Node::Leaf {
+                                None,
+                                Some(Node::Leaf {
                                     slice: ,
                                     value: [
                                         65,
                                         65
                                     ]
-                                },
-                                Node::Leaf {
+                                }),
+                                Some(Node::Leaf {
                                     slice: ,
                                     value: [
                                         65,
                                         66
                                     ]
-                                },
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty,
-                                Node::Empty
+                                }),
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None
                             ],
                             value: None
-                        },
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty,
-                        Node::Empty
+                        }),
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None
                     ],
                     value: Some(
                         [
                             65
                         ]
                     )
-                },
-                Node::Leaf {
+                }),
+                Some(Node::Leaf {
                     slice: ,
                     value: [
                         66
                     ]
-                },
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty,
-                Node::Empty
+                }),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None
             ],
             value: None
         }

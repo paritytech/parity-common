@@ -281,7 +281,6 @@ impl RlpStream {
 
 	/// Get raw encoded bytes
 	pub fn as_raw(&self) -> &[u8] {
-		//&self.encoder.bytes
 		&self.buffer
 	}
 
@@ -377,6 +376,7 @@ impl<'a> BasicEncoder<'a> {
 		};
 	}
 
+	/// Pushes encoded value to the end of buffer
 	pub fn encode_value(&mut self, value: &[u8]) {
 		self.encode_iter(value.iter().cloned());
 	}
