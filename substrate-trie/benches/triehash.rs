@@ -16,7 +16,7 @@
 
 #[macro_use]
 extern crate criterion;
-use criterion::Criterion;
+use criterion::{Criterion, Fun};
 criterion_group!(benches, triehash_insertions_32_mir_1k, triehash_insertions_32_ran_1k, triehash_insertions_six_high, triehash_insertions_six_mid, triehash_insertions_random_mid, triehash_insertions_six_low, typical_tx_payload);
 criterion_main!(benches);
 
@@ -34,6 +34,7 @@ use trie_standardmap::{Alphabet, ValueMode, StandardMap};
 use triehash::trie_root;
 use codec::{Encode, Compact};
 use substrate_trie::CodecTrieStream;
+use patricia_trie_ethereum::RlpTrieStream;
 
 type H256 = <KeccakHasher as Hasher>::Out;
 
@@ -63,6 +64,27 @@ fn random_value(seed: &mut H256) -> Vec<u8> {
 	}
 }
 
+struct TrieInsertionList(Vec<(Vec<u8>, Vec<u8>)>);
+impl ::std::fmt::Display for TrieInsertionList {
+	fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+		write!(fmt, "{} items", self.0.len())
+	}
+}
+
+fn bench_root(b: &mut Criterion, name: &str, d: Vec<(Vec<u8>, Vec<u8>)>) {
+	let funs = vec![
+		Fun::new("Rlp", |b, d: &TrieInsertionList| b.iter(&mut ||{
+			trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(d.0.clone())
+		})),
+		Fun::new("Codec", |b, d: &TrieInsertionList| b.iter(&mut ||{
+			trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.0.clone())
+		})),
+		Fun::new("-", |b, _d: &TrieInsertionList| b.iter(&mut ||{}))
+	];
+
+	b.bench_functions(name, funs, &TrieInsertionList(d));
+}
+
 fn triehash_insertions_32_mir_1k(b: &mut Criterion) {
 	let st = StandardMap {
 		alphabet: Alphabet::All,
@@ -71,10 +93,7 @@ fn triehash_insertions_32_mir_1k(b: &mut Criterion) {
 		value_mode: ValueMode::Mirror,
 		count: 1000,
 	};
-	let d = st.make();
-	b.bench_function("triehash_insertions_32_mir_1k", |b| b.iter(&mut ||{
-		let _ = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.clone()).clone();
-	}));
+	bench_root(b, "triehash_insertions_32_mir_1k", st.make());
 }
 
 fn triehash_insertions_32_ran_1k(b: &mut Criterion) {
@@ -85,10 +104,7 @@ fn triehash_insertions_32_ran_1k(b: &mut Criterion) {
 		value_mode: ValueMode::Random,
 		count: 1000,
 	};
-	let d = st.make();
-	b.bench_function("triehash_insertions_32_ran_1k", |b| b.iter(&mut ||{
-		let _ = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.clone()).clone();
-	}));
+	bench_root(b, "triehash_insertions_32_ran_1k", st.make());
 }
 
 fn triehash_insertions_six_high(b: &mut Criterion) {
@@ -100,9 +116,7 @@ fn triehash_insertions_six_high(b: &mut Criterion) {
 		d.push((k, v))
 	}
 
-	b.bench_function("triehash_insertions_six_high", |b| b.iter(&mut ||{
-		let _ = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.clone());
-	}));
+	bench_root(b, "triehash_insertions_six_high", d);
 }
 
 fn triehash_insertions_six_mid(b: &mut Criterion) {
@@ -114,9 +128,7 @@ fn triehash_insertions_six_mid(b: &mut Criterion) {
 		let v = random_value(&mut seed);
 		d.push((k, v))
 	}
-	b.bench_function("triehash_insertions_six_mid", |b| b.iter(&mut ||{
-		let _ = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.clone());
-	}));
+	bench_root(b, "triehash_insertions_six_mid", d);
 }
 
 fn triehash_insertions_random_mid(b: &mut Criterion) {
@@ -129,9 +141,7 @@ fn triehash_insertions_random_mid(b: &mut Criterion) {
 		d.push((k, v))
 	}
 
-	b.bench_function("triehash_insertions_random_mid", |b| b.iter(&mut ||{
-		let _ = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.clone());
-	}));
+	bench_root(b, "triehash_insertions_random_mid", d);
 }
 
 fn triehash_insertions_six_low(b: &mut Criterion) {
@@ -144,9 +154,7 @@ fn triehash_insertions_six_low(b: &mut Criterion) {
 		d.push((k, v))
 	}
 
-	b.bench_function("triehash_insertions_six_low", |b| b.iter(&mut ||{
-		let _ = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.clone());
-	}));
+	bench_root(b, "triehash_insertions_six_low", d);
 }
 
 fn typical_tx_payload(b: &mut Criterion) {
@@ -295,18 +303,9 @@ fn typical_tx_payload(b: &mut Criterion) {
 		vec![0xf8, 0x6b, 0xf, 0x85, 0x1, 0x3f, 0x2e, 0xd0, 0xc0, 0x82, 0x52, 0x8, 0x94, 0x4f, 0xed, 0x1f, 0xc4, 0x14, 0x4c, 0x22, 0x3a, 0xe3, 0xc1, 0x55, 0x3b, 0xe2, 0x3, 0xcd, 0xfc, 0xbd, 0x38, 0xc5, 0x81, 0x87, 0xad, 0xf4, 0x88, 0xb7, 0xb3, 0xd8, 0x30, 0x80, 0x25, 0xa0, 0xb4, 0x31, 0xe4, 0x56, 0xc7, 0xdf, 0x1f, 0x17, 0xf2, 0xdd, 0x40, 0xf7, 0x7a, 0x10, 0xeb, 0xa7, 0xa4, 0xc1, 0x6d, 0x91, 0x1a, 0xda, 0xc1, 0xe9, 0x24, 0xf6, 0xe, 0x75, 0x58, 0xd0, 0x5e, 0x64, 0xa0, 0x69, 0xa4, 0xa, 0x93, 0xd1, 0xb, 0x5d, 0xda, 0xf6, 0xf4, 0xb7, 0xea, 0xc2, 0x4, 0x34, 0xf1, 0x80, 0xf4, 0xdf, 0x58, 0xac, 0xaa, 0x44, 0xe3, 0xfe, 0x2d, 0x62, 0x8a, 0x4, 0x51, 0x59, 0x8e]
 	];
 
-	fn ordered_trie_root<I, V>(input: I) -> H256
-	where
-		I: IntoIterator<Item = V>,
-		V: AsRef<[u8]> + std::fmt::Debug, // TODO: remove the debug bound when cleaning up
-	{
-		let input = input.into_iter()
-			.enumerate()
-			.map(|(i, v)| (Compact(i as u32).encode(), v) );
-		trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(input)
-	}
-
-	b.bench_function("typical_tx_payload", |b| b.iter(&mut ||{
-		let _ = ordered_trie_root(&tx_payload);
-	}));
+	let d = tx_payload.into_iter()
+		.enumerate()
+		.map(|(i, v)| (Compact(i as u32).encode(), v) )
+		.collect::<Vec<_>>();
+	bench_root(b, "typical_tx_payload", d);
 }

@@ -17,7 +17,7 @@
 #[macro_use]
 extern crate criterion;
 use criterion::{Criterion, black_box, Fun};
-criterion_group!(benches, trie_insertions_32_mir_1k, trie_iter, trie_insertions_32_ran_1k, trie_insertions_six_high, trie_insertions_six_mid, trie_insertions_random_mid, trie_insertions_six_low, nibble_common_prefix);
+criterion_group!(benches, trie_insertions_32_mir_1k, trie_insertions_32_ran_1k, trie_insertions_six_high, trie_insertions_six_mid, trie_insertions_random_mid, trie_insertions_six_low, nibble_common_prefix);
 criterion_main!(benches);
 
 extern crate memorydb;
@@ -27,18 +27,22 @@ extern crate substrate_trie;
 extern crate keccak_hasher;
 extern crate trie_standardmap;
 extern crate hashdb;
+extern crate triehash;
 
 use memorydb::MemoryDB;
 use trie::{DBValue, NibbleSlice, TrieMut, Trie};
-use ethtrie::RlpNodeCodec;
+use ethtrie::{RlpNodeCodec, RlpTrieStream};
+use substrate_trie::{ParityNodeCodec, CodecTrieStream, ParityNodeCodecAlt, CodecTrieStreamAlt};
 use trie_standardmap::{Alphabet, ValueMode, StandardMap};
-use substrate_trie::ParityNodeCodec;
 use keccak_hasher::KeccakHasher;
 use hashdb::Hasher;
+use triehash::trie_root;
 
 type H256 = <KeccakHasher as Hasher>::Out;
 type TrieDB<'a> = trie::TrieDB<'a, KeccakHasher, ParityNodeCodec<KeccakHasher>>;
 type TrieDBMut<'a> = trie::TrieDBMut<'a, KeccakHasher, ParityNodeCodec<KeccakHasher>>;
+type AltTrieDB<'a> = trie::TrieDB<'a, KeccakHasher, ParityNodeCodecAlt<KeccakHasher>>;
+type AltTrieDBMut<'a> = trie::TrieDBMut<'a, KeccakHasher, ParityNodeCodecAlt<KeccakHasher>>;
 type RlpTrieDB<'a> = trie::TrieDB<'a, KeccakHasher, RlpNodeCodec<KeccakHasher>>;
 type RlpTrieDBMut<'a> = trie::TrieDBMut<'a, KeccakHasher, RlpNodeCodec<KeccakHasher>>;
 
@@ -76,6 +80,23 @@ impl ::std::fmt::Display for TrieInsertionList {
 }
 
 fn bench_insertions(b: &mut Criterion, name: &str, d: Vec<(Vec<u8>, Vec<u8>)>) {
+	let mut rlp_memdb = MemoryDB::<KeccakHasher, DBValue>::new();
+	let mut rlp_root = H256::default();
+	let mut codec_memdb = MemoryDB::<KeccakHasher, DBValue>::new_codec();
+	let mut codec_root = H256::default();
+	let mut alt_memdb = MemoryDB::<KeccakHasher, DBValue>::new_codec();
+	let mut alt_root = H256::default();
+	{
+		let mut rlp_t = RlpTrieDBMut::new(&mut rlp_memdb, &mut rlp_root);
+		let mut codec_t = TrieDBMut::new(&mut codec_memdb, &mut codec_root);
+		let mut alt_t = TrieDBMut::new(&mut alt_memdb, &mut alt_root);
+		for i in d.iter() {
+			rlp_t.insert(&i.0, &i.1).unwrap();
+			codec_t.insert(&i.0, &i.1).unwrap();
+			alt_t.insert(&i.0, &i.1).unwrap();
+		}
+	}
+
 	let funs = vec![
 		Fun::new("Rlp", |b, d: &TrieInsertionList| b.iter(&mut ||{
 			let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
@@ -93,43 +114,44 @@ fn bench_insertions(b: &mut Criterion, name: &str, d: Vec<(Vec<u8>, Vec<u8>)>) {
 				t.insert(&i.0, &i.1).unwrap();
 			}
 		})),
-		Fun::new("-", |b, _d: &TrieInsertionList| b.iter(&mut ||{}))
-	];
-
-	b.bench_functions(name, funs, &TrieInsertionList(d));
-}
-
-fn bench_iteration(b: &mut Criterion, name: &str, d: Vec<(Vec<u8>, Vec<u8>)>) {
-	let mut rlp_memdb = MemoryDB::<KeccakHasher, DBValue>::new();
-	let mut rlp_root = H256::default();
-	let mut codec_memdb = MemoryDB::<KeccakHasher, DBValue>::new_codec();
-	let mut codec_root = H256::default();
-	{
-		let mut rlp_t = RlpTrieDBMut::new(&mut rlp_memdb, &mut rlp_root);
-		let mut codec_t = TrieDBMut::new(&mut codec_memdb, &mut codec_root);
-		for i in d.iter() {
-			rlp_t.insert(&i.0, &i.1).unwrap();
-			codec_t.insert(&i.0, &i.1).unwrap();
-		}
-	}
-
-	let funs = vec![
-		Fun::new("Rlp", move |b, d: &u8| b.iter(&mut ||{
+		Fun::new("Alt", |b, d: &TrieInsertionList| b.iter(&mut ||{
+			let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new_codec();
+			let mut root = H256::default();
+			let mut t = AltTrieDBMut::new(&mut memdb, &mut root);
+			for i in d.0.iter() {
+				t.insert(&i.0, &i.1).unwrap();
+			}
+		})),
+		Fun::new("IterRlp", move |b, _d| b.iter(&mut ||{
 			let t = RlpTrieDB::new(&rlp_memdb, &rlp_root).unwrap();
 			for n in t.iter().unwrap() {
 				black_box(n).unwrap();
 			}
 		})),
-		Fun::new("Codec", move |b, d: &u8| b.iter(&mut ||{
+		Fun::new("IterCodec", move |b, _d| b.iter(&mut ||{
 			let t = TrieDB::new(&codec_memdb, &codec_root).unwrap();
 			for n in t.iter().unwrap() {
 				black_box(n).unwrap();
 			}
 		})),
-		Fun::new("-", |b, _d: &u8| b.iter(&mut ||{}))
+		Fun::new("IterAlt", move |b, _d| b.iter(&mut ||{
+			let t = AltTrieDB::new(&alt_memdb, &codec_root).unwrap();
+			for n in t.iter().unwrap() {
+				black_box(n).unwrap();
+			}
+		})),
+		Fun::new("ClosedRlp", |b, d: &TrieInsertionList| b.iter(&mut ||{
+			trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(d.0.clone())
+		})),
+		Fun::new("ClosedCodec", |b, d: &TrieInsertionList| b.iter(&mut ||{
+			trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.0.clone())
+		})),
+		Fun::new("ClosedAlt", |b, d: &TrieInsertionList| b.iter(&mut ||{
+			trie_root::<KeccakHasher, CodecTrieStreamAlt, _, _, _>(d.0.clone())
+		}))
 	];
 
-	b.bench_functions(name, funs, &0u8);
+	b.bench_functions(name, funs, &TrieInsertionList(d));
 }
 
 fn trie_insertions_32_mir_1k(b: &mut Criterion) {
@@ -199,17 +221,6 @@ fn trie_insertions_six_low(b: &mut Criterion) {
 		d.push((k, v))
 	}
 	bench_insertions(b, "trie_ins_six_low", d);
-}
-
-fn trie_iter(b: &mut Criterion) {
-	let st = StandardMap {
-		alphabet: Alphabet::All,
-		min_key: 32,
-		journal_key: 0,
-		value_mode: ValueMode::Mirror,
-		count: 1000,
-	};
-	bench_iteration(b, "iteration", st.make());
 }
 
 fn nibble_common_prefix(b: &mut Criterion) {

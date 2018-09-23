@@ -29,11 +29,15 @@ extern crate keccak_hasher;
 
 mod codec_error;
 mod parity_node_codec;
+mod parity_node_codec_alt;
 mod codec_triestream;
+mod codec_triestream_alt;
 
 pub use codec_error::CodecError;
 pub use parity_node_codec::ParityNodeCodec;
+pub use parity_node_codec_alt::ParityNodeCodecAlt;
 pub use codec_triestream::CodecTrieStream;
+pub use codec_triestream_alt::CodecTrieStreamAlt;
 
 #[cfg(test)]
 mod tests {
@@ -45,19 +49,36 @@ mod tests {
 	use patricia_trie::{Hasher, DBValue, TrieMut, TrieDBMut};
 
 	fn check_equivalent(input: Vec<(&[u8], &[u8])>) {
-		let closed_form = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(input.clone());
-		let d = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input.clone());
-		println!("Data: {:#x?}, {:#x?}", d, KeccakHasher::hash(&d[..]));
-		let persistent = {
-			let mut memdb = MemoryDB::<KeccakHasher, DBValue>::from_null_node(&[0u8][..], [0u8][..].into());
-			let mut root = <KeccakHasher as Hasher>::Out::default();
-			let mut t = TrieDBMut::<KeccakHasher, ParityNodeCodec<KeccakHasher>>::new(&mut memdb, &mut root);
-			for (x, y) in input {
-				t.insert(x, y).unwrap();
-			}
-			t.root().clone()
-		};
-		assert_eq!(closed_form, persistent);
+		{
+			let closed_form = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(input.clone());
+			let d = unhashed_trie::<KeccakHasher, CodecTrieStream, _, _, _>(input.clone());
+			println!("Data: {:#x?}, {:#x?}", d, KeccakHasher::hash(&d[..]));
+			let persistent = {
+				let mut memdb = MemoryDB::<KeccakHasher, DBValue>::from_null_node(&[0u8][..], [0u8][..].into());
+				let mut root = <KeccakHasher as Hasher>::Out::default();
+				let mut t = TrieDBMut::<KeccakHasher, ParityNodeCodec<KeccakHasher>>::new(&mut memdb, &mut root);
+				for (x, y) in input.clone() {
+					t.insert(x, y).unwrap();
+				}
+				t.root().clone()
+			};
+			assert_eq!(closed_form, persistent);
+		}
+		{
+			let closed_form = trie_root::<KeccakHasher, CodecTrieStreamAlt, _, _, _>(input.clone());
+			let d = unhashed_trie::<KeccakHasher, CodecTrieStreamAlt, _, _, _>(input.clone());
+			println!("Data: {:#x?}, {:#x?}", d, KeccakHasher::hash(&d[..]));
+			let persistent = {
+				let mut memdb = MemoryDB::<KeccakHasher, DBValue>::from_null_node(&[0u8][..], [0u8][..].into());
+				let mut root = <KeccakHasher as Hasher>::Out::default();
+				let mut t = TrieDBMut::<KeccakHasher, ParityNodeCodecAlt<KeccakHasher>>::new(&mut memdb, &mut root);
+				for (x, y) in input {
+					t.insert(x, y).unwrap();
+				}
+				t.root().clone()
+			};
+			assert_eq!(closed_form, persistent);
+		}
 	}
 
 	#[test]
