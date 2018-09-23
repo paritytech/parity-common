@@ -28,6 +28,7 @@ extern crate memorydb;
 extern crate keccak_hasher;
 
 mod codec_error;
+mod node_header;
 mod parity_node_codec;
 mod parity_node_codec_alt;
 mod codec_triestream;
@@ -38,6 +39,27 @@ pub use parity_node_codec::ParityNodeCodec;
 pub use parity_node_codec_alt::ParityNodeCodecAlt;
 pub use codec_triestream::CodecTrieStream;
 pub use codec_triestream_alt::CodecTrieStreamAlt;
+
+fn take<'a>(input: &mut &'a[u8], count: usize) -> Option<&'a[u8]> {
+	if input.len() < count {
+		return None
+	}
+	let r = &(*input)[..count];
+	*input = &(*input)[count..];
+	Some(r)
+}
+
+fn partial_to_key(partial: &[u8], offset: u8, big: u8) -> Vec<u8> {
+	let nibble_count = (partial.len() - 1) * 2 + if partial[0] & 16 == 16 { 1 } else { 0 };
+	let (first_byte_small, big_threshold) = (offset, (big - offset) as usize);
+	let mut output = vec![first_byte_small + nibble_count.min(big_threshold) as u8];
+	if nibble_count >= big_threshold { output.push((nibble_count - big_threshold) as u8) }
+	if nibble_count % 2 == 1 {
+		output.push(partial[0] & 0x0f);
+	}
+	output.extend_from_slice(&partial[1..]);
+	output
+}
 
 #[cfg(test)]
 mod tests {

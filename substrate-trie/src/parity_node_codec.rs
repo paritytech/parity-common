@@ -18,98 +18,15 @@
 
 use std::marker::PhantomData;
 use patricia_trie::{DBValue, NibbleSlice, NodeCodec, node::Node, ChildReference, Hasher};
-use codec::{Encode, Decode, Input, Output, Compact};
+use codec::{Encode, Decode, Compact};
 use codec_error::CodecError;
 use codec_triestream::{EMPTY_TRIE, LEAF_NODE_OFFSET, LEAF_NODE_BIG, EXTENSION_NODE_OFFSET,
-	EXTENSION_NODE_BIG, BRANCH_NODE_NO_VALUE, BRANCH_NODE_WITH_VALUE, branch_node};
+	EXTENSION_NODE_BIG, branch_node};
+use super::{take, partial_to_key, node_header::NodeHeader};
 
 /// Concrete implementation of a `NodeCodec` with Parity Codec encoding, generic over the `Hasher`
 #[derive(Default, Clone)]
 pub struct ParityNodeCodec<H: Hasher>(PhantomData<H>);
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-enum NodeHeader {
-	Null,
-	Branch(bool),
-	Extension(usize),
-	Leaf(usize),
-}
-
-const LEAF_NODE_THRESHOLD: u8 = LEAF_NODE_BIG - LEAF_NODE_OFFSET;
-const EXTENSION_NODE_THRESHOLD: u8 = EXTENSION_NODE_BIG - EXTENSION_NODE_OFFSET;	//125
-const LEAF_NODE_SMALL_MAX: u8 = LEAF_NODE_BIG - 1;
-const EXTENSION_NODE_SMALL_MAX: u8 = EXTENSION_NODE_BIG - 1;
-
-impl Encode for NodeHeader {
-	fn encode_to<T: Output>(&self, output: &mut T) {
-		match self {
-			NodeHeader::Null => output.push_byte(EMPTY_TRIE),
-			
-			NodeHeader::Branch(true) => output.push_byte(BRANCH_NODE_WITH_VALUE),
-			NodeHeader::Branch(false) => output.push_byte(BRANCH_NODE_NO_VALUE),
-			
-			NodeHeader::Leaf(nibble_count) if *nibble_count < LEAF_NODE_THRESHOLD as usize =>
-				output.push_byte(LEAF_NODE_OFFSET + *nibble_count as u8),
-			NodeHeader::Leaf(nibble_count) => {
-				output.push_byte(LEAF_NODE_BIG);
-				output.push_byte((*nibble_count - LEAF_NODE_THRESHOLD as usize) as u8);
-			}
-
-			NodeHeader::Extension(nibble_count) if *nibble_count < EXTENSION_NODE_THRESHOLD as usize =>
-				output.push_byte(EXTENSION_NODE_OFFSET + *nibble_count as u8),
-			NodeHeader::Extension(nibble_count) => {
-				output.push_byte(EXTENSION_NODE_BIG);
-				output.push_byte((*nibble_count - EXTENSION_NODE_THRESHOLD as usize) as u8);
-			}
-		}
-	}
-}
-
-impl Decode for NodeHeader {
-	fn decode<I: Input>(input: &mut I) -> Option<Self> {
-		Some(match input.read_byte()? {
-			EMPTY_TRIE => NodeHeader::Null,							// 0
-
-			i @ LEAF_NODE_OFFSET ... LEAF_NODE_SMALL_MAX =>			// 1 ... (127 - 1)
-				NodeHeader::Leaf((i - LEAF_NODE_OFFSET) as usize),
-			LEAF_NODE_BIG =>										// 127
-				NodeHeader::Leaf(input.read_byte()? as usize + LEAF_NODE_THRESHOLD as usize),
-
-			i @ EXTENSION_NODE_OFFSET ... EXTENSION_NODE_SMALL_MAX =>// 128 ... (253 - 1)
-				NodeHeader::Extension((i - EXTENSION_NODE_OFFSET) as usize),
-			EXTENSION_NODE_BIG =>									// 253
-				NodeHeader::Extension(input.read_byte()? as usize + EXTENSION_NODE_THRESHOLD as usize),
-
-			BRANCH_NODE_NO_VALUE => NodeHeader::Branch(false),		// 254
-			BRANCH_NODE_WITH_VALUE => NodeHeader::Branch(true),		// 255
-
-			_ => unreachable!(),
-		})
-	}
-}
-
-// encode branch as 3 bytes: header including value existence + 16-bit bitmap for branch existence
-
-fn take<'a>(input: &mut &'a[u8], count: usize) -> Option<&'a[u8]> {
-	if input.len() < count {
-		return None
-	}
-	let r = &(*input)[..count];
-	*input = &(*input)[count..];
-	Some(r)
-}
-
-fn partial_to_key(partial: &[u8], offset: u8, big: u8) -> Vec<u8> {
-	let nibble_count = (partial.len() - 1) * 2 + if partial[0] & 16 == 16 { 1 } else { 0 };
-	let (first_byte_small, big_threshold) = (offset, (big - offset) as usize);
-	let mut output = vec![first_byte_small + nibble_count.min(big_threshold) as u8];
-	if nibble_count >= big_threshold { output.push((nibble_count - big_threshold) as u8) }
-	if nibble_count % 2 == 1 {
-		output.push(partial[0] & 0x0f);
-	}
-	output.extend_from_slice(&partial[1..]);
-	output
-}
 
 // NOTE: what we'd really like here is:
 // `impl<H: Hasher> NodeCodec<H> for RlpNodeCodec<H> where H::Out: Decodable`
@@ -183,7 +100,6 @@ impl<H: Hasher> NodeCodec<H> for ParityNodeCodec<H> {
 		value.encode_to(&mut output);
 //		println!("leaf_node: {:#x?}", output);
 		output
-
 	}
 
 	// TODO: refactor this so that `partial` isn't already encoded with HPE. Should just be an `impl Iterator<Item=u8>`.
