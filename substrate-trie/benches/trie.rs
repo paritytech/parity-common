@@ -79,7 +79,7 @@ impl ::std::fmt::Display for TrieInsertionList {
 	}
 }
 
-fn bench_insertions(b: &mut Criterion, name: &str, d: Vec<(Vec<u8>, Vec<u8>)>) {
+fn bench_contents(b: &mut Criterion, name: &str, d: Vec<(Vec<u8>, Vec<u8>)>) {
 	let mut rlp_memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 	let mut rlp_root = H256::default();
 	let mut codec_memdb = MemoryDB::<KeccakHasher, DBValue>::new_codec();
@@ -162,7 +162,7 @@ fn trie_insertions_32_mir_1k(b: &mut Criterion) {
 		value_mode: ValueMode::Mirror,
 		count: 1000,
 	};
-	bench_insertions(b, "trie_ins_32_mir_1k", st.make());
+	bench_contents(b, "trie_ins_32_mir_1k", st.make());
 }
 
 fn trie_insertions_32_ran_1k(b: &mut Criterion) {
@@ -173,7 +173,7 @@ fn trie_insertions_32_ran_1k(b: &mut Criterion) {
 		value_mode: ValueMode::Random,
 		count: 1000,
 	};
-	bench_insertions(b, "trie_ins_32_ran_1k", st.make());
+	bench_contents(b, "trie_ins_32_ran_1k", st.make());
 }
 
 fn trie_insertions_six_high(b: &mut Criterion) {
@@ -184,7 +184,7 @@ fn trie_insertions_six_high(b: &mut Criterion) {
 		let v = random_value(&mut seed);
 		d.push((k, v))
 	}
-	bench_insertions(b, "trie_ins_six_high", d);
+	bench_contents(b, "trie_ins_six_high", d);
 }
 
 fn trie_insertions_six_mid(b: &mut Criterion) {
@@ -196,7 +196,7 @@ fn trie_insertions_six_mid(b: &mut Criterion) {
 		let v = random_value(&mut seed);
 		d.push((k, v))
 	}
-	bench_insertions(b, "trie_ins_six_mid", d);
+	bench_contents(b, "trie_ins_six_mid", d);
 }
 
 fn trie_insertions_random_mid(b: &mut Criterion) {
@@ -208,7 +208,7 @@ fn trie_insertions_random_mid(b: &mut Criterion) {
 		let v = random_value(&mut seed);
 		d.push((k, v))
 	}
-	bench_insertions(b, "trie_ins_random_mid", d);
+	bench_contents(b, "trie_ins_random_mid", d);
 }
 
 fn trie_insertions_six_low(b: &mut Criterion) {
@@ -220,7 +220,7 @@ fn trie_insertions_six_low(b: &mut Criterion) {
 		let v = random_value(&mut seed);
 		d.push((k, v))
 	}
-	bench_insertions(b, "trie_ins_six_low", d);
+	bench_contents(b, "trie_ins_six_low", d);
 }
 
 fn nibble_common_prefix(b: &mut Criterion) {
