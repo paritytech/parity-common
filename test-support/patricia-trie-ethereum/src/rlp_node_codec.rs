@@ -36,7 +36,7 @@ impl<H: Hasher> NodeCodec<H> for RlpNodeCodec<H> where
 {
 	type Error = DecoderError;
 	fn hashed_null_node() -> H::Out {
-		H::hash(&[80u8][..])
+		H::hash(&[0x80u8][..])
 	}
 	fn decode(data: &[u8]) -> ::std::result::Result<Node, Self::Error> {
 		let r = Rlp::new(data);

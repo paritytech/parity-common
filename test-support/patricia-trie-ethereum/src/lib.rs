@@ -25,6 +25,8 @@ extern crate keccak_hasher;
 extern crate rlp;
 extern crate triehash;
 extern crate hex_prefix_encoding;
+#[cfg(test)]
+extern crate memorydb;
 
 mod rlp_node_codec;
 mod rlp_triestream;
@@ -79,10 +81,58 @@ pub type Result<T> = trie::Result<T, H256, DecoderError>;
 
 #[cfg(test)]
 mod tests {
-	use super::{RlpTrieStream};
+	use super::{RlpTrieStream, RlpNodeCodec};
 	use triehash::{unhashed_trie, trie_root, sec_trie_root};
 	use keccak_hasher::KeccakHasher;
-	
+	use memorydb::MemoryDB;
+	use trie::{Hasher, DBValue, TrieMut, TrieDBMut};
+
+	fn check_equivalent(input: Vec<(&[u8], &[u8])>) {
+		let closed_form = trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(input.clone());
+		let d = unhashed_trie::<KeccakHasher, RlpTrieStream, _, _, _>(input.clone());
+		println!("Data: {:#x?}, {:#x?}, {:#x?}", d, KeccakHasher::hash(&d[..]), closed_form);
+		let persistent = {
+			let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
+			let mut root = <KeccakHasher as Hasher>::Out::default();
+			let mut t = TrieDBMut::<KeccakHasher, RlpNodeCodec<KeccakHasher>>::new(&mut memdb, &mut root);
+			for (x, y) in input {
+				t.insert(x, y).unwrap();
+			}
+			t.root().clone()
+		};
+		assert_eq!(closed_form, persistent);
+	}
+
+	#[test]
+	fn empty_is_equivalent() {
+		let input: Vec<(&[u8], &[u8])> = vec![];
+		check_equivalent(input);
+	}
+
+	#[test]
+	fn leaf_is_equivalent() {
+		let input: Vec<(&[u8], &[u8])> = vec![(&[0xaa][..], &[0xbb][..])];
+		check_equivalent(input);
+	}
+
+	#[test]
+	fn branch_is_equivalent() {
+		let input: Vec<(&[u8], &[u8])> = vec![(&[0xaa][..], &[0x10][..]), (&[0xba][..], &[0x11][..])];
+		check_equivalent(input);
+	}
+
+	#[test]
+	fn extension_and_branch_is_equivalent() {
+		let input: Vec<(&[u8], &[u8])> = vec![(&[0xaa][..], &[0x10][..]), (&[0xab][..], &[0x11][..])];
+		check_equivalent(input);
+	}
+
+	#[test]
+	fn single_long_leaf_is_equivalent() {
+		let input: Vec<(&[u8], &[u8])> = vec![(&[0xaa][..], &b"ABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABC"[..]), (&[0xba][..], &[0x11][..])];
+		check_equivalent(input);
+	}
+
 	#[test]
 	fn sec_trie_root_works() {
 		let v = vec![

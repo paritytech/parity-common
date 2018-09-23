@@ -16,3 +16,6 @@ hex-prefix-encoding = { path = "../../hex-prefix-encoding" }
 
 ethereum-types = "0.4"
 elastic-array = "0.10"
+
+[dev-dependencies]
+memorydb = { path = "../../memorydb" }
