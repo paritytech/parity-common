@@ -14,28 +14,31 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(test)]
+#[macro_use]
+extern crate criterion;
+use criterion::Criterion;
+criterion_group!(benches, triehash_insertions_32_mir_1k, triehash_insertions_32_ran_1k, triehash_insertions_six_high, triehash_insertions_six_mid, triehash_insertions_random_mid, triehash_insertions_six_low, typical_tx_payload);
+criterion_main!(benches);
 
-extern crate ethereum_types;
 extern crate keccak_hasher;
-extern crate test;
-extern crate tiny_keccak;
 extern crate trie_standardmap;
+extern crate hashdb;
 extern crate triehash;
-extern crate rlp;
+extern crate parity_codec as codec;
+extern crate substrate_trie;
 
-use ethereum_types::H256;
 use keccak_hasher::KeccakHasher;
-use test::Bencher;
-use tiny_keccak::keccak256;
+use hashdb::Hasher;
 use trie_standardmap::{Alphabet, ValueMode, StandardMap};
 use triehash::trie_root;
-use patricia_trie_ethereum::RlpTrieStream;
-use rlp::encode as rlp_encode;
+use codec::{Encode, Compact};
+use substrate_trie::CodecTrieStream;
+
+type H256 = <KeccakHasher as Hasher>::Out;
 
 fn random_word(alphabet: &[u8], min_count: usize, diff_count: usize, seed: &mut H256) -> Vec<u8> {
 	assert!(min_count + diff_count <= 32);
-	*seed = H256(keccak256(&seed));
+	*seed = KeccakHasher::hash(seed.as_ref());
 	let r = min_count + (seed[31] as usize % (diff_count + 1));
 	let mut ret: Vec<u8> = Vec::with_capacity(r);
 	for i in 0..r {
@@ -46,21 +49,20 @@ fn random_word(alphabet: &[u8], min_count: usize, diff_count: usize, seed: &mut 
 
 fn random_bytes(min_count: usize, diff_count: usize, seed: &mut H256) -> Vec<u8> {
 	assert!(min_count + diff_count <= 32);
-	*seed = H256(keccak256(&seed));
+	*seed = KeccakHasher::hash(seed.as_ref());
 	let r = min_count + (seed[31] as usize % (diff_count + 1));
 	seed[0..r].to_vec()
 }
 
 fn random_value(seed: &mut H256) -> Vec<u8> {
-	*seed = H256(keccak256(&seed));
+	*seed = KeccakHasher::hash(seed.as_ref());
 	match seed[0] % 2 {
 		1 => vec![seed[31];1],
 		_ => seed.to_vec(),
 	}
 }
 
-#[bench]
-fn triehash_insertions_32_mir_1k(b: &mut Bencher) {
+fn triehash_insertions_32_mir_1k(b: &mut Criterion) {
 	let st = StandardMap {
 		alphabet: Alphabet::All,
 		min_key: 32,
@@ -69,13 +71,12 @@ fn triehash_insertions_32_mir_1k(b: &mut Bencher) {
 		count: 1000,
 	};
 	let d = st.make();
-	b.iter(&mut ||{
-		let _ = trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(d.clone()).clone();
-	});
+	b.bench_function("triehash_insertions_32_mir_1k", |b| b.iter(&mut ||{
+		let _ = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.clone()).clone();
+	}));
 }
 
-#[bench]
-fn triehash_insertions_32_ran_1k(b: &mut Bencher) {
+fn triehash_insertions_32_ran_1k(b: &mut Criterion) {
 	let st = StandardMap {
 		alphabet: Alphabet::All,
 		min_key: 32,
@@ -84,75 +85,70 @@ fn triehash_insertions_32_ran_1k(b: &mut Bencher) {
 		count: 1000,
 	};
 	let d = st.make();
-	b.iter(&mut ||{
-		let _ = trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(d.clone()).clone();
-	});
+	b.bench_function("triehash_insertions_32_ran_1k", |b| b.iter(&mut ||{
+		let _ = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.clone()).clone();
+	}));
 }
 
-#[bench]
-fn triehash_insertions_six_high(b: &mut Bencher) {
+fn triehash_insertions_six_high(b: &mut Criterion) {
 	let mut d: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
-	let mut seed = H256::new();
+	let mut seed = H256::default();
 	for _ in 0..1000 {
 		let k = random_bytes(6, 0, &mut seed);
 		let v = random_value(&mut seed);
 		d.push((k, v))
 	}
 
-	b.iter(&||{
-		let _ = trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(d.clone());
-	})
+	b.bench_function("triehash_insertions_six_high", |b| b.iter(&mut ||{
+		let _ = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.clone());
+	}));
 }
 
-#[bench]
-fn triehash_insertions_six_mid(b: &mut Bencher) {
+fn triehash_insertions_six_mid(b: &mut Criterion) {
 	let alphabet = b"@QWERTYUIOPASDFGHJKLZXCVBNM[/]^_";
 	let mut d: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
-	let mut seed = H256::new();
+	let mut seed = H256::default();
 	for _ in 0..1000 {
 		let k = random_word(alphabet, 6, 0, &mut seed);
 		let v = random_value(&mut seed);
 		d.push((k, v))
 	}
-	b.iter(||{
-		let _ = trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(d.clone());
-	})
+	b.bench_function("triehash_insertions_six_mid", |b| b.iter(&mut ||{
+		let _ = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.clone());
+	}));
 }
 
-#[bench]
-fn triehash_insertions_random_mid(b: &mut Bencher) {
+fn triehash_insertions_random_mid(b: &mut Criterion) {
 	let alphabet = b"@QWERTYUIOPASDFGHJKLZXCVBNM[/]^_";
 	let mut d: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
-	let mut seed = H256::new();
+	let mut seed = H256::default();
 	for _ in 0..1000 {
 		let k = random_word(alphabet, 1, 5, &mut seed);
 		let v = random_value(&mut seed);
 		d.push((k, v))
 	}
 
-	b.iter(||{
-		let _ = trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(d.clone());
-	})
+	b.bench_function("triehash_insertions_random_mid", |b| b.iter(&mut ||{
+		let _ = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.clone());
+	}));
 }
 
-#[bench]
-fn triehash_insertions_six_low(b: &mut Bencher) {
+fn triehash_insertions_six_low(b: &mut Criterion) {
 	let alphabet = b"abcdef";
 	let mut d: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
-	let mut seed = H256::new();
+	let mut seed = H256::default();
 	for _ in 0..1000 {
 		let k = random_word(alphabet, 6, 0, &mut seed);
 		let v = random_value(&mut seed);
 		d.push((k, v))
 	}
 
-	b.iter(||{
-		let _ = trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(d.clone());
-	})
+	b.bench_function("triehash_insertions_six_low", |b| b.iter(&mut ||{
+		let _ = trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(d.clone());
+	}));
 }
 
-#[bench]
-fn typical_tx_payload(b: &mut Bencher) {
+fn typical_tx_payload(b: &mut Criterion) {
 	// Typical ethereum transaction payload passing through `verify_block_integrity()` close to block #6317032;
 	// 140 iteams, avg length 157bytes, total 22033bytes payload (expected root: 0xc1382bbef81d10a41d325e2873894b61162fb1e6167cafc663589283194acfda)
 	let tx_payload : Vec<Vec<u8>> = vec![
@@ -305,11 +301,11 @@ fn typical_tx_payload(b: &mut Bencher) {
 	{
 		let input = input.into_iter()
 			.enumerate()
-			.map(|(i, v)| (rlp_encode(&i), v) );
-		trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(input)
+			.map(|(i, v)| (Compact(i as u32).encode(), v) );
+		trie_root::<KeccakHasher, CodecTrieStream, _, _, _>(input)
 	}
 
-	b.iter(|| {
+	b.bench_function("typical_tx_payload", |b| b.iter(&mut ||{
 		let _ = ordered_trie_root(&tx_payload);
-	})
+	}));
 }

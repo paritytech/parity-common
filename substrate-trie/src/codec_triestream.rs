@@ -87,28 +87,28 @@ impl TrieStream for CodecTrieStream {
 		value.encode_to(&mut self.buffer);
 	}
 	fn begin_branch(&mut self, maybe_value: Option<&[u8]>, has_children: impl Iterator<Item = bool>) {
-		println!("[begin_branch] pushing BRANCH_NODE");
+//		println!("[begin_branch] pushing BRANCH_NODE");
 		self.buffer.extend(&branch_node(maybe_value.is_some(), has_children));
 		// Push the value if one exists.
 		if let Some(value) = maybe_value {
 			value.encode_to(&mut self.buffer);
 		}
-		println!("[begin_branch] buffer so far: {:#x?}", self.buffer);
+//		println!("[begin_branch] buffer so far: {:#x?}", self.buffer);
 	}
 	fn append_extension(&mut self, key: &[u8]) {
 		self.buffer.extend(fuse_nibbles_node(key, false));
 	}
 	fn append_substream<H: Hasher>(&mut self, other: Self) {
 		let data = other.out();
-		println!("[append_substream] START own buffer: {:x?}", self.buffer);
-		println!("[append_substream] START other buffer: {:x?}", data);
+//		println!("[append_substream] START own buffer: {:x?}", self.buffer);
+//		println!("[append_substream] START other buffer: {:x?}", data);
 		match data.len() {
 			0...31 => {
-				println!("[append_substream] appending data, because data.len() = {}", data.len());
+//				println!("[append_substream] appending data, because data.len() = {}", data.len());
 				data.encode_to(&mut self.buffer)
 			},
 			_ => {
-				println!("[append_substream] would have hashed, because data.len() = {}", data.len());
+//				println!("[append_substream] would have hashed, because data.len() = {}", data.len());
 //				data.encode_to(&mut self.buffer)
 				// TODO: re-enable hashing before merging
 				H::hash(&data).as_ref().encode_to(&mut self.buffer)
