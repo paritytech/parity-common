@@ -23,14 +23,30 @@ extern crate ethereum_types;
 extern crate hashdb;
 extern crate keccak_hasher;
 extern crate rlp;
+extern crate triehash;
+extern crate hex_prefix_encoding;
 
 mod rlp_node_codec;
+mod rlp_triestream;
 
 pub use rlp_node_codec::RlpNodeCodec;
+pub use rlp_triestream::RlpTrieStream;
 
 use ethereum_types::H256;
 use keccak_hasher::KeccakHasher;
 use rlp::DecoderError;
+
+pub fn unhashed_trie(input: Vec<(&[u8], &[u8])>) -> Vec<u8> {
+	triehash::unhashed_trie::<KeccakHasher, RlpTrieStream, _, _, _>(input)
+}
+
+pub fn trie_root(input: Vec<(&[u8], &[u8])>) -> H256 {
+	triehash::trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(input)
+}
+
+pub fn sec_trie_root(input: Vec<(&[u8], &[u8])>) -> H256 {
+	triehash::sec_trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(input)
+}
 
 /// Convenience type alias to instantiate a Keccak-flavoured `RlpNodeCodec`
 pub type RlpCodec = RlpNodeCodec<KeccakHasher>;
@@ -63,10 +79,9 @@ pub type Result<T> = trie::Result<T, H256, DecoderError>;
 
 #[cfg(test)]
 mod tests {
-	use super::{trie_root, sec_trie_root, shared_prefix_len};
-	use super::unhashed_trie;
+	use super::{RlpTrieStream};
+	use triehash::{unhashed_trie, trie_root, sec_trie_root};
 	use keccak_hasher::KeccakHasher;
-	use patricia_trie_ethereum::RlpTrieStream;
 	
 	#[test]
 	fn sec_trie_root_works() {
@@ -112,27 +127,6 @@ mod tests {
 			(vec![0xf1u8, 0x23], vec![0xf1u8, 0x23]), // last two tuples are swapped
 			(vec![0x81u8, 0x23], vec![0x81u8, 0x23]),
 		]));
-	}
-
-	#[test]
-	fn test_shared_prefix() {
-		let a = vec![1,2,3,4,5,6];
-		let b = vec![4,2,3,4,5,6];
-		assert_eq!(shared_prefix_len(&a, &b), 0);
-	}
-
-	#[test]
-	fn test_shared_prefix2() {
-		let a = vec![1,2,3,3,5];
-		let b = vec![1,2,3];
-		assert_eq!(shared_prefix_len(&a, &b), 3);
-	}
-
-	#[test]
-	fn test_shared_prefix3() {
-		let a = vec![1,2,3,4,5,6];
-		let b = vec![1,2,3,4,5,6];
-		assert_eq!(shared_prefix_len(&a, &b), 6);
 	}
 
 	#[test]

@@ -17,7 +17,7 @@
 use hex_prefix_encoding::hex_prefix_encode;
 use rlp::RlpStream;
 use hashdb::Hasher;
-use super::TrieStream;
+use triehash::TrieStream;
 
 /// RLP-flavoured TrieStream
 pub struct RlpTrieStream {

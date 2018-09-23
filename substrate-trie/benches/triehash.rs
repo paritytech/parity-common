@@ -26,6 +26,7 @@ extern crate hashdb;
 extern crate triehash;
 extern crate parity_codec as codec;
 extern crate substrate_trie;
+extern crate patricia_trie_ethereum;
 
 use keccak_hasher::KeccakHasher;
 use hashdb::Hasher;

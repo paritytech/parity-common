@@ -25,3 +25,4 @@ memorydb = { path = "../memorydb" }
 trie-standardmap = { path = "../trie-standardmap" }
 hashdb = { path = "../hashdb" }
 criterion = "0.1.2"
+patricia-trie-ethereum = { path = "../test-support/patricia-trie-ethereum" }
