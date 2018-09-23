@@ -10,7 +10,7 @@ use std::fmt;
 use std::error::Error as StdError;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-/// Error concerning the RLP decoder.
+/// Error concerning the Parity-Codec based decoder.
 pub enum CodecError {
 	/// Bad format.
 	BadFormat,
