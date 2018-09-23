@@ -36,8 +36,6 @@ use substrate_trie::ParityNodeCodec;
 use keccak_hasher::KeccakHasher;
 use hashdb::Hasher;
 
-//use ethtrie::{TrieDB, TrieDBMut};
-
 type H256 = <KeccakHasher as Hasher>::Out;
 type TrieDB<'a> = trie::TrieDB<'a, KeccakHasher, ParityNodeCodec<KeccakHasher>>;
 type TrieDBMut<'a> = trie::TrieDBMut<'a, KeccakHasher, ParityNodeCodec<KeccakHasher>>;
@@ -99,6 +97,39 @@ fn bench_insertions(b: &mut Criterion, name: &str, d: Vec<(Vec<u8>, Vec<u8>)>) {
 	];
 
 	b.bench_functions(name, funs, &TrieInsertionList(d));
+}
+
+fn bench_iteration(b: &mut Criterion, name: &str, d: Vec<(Vec<u8>, Vec<u8>)>) {
+	let mut rlp_memdb = MemoryDB::<KeccakHasher, DBValue>::new();
+	let mut rlp_root = H256::default();
+	let mut codec_memdb = MemoryDB::<KeccakHasher, DBValue>::new_codec();
+	let mut codec_root = H256::default();
+	{
+		let mut rlp_t = RlpTrieDBMut::new(&mut rlp_memdb, &mut rlp_root);
+		let mut codec_t = TrieDBMut::new(&mut codec_memdb, &mut codec_root);
+		for i in d.iter() {
+			rlp_t.insert(&i.0, &i.1).unwrap();
+			codec_t.insert(&i.0, &i.1).unwrap();
+		}
+	}
+
+	let funs = vec![
+		Fun::new("Rlp", move |b, d: &u8| b.iter(&mut ||{
+			let t = RlpTrieDB::new(&rlp_memdb, &rlp_root).unwrap();
+			for n in t.iter().unwrap() {
+				black_box(n).unwrap();
+			}
+		})),
+		Fun::new("Codec", move |b, d: &u8| b.iter(&mut ||{
+			let t = TrieDB::new(&codec_memdb, &codec_root).unwrap();
+			for n in t.iter().unwrap() {
+				black_box(n).unwrap();
+			}
+		})),
+		Fun::new("-", |b, _d: &u8| b.iter(&mut ||{}))
+	];
+
+	b.bench_functions(name, funs, &0u8);
 }
 
 fn trie_insertions_32_mir_1k(b: &mut Criterion) {
@@ -178,22 +209,7 @@ fn trie_iter(b: &mut Criterion) {
 		value_mode: ValueMode::Mirror,
 		count: 1000,
 	};
-	let d = st.make();
-	let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new_codec();
-	let mut root = H256::default();
-	{
-		let mut t = TrieDBMut::new(&mut memdb, &mut root);
-		for i in d.iter() {
-			t.insert(&i.0, &i.1).unwrap();
-		}
-	}
-
-	b.bench_function("trie_iter", |b| b.iter(&mut ||{
-		let t = TrieDB::new(&memdb, &root).unwrap();
-		for n in t.iter().unwrap() {
-			black_box(n).unwrap();
-		}
-	}));
+	bench_iteration(b, "iteration", st.make());
 }
 
 fn nibble_common_prefix(b: &mut Criterion) {
