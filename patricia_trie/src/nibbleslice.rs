@@ -98,7 +98,10 @@ impl<'a> NibbleSlice<'a> {
 
 	/// Create a new nibble slice from the given HPE encoded data (e.g. output of `encoded()`).
 	pub fn from_encoded(data: &'a [u8]) -> (NibbleSlice, bool) {
-		(Self::new_offset(data, if data[0] & 16 == 16 {1} else {2}), data[0] & 32 == 32)
+		(
+			Self::new_offset(data, if data[0] & 16 == 16 { 1 } else { 2 } ),
+			data[0] & 32 == 32
+		)
 	}
 
 	/// Is this an empty slice?
@@ -106,24 +109,26 @@ impl<'a> NibbleSlice<'a> {
 
 	/// Get the length (in nibbles, naturally) of this slice.
 	#[inline]
-	pub fn len(&self) -> usize { (self.data.len() + self.data_encode_suffix.len()) * 2 - self.offset - self.offset_encode_suffix }
+	pub fn len(&self) -> usize {
+		(self.data.len() + self.data_encode_suffix.len()) * 2 - self.offset - self.offset_encode_suffix
+	}
 
 	/// Get the nibble at position `i`.
 	#[inline(always)]
 	pub fn at(&self, i: usize) -> u8 {
-		let l = self.data.len() * 2 - self.offset;
-		if i < l {
+		let length = self.data.len() * 2 - self.offset;
+		if i < length {
 			if (self.offset + i) & 1 == 1 {
-				self.data[(self.offset + i) / 2] & 15u8
+				self.data[(self.offset + i) / 2] & 0b_0000_1111 // lower 4 bits
 			}
 			else {
 				self.data[(self.offset + i) / 2] >> 4
 			}
 		}
 		else {
-			let i = i - l;
+			let i = i - length;
 			if (self.offset_encode_suffix + i) & 1 == 1 {
-				self.data_encode_suffix[(self.offset_encode_suffix + i) / 2] & 15u8
+				self.data_encode_suffix[(self.offset_encode_suffix + i) / 2] & 0b_0000_1111
 			}
 			else {
 				self.data_encode_suffix[(self.offset_encode_suffix + i) / 2] >> 4
@@ -147,12 +152,31 @@ impl<'a> NibbleSlice<'a> {
  	/// How many of the same nibbles at the beginning do we match with `them`?
 	pub fn common_prefix(&self, them: &Self) -> usize {
 		let s = min(self.len(), them.len());
-		let mut i = 0usize;
-		while i < s {
-			if self.at(i) != them.at(i) { break; }
-			i += 1;
+		if s % 2 == 0 && s > 2 && self.offset % 2 == 0 && them.offset % 2 == 0 {
+			let my_offset = self.offset / 2;
+			let their_offset = them.offset / 2;
+			let mut eq_counter = 0;
+			for i in 0..s/2 {
+				let mybyte = self.data[i + my_offset];
+				let theirbyte = them.data[i + their_offset];
+				if mybyte == theirbyte {
+					eq_counter += 2
+				} else {
+					if mybyte & 0b_1111_0000 == theirbyte & 0b_1111_0000 {
+						eq_counter += 1;
+					}
+					break
+				}
+			}
+			return eq_counter
+		} else {
+			let mut i = 0;
+			while i < s {
+				if self.at(i) != them.at(i) { break; }
+				i += 1;
+			}
+			return i
 		}
-		i
 	}
 
 	/// Encode while nibble slice in prefixed hex notation, noting whether it `is_leaf`.
@@ -281,7 +305,6 @@ mod tests {
 	#[test]
 	fn shared() {
 		let n = NibbleSlice::new(D);
-
 		let other = &[0x01u8, 0x23, 0x01, 0x23, 0x45, 0x67];
 		let m = NibbleSlice::new(other);
 

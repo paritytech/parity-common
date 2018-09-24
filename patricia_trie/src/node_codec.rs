@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Generic trait for trie node encoding/decoding. Takes a `hashdb::Hasher` 
+//! Generic trait for trie node encoding/decoding. Takes a `hashdb::Hasher`
 //! to parametrize the hashes used in the codec.
 
 use hashdb::Hasher;
@@ -30,7 +30,7 @@ pub trait NodeCodec<H: Hasher>: Sized {
 
 	/// Null node type
 	const HASHED_NULL_NODE: H::Out;
-	
+
 	/// Decode bytes to a `Node`. Returns `Self::E` on failure.
 	fn decode(data: &[u8]) -> Result<Node, Self::Error>;
 
@@ -43,7 +43,7 @@ pub trait NodeCodec<H: Hasher>: Sized {
 	/// Returns an empty node
 	fn empty_node() -> Vec<u8>;
 
-	/// Returns an encoded leaft node
+	/// Returns an encoded leaf node
 	fn leaf_node(partial: &[u8], value: &[u8]) -> Vec<u8>;
 
 	/// Returns an encoded extension node

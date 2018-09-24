@@ -95,7 +95,7 @@ where
 			.ok_or_else(|| Box::new(TrieError::InvalidStateRoot(*self.root)))
 	}
 
-	/// Given some node-describing data `node`, return the actual node RLP.
+	/// Given some node-describing data `node`, return the actual encoded node.
 	/// This could be a simple identity operation in the case that the node is sufficiently small, but
 	/// may require a database lookup.
 	fn get_raw_or_lookup(&'db self, node: &[u8]) -> Result<Cow<'db, DBValue>, H::Out, C::Error> {
@@ -324,7 +324,7 @@ impl<'a, H: Hasher, C: NodeCodec<H>> TrieDBIterator<'a, H, C> {
 		}
 	}
 
-	/// The present key.
+	/// The present key, converted back from nibbles to bytes. Allocates.
 	fn key(&self) -> Bytes {
 		// collapse the key_nibbles down to bytes.
 		let nibbles = &self.key_nibbles;

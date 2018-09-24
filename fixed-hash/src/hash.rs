@@ -677,6 +677,7 @@ mod tests {
 		assert!(r == u)
 	}
 
+	#[cfg(feature = "uint_conversions")]
 	#[test]
 	#[should_panic]
 	fn converting_differently_sized_types_panics() {
