@@ -14,8 +14,8 @@ install:
   - cargo -V
 
 build_script:
-  - cargo check --tests --verbose --features "%FEATURES%"
-  - cargo build --verbose --features "%FEATURES%"
+  - cargo check --tests --features "%FEATURES%"
+  - cargo build --all --features "%FEATURES%"
 
 test_script:
-  - cargo test --all --verbose --features "%FEATURES%"
+  - cargo test --all --features "%FEATURES%" --exclude uint --exclude fixed-hash
