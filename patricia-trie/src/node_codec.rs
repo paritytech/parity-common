@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Generic trait for trie node encoding/decoding. Takes a `hashdb::Hasher` 
+//! Generic trait for trie node encoding/decoding. Takes a `hashdb::Hasher`
 //! to parametrize the hashes used in the codec.
 
 use hashdb::Hasher;
@@ -25,12 +25,12 @@ use elastic_array::{ElasticArray128};
 
 /// Trait for trie node encoding/decoding
 pub trait NodeCodec<H: Hasher>: Sized {
-	/// Encoding error type
+	/// Codec error type
 	type Error: ::std::error::Error;
 
-	/// Null node type
-	const HASHED_NULL_NODE: H::Out;
-	
+	/// Get the hashed null node.
+	fn hashed_null_node() -> H::Out;
+
 	/// Decode bytes to a `Node`. Returns `Self::E` on failure.
 	fn decode(data: &[u8]) -> Result<Node, Self::Error>;
 
@@ -43,7 +43,7 @@ pub trait NodeCodec<H: Hasher>: Sized {
 	/// Returns an empty node
 	fn empty_node() -> Vec<u8>;
 
-	/// Returns an encoded leaft node
+	/// Returns an encoded leaf node
 	fn leaf_node(partial: &[u8], value: &[u8]) -> Vec<u8>;
 
 	/// Returns an encoded extension node
@@ -51,5 +51,5 @@ pub trait NodeCodec<H: Hasher>: Sized {
 
 	/// Returns an encoded branch node. Takes an iterator yielding `ChildReference<H::Out>` and an optional value
 	fn branch_node<I>(children: I, value: Option<ElasticArray128<u8>>) -> Vec<u8>
-	where I: IntoIterator<Item=Option<ChildReference<H::Out>>>;
+	where I: IntoIterator<Item=Option<ChildReference<H::Out>>> + Iterator<Item=Option<ChildReference<H::Out>>>;
 }

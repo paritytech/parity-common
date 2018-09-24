@@ -19,6 +19,7 @@ extern crate elastic_array;
 extern crate parity_bytes as bytes; // TODO: name changed; update upstream when `parity-common` is available
 extern crate hashdb;
 extern crate rand;
+extern crate parity_codec as codec;
 #[macro_use]
 extern crate log;
 
@@ -38,11 +39,8 @@ extern crate rlp;
 extern crate keccak_hash as keccak;
 #[cfg(test)]
 extern crate keccak_hasher;
-#[cfg(test)]
-extern crate triehash;
 
 use std::{fmt, error};
-use hashdb::{HashDB, Hasher};
 use std::marker::PhantomData;
 
 pub mod node;
@@ -59,6 +57,7 @@ mod nibblevec;
 mod nibbleslice;
 mod node_codec;
 
+pub use hashdb::{HashDB, Hasher};
 pub use self::triedb::{TrieDB, TrieDBIterator};
 pub use self::triedbmut::{TrieDBMut, ChildReference};
 pub use self::sectriedbmut::SecTrieDBMut;
@@ -158,7 +157,7 @@ pub trait Trie<H: Hasher, C: NodeCodec<H>> {
 	fn root(&self) -> &H::Out;
 
 	/// Is the trie empty?
-	fn is_empty(&self) -> bool { *self.root() == C::HASHED_NULL_NODE }
+	fn is_empty(&self) -> bool { *self.root() == C::hashed_null_node() }
 
 	/// Does the trie contain a given key?
 	fn contains(&self, key: &[u8]) -> Result<bool, H::Out, C::Error> {

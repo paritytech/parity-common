@@ -114,12 +114,9 @@ where
 			}
 			EncodedNode::Branch(ref encoded_children, val) => {
 				let mut child = |i:usize| {
-					let raw = encoded_children[i];
-					if !C::is_empty_node(raw) {
-						Some(Self::inline_or_hash::<C, H>(raw, db, storage))
-					} else {
-						None
-					}
+					encoded_children[i].map(|data|
+						Self::inline_or_hash::<C, H>(data, db, storage)
+					)
 				};
 
 				let children = Box::new([
@@ -313,8 +310,8 @@ where
 {
 	/// Create a new trie with backing database `db` and empty `root`.
 	pub fn new(db: &'a mut HashDB<H, DBValue>, root: &'a mut H::Out) -> Self {
-		*root = C::HASHED_NULL_NODE;
-		let root_handle = NodeHandle::Hash(C::HASHED_NULL_NODE);
+		*root = C::hashed_null_node();
+		let root_handle = NodeHandle::Hash(C::hashed_null_node());
 
 		TrieDBMut {
 			storage: NodeStorage::empty(),
@@ -902,7 +899,7 @@ where
 
 	fn is_empty(&self) -> bool {
 		match self.root_handle {
-			NodeHandle::Hash(h) => h == C::HASHED_NULL_NODE,
+			NodeHandle::Hash(h) => h == C::hashed_null_node(),
 			NodeHandle::InMemory(ref h) => match self.storage[h] {
 				Node::Empty => true,
 				_ => false,
@@ -951,8 +948,8 @@ where
 			}
 			None => {
 				trace!(target: "trie", "remove: obliterated trie");
-				self.root_handle = NodeHandle::Hash(C::HASHED_NULL_NODE);
-				*self.root = C::HASHED_NULL_NODE;
+				self.root_handle = NodeHandle::Hash(C::hashed_null_node());
+				*self.root = C::hashed_null_node();
 			}
 		}
 
@@ -978,6 +975,7 @@ mod tests {
 	use memorydb::MemoryDB;
 	use rlp::{Decodable, Encodable};
 	use triehash::trie_root;
+	use patricia_trie_ethereum::RlpTrieStream;
 	use standardmap::*;
 	use ethtrie::{TrieDBMut, RlpCodec, trie::{TrieMut, NodeCodec}};
 	use env_logger;
@@ -1026,7 +1024,7 @@ mod tests {
 				count: 100,
 			}.make_with(&mut seed);
 
-			let real = trie_root::<KeccakHasher, _, _, _>(x.clone());
+			let real = trie_root::<KeccakHasher, RlpTrieStream,_, _, _>(x.clone());
 			let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 			let mut root = H256::new();
 			let mut memtrie = populate_trie::<_, RlpCodec>(&mut memdb, &mut root, &x);
@@ -1043,7 +1041,7 @@ mod tests {
 			assert_eq!(*memtrie.root(), real);
 			unpopulate_trie(&mut memtrie, &x);
 			memtrie.commit();
-			if *memtrie.root() != RlpCodec::HASHED_NULL_NODE {
+			if *memtrie.root() != RlpCodec::hashed_null_node() {
 				println!("- TRIE MISMATCH");
 				println!("");
 				println!("{:?} vs {:?}", memtrie.root(), real);
@@ -1051,7 +1049,7 @@ mod tests {
 					println!("{:?} -> {:?}", i.0.pretty(), i.1.pretty());
 				}
 			}
-			assert_eq!(*memtrie.root(), RlpCodec::HASHED_NULL_NODE);
+			assert_eq!(*memtrie.root(), RlpCodec::hashed_null_node());
 		}
 	}
 
@@ -1060,7 +1058,7 @@ mod tests {
 		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
-		assert_eq!(*t.root(), RlpCodec::HASHED_NULL_NODE);
+		assert_eq!(*t.root(), RlpCodec::hashed_null_node());
 	}
 
 	#[test]
@@ -1069,7 +1067,7 @@ mod tests {
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
-		assert_eq!(*t.root(), trie_root::<KeccakHasher, _, _, _>(vec![ (vec![0x01u8, 0x23], vec![0x01u8, 0x23]) ]));
+		assert_eq!(*t.root(), trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(vec![ (vec![0x01u8, 0x23], vec![0x01u8, 0x23]) ]));
 	}
 
 	#[test]
@@ -1098,7 +1096,7 @@ mod tests {
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
 		t.insert(&[0x01u8, 0x23], &[0x23u8, 0x45]).unwrap();
-		assert_eq!(*t.root(), trie_root::<KeccakHasher, _, _, _>(vec![ (vec![0x01u8, 0x23], vec![0x23u8, 0x45]) ]));
+		assert_eq!(*t.root(), trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(vec![ (vec![0x01u8, 0x23], vec![0x23u8, 0x45]) ]));
 	}
 
 	#[test]
@@ -1108,7 +1106,7 @@ mod tests {
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
 		t.insert(&[0x11u8, 0x23], &[0x11u8, 0x23]).unwrap();
-		assert_eq!(*t.root(), trie_root::<KeccakHasher, _, _, _>(vec![
+		assert_eq!(*t.root(), trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(vec![
 			(vec![0x01u8, 0x23], vec![0x01u8, 0x23]),
 			(vec![0x11u8, 0x23], vec![0x11u8, 0x23])
 		]));
@@ -1122,7 +1120,7 @@ mod tests {
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
 		t.insert(&[0xf1u8, 0x23], &[0xf1u8, 0x23]).unwrap();
 		t.insert(&[0x81u8, 0x23], &[0x81u8, 0x23]).unwrap();
-		assert_eq!(*t.root(), trie_root::<KeccakHasher, _, _, _>(vec![
+		assert_eq!(*t.root(), trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(vec![
 			(vec![0x01u8, 0x23], vec![0x01u8, 0x23]),
 			(vec![0x81u8, 0x23], vec![0x81u8, 0x23]),
 			(vec![0xf1u8, 0x23], vec![0xf1u8, 0x23]),
@@ -1136,7 +1134,7 @@ mod tests {
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
 		t.insert(&[], &[0x0]).unwrap();
-		assert_eq!(*t.root(), trie_root::<KeccakHasher, _, _, _>(vec![
+		assert_eq!(*t.root(), trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(vec![
 			(vec![], vec![0x0]),
 			(vec![0x01u8, 0x23], vec![0x01u8, 0x23]),
 		]));
@@ -1149,7 +1147,7 @@ mod tests {
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], &[0x01u8, 0x23]).unwrap();
 		t.insert(&[0x01u8, 0x34], &[0x01u8, 0x34]).unwrap();
-		assert_eq!(*t.root(), trie_root::<KeccakHasher, _, _, _>(vec![
+		assert_eq!(*t.root(), trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(vec![
 			(vec![0x01u8, 0x23], vec![0x01u8, 0x23]),
 			(vec![0x01u8, 0x34], vec![0x01u8, 0x34]),
 		]));
@@ -1163,7 +1161,7 @@ mod tests {
 		t.insert(&[0x01, 0x23, 0x45], &[0x01]).unwrap();
 		t.insert(&[0x01, 0xf3, 0x45], &[0x02]).unwrap();
 		t.insert(&[0x01, 0xf3, 0xf5], &[0x03]).unwrap();
-		assert_eq!(*t.root(), trie_root::<KeccakHasher, _, _, _>(vec![
+		assert_eq!(*t.root(), trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(vec![
 			(vec![0x01, 0x23, 0x45], vec![0x01]),
 			(vec![0x01, 0xf3, 0x45], vec![0x02]),
 			(vec![0x01, 0xf3, 0xf5], vec![0x03]),
@@ -1180,7 +1178,7 @@ mod tests {
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], big_value0).unwrap();
 		t.insert(&[0x11u8, 0x23], big_value1).unwrap();
-		assert_eq!(*t.root(), trie_root::<KeccakHasher, _, _, _>(vec![
+		assert_eq!(*t.root(), trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(vec![
 			(vec![0x01u8, 0x23], big_value0.to_vec()),
 			(vec![0x11u8, 0x23], big_value1.to_vec())
 		]));
@@ -1195,7 +1193,7 @@ mod tests {
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		t.insert(&[0x01u8, 0x23], big_value).unwrap();
 		t.insert(&[0x11u8, 0x23], big_value).unwrap();
-		assert_eq!(*t.root(), trie_root::<KeccakHasher, _, _, _>(vec![
+		assert_eq!(*t.root(), trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(vec![
 			(vec![0x01u8, 0x23], big_value.to_vec()),
 			(vec![0x11u8, 0x23], big_value.to_vec())
 		]));
@@ -1251,7 +1249,7 @@ mod tests {
 				count: 4,
 			}.make_with(&mut seed);
 
-			let real = trie_root::<KeccakHasher, _, _, _>(x.clone());
+			let real = trie_root::<KeccakHasher, RlpTrieStream,_, _, _>(x.clone());
 			let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 			let mut root = H256::new();
 			let mut memtrie = populate_trie::<_, RlpCodec>(&mut memdb, &mut root, &x);
@@ -1309,14 +1307,14 @@ mod tests {
 			t.insert(key, value).unwrap();
 		}
 
-		assert_eq!(*t.root(), trie_root::<KeccakHasher, _, _, _>(x.clone()));
+		assert_eq!(*t.root(), trie_root::<KeccakHasher, RlpTrieStream, _, _, _>(x.clone()));
 
 		for &(ref key, _) in &x {
 			t.insert(key, &[]).unwrap();
 		}
 
 		assert!(t.is_empty());
-		assert_eq!(*t.root(), RlpCodec::HASHED_NULL_NODE);
+		assert_eq!(*t.root(), RlpCodec::hashed_null_node());
 	}
 
 	#[test]

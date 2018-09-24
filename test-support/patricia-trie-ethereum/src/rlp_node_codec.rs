@@ -17,10 +17,9 @@
 //! `NodeCodec` implementation for Rlp
 
 use elastic_array::ElasticArray128;
-use ethereum_types::H256;
 use hashdb::Hasher;
 use keccak_hasher::KeccakHasher;
-use rlp::{DecoderError, RlpStream, Rlp, Prototype};
+use rlp::{DecoderError, RlpStream, Rlp, Prototype, Decodable, Encodable};
 use std::marker::PhantomData;
 use trie::{NibbleSlice, NodeCodec, node::Node, ChildReference};
 
@@ -32,9 +31,13 @@ pub struct RlpNodeCodec<H: Hasher> {mark: PhantomData<H>}
 // `impl<H: Hasher> NodeCodec<H> for RlpNodeCodec<H> where H::Out: Decodable`
 // but due to the current limitations of Rust const evaluation we can't
 // do `const HASHED_NULL_NODE: H::Out = H::Out( … … )`. Perhaps one day soon?
-impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
+impl<H: Hasher> NodeCodec<H> for RlpNodeCodec<H> where
+	H::Out: Decodable + Encodable
+{
 	type Error = DecoderError;
-	const HASHED_NULL_NODE : H256 = H256( [0x56, 0xe8, 0x1f, 0x17, 0x1b, 0xcc, 0x55, 0xa6, 0xff, 0x83, 0x45, 0xe6, 0x92, 0xc0, 0xf8, 0x6e, 0x5b, 0x48, 0xe0, 0x1b, 0x99, 0x6c, 0xad, 0xc0, 0x01, 0x62, 0x2f, 0xb5, 0xe3, 0x63, 0xb4, 0x21] );
+	fn hashed_null_node() -> H::Out {
+		H::hash(&[0x80u8][..])
+	}
 	fn decode(data: &[u8]) -> ::std::result::Result<Node, Self::Error> {
 		let r = Rlp::new(data);
 		match r.prototype()? {
@@ -49,9 +52,14 @@ impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
 			},
 			// branch - first 16 are nodes, 17th is a value (or empty).
 			Prototype::List(17) => {
-				let mut nodes = [&[] as &[u8]; 16];
+				let mut nodes = [None; 16];
 				for i in 0..16 {
-					nodes[i] = r.at(i)?.as_raw();
+					let d = r.at(i)?.as_raw();
+					nodes[i] = if d != &[80u8][..] {
+						Some(d)
+					} else {
+						None
+					};
 				}
 				Ok(Node::Branch(nodes, if r.at(16)?.is_empty() { None } else { Some(r.at(16)?.data()?) }))
 			},
@@ -61,7 +69,7 @@ impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
 			_ => Err(DecoderError::Custom("Rlp is not valid."))
 		}
 	}
-	fn try_decode_hash(data: &[u8]) -> Option<<KeccakHasher as Hasher>::Out> {
+	fn try_decode_hash(data: &[u8]) -> Option<H::Out> {
 		let r = Rlp::new(data);
 		if r.is_data() && r.size() == KeccakHasher::LENGTH {
 			Some(r.as_val().expect("Hash is the correct size; qed"))
@@ -72,53 +80,53 @@ impl NodeCodec<KeccakHasher> for RlpNodeCodec<KeccakHasher> {
 	fn is_empty_node(data: &[u8]) -> bool {
 		Rlp::new(data).is_empty()
 	}
-    fn empty_node() -> Vec<u8> {
-        let mut stream = RlpStream::new();
-        stream.append_empty_data();
-        stream.drain()
-    }
+	fn empty_node() -> Vec<u8> {
+		let mut stream = RlpStream::new();
+		stream.append_empty_data();
+		stream.drain()
+	}
 
-    fn leaf_node(partial: &[u8], value: &[u8]) -> Vec<u8> {
-        let mut stream = RlpStream::new_list(2);
-        stream.append(&partial);
-        stream.append(&value);
-        stream.drain()
-    }
+	fn leaf_node(partial: &[u8], value: &[u8]) -> Vec<u8> {
+		let mut stream = RlpStream::new_list(2);
+		stream.append(&partial);
+		stream.append(&value);
+		stream.drain()
+	}
 
-	fn ext_node(partial: &[u8], child_ref: ChildReference<<KeccakHasher as Hasher>::Out>) -> Vec<u8> {
-        let mut stream = RlpStream::new_list(2);
-        stream.append(&partial);
-        match child_ref {
-            ChildReference::Hash(h) => stream.append(&h),
-            ChildReference::Inline(inline_data, len) => {
-                let bytes = &AsRef::<[u8]>::as_ref(&inline_data)[..len];
-                stream.append_raw(bytes, 1)
-            },
-        };
-        stream.drain()
+	fn ext_node(partial: &[u8], child_ref: ChildReference<H::Out>) -> Vec<u8> {
+		let mut stream = RlpStream::new_list(2);
+		stream.append(&partial);
+		match child_ref {
+			ChildReference::Hash(h) => stream.append(&h),
+			ChildReference::Inline(inline_data, len) => {
+				let bytes = &AsRef::<[u8]>::as_ref(&inline_data)[..len];
+				stream.append_raw(bytes, 1)
+			},
+		};
+		stream.drain()
 	}
 
 	fn branch_node<I>(children: I, value: Option<ElasticArray128<u8>>) -> Vec<u8>
-	where I: IntoIterator<Item=Option<ChildReference<<KeccakHasher as Hasher>::Out>>>
-    {
-        let mut stream = RlpStream::new_list(17);
-        for child_ref in children {
-            match child_ref {
-                Some(c) => match c {
-                    ChildReference::Hash(h) => stream.append(&h),
-                    ChildReference::Inline(inline_data, len) => {
-                        let bytes = &AsRef::<[u8]>::as_ref(&inline_data)[..len];
-                        stream.append_raw(bytes, 1)
-                    },
-                },
-                None => stream.append_empty_data()
-            };
-        }
-        if let Some(value) = value {
-            stream.append(&&*value);
-        } else {
-            stream.append_empty_data();
-        }
-        stream.drain()
-    }
+		where I: IntoIterator<Item=Option<ChildReference<H::Out>>>
+	{
+		let mut stream = RlpStream::new_list(17);
+		for child_ref in children {
+			match child_ref {
+				Some(c) => match c {
+					ChildReference::Hash(h) => stream.append(&h),
+					ChildReference::Inline(inline_data, len) => {
+						let bytes = &AsRef::<[u8]>::as_ref(&inline_data)[..len];
+						stream.append_raw(bytes, 1)
+					},
+				},
+				None => stream.append_empty_data()
+			};
+		}
+		if let Some(value) = value {
+			stream.append(&&*value);
+		} else {
+			stream.append_empty_data();
+		}
+		stream.drain()
+	}
 }

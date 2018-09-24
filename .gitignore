@@ -19,3 +19,5 @@
 *.iml
 *.swp
 *.swo
+
+**/.criterion

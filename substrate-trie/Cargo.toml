@@ -1,0 +1,28 @@
+[package]
+name = "substrate-trie"
+version = "0.4.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+description = "Patricia trie stuff using a parity-codec node format"
+repository = "https://github.com/paritytech/parity-common"
+license = "GPL-3.0"
+
+[[bench]]
+name = "triehash"
+harness = false
+
+[[bench]]
+name = "trie"
+harness = false
+
+[dependencies]
+parity-codec = { version = "~2.0.1" }
+patricia-trie = { path = "../patricia-trie" }
+triehash = { path = "../triehash" }
+
+[dev-dependencies]
+keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
+memorydb = { path = "../memorydb" }
+trie-standardmap = { path = "../trie-standardmap" }
+hashdb = { path = "../hashdb" }
+criterion = "0.1.2"
+patricia-trie-ethereum = { path = "../test-support/patricia-trie-ethereum" }
