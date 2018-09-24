@@ -11,6 +11,7 @@ hashdb = { version = "0.3", path = "../hashdb", default-features = false }
 
 [dev-dependencies]
 keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
+patricia-trie-ethereum = {version = "0.1", path = "../test-support/patricia-trie-ethereum"}
 
 # Used in benches
 ethereum-types = "0.4"

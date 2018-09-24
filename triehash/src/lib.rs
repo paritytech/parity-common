@@ -21,8 +21,6 @@
 extern crate hashdb;
 #[cfg(test)]
 extern crate keccak_hasher;
-#[cfg(test)]
-extern crate parity_codec;
 
 use std::collections::BTreeMap;
 use std::cmp;
@@ -55,10 +53,10 @@ fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
 /// ```rust
 /// extern crate triehash;
 /// extern crate keccak_hasher;
-/// extern crate triestream;
+/// extern crate patricia_trie_ethereum;
 /// use triehash::trie_root;
 /// use keccak_hasher::KeccakHasher;
-/// use triestream::RlpTrieStream;
+/// use patricia_trie_ethereum::RlpTrieStream;
 ///
 /// fn main() {
 /// 	let v = vec![
@@ -145,10 +143,10 @@ pub fn unhashed_trie<H, S, I, A, B>(input: I) -> Vec<u8> where
 /// ```rust
 /// extern crate triehash;
 /// extern crate keccak_hasher;
-/// extern crate triestream;
+/// extern crate patricia_trie_ethereum;
 /// use triehash::sec_trie_root;
 /// use keccak_hasher::KeccakHasher;
-/// use triestream::RlpTrieStream;
+/// use patricia_trie_ethereum::RlpTrieStream;
 ///
 /// fn main() {
 /// 	let v = vec![
