@@ -9,7 +9,6 @@
 //! Efficient large, fixed-size big integers and hashes.
 
 #![cfg_attr(not(feature="std"), no_std)]
-#![cfg_attr(all(not(feature="std"), test), feature(alloc))]
 
 #[doc(hidden)]
 pub extern crate byteorder;
@@ -28,9 +27,6 @@ pub extern crate rustc_hex;
 #[cfg(feature="impl_quickcheck_arbitrary")]
 #[doc(hidden)]
 pub extern crate quickcheck;
-
-#[cfg(all(not(feature = "std"), test))]
-extern crate alloc;
 
 #[macro_use]
 extern crate crunchy;
