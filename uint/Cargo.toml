@@ -26,3 +26,8 @@ impl_quickcheck_arbitrary = ["quickcheck"]
 [[example]]
 name = "modular"
 required-features = ["std"]
+
+[[test]]
+name = "uint_tests"
+required-features = ["std"]
+
