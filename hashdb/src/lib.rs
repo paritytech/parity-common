@@ -49,7 +49,7 @@ pub trait HashDB<H: Hasher, T>: Send + Sync + AsHashDB<H, T> {
 
 	/// Look up a given hash into the bytes that hash to it, returning None if the
 	/// hash is not known.
-	fn get(&self, key: &H::Out) -> Option<&T>;
+	fn get(&self, key: &H::Out) -> Option<T>;
 
 	/// Check for the existance of a hash-key.
 	fn contains(&self, key: &H::Out) -> bool;
@@ -83,4 +83,3 @@ impl<'a, H: Hasher, T> AsHashDB<H, T> for &'a mut HashDB<H, T> {
 	fn as_hashdb(&self) -> &HashDB<H, T> { &**self }
 	fn as_hashdb_mut(&mut self) -> &mut HashDB<H, T> { &mut **self }
 }
-
