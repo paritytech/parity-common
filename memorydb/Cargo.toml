@@ -1,6 +1,6 @@
 [package]
 name = "memorydb"
-version = "0.3.0"
+version = "0.3.0-beta.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "in-memory implementation of hashdb"
 repository = "https://github.com/paritytech/parity-common"
@@ -8,12 +8,12 @@ license = "GPL-3.0"
 
 [dependencies]
 heapsize = "0.4"
-hashdb = { version = "0.3", path = "../hashdb" }
-plain_hasher = { version = "0.2", path = "../plain_hasher", default-features = false }
-rlp = { version = "0.3", path = "../rlp", default-features = false }
+hashdb = { path = "../hashdb" }
+plain_hasher = { path = "../plain_hasher", default-features = false }
+rlp = { path = "../rlp", default-features = false }
 
 [dev-dependencies]
 tiny-keccak = "1.4.2"
 ethereum-types = "0.4"
-keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
-keccak-hash = { version = "0.1", path = "../keccak-hash" }
+keccak-hasher = { path = "../test-support/keccak-hasher" }
+keccak-hash = { path = "../keccak-hash" }

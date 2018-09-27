@@ -1,6 +1,6 @@
 [package]
 name = "patricia-trie"
-version = "0.3.0"
+version = "0.3.0-beta.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "Merkle-Patricia Trie generic over key hasher and node encoding"
 repository = "https://github.com/paritytech/parity-common"
@@ -10,17 +10,17 @@ license = "GPL-3.0"
 elastic-array = "0.10"
 log = "0.3"
 rand = "0.4"
-hashdb = { version = "0.3", path = "../hashdb" }
-parity-bytes = { version = "0.1", path = "../parity-bytes" }
+hashdb = { path = "../hashdb" }
+parity-bytes = { path = "../parity-bytes" }
 
 [dev-dependencies]
 env_logger = "0.5"
 ethereum-types = "0.4"
-keccak-hash = { version = "0.1", path = "../keccak-hash" }
-memorydb = { version = "0.3", path = "../memorydb", default-features = false }
-rlp = { version = "0.3.0", path = "../rlp", default-features = false }
-trie-standardmap = { version = "0.1", path = "../trie-standardmap", default-features = false }
-triehash = { version = "0.3", path = "../triehash", default-features = false }
-parity-bytes = { version = "0.1.0", path = "../parity-bytes" }
-patricia-trie-ethereum = { version = "0.1", path = "../test-support/patricia-trie-ethereum" }
-keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
+keccak-hash = { path = "../keccak-hash" }
+memorydb = { path = "../memorydb", default-features = false }
+rlp = { path = "../rlp", default-features = false }
+trie-standardmap = { path = "../trie-standardmap", default-features = false }
+triehash = { path = "../triehash", default-features = false }
+parity-bytes = {  path = "../parity-bytes" }
+patricia-trie-ethereum = { path = "../test-support/patricia-trie-ethereum" }
+keccak-hasher = { path = "../test-support/keccak-hasher" }
