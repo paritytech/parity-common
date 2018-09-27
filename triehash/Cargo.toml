@@ -8,11 +8,11 @@ license = "GPL-3.0"
 
 [dependencies]
 hashdb = { path = "../hashdb", default-features = false }
-rlp = { version = "0.3", path = "../rlp", default-features = false }
+rlp = { path = "../rlp", default-features = false }
 
 [dev-dependencies]
-trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
-keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
+trie-standardmap = { path = "../trie-standardmap" }
+keccak-hasher = { path = "../test-support/keccak-hasher" }
 tiny-keccak = "1.4.2"
 ethereum-types = "0.4"
 
