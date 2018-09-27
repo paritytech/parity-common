@@ -57,6 +57,12 @@ fn calculate_payload_info(header_bytes: &[u8], len_of_len: usize) -> Result<Payl
 	}
 	if header_bytes.len() < header_len { return Err(DecoderError::RlpIsTooShort); }
 	let value_len = decode_usize(&header_bytes[1..header_len])?;
+	// TODO: the following two lines from commit 9c0d5263e break
+	// a test in util/network-devp2p/src/discovery.rs (`packets()`: the second payload fails to decode when the following two lines are present.
+	// Failure happens in:
+	// on_packet()
+	// 		on_ping()
+	// 			NodeEndpoint::from_rlp(&rlp.at(2)?)? (outer `?`)
 	if value_len <= 55 {
 		return Err(DecoderError::RlpInvalidIndirection);
 	}
@@ -262,6 +268,11 @@ impl<'a> Rlp<'a> {
 	/// consumes first found prefix
 	fn consume_list_payload(&self) -> Result<&'a [u8], DecoderError> {
 		let item = BasicDecoder::payload_info(self.bytes)?;
+		// TODO: this fix from commit 4af0fa655 breaks 4 tests in `util/network-devp2p/`:
+		// 	handshake::test::test_handshake_ack_eip8
+		// 	handshake::test::test_handshake_ack_eip8_2
+		// 	handshake::test::test_handshake_auth_eip8
+		// 	handshake::test::test_handshake_auth_eip8_2
 		if self.bytes.len() < (item.header_len + item.value_len) {
 			return Err(DecoderError::RlpIsTooShort);
 		}
