@@ -9,7 +9,7 @@ license = "GPL-3.0"
 patricia-trie = { version = "0.3", path = "../../patricia_trie" }
 keccak-hasher = { version = "0.1", path = "../keccak-hasher" }
 hashdb = { version = "0.3", path = "../../hashdb" }
-rlp = { version = "0.3.0", path = "../../rlp" }
+rlp = { version = "0.3", path = "../../rlp" }
 parity-bytes = { version = "0.1", path = "../../parity-bytes" }
 
 ethereum-types = "0.4"

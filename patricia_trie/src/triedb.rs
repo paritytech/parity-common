@@ -89,7 +89,7 @@ where
 	pub fn db(&'db self) -> &'db HashDB<H, DBValue> { self.db }
 
 	/// Get the data of the root node.
-	fn root_data(&self) -> Result<&DBValue, H::Out, C::Error> {
+	fn root_data(&self) -> Result<DBValue, H::Out, C::Error> {
 		self.db
 			.get(self.root)
 			.ok_or_else(|| Box::new(TrieError::InvalidStateRoot(*self.root)))
@@ -103,7 +103,7 @@ where
 			Some(key) => {
 				self.db
 					.get(&key)
-					.map(|v| Cow::Borrowed(v))
+					.map(|v| Cow::Owned(v))
 					.ok_or_else(|| Box::new(TrieError::IncompleteDatabase(key)))
 			}
 			None => Ok(Cow::Owned(DBValue::from_slice(node)))
@@ -345,7 +345,7 @@ impl<'a, H: Hasher, C: NodeCodec<H>> TrieIterator<H, C> for TrieDBIterator<'a, H
 		self.trail.clear();
 		self.key_nibbles.clear();
 		let root_rlp = self.db.root_data()?;
-		self.seek(root_rlp, NibbleSlice::new(key.as_ref()))
+		self.seek(&root_rlp, NibbleSlice::new(key.as_ref()))
 	}
 }
 

@@ -139,7 +139,7 @@ mod test {
 		let mut t = FatDBMut::new(&mut memdb, &mut root);
 		t.insert(&key, &val).unwrap();
 		assert_eq!(t.get(&key), Ok(Some(DBValue::from_slice(&val))));
-		assert_eq!(t.db().get(&aux_hash), Some(&DBValue::from_slice(&key)));
+		assert_eq!(t.db().get(&aux_hash), Some(DBValue::from_slice(&key)));
 		t.remove(&key).unwrap();
 		assert_eq!(t.db().get(&aux_hash), None);
 	}
