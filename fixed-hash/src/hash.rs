@@ -635,6 +635,7 @@ mod tests {
 		assert_eq!(a | b, c);
 	}
 
+	#[cfg(feature="std")]
 	#[test]
 	fn from_and_to_address() {
 		let address: H160 = "ef2d6d194084c2de36e0dabfce45d046b37d1106".into();
@@ -643,6 +644,7 @@ mod tests {
 		assert_eq!(address, a);
 	}
 
+	#[cfg(feature="std")]
 	#[test]
 	fn from_u64() {
 		use core::str::FromStr;
@@ -652,6 +654,7 @@ mod tests {
 		assert_eq!(H32::from(0x1234567890abcdef), H32::from_str("90abcdef").unwrap());
 	}
 
+	#[cfg(feature="std")]
 	#[test]
 	fn from_str() {
 		assert_eq!(H64::from(0x1234567890abcdef), H64::from("0x1234567890abcdef"));
@@ -677,6 +680,7 @@ mod tests {
 		assert!(r == u)
 	}
 
+	#[cfg(feature="uint_conversions")]
 	#[test]
 	#[should_panic]
 	fn converting_differently_sized_types_panics() {

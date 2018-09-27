@@ -6,7 +6,8 @@ matrix:
   allow_failures:
     - rust: nightly
 script:
-  - cargo build
+  - cargo check --all --tests
+  - cargo build --all
   - cargo test --all --exclude uint --exclude fixed-hash
   - cd fixed-hash/ && cargo test --features=std,heapsizeof,uint_conversions && cd ..
   - cd uint/ && cargo test --features=std,impl_quickcheck_arbitrary --release && cd ..

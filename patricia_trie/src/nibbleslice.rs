@@ -279,7 +279,7 @@ mod tests {
 	}
 
 	#[test]
-	fn shared() {
+	fn find_length_of_common_prefix() {
 		let n = NibbleSlice::new(D);
 
 		let other = &[0x01u8, 0x23, 0x01, 0x23, 0x45, 0x67];
@@ -295,7 +295,7 @@ mod tests {
 	}
 
 	#[test]
-	fn compare() {
+	fn compare_sizes() {
 		let other = &[0x01u8, 0x23, 0x01, 0x23, 0x45];
 		let n = NibbleSlice::new(D);
 		let m = NibbleSlice::new(other);
@@ -307,5 +307,22 @@ mod tests {
 		assert!(n == m.mid(4));
 		assert!(n >= m.mid(4));
 		assert!(n <= m.mid(4));
+	}
+
+	#[test]
+	fn common_prefix_for_concatenated_slices() {
+		let first = NibbleSlice::new(&[0x01u8, 0x23, 0x45]); // 0'1'2'3'4'5'
+		let first_ext = NibbleSlice::new(&[0x22u8, 0x44, 0x55]); // 2'2'4'4'5'5
+		let concat = NibbleSlice::new_composed(&first, &first_ext);
+		assert!(concat.len() == first.len() + first_ext.len());
+
+		// 0'1'2'3'4'5'2'2'9'9'5'5'
+		let second = NibbleSlice::new(&[0x01u8, 0x23, 0x45, 0x22, 0x99, 0x55]);
+
+		let common_prefix_length = first.common_prefix(&second);
+		assert_eq!(common_prefix_length, 6);
+
+		let common_prefix_length = concat.common_prefix(&second);
+		assert_eq!(common_prefix_length, 8);
 	}
 }
