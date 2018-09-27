@@ -10,4 +10,4 @@ license = "GPL-3.0"
 ethereum-types = "0.4"
 keccak-hash = { version = "0.1", path = "../keccak-hash" }
 parity-bytes = { version = "0.1", path = "../parity-bytes" }
-rlp = { version = "0.3.0", path = "../rlp" }
+rlp = { version = "0.3.0-beta", path = "../rlp" }
