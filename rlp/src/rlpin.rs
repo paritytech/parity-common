@@ -55,14 +55,10 @@ fn calculate_payload_info(header_bytes: &[u8], len_of_len: usize) -> Result<Payl
 		None => return Err(DecoderError::RlpIsTooShort),
 		_ => (),
 	}
-	if header_bytes.len() < header_len { return Err(DecoderError::RlpIsTooShort); }
+	if header_bytes.len() < header_len {
+		return Err(DecoderError::RlpIsTooShort);
+	}
 	let value_len = decode_usize(&header_bytes[1..header_len])?;
-	// TODO: the following two lines from commit 9c0d5263e break
-	// a test in util/network-devp2p/src/discovery.rs (`packets()`: the second payload fails to decode when the following two lines are present.
-	// Failure happens in:
-	// on_packet()
-	// 		on_ping()
-	// 			NodeEndpoint::from_rlp(&rlp.at(2)?)? (outer `?`)
 	if value_len <= 55 {
 		return Err(DecoderError::RlpInvalidIndirection);
 	}
@@ -108,7 +104,7 @@ impl PayloadInfo {
 #[derive(Debug, Clone)]
 pub struct Rlp<'a> {
 	bytes: &'a [u8],
-	offset_cache: Cell<OffsetCache>,
+	offset_cache: Cell<Option<OffsetCache>>,
 	count_cache: Cell<Option<usize>>,
 }
 
@@ -134,7 +130,7 @@ impl<'a> Rlp<'a> {
 	pub fn new(bytes: &'a [u8]) -> Rlp<'a> {
 		Rlp {
 			bytes: bytes,
-			offset_cache: Cell::new(OffsetCache::new(usize::max_value(), 0)),
+			offset_cache: Cell::new(None),
 			count_cache: Cell::new(None)
 		}
 	}
@@ -192,17 +188,22 @@ impl<'a> Rlp<'a> {
 
 		// move to cached position if its index is less or equal to
 		// current search index, otherwise move to beginning of list
-		let c = self.offset_cache.get();
-		let (mut bytes, to_skip) = match c.index <= index {
-			true => (Rlp::consume(self.bytes, c.offset)?, index - c.index),
-			false => (self.consume_list_payload()?, index),
+		let cache = self.offset_cache.get();
+		let (bytes, indexes_to_skip, bytes_consumed) = match cache {
+			Some(ref cache) if cache.index <= index => (
+				Rlp::consume(self.bytes, cache.offset)?, index - cache.index, cache.offset
+			),
+			Some(_) | None => {
+				let (bytes, consumed) = self.consume_list_payload()?;
+				(bytes, index, consumed)
+			}
 		};
 
 		// skip up to x items
-		bytes = Rlp::consume_items(bytes, to_skip)?;
+		let (bytes, consumed) = Rlp::consume_items(bytes, indexes_to_skip)?;
 
 		// update the cache
-		self.offset_cache.set(OffsetCache::new(index, self.bytes.len() - bytes.len()));
+		self.offset_cache.set(Some(OffsetCache::new(index, bytes_consumed + consumed)));
 
 		// construct new rlp
 		let found = BasicDecoder::payload_info(bytes)?;
@@ -266,34 +267,34 @@ impl<'a> Rlp<'a> {
 	}
 
 	/// consumes first found prefix
-	fn consume_list_payload(&self) -> Result<&'a [u8], DecoderError> {
+	fn consume_list_payload(&self) -> Result<(&'a [u8], usize), DecoderError> {
 		let item = BasicDecoder::payload_info(self.bytes)?;
-		// TODO: this fix from commit 4af0fa655 breaks 4 tests in `util/network-devp2p/`:
-		// 	handshake::test::test_handshake_ack_eip8
-		// 	handshake::test::test_handshake_ack_eip8_2
-		// 	handshake::test::test_handshake_auth_eip8
-		// 	handshake::test::test_handshake_auth_eip8_2
 		if self.bytes.len() < (item.header_len + item.value_len) {
 			return Err(DecoderError::RlpIsTooShort);
 		}
-		Ok(&self.bytes[item.header_len..item.header_len + item.value_len])
+		Ok((&self.bytes[item.header_len..item.header_len + item.value_len], item.header_len))
 	}
 
 	/// consumes fixed number of items
-	fn consume_items(bytes: &'a [u8], items: usize) -> Result<&'a [u8], DecoderError> {
+	fn consume_items(bytes: &'a [u8], items: usize) -> Result<(&'a [u8], usize), DecoderError> {
 		let mut result = bytes;
+		let mut consumed = 0;
 		for _ in 0..items {
 			let i = BasicDecoder::payload_info(result)?;
-			result = Rlp::consume(result, i.header_len + i.value_len)?;
+			let to_consume = i.header_len + i.value_len;
+			result = Rlp::consume(result, to_consume)?;
+			consumed += to_consume;
 		}
-		Ok(result)
+		Ok((result, consumed))
 	}
 
 	/// consumes slice prefix of length `len`
 	fn consume(bytes: &'a [u8], len: usize) -> Result<&'a [u8], DecoderError> {
 		match bytes.len() >= len {
 			true => Ok(&bytes[len..]),
-			false => Err(DecoderError::RlpIsTooShort),
+			false => {
+				Err(DecoderError::RlpIsTooShort)
+			},
 		}
 	}
 }
@@ -343,7 +344,9 @@ impl<'a> BasicDecoder<'a> {
 		let item = PayloadInfo::from(bytes)?;
 		match item.header_len.checked_add(item.value_len) {
 			Some(x) if x <= bytes.len() => Ok(item),
-			_ => Err(DecoderError::RlpIsTooShort),
+			_ => {
+				Err(DecoderError::RlpIsTooShort)
+			},
 		}
 	}
 
