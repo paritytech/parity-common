@@ -10,33 +10,17 @@ license = "GPL-3.0"
 elastic-array = "0.10"
 log = "0.3"
 rand = "0.4"
-hashdb = { version = "0.3", path = "../hashdb" }
+hashdb = { version = "0.3.0", path = "../hashdb" }
 parity-bytes = { version = "0.1", path = "../parity-bytes" }
 
 [dev-dependencies]
 env_logger = "0.5"
 ethereum-types = "0.4"
 keccak-hash = { version = "0.1", path = "../keccak-hash" }
-memorydb = { version = "0.3", path = "../memorydb", default-features = false }
+memorydb = { version = "0.3.0", path = "../memorydb", default-features = false }
 rlp = { version = "0.3.0", path = "../rlp", default-features = false }
 trie-standardmap = { version = "0.1", path = "../trie-standardmap", default-features = false }
-triehash = { version = "0.3", path = "../triehash", default-features = false }
+triehash = { version = "0.3.0", path = "../triehash", default-features = false }
 parity-bytes = { version = "0.1.0", path = "../parity-bytes" }
-
-# REVIEW: what's a better way to deal with this? The tests here in
-# `patricia_trie` use `keccak-hasher` and `patricia-trie-ethereum` to
-# instantiate concrete impls. Neither crate is needed/wanted in `parity-common`
-# (but we do want our tests to run…). We can publish them to crates.io (and I
-# did this for `keccak-hasher`, but: see below) but `patricia-trie-ethereum`
-# depends on `patricia_trie` and which will eventually be published as part of
-# `parity-common` but not before that. So it's a cycle. The temporary workaround
-# is to copy `patricia-trie-ethereum` into `parity-common` as a "test helper".
-# Note that this is a *copy*, without any git history or link to the mother
-# repo. They are to be considered test-only helpers and do not necessarily need
-# to be in sync with the `parity-ethereum` versions.
 patricia-trie-ethereum = { version = "0.1", path = "../test-support/patricia-trie-ethereum" }
-# We need this in-tree or we end up with duplicate versions when `keccak-hasher`
-# from crates.io fetches `hashdb` from crates, which causes compiler error
-# `error[E0277]: the trait bound `keccak_hasher::KeccakHasher: hashdb::Hasher`
-# is not satisfied`. Not sure if there's any way around that.
 keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }

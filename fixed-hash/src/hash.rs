@@ -376,7 +376,7 @@ macro_rules! impl_hash_conversions {
 #[macro_export]
 macro_rules! impl_hash_uint_conversions {
 	($hash: ident, $uint: ident) => {
-		debug_assert_eq!(::core::mem::size_of::<$hash>(), ::core::mem::size_of::<$uint>());
+		debug_assert_eq!(::core::mem::size_of::<$hash>(), ::core::mem::size_of::<$uint>(), "Can't convert between differently sized uint/hash.");
 		impl From<$uint> for $hash {
 			fn from(value: $uint) -> $hash {
 				let mut ret = $hash::new();
@@ -682,7 +682,7 @@ mod tests {
 
 	#[cfg(feature="uint_conversions")]
 	#[test]
-	#[should_panic]
+	#[should_panic(expected = "Can't convert between differently sized uint/hash.")]
 	fn converting_differently_sized_types_panics() {
 		use uint::U512;
 
