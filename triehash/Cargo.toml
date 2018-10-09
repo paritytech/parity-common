@@ -1,14 +1,14 @@
 [package]
 name = "triehash"
-version = "0.3.0-beta.0"
+version = "0.3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "In-memory patricia trie operations"
 repository = "https://github.com/paritytech/parity-common"
 license = "GPL-3.0"
 
 [dependencies]
-hashdb = { version = "0.3.0-beta", path = "../hashdb", default-features = false }
-rlp = { version = "0.3.0-beta", path = "../rlp", default-features = false }
+hashdb = { version = "0.3.0", path = "../hashdb", default-features = false }
+rlp = { version = "0.3.0", path = "../rlp", default-features = false }
 
 [dev-dependencies]
 trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
