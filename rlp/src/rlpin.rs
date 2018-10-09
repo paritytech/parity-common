@@ -193,7 +193,7 @@ impl<'a> Rlp<'a> {
 			Some(ref cache) if cache.index <= index => (
 				Rlp::consume(self.bytes, cache.offset)?, index - cache.index, cache.offset
 			),
-			Some(_) | None => {
+			_ => {
 				let (bytes, consumed) = self.consume_list_payload()?;
 				(bytes, index, consumed)
 			}
@@ -292,9 +292,7 @@ impl<'a> Rlp<'a> {
 	fn consume(bytes: &'a [u8], len: usize) -> Result<&'a [u8], DecoderError> {
 		match bytes.len() >= len {
 			true => Ok(&bytes[len..]),
-			false => {
-				Err(DecoderError::RlpIsTooShort)
-			},
+			false => Err(DecoderError::RlpIsTooShort)
 		}
 	}
 }
@@ -344,9 +342,7 @@ impl<'a> BasicDecoder<'a> {
 		let item = PayloadInfo::from(bytes)?;
 		match item.header_len.checked_add(item.value_len) {
 			Some(x) if x <= bytes.len() => Ok(item),
-			_ => {
-				Err(DecoderError::RlpIsTooShort)
-			},
+			_ => Err(DecoderError::RlpIsTooShort),
 		}
 	}
 
