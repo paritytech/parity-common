@@ -15,18 +15,20 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use rripemd160;
-use ring::digest::{self, Context, SHA256, SHA512};
+use rsha2;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use rdigest::generic_array::GenericArray;
-use rdigest::generic_array::typenum::U20;
-
+use rdigest::generic_array::typenum::{U20, U32, U64};
+use rdigest::Input;
+use rsha2::Digest as RDigest;
 
 /// The message digest.
 pub struct Digest<T>(InnerDigest, PhantomData<T>);
 
 enum InnerDigest {
-	Ring(digest::Digest),
+	Sha256(GenericArray<u8, U32>),
+	Sha512(GenericArray<u8, U64>),
 	Ripemd160(GenericArray<u8, U20>),
 }
 
@@ -34,20 +36,25 @@ impl<T> Deref for Digest<T> {
 	type Target = [u8];
 	fn deref(&self) -> &Self::Target {
 		match self.0 {
-			InnerDigest::Ring(ref d) => d.as_ref(),
-			InnerDigest::Ripemd160(ref d) => &d[..]
+			InnerDigest::Sha256(ref d) => &d[..],
+			InnerDigest::Sha512(ref d) => &d[..],
+			InnerDigest::Ripemd160(ref d) => &d[..],
 		}
 	}
 }
 
 /// Single-step sha256 digest computation.
 pub fn sha256(data: &[u8]) -> Digest<Sha256> {
-	Digest(InnerDigest::Ring(digest::digest(&SHA256, data)), PhantomData)
+	let mut hasher = Hasher::sha256();
+	hasher.update(data);
+	hasher.finish()
 }
 
 /// Single-step sha512 digest computation.
 pub fn sha512(data: &[u8]) -> Digest<Sha512> {
-	Digest(InnerDigest::Ring(digest::digest(&SHA512, data)), PhantomData)
+	let mut hasher = Hasher::sha512();
+	hasher.update(data);
+	hasher.finish()
 }
 
 /// Single-step ripemd160 digest computation.
@@ -65,19 +72,20 @@ pub enum Ripemd160 {}
 pub struct Hasher<T>(Inner, PhantomData<T>);
 
 enum Inner {
-	Ring(Context),
+	Sha256(rsha2::Sha256),
+	Sha512(rsha2::Sha512),
 	Ripemd160(rripemd160::Ripemd160)
 }
 
 impl Hasher<Sha256> {
 	pub fn sha256() -> Hasher<Sha256> {
-		Hasher(Inner::Ring(Context::new(&SHA256)), PhantomData)
+		Hasher(Inner::Sha256(rsha2::Sha256::default()), PhantomData)
 	}
 }
 
 impl Hasher<Sha512> {
 	pub fn sha512() -> Hasher<Sha512> {
-		Hasher(Inner::Ring(Context::new(&SHA512)), PhantomData)
+		Hasher(Inner::Sha512(rsha2::Sha512::default()), PhantomData)
 	}
 }
 
@@ -90,9 +98,13 @@ impl Hasher<Ripemd160> {
 impl<T> Hasher<T> {
 	pub fn update(&mut self, data: &[u8]) {
 		match self.0 {
-			Inner::Ring(ref mut ctx) => ctx.update(data),
+			Inner::Sha256(ref mut ctx) => {
+				ctx.process(data)
+			},
+			Inner::Sha512(ref mut ctx) => {
+				ctx.process(data)
+			},
 			Inner::Ripemd160(ref mut ctx) => {
-				use rdigest::Input;
 				ctx.process(data)
 			}
 		}
@@ -100,9 +112,13 @@ impl<T> Hasher<T> {
 
 	pub fn finish(self) -> Digest<T> {
 		match self.0 {
-			Inner::Ring(ctx) => Digest(InnerDigest::Ring(ctx.finish()), PhantomData),
+			Inner::Sha256(ctx) => {
+				Digest(InnerDigest::Sha256(ctx.result()), PhantomData)
+			},
+			Inner::Sha512(ctx) => {
+				Digest(InnerDigest::Sha512(ctx.result()), PhantomData)
+			},
 			Inner::Ripemd160(ctx) => {
-				use rdigest::Digest;
 				Digest(InnerDigest::Ripemd160(ctx.result()), PhantomData)
 			}
 		}

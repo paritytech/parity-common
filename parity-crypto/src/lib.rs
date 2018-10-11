@@ -18,22 +18,30 @@
 
 #[macro_use]
 extern crate quick_error;
+#[cfg(not(target_arch = "wasm32"))]
 extern crate ring;
 extern crate tiny_keccak;
 extern crate scrypt as rscrypt;
 extern crate ripemd160 as rripemd160;
+extern crate sha2 as rsha2;
 extern crate digest as rdigest;
 extern crate aes as raes;
 extern crate aes_ctr;
 extern crate block_modes;
 
 pub mod aes;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod aes_gcm;
+// could create a less safe RustCrypto based aes_gcm here if needed for wasm
 pub mod error;
 pub mod scrypt;
 pub mod digest;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod hmac;
+// could create a less safe crate using RustCrypto or just switch
+#[cfg(not(target_arch = "wasm32"))]
 pub mod pbkdf2;
+// could create a less safe crate using RustCrypto or just switch
 
 pub use error::Error;
 
@@ -60,6 +68,7 @@ impl<T> Keccak256<[u8; 32]> for T where T: AsRef<[u8]> {
 	}
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn derive_key_iterations(password: &[u8], salt: &[u8], c: u32) -> (Vec<u8>, Vec<u8>) {
 	let mut derived_key = [0u8; KEY_LENGTH];
 	pbkdf2::sha256(c, pbkdf2::Salt(salt), pbkdf2::Secret(password), &mut derived_key);
@@ -75,6 +84,7 @@ pub fn derive_mac(derived_left_bits: &[u8], cipher_text: &[u8]) -> Vec<u8> {
 	mac
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn is_equal(a: &[u8], b: &[u8]) -> bool {
 	ring::constant_time::verify_slices_are_equal(a, b).is_ok()
 }
