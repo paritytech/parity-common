@@ -19,4 +19,4 @@ aes-ctr = "0.1.0"
 block-modes = "0.1.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-ring = "0.13"
+ring = "0.12"
