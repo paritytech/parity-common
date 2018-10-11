@@ -20,7 +20,7 @@ use rscrypt:: {scrypt, ScryptParams};
 #[cfg(test)]
 use std::io::{ Error };
 
-pub fn derive_key(pass: &[u8], salt: &[u8; 32], n: u32, p: u32, r: u32) -> Result<(Vec<u8>, Vec<u8>), ScryptError> {
+pub fn derive_key(pass: &[u8], salt: &[u8], n: u32, p: u32, r: u32) -> Result<(Vec<u8>, Vec<u8>), ScryptError> {
 	// sanity checks
 	let log_n = (32 - n.leading_zeros() - 1) as u8;
 	if log_n as u32 >= r * 16 {

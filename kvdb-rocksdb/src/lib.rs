@@ -23,9 +23,11 @@ extern crate interleaved_ordered;
 extern crate num_cpus;
 extern crate parking_lot;
 extern crate regex;
-extern crate rocksdb;
+extern crate parity_rocksdb;
 
+#[cfg(test)]
 extern crate ethereum_types;
+
 extern crate kvdb;
 
 use std::collections::HashMap;
@@ -34,7 +36,7 @@ use std::{cmp, fs, io, mem, result, error};
 use std::path::Path;
 
 use parking_lot::{Mutex, MutexGuard, RwLock};
-use rocksdb::{
+use parity_rocksdb::{
 	DB, Writable, WriteBatch, WriteOptions, IteratorMode, DBIterator,
 	Options, BlockBasedOptions, Direction, Cache, Column, ReadOptions
 };
@@ -604,15 +606,15 @@ impl Database {
 				let _ = fs::remove_dir_all(new_db);
 			},
 			Err(err) => {
-				warn!("DB atomic swap failed: {}", err);
+				debug!("DB atomic swap failed: {}", err);
 				match swap_nonatomic(new_db, &self.path) {
 					Ok(_) => {
 						// ignore errors
 						let _ = fs::remove_dir_all(new_db);
 					},
 					Err(err) => {
-						warn!("DB nonatomic atomic swap failed: {}", err);
-						return Err(err.into());
+						warn!("Failed to swap DB directories: {:?}", err);
+						return Err(io::Error::new(io::ErrorKind::Other, "DB restoration failed: could not swap DB directories"));
 					}
 				}
 			}

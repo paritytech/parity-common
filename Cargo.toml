@@ -9,10 +9,12 @@ members = [
 	"memorydb",
 	"parity-bytes",
 	"parity-crypto",
-	"path",
+	"parity-path",
 	"patricia_trie",
 	"plain_hasher",
 	"rlp",
+	"transaction-pool",
+	"trace-time",
 	"trie-standardmap",
 	"triehash",
 	"uint"

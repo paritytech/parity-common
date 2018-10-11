@@ -21,7 +21,7 @@ use hashdb::Hasher;
 use node::Node;
 use ChildReference;
 
-use elastic_array::{ElasticArray1024, ElasticArray128};
+use elastic_array::{ElasticArray128};
 
 /// Trait for trie node encoding/decoding
 pub trait NodeCodec<H: Hasher>: Sized {
@@ -41,15 +41,15 @@ pub trait NodeCodec<H: Hasher>: Sized {
 	fn is_empty_node(data: &[u8]) -> bool;
 
 	/// Returns an empty node
-	fn empty_node() -> ElasticArray1024<u8>;
+	fn empty_node() -> Vec<u8>;
 
 	/// Returns an encoded leaft node
-	fn leaf_node(partial: &[u8], value: &[u8]) -> ElasticArray1024<u8>;
+	fn leaf_node(partial: &[u8], value: &[u8]) -> Vec<u8>;
 
 	/// Returns an encoded extension node
-	fn ext_node(partial: &[u8], child_ref: ChildReference<H::Out>) -> ElasticArray1024<u8>;
+	fn ext_node(partial: &[u8], child_ref: ChildReference<H::Out>) -> Vec<u8>;
 
 	/// Returns an encoded branch node. Takes an iterator yielding `ChildReference<H::Out>` and an optional value
-	fn branch_node<I>(children: I, value: Option<ElasticArray128<u8>>) -> ElasticArray1024<u8>
+	fn branch_node<I>(children: I, value: Option<ElasticArray128<u8>>) -> Vec<u8>
 	where I: IntoIterator<Item=Option<ChildReference<H::Out>>>;
 }

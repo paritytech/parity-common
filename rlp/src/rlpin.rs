@@ -40,6 +40,7 @@ pub enum Prototype {
 }
 
 /// Stores basic information about item
+#[derive(Debug)]
 pub struct PayloadInfo {
 	/// Header length in bytes
 	pub header_len: usize,
@@ -54,8 +55,13 @@ fn calculate_payload_info(header_bytes: &[u8], len_of_len: usize) -> Result<Payl
 		None => return Err(DecoderError::RlpIsTooShort),
 		_ => (),
 	}
-	if header_bytes.len() < header_len { return Err(DecoderError::RlpIsTooShort); }
+	if header_bytes.len() < header_len {
+		return Err(DecoderError::RlpIsTooShort);
+	}
 	let value_len = decode_usize(&header_bytes[1..header_len])?;
+	if value_len <= 55 {
+		return Err(DecoderError::RlpInvalidIndirection);
+	}
 	Ok(PayloadInfo::new(header_len, value_len))
 }
 
@@ -72,21 +78,19 @@ impl PayloadInfo {
 
 	/// Create a new object from the given bytes RLP. The bytes
 	pub fn from(header_bytes: &[u8]) -> Result<PayloadInfo, DecoderError> {
-		match header_bytes.first().cloned() {
-			None => Err(DecoderError::RlpIsTooShort),
-			Some(0...0x7f) => Ok(PayloadInfo::new(0, 1)),
-			Some(l @ 0x80...0xb7) => Ok(PayloadInfo::new(1, l as usize - 0x80)),
-			Some(l @ 0xb8...0xbf) => {
-				let len_of_len = l as usize - 0xb7;
-				calculate_payload_info(header_bytes, len_of_len)
-			}
-			Some(l @ 0xc0...0xf7) => Ok(PayloadInfo::new(1, l as usize - 0xc0)),
-			Some(l @ 0xf8...0xff) => {
-				let len_of_len = l as usize - 0xf7;
-				calculate_payload_info(header_bytes, len_of_len)
-			},
-			// we cant reach this place, but rust requires _ to be implemented
-			_ => { unreachable!(); }
+		let l = *header_bytes.first().ok_or_else(|| DecoderError::RlpIsTooShort)?;
+		if l <= 0x7f {
+			Ok(PayloadInfo::new(0, 1))
+		} else if l <= 0xb7 {
+			Ok(PayloadInfo::new(1, l as usize - 0x80))
+		} else if l <= 0xbf {
+			let len_of_len = l as usize - 0xb7;
+			calculate_payload_info(header_bytes, len_of_len)
+		} else if l <= 0xf7 {
+			Ok(PayloadInfo::new(1, l as usize - 0xc0))
+		} else {
+			let len_of_len = l as usize - 0xf7;
+			calculate_payload_info(header_bytes, len_of_len)
 		}
 	}
 }
@@ -97,28 +101,18 @@ impl PayloadInfo {
 ///
 /// Should be used in places where, error handling is required,
 /// eg. on input
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Rlp<'a> {
 	bytes: &'a [u8],
-	offset_cache: Cell<OffsetCache>,
+	offset_cache: Cell<Option<OffsetCache>>,
 	count_cache: Cell<Option<usize>>,
-}
-
-impl<'a> Clone for Rlp<'a> {
-	fn clone(&self) -> Rlp<'a> {
-		Rlp {
-			bytes: self.bytes,
-			offset_cache: self.offset_cache.clone(),
-			count_cache: self.count_cache.clone(),
-		}
-	}
 }
 
 impl<'a> fmt::Display for Rlp<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
 		match self.prototype() {
 			Ok(Prototype::Null) => write!(f, "null"),
-			Ok(Prototype::Data(_)) => write!(f, "\"0x{}\"", self.data().unwrap().to_hex()),
+			Ok(Prototype::Data(_)) => write!(f, "\"0x{}\"", self.data().unwrap().to_hex::<String>()),
 			Ok(Prototype::List(len)) => {
 				write!(f, "[")?;
 				for i in 0..len-1 {
@@ -132,16 +126,16 @@ impl<'a> fmt::Display for Rlp<'a> {
 	}
 }
 
-impl<'a, 'view> Rlp<'a> where 'a: 'view {
+impl<'a> Rlp<'a> {
 	pub fn new(bytes: &'a [u8]) -> Rlp<'a> {
 		Rlp {
 			bytes: bytes,
-			offset_cache: Cell::new(OffsetCache::new(usize::max_value(), 0)),
+			offset_cache: Cell::new(None),
 			count_cache: Cell::new(None)
 		}
 	}
 
-	pub fn as_raw(&'view self) -> &'a [u8] {
+	pub fn as_raw<'view>(&'view self) -> &'a [u8] where 'a: 'view {
 		self.bytes
 	}
 
@@ -160,7 +154,7 @@ impl<'a, 'view> Rlp<'a> where 'a: 'view {
 		BasicDecoder::payload_info(self.bytes)
 	}
 
-	pub fn data(&'view self) -> Result<&'a [u8], DecoderError> {
+	pub fn data<'view>(&'view self) -> Result<&'a [u8], DecoderError> where 'a: 'view {
 		let pi = BasicDecoder::payload_info(self.bytes)?;
 		Ok(&self.bytes[pi.header_len..(pi.header_len + pi.value_len)])
 	}
@@ -187,24 +181,29 @@ impl<'a, 'view> Rlp<'a> where 'a: 'view {
 		}
 	}
 
-	pub fn at(&'view self, index: usize) -> Result<Rlp<'a>, DecoderError> {
+	pub fn at<'view>(&'view self, index: usize) -> Result<Rlp<'a>, DecoderError> where 'a: 'view {
 		if !self.is_list() {
 			return Err(DecoderError::RlpExpectedToBeList);
 		}
 
 		// move to cached position if its index is less or equal to
 		// current search index, otherwise move to beginning of list
-		let c = self.offset_cache.get();
-		let (mut bytes, to_skip) = match c.index <= index {
-			true => (Rlp::consume(self.bytes, c.offset)?, index - c.index),
-			false => (self.consume_list_payload()?, index),
+		let cache = self.offset_cache.get();
+		let (bytes, indexes_to_skip, bytes_consumed) = match cache {
+			Some(ref cache) if cache.index <= index => (
+				Rlp::consume(self.bytes, cache.offset)?, index - cache.index, cache.offset
+			),
+			_ => {
+				let (bytes, consumed) = self.consume_list_payload()?;
+				(bytes, index, consumed)
+			}
 		};
 
 		// skip up to x items
-		bytes = Rlp::consume_items(bytes, to_skip)?;
+		let (bytes, consumed) = Rlp::consume_items(bytes, indexes_to_skip)?;
 
 		// update the cache
-		self.offset_cache.set(OffsetCache::new(index, self.bytes.len() - bytes.len()));
+		self.offset_cache.set(Some(OffsetCache::new(index, bytes_consumed + consumed)));
 
 		// construct new rlp
 		let found = BasicDecoder::payload_info(bytes)?;
@@ -235,12 +234,15 @@ impl<'a, 'view> Rlp<'a> where 'a: 'view {
 		match self.bytes[0] {
 			0...0x80 => true,
 			0x81...0xb7 => self.bytes[1] != 0,
-			b @ 0xb8...0xbf => self.bytes[1 + b as usize - 0xb7] != 0,
+			b @ 0xb8...0xbf => {
+				let payload_idx = 1 + b as usize - 0xb7;
+				payload_idx < self.bytes.len() && self.bytes[payload_idx] != 0
+			},
 			_ => false
 		}
 	}
 
-	pub fn iter(&'view self) -> RlpIterator<'a, 'view> {
+	pub fn iter<'view>(&'view self) -> RlpIterator<'a, 'view> where 'a: 'view {
 		self.into_iter()
 	}
 
@@ -261,31 +263,36 @@ impl<'a, 'view> Rlp<'a> where 'a: 'view {
 	}
 
 	pub fn decoder(&self) -> BasicDecoder {
-		BasicDecoder::new(self.clone())
+		BasicDecoder::new(self.bytes)
 	}
 
 	/// consumes first found prefix
-	fn consume_list_payload(&self) -> Result<&'a [u8], DecoderError> {
+	fn consume_list_payload(&self) -> Result<(&'a [u8], usize), DecoderError> {
 		let item = BasicDecoder::payload_info(self.bytes)?;
-		let bytes = Rlp::consume(self.bytes, item.header_len)?;
-		Ok(bytes)
+		if self.bytes.len() < (item.header_len + item.value_len) {
+			return Err(DecoderError::RlpIsTooShort);
+		}
+		Ok((&self.bytes[item.header_len..item.header_len + item.value_len], item.header_len))
 	}
 
 	/// consumes fixed number of items
-	fn consume_items(bytes: &'a [u8], items: usize) -> Result<&'a [u8], DecoderError> {
+	fn consume_items(bytes: &'a [u8], items: usize) -> Result<(&'a [u8], usize), DecoderError> {
 		let mut result = bytes;
+		let mut consumed = 0;
 		for _ in 0..items {
 			let i = BasicDecoder::payload_info(result)?;
-			result = Rlp::consume(result, i.header_len + i.value_len)?;
+			let to_consume = i.header_len + i.value_len;
+			result = Rlp::consume(result, to_consume)?;
+			consumed += to_consume;
 		}
-		Ok(result)
+		Ok((result, consumed))
 	}
 
 	/// consumes slice prefix of length `len`
 	fn consume(bytes: &'a [u8], len: usize) -> Result<&'a [u8], DecoderError> {
 		match bytes.len() >= len {
 			true => Ok(&bytes[len..]),
-			false => Err(DecoderError::RlpIsTooShort),
+			false => Err(DecoderError::RlpIsTooShort)
 		}
 	}
 }
@@ -320,13 +327,13 @@ impl<'a, 'view> Iterator for RlpIterator<'a, 'view> {
 }
 
 pub struct BasicDecoder<'a> {
-	rlp: Rlp<'a>
+	rlp: &'a [u8],
 }
 
 impl<'a> BasicDecoder<'a> {
-	pub fn new(rlp: Rlp<'a>) -> BasicDecoder<'a> {
+	pub fn new(rlp: &'a [u8]) -> BasicDecoder<'a> {
 		BasicDecoder {
-			rlp: rlp
+			rlp,
 		}
 	}
 
@@ -342,43 +349,38 @@ impl<'a> BasicDecoder<'a> {
 	pub fn decode_value<T, F>(&self, f: F) -> Result<T, DecoderError>
 		where F: Fn(&[u8]) -> Result<T, DecoderError> {
 
-		let bytes = self.rlp.as_raw();
+		let bytes = self.rlp;
 
-		match bytes.first().cloned() {
-			// RLP is too short.
-			None => Err(DecoderError::RlpIsTooShort),
-			// Single byte value.
-			Some(l @ 0...0x7f) => Ok(f(&[l])?),
-			// 0-55 bytes
-			Some(l @ 0x80...0xb7) => {
-				let last_index_of = 1 + l as usize - 0x80;
-				if bytes.len() < last_index_of {
-					return Err(DecoderError::RlpInconsistentLengthAndData);
-				}
-				let d = &bytes[1..last_index_of];
-				if l == 0x81 && d[0] < 0x80 {
-					return Err(DecoderError::RlpInvalidIndirection);
-				}
-				Ok(f(d)?)
-			},
-			// Longer than 55 bytes.
-			Some(l @ 0xb8...0xbf) => {
-				let len_of_len = l as usize - 0xb7;
-				let begin_of_value = 1 as usize + len_of_len;
-				if bytes.len() < begin_of_value {
-					return Err(DecoderError::RlpInconsistentLengthAndData);
-				}
-				let len = decode_usize(&bytes[1..begin_of_value])?;
+		let l = *bytes.first().ok_or_else(|| DecoderError::RlpIsTooShort)?;
 
-				let last_index_of_value = begin_of_value.checked_add(len)
-					.ok_or(DecoderError::RlpInvalidLength)?;
-				if bytes.len() < last_index_of_value {
-					return Err(DecoderError::RlpInconsistentLengthAndData);
-				}
-				Ok(f(&bytes[begin_of_value..last_index_of_value])?)
+		if l <= 0x7f {
+			Ok(f(&[l])?)
+		} else if l <= 0xb7 {
+			let last_index_of = 1 + l as usize - 0x80;
+			if bytes.len() < last_index_of {
+				return Err(DecoderError::RlpInconsistentLengthAndData);
 			}
-			// We are reading value, not a list!
-			_ => Err(DecoderError::RlpExpectedToBeData)
+			let d = &bytes[1..last_index_of];
+			if l == 0x81 && d[0] < 0x80 {
+				return Err(DecoderError::RlpInvalidIndirection);
+			}
+			Ok(f(d)?)
+		} else if l <= 0xbf {
+			let len_of_len = l as usize - 0xb7;
+			let begin_of_value = 1 as usize + len_of_len;
+			if bytes.len() < begin_of_value {
+				return Err(DecoderError::RlpInconsistentLengthAndData);
+			}
+			let len = decode_usize(&bytes[1..begin_of_value])?;
+
+			let last_index_of_value = begin_of_value.checked_add(len)
+				.ok_or(DecoderError::RlpInvalidLength)?;
+			if bytes.len() < last_index_of_value {
+				return Err(DecoderError::RlpInconsistentLengthAndData);
+			}
+			Ok(f(&bytes[begin_of_value..last_index_of_value])?)
+		} else {
+			Err(DecoderError::RlpExpectedToBeData)
 		}
 	}
 }
@@ -389,8 +391,7 @@ mod tests {
 
 	#[test]
 	fn test_rlp_display() {
-		use rustc_hex::FromHex;
-		let data = "f84d0589010efbef67941f79b2a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470".from_hex().unwrap();
+		let data = hex!("f84d0589010efbef67941f79b2a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
 		let rlp = Rlp::new(&data);
 		assert_eq!(format!("{}", rlp), "[\"0x05\", \"0x010efbef67941f79b2\", \"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\", \"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470\"]");
 	}

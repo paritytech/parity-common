@@ -36,5 +36,15 @@ pub extern crate rand;
 #[doc(hidden)]
 pub extern crate quickcheck;
 
+#[cfg(feature="uint_conversions")]
+extern crate uint;
+
+#[cfg(feature="serialize")]
+extern crate serde;
+
+#[cfg(feature="serialize")]
+#[macro_use]
+extern crate serde_derive;
+
 mod hash;
 pub use hash::*;

@@ -1,8 +1,8 @@
 # Big unsigned integer types
 
-Implementation of a various large-but-fixed sized unsigned integer types.
-The functions here are designed to be fast. There are optional `x86_64`
-implementations for even more speed, hidden behind the `x64_arithmetic`
-feature flag.
+Macros to implement large-but-fixed sized unsigned integer types.
+The functions here are designed to be fast.
 
-Run tests with `cargo test --features=std,impl_quickcheck_arbitrary`.
+The crate builds and exports two commonly used types: `U256` and `U512`. Other sizes can be constructed with `construct_uint!(NAME, SIZE_IN_WORDS)`, e.g. `construct_uint!(U128, 2);`.
+
+Run tests with `cargo test --features=std,impl_quickcheck_arbitrary --release`.

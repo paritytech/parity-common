@@ -6,11 +6,15 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate ethereum_types as bigint;
+#[cfg(feature = "ethereum")]
+extern crate ethereum_types;
 extern crate rlp;
+#[macro_use]
+extern crate hex_literal;
 
 use std::{fmt, cmp};
-use bigint::{U256, H160};
+#[cfg(feature = "ethereum")]
+use ethereum_types::{U256, H160};
 use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
 
 #[test]
@@ -130,6 +134,7 @@ fn encode_u64() {
 	run_encode_tests(tests);
 }
 
+#[cfg(feature = "ethereum")]
 #[test]
 fn encode_u256() {
 	let tests = vec![ETestPair(U256::from(0u64), vec![0x80u8]),
@@ -162,6 +167,7 @@ fn encode_str() {
 	run_encode_tests(tests);
 }
 
+#[cfg(feature = "ethereum")]
 #[test]
 fn encode_address() {
 	let tests = vec![
@@ -272,6 +278,7 @@ fn decode_untrusted_u64() {
 	run_decode_tests(tests);
 }
 
+#[cfg(feature = "ethereum")]
 #[test]
 fn decode_untrusted_u256() {
 	let tests = vec![DTestPair(U256::from(0u64), vec![0x80u8]),
@@ -306,6 +313,7 @@ fn decode_untrusted_str() {
 	run_decode_tests(tests);
 }
 
+#[cfg(feature = "ethereum")]
 #[test]
 fn decode_untrusted_address() {
 	let tests = vec![
@@ -422,4 +430,70 @@ fn test_rlp_stream_unbounded_list() {
 	assert!(!stream.is_finished());
 	stream.complete_unbounded_list();
 	assert!(stream.is_finished());
+}
+
+#[test]
+fn test_rlp_is_int() {
+	for b in 0xb8..0xc0 {
+		let data: Vec<u8> = vec![b];
+		let rlp = Rlp::new(&data);
+		assert_eq!(rlp.is_int(), false);
+	}
+}
+
+// test described in
+//
+// https://github.com/paritytech/parity-common/issues/49
+#[test]
+fn test_canonical_string_encoding() {
+	assert_ne!(
+		Rlp::new(&vec![0xc0 + 4, 0xb7 + 1, 2, b'a', b'b']).val_at::<String>(0),
+		Rlp::new(&vec![0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0)
+	);
+
+	assert_eq!(
+		Rlp::new(&vec![0xc0 + 4, 0xb7 + 1, 2, b'a', b'b']).val_at::<String>(0),
+		Err(DecoderError::RlpInvalidIndirection)
+	);
+}
+
+// test described in
+//
+// https://github.com/paritytech/parity-common/issues/49
+#[test]
+fn test_canonical_list_encoding() {
+	assert_ne!(
+		Rlp::new(&vec![0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0),
+		Rlp::new(&vec![0xf7 + 1, 3, 0x82, b'a', b'b']).val_at::<String>(0)
+	);
+
+	assert_eq!(
+		Rlp::new(&vec![0xf7 + 1, 3, 0x82, b'a', b'b']).val_at::<String>(0),
+		Err(DecoderError::RlpInvalidIndirection)
+	);
+}
+
+// test described in
+//
+// https://github.com/paritytech/parity-common/issues/48
+#[test]
+fn test_inner_length_capping_for_short_lists() {
+	assert_eq!(Rlp::new(&vec![0xc0 + 0, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&vec![0xc0 + 1, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&vec![0xc0 + 2, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&vec![0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0), Ok("ab".to_owned()));
+	assert_eq!(Rlp::new(&vec![0xc0 + 4, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+}
+
+// test described in
+//
+// https://github.com/paritytech/parity-ethereum/pull/9663
+#[test]
+fn test_list_at() {
+	let raw = hex!("f83e82022bd79020010db83c4d001500000000abcdef12820cfa8215a8d79020010db885a308d313198a2e037073488208ae82823a8443b9a355c5010203040531b9019afde696e582a78fa8d95ea13ce3297d4afb8ba6433e4154caa5ac6431af1b80ba76023fa4090c408f6b4bc3701562c031041d4702971d102c9ab7fa5eed4cd6bab8f7af956f7d565ee1917084a95398b6a21eac920fe3dd1345ec0a7ef39367ee69ddf092cbfe5b93e5e568ebc491983c09c76d922dc3");
+
+	let rlp = Rlp::new(&raw);
+	let _rlp1 = rlp.at(1).unwrap();
+	let rlp2 = rlp.at(2).unwrap();
+	assert_eq!(rlp2.val_at::<u16>(2).unwrap(), 33338);
 }

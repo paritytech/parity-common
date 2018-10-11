@@ -17,7 +17,7 @@
 #![feature(test)]
 
 extern crate test;
-extern crate ethcore_bytes;
+extern crate parity_bytes;
 extern crate ethereum_types;
 extern crate memorydb;
 extern crate patricia_trie as trie;
@@ -27,12 +27,12 @@ extern crate keccak_hash;
 extern crate trie_standardmap;
 extern crate hashdb;
 
-use ethcore_bytes::Bytes;
+use parity_bytes::Bytes;
 use ethereum_types::H256;
 use keccak_hash::keccak;
 use memorydb::MemoryDB;
 use test::{Bencher, black_box};
-use trie::{TrieMut, Trie};
+use trie::{DBValue, TrieMut, Trie};
 use trie_standardmap::{Alphabet, ValueMode, StandardMap};
 use keccak_hasher::KeccakHasher;
 use ethtrie::{TrieDB, TrieDBMut};
@@ -74,7 +74,7 @@ fn trie_insertions_32_mir_1k(b: &mut Bencher) {
 	};
 	let d = st.make();
 	b.iter(&mut ||{
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		for i in d.iter() {
@@ -92,7 +92,7 @@ fn trie_iter(b: &mut Bencher) {
 		count: 1000,
 	};
 	let d = st.make();
-	let mut memdb = MemoryDB::<KeccakHasher>::new();
+	let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 	let mut root = H256::new();
 	{
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
@@ -121,7 +121,7 @@ fn trie_insertions_32_ran_1k(b: &mut Bencher) {
 	let d = st.make();
 	let mut r = H256::new();
 	b.iter(&mut ||{
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		for i in d.iter() {
@@ -142,7 +142,7 @@ fn trie_insertions_six_high(b: &mut Bencher) {
 	}
 
 	b.iter(||{
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		for i in d.iter() {
@@ -162,7 +162,7 @@ fn trie_insertions_six_mid(b: &mut Bencher) {
 		d.push((k, v))
 	}
 	b.iter(||{
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		for i in d.iter() {
@@ -183,7 +183,7 @@ fn trie_insertions_random_mid(b: &mut Bencher) {
 	}
 
 	b.iter(||{
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		for i in d.iter() {
@@ -204,7 +204,7 @@ fn trie_insertions_six_low(b: &mut Bencher) {
 	}
 
 	b.iter(||{
-		let mut memdb = MemoryDB::<KeccakHasher>::new();
+		let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
 		let mut root = H256::new();
 		let mut t = TrieDBMut::new(&mut memdb, &mut root);
 		for i in d.iter() {

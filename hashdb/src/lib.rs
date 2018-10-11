@@ -15,22 +15,25 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Database of byte-slices keyed to their hash.
-extern crate elastic_array;
-extern crate heapsize;
 
-use elastic_array::ElasticArray128;
-use heapsize::HeapSizeOf;
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(feature = "std")]
+extern crate core;
+
+#[cfg(feature = "std")]
+#[cfg(feature = "std")]
 use std::collections::HashMap;
-use std::{fmt::Debug, hash::Hash};
+use core::{fmt::Debug, hash::Hash};
 
 /// Trait describing an object that can hash a slice of bytes. Used to abstract
 /// other types over the hashing algorithm. Defines a single `hash` method and an
 /// `Out` associated type with the necessary bounds.
 pub trait Hasher: Sync + Send {
 	/// The output type of the `Hasher`
-	type Out: AsRef<[u8]> + AsMut<[u8]> + Default + HeapSizeOf + Debug + PartialEq + Eq + Hash + Send + Sync + Clone + Copy;
+	type Out: AsRef<[u8]> + AsMut<[u8]> + Default + Debug + PartialEq + Eq + Hash + Send + Sync + Clone + Copy;
 	/// What to use to build `HashMap`s with this `Hasher`
-	type StdHasher: Sync + Send + Default + std::hash::Hasher;
+	type StdHasher: Sync + Send + Default + core::hash::Hasher;
 	/// The length in bytes of the `Hasher` output
 	const LENGTH: usize;
 
@@ -38,17 +41,15 @@ pub trait Hasher: Sync + Send {
 	fn hash(x: &[u8]) -> Self::Out;
 }
 
-/// `HashDB` value type.
-pub type DBValue = ElasticArray128<u8>;
-
 /// Trait modelling datastore keyed by a hash defined by the `Hasher`.
-pub trait HashDB<H: Hasher>: Send + Sync + AsHashDB<H> {
+#[cfg(feature = "std")]
+pub trait HashDB<H: Hasher, T>: Send + Sync + AsHashDB<H, T> {
 	/// Get the keys in the database together with number of underlying references.
 	fn keys(&self) -> HashMap<H::Out, i32>;
 
 	/// Look up a given hash into the bytes that hash to it, returning None if the
 	/// hash is not known.
-	fn get(&self, key: &H::Out) -> Option<DBValue>;
+	fn get(&self, key: &H::Out) -> Option<T>;
 
 	/// Check for the existance of a hash-key.
 	fn contains(&self, key: &H::Out) -> bool;
@@ -59,7 +60,7 @@ pub trait HashDB<H: Hasher>: Send + Sync + AsHashDB<H> {
 	fn insert(&mut self, value: &[u8]) -> H::Out;
 
 	/// Like `insert()`, except you provide the key and the data is all moved.
-	fn emplace(&mut self, key: H::Out, value: DBValue);
+	fn emplace(&mut self, key: H::Out, value: T);
 
 	/// Remove a datum previously inserted. Insertions can be "owed" such that the same number of `insert()`s may
 	/// happen without the data being eventually being inserted into the DB. It can be "owed" more than once.
@@ -67,17 +68,18 @@ pub trait HashDB<H: Hasher>: Send + Sync + AsHashDB<H> {
 }
 
 /// Upcast trait.
-pub trait AsHashDB<H: Hasher> {
+#[cfg(feature = "std")]
+pub trait AsHashDB<H: Hasher, T> {
 	/// Perform upcast to HashDB for anything that derives from HashDB.
-	fn as_hashdb(&self) -> &HashDB<H>;
+	fn as_hashdb(&self) -> &HashDB<H, T>;
 	/// Perform mutable upcast to HashDB for anything that derives from HashDB.
-	fn as_hashdb_mut(&mut self) -> &mut HashDB<H>;
+	fn as_hashdb_mut(&mut self) -> &mut HashDB<H, T>;
 }
 
 // NOTE: There used to be a `impl<T> AsHashDB for T` but that does not work with generics. See https://stackoverflow.com/questions/48432842/implementing-a-trait-for-reference-and-non-reference-types-causes-conflicting-im
 // This means we need concrete impls of AsHashDB in several places, which somewhat defeats the point of the trait.
-impl<'a, H: Hasher> AsHashDB<H> for &'a mut HashDB<H> {
-	fn as_hashdb(&self) -> &HashDB<H> { &**self }
-	fn as_hashdb_mut(&mut self) -> &mut HashDB<H> { &mut **self }
+#[cfg(feature = "std")]
+impl<'a, H: Hasher, T> AsHashDB<H, T> for &'a mut HashDB<H, T> {
+	fn as_hashdb(&self) -> &HashDB<H, T> { &**self }
+	fn as_hashdb_mut(&mut self) -> &mut HashDB<H, T> { &mut **self }
 }
-
