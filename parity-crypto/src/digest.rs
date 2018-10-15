@@ -20,7 +20,6 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use rdigest::generic_array::GenericArray;
 use rdigest::generic_array::typenum::{U20, U32, U64};
-use rdigest::Input;
 use rsha2::Digest as RDigest;
 
 /// The message digest.
@@ -99,13 +98,13 @@ impl<T> Hasher<T> {
 	pub fn update(&mut self, data: &[u8]) {
 		match self.0 {
 			Inner::Sha256(ref mut ctx) => {
-				ctx.process(data)
+				ctx.input(data)
 			},
 			Inner::Sha512(ref mut ctx) => {
-				ctx.process(data)
+				ctx.input(data)
 			},
 			Inner::Ripemd160(ref mut ctx) => {
-				ctx.process(data)
+				ctx.input(data)
 			}
 		}
 	}

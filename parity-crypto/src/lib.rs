@@ -38,6 +38,12 @@ pub mod scrypt;
 pub mod digest;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod hmac;
+#[cfg(all(not(target_arch = "wasm32"), test))]
+pub mod hmac_alt;
+#[path = "hmac_alt.rs"]
+#[cfg(target_arch = "wasm32")]
+pub mod hmac;
+
 // could create a less safe crate using RustCrypto or just switch
 #[cfg(not(target_arch = "wasm32"))]
 pub mod pbkdf2;

@@ -11,12 +11,18 @@ quick-error = "1.2.2"
 
 tiny-keccak = "1.4"
 scrypt = { version = "0.1.1", default-features = false }
-ripemd160 = "0.7.0"
-sha2 = "0.7.0"
-digest = "0.7"
+ripemd160 = "0.8.0"
+sha2 = "0.8.0"
+digest = "0.8"
 aes = "0.2.0"
 aes-ctr = "0.1.0"
 block-modes = "0.1.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ring = "0.12"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+hmac = "0.7"
+
+[dev-dependencies]
+hmac = "0.7"
