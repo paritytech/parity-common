@@ -1,3 +1,5 @@
+cargo-features = ["rename-dependency"]
+
 [package]
 name = "parity-crypto"
 version = "0.2.0"
@@ -20,10 +22,14 @@ block-modes = "0.1.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ring = "0.12"
+eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }
+lazy_static = "1.0" # for this secp
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 hmac = "0.7"
 subtle = "1.0"
+libsecp256k1 = { version = "0.1", package = "libsecp256k1" }
 
 [dev-dependencies]
 hmac = "0.7"
+libsecp256k1 = { version = "0.1", package = "libsecp256k1" }

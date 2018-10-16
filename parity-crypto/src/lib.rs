@@ -31,6 +31,12 @@ extern crate aes as raes;
 extern crate aes_ctr;
 extern crate block_modes;
 
+
+
+#[cfg(not(target_arch = "wasm32"))]
+#[macro_use] extern crate lazy_static;
+
+
 pub mod aes;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod aes_gcm;
@@ -45,6 +51,16 @@ pub mod hmac_alt;
 #[path = "hmac_alt.rs"]
 #[cfg(target_arch = "wasm32")]
 pub mod hmac;
+
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod secp256k1;
+
+#[cfg(all(not(target_arch = "wasm32"), test))]
+pub mod secp256k1_alt;
+#[path = "secp256k1_alt.rs"]
+#[cfg(target_arch = "wasm32")]
+pub mod secp256k1;
 
 // could create a less safe crate using RustCrypto or just switch
 #[cfg(not(target_arch = "wasm32"))]
