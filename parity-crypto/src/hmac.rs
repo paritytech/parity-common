@@ -114,4 +114,9 @@ fn simple_mac_and_verify() {
 	assert_eq!(&sig2[..], &[29, 63, 46, 122, 27, 5, 241, 38, 86, 197, 91, 79, 33, 107, 152, 195, 118, 221, 117, 119, 84, 114, 46, 65, 243, 157, 105, 12, 147, 176, 190, 37, 210, 164, 152, 8, 58, 243, 59, 206, 80, 10, 230, 197, 255, 110, 191, 180, 93, 22, 255, 0, 99, 79, 237, 229, 209, 199, 125, 83, 15, 179, 134, 89][..]);
 	assert_eq!(&sig1[..], &sign(&sig_key1, &input[..])[..]);
 	assert_eq!(&sig2[..], &sign(&sig_key2, &big_input[..])[..]);
+	let verif_key1 = VerifyKey::sha256(&key1[..]);
+	let verif_key2 = VerifyKey::sha512(&key2[..]);
+	assert!(verify(&verif_key1, &input[..], &sig1[..]));
+	assert!(verify(&verif_key2, &big_input[..], &sig2[..]));
+
 }

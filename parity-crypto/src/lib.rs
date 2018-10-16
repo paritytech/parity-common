@@ -20,6 +20,8 @@
 extern crate quick_error;
 #[cfg(not(target_arch = "wasm32"))]
 extern crate ring;
+#[cfg(target_arch = "wasm32")]
+extern crate subtle;
 extern crate tiny_keccak;
 extern crate scrypt as rscrypt;
 extern crate ripemd160 as rripemd160;
@@ -94,3 +96,11 @@ pub fn derive_mac(derived_left_bits: &[u8], cipher_text: &[u8]) -> Vec<u8> {
 pub fn is_equal(a: &[u8], b: &[u8]) -> bool {
 	ring::constant_time::verify_slices_are_equal(a, b).is_ok()
 }
+
+#[cfg(target_arch = "wasm32")]
+pub fn is_equal(a: &[u8], b: &[u8]) -> bool {
+	use subtle::ConstantTimeEq;
+	a.ct_eq(b).unwrap_u8() == 1
+}
+
+
