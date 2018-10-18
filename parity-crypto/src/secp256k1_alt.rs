@@ -69,10 +69,10 @@ pub const GENERATOR_Y: [u8; 32] = [
 
 /// The order of the secp256k1 curve
 pub const CURVE_ORDER: [u8; 32] = [
-	  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-	  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
-	  0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
-	  0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
+	0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
+	0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41
 ];
 
 lazy_static! {
@@ -151,13 +151,19 @@ pub fn public_to_vec(p: &PublicKey) -> impl AsRef<[u8]> {
 	a_vec[1..65].to_vec()
 }
 
+pub fn public_is_valid(p: &PublicKey) -> bool {
+	// Check from other implementation only look for a non zero value in fields
+	// here we can
+	let aff: Affine = p.clone().into();
+	aff.is_valid_var()
+}
+
 /// ret size 33
 pub fn public_to_compressed_vec(p: &PublicKey) -> impl AsRef<[u8]> {
 	p.serialize_compressed().to_vec()
 }
 
 /// only for test (or make the result erasable)
-#[cfg(test)]
 pub fn secret_to_vec(p: &SecretKey) -> impl AsRef<[u8]> {
 	p.serialize()
 }
@@ -210,9 +216,9 @@ pub fn public_add(pub_key: PublicKey, other_public: &PublicKey) -> Result<Public
 struct SecretScalar(pub Scalar);
 
 impl Drop for SecretScalar {
-  fn drop(&mut self) {
-    self.0.clear();
-  }
+	fn drop(&mut self) {
+		self.0.clear();
+	}
 }
 
 pub fn public_mul(pub_key: PublicKey, sec_key: &SecretKey) -> Result<PublicKey, Error> {
@@ -286,7 +292,7 @@ mod tests {
 		public_from_slice,
 		public_mul,
 		minus_one_key,
-	  secret_mul,
+		secret_mul,
 		secret_inv,
 		one_key,
 	};

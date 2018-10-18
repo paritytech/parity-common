@@ -117,8 +117,11 @@ pub fn public_to_vec(p: &PublicKey) -> impl AsRef<[u8]> {
 	a_vec
 }
 
+pub fn public_is_valid(p: &PublicKey) -> bool {
+	p.is_valid()
+}
+
 /// only for test (or make the result erasable)
-#[cfg(test)]
 pub fn secret_to_vec(p: &SecretKey) -> impl AsRef<[u8]> {
 	p[..].to_vec()
 }
@@ -202,7 +205,7 @@ mod tests {
 		public_from_slice,
 		public_mul,
 		minus_one_key,
-	  secret_mul,
+		secret_mul,
 		secret_inv,
 		one_key,
 	};
