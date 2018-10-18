@@ -18,6 +18,8 @@
 
 #[macro_use]
 extern crate quick_error;
+#[macro_use]
+extern crate lazy_static;
 #[cfg(not(target_arch = "wasm32"))]
 extern crate ring;
 #[cfg(target_arch = "wasm32")]
@@ -30,11 +32,6 @@ extern crate digest as rdigest;
 extern crate aes as raes;
 extern crate aes_ctr;
 extern crate block_modes;
-
-
-
-#[cfg(not(target_arch = "wasm32"))]
-#[macro_use] extern crate lazy_static;
 
 
 pub mod aes;
