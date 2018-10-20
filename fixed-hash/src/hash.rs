@@ -61,12 +61,14 @@ macro_rules! construct_hash {
 		$visibility struct $name (pub [u8; $n_bytes]);
 
 		impl From<[u8; $n_bytes]> for $name {
+			#[inline]
 			fn from(bytes: [u8; $n_bytes]) -> Self {
 				$name(bytes)
 			}
 		}
 
 		impl From<$name> for [u8; $n_bytes] {
+			#[inline]
 			fn from(s: $name) -> Self {
 				s.0
 			}
@@ -88,41 +90,47 @@ macro_rules! construct_hash {
 
 		impl $name {
 			/// Create a new, zero-initialised, instance.
+			#[inline]
 			pub fn new() -> $name {
 				$name([0; $n_bytes])
 			}
 
 			/// Synonym for `new()`. Prefer to new as it's more readable.
+			#[inline]
 			pub fn zero() -> $name {
 				$name([0; $n_bytes])
 			}
 
 			/// Get the size of this object in bytes.
+			#[inline]
 			pub fn len() -> usize {
 				$n_bytes
 			}
 
 			/// Extracts a byte slice containing the entire fixed hash.
+			#[inline]
 			pub fn as_bytes(&self) -> &[u8] {
 				&self.0
 			}
 
 			/// Extracts a mutable byte slice containing the entire fixed hash.
+			#[inline]
 			pub fn as_bytes_mut(&mut self) -> &mut [u8] {
 				&mut self.0
 			}
 
             /// Returns a constant raw pointer to the value.
+			#[inline]
             pub fn as_ptr(&self) -> *const u8 {
                 self.0.as_ptr()
             }
 
 			/// Returns a mutable raw pointer to the value.
+			#[inline]
             pub fn as_mut_ptr(&mut self) -> *mut u8 {
                 (&mut self.0).as_mut_ptr()
             }
 
-			#[inline]
 			/// Assign self to be of the same value as a slice of bytes of length `len()`.
 			pub fn clone_from_slice(&mut self, src: &[u8]) -> usize {
 				let min = $crate::core::cmp::min($n_bytes, src.len());
@@ -144,11 +152,13 @@ macro_rules! construct_hash {
 			}
 
 			/// Returns `true` if all bits set in `b` are also set in `self`.
+			#[inline]
 			pub fn contains<'a>(&'a self, b: &'a Self) -> bool {
 				&(b & self) == b
 			}
 
 			/// Returns `true` if no bits are set.
+			#[inline]
 			pub fn is_zero(&self) -> bool {
 				self.eq(&Self::new())
 			}
