@@ -47,7 +47,7 @@ pub fn clean_0x(s: &str) -> &str {
 /// So for a private type go ahead with this.
 ///
 /// ```
-/// #[macro_use] extern crate fixed_hash;
+/// # #[macro_use] extern crate fixed_hash;
 /// construct_hash!{ struct H512(64); }
 /// # fn main() {
 /// # 	assert_eq!(::std::mem::size_of::<H512>(), 64);
