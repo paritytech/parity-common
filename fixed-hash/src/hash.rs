@@ -27,7 +27,6 @@ macro_rules! construct_hash {
 		/// Unformatted binary data of fixed length.
 		pub struct $from (pub [u8; $size]);
 
-
 		impl From<[u8; $size]> for $from {
 			fn from(bytes: [u8; $size]) -> Self {
 				$from(bytes)
@@ -51,13 +50,6 @@ macro_rules! construct_hash {
 			#[inline]
 			fn as_mut(&mut self) -> &mut [u8] {
 				&mut self.0
-			}
-		}
-
-		impl AsRef<$from> for $from {
-			#[inline]
-			fn as_ref(&self) -> &$from {
-				&self
 			}
 		}
 
