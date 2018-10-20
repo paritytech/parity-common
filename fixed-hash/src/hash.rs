@@ -573,13 +573,13 @@ macro_rules! impl_libc_for_hash {
 	($from: ident, $size: expr) => {
 		impl PartialEq for $from {
 			fn eq(&self, other: &Self) -> bool {
-				&self.0[..] == &other.0[..]
+				self.as_bytes() == other.as_bytes()
 			}
 		}
 
 		impl Ord for $from {
 			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
-				self.0[..].cmp(&other.0[..])
+				self.as_bytes().cmp(other.as_bytes())
 			}
 		}
 	}
