@@ -21,51 +21,51 @@ pub fn clean_0x(s: &str) -> &str {
 /// Example: `construct_hash!(H160, 20, cfg_attr(feature = "serialize", derive(Serialize, Deserialize)));`
 #[macro_export]
 macro_rules! construct_hash {
-	($(#[$attr:meta])* $visibility:vis struct $from:ident ( $size:expr );) => {
+	($(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_bytes:expr );) => {
 		#[repr(C)]
 		$(#[$attr])*
-		$visibility struct $from (pub [u8; $size]);
+		$visibility struct $name (pub [u8; $n_bytes]);
 
-		impl From<[u8; $size]> for $from {
-			fn from(bytes: [u8; $size]) -> Self {
-				$from(bytes)
+		impl From<[u8; $n_bytes]> for $name {
+			fn from(bytes: [u8; $n_bytes]) -> Self {
+				$name(bytes)
 			}
 		}
 
-		impl From<$from> for [u8; $size] {
-			fn from(s: $from) -> Self {
+		impl From<$name> for [u8; $n_bytes] {
+			fn from(s: $name) -> Self {
 				s.0
 			}
 		}
 
-		impl AsRef<[u8]> for $from {
+		impl AsRef<[u8]> for $name {
 			#[inline]
 			fn as_ref(&self) -> &[u8] {
 				self.as_bytes()
 			}
 		}
 
-		impl AsMut<[u8]> for $from {
+		impl AsMut<[u8]> for $name {
 			#[inline]
 			fn as_mut(&mut self) -> &mut [u8] {
 				self.as_bytes_mut()
 			}
 		}
 
-		impl $from {
+		impl $name {
 			/// Create a new, zero-initialised, instance.
-			pub fn new() -> $from {
-				$from([0; $size])
+			pub fn new() -> $name {
+				$name([0; $n_bytes])
 			}
 
 			/// Synonym for `new()`. Prefer to new as it's more readable.
-			pub fn zero() -> $from {
-				$from([0; $size])
+			pub fn zero() -> $name {
+				$name([0; $n_bytes])
 			}
 
 			/// Get the size of this object in bytes.
 			pub fn len() -> usize {
-				$size
+				$n_bytes
 			}
 
 			/// Extracts a byte slice containing the entire fixed hash.
@@ -90,7 +90,7 @@ macro_rules! construct_hash {
 			#[inline]
 			/// Assign self to be of the same value as a slice of bytes of length `len()`.
 			pub fn clone_from_slice(&mut self, src: &[u8]) -> usize {
-				let min = ::core::cmp::min($size, src.len());
+				let min = ::core::cmp::min($n_bytes, src.len());
 				self.0[..min].copy_from_slice(&src[..min]);
 				min
 			}
@@ -104,7 +104,7 @@ macro_rules! construct_hash {
 
 			/// Copy the data of this object into some mutable slice of length `len()`.
 			pub fn copy_to(&self, dest: &mut[u8]) {
-				let min = ::core::cmp::min($size, dest.len());
+				let min = ::core::cmp::min($n_bytes, dest.len());
 				dest[..min].copy_from_slice(&self.0[..min]);
 			}
 
@@ -121,36 +121,36 @@ macro_rules! construct_hash {
 			/// Returns the lowest 8 bytes interpreted as a BigEndian integer.
 			pub fn low_u64(&self) -> u64 {
 				let mut ret = 0u64;
-				for i in 0..::core::cmp::min($size, 8) {
-					ret |= (self.0[$size - 1 - i] as u64) << (i * 8);
+				for i in 0..::core::cmp::min($n_bytes, 8) {
+					ret |= (self.0[$n_bytes - 1 - i] as u64) << (i * 8);
 				}
 				ret
 			}
 
-			impl_std_for_hash_internals!($from, $size);
+			impl_std_for_hash_internals!($name, $n_bytes);
 		}
 
-		impl ::core::fmt::Debug for $from {
+		impl ::core::fmt::Debug for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				write!(f, "{:#x}", self)
 			}
 		}
 
-		impl ::core::fmt::Display for $from {
+		impl ::core::fmt::Display for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				write!(f, "0x")?;
 				for i in &self.0[0..2] {
 					write!(f, "{:02x}", i)?;
 				}
 				write!(f, "…")?;
-				for i in &self.0[$size - 2..$size] {
+				for i in &self.0[$n_bytes - 2..$n_bytes] {
 					write!(f, "{:02x}", i)?;
 				}
 				Ok(())
 			}
 		}
 
-		impl ::core::fmt::LowerHex for $from {
+		impl ::core::fmt::LowerHex for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				if f.alternate() {
 					write!(f, "0x")?;
@@ -162,75 +162,75 @@ macro_rules! construct_hash {
 			}
 		}
 
-		impl Copy for $from {}
+		impl Copy for $name {}
 		#[cfg_attr(feature="dev", allow(expl_impl_clone_on_copy))]
-		impl Clone for $from {
-			fn clone(&self) -> $from {
-				let mut ret = $from::new();
+		impl Clone for $name {
+			fn clone(&self) -> $name {
+				let mut ret = $name::new();
 				ret.0.copy_from_slice(&self.0);
 				ret
 			}
 		}
 
-		impl Eq for $from {}
+		impl Eq for $name {}
 
-		impl PartialOrd for $from {
+		impl PartialOrd for $name {
 			fn partial_cmp(&self, other: &Self) -> Option<::core::cmp::Ordering> {
 				Some(self.cmp(other))
 			}
 		}
 
-		impl ::core::hash::Hash for $from {
+		impl ::core::hash::Hash for $name {
 			fn hash<H>(&self, state: &mut H) where H: ::core::hash::Hasher {
 				state.write(&self.0);
 				state.finish();
 			}
 		}
 
-		impl ::core::ops::Index<usize> for $from {
+		impl ::core::ops::Index<usize> for $name {
 			type Output = u8;
 
 			fn index(&self, index: usize) -> &u8 {
 				&self.0[index]
 			}
 		}
-		impl ::core::ops::IndexMut<usize> for $from {
+		impl ::core::ops::IndexMut<usize> for $name {
 			fn index_mut(&mut self, index: usize) -> &mut u8 {
 				&mut self.0[index]
 			}
 		}
-		impl ::core::ops::Index<::core::ops::Range<usize>> for $from {
+		impl ::core::ops::Index<::core::ops::Range<usize>> for $name {
 			type Output = [u8];
 
 			fn index(&self, index: ::core::ops::Range<usize>) -> &[u8] {
 				&self.0[index]
 			}
 		}
-		impl ::core::ops::IndexMut<::core::ops::Range<usize>> for $from {
+		impl ::core::ops::IndexMut<::core::ops::Range<usize>> for $name {
 			fn index_mut(&mut self, index: ::core::ops::Range<usize>) -> &mut [u8] {
 				&mut self.0[index]
 			}
 		}
-		impl ::core::ops::Index<::core::ops::RangeFull> for $from {
+		impl ::core::ops::Index<::core::ops::RangeFull> for $name {
 			type Output = [u8];
 
 			fn index(&self, _index: ::core::ops::RangeFull) -> &[u8] {
 				&self.0
 			}
 		}
-		impl ::core::ops::IndexMut<::core::ops::RangeFull> for $from {
+		impl ::core::ops::IndexMut<::core::ops::RangeFull> for $name {
 			fn index_mut(&mut self, _index: ::core::ops::RangeFull) -> &mut [u8] {
 				&mut self.0
 			}
 		}
 
 		/// `BitOr` on references
-		impl<'a> ::core::ops::BitOr for &'a $from {
-			type Output = $from;
+		impl<'a> ::core::ops::BitOr for &'a $name {
+			type Output = $name;
 
 			fn bitor(self, rhs: Self) -> Self::Output {
-				let mut ret: $from = $from::default();
-				for i in 0..$size {
+				let mut ret: $name = $name::default();
+				for i in 0..$n_bytes {
 					ret.0[i] = self.0[i] | rhs.0[i];
 				}
 				ret
@@ -238,8 +238,8 @@ macro_rules! construct_hash {
 		}
 
 		/// Moving `BitOr`
-		impl ::core::ops::BitOr for $from {
-			type Output = $from;
+		impl ::core::ops::BitOr for $name {
+			type Output = $name;
 
 			fn bitor(self, rhs: Self) -> Self::Output {
 				&self | &rhs
@@ -247,12 +247,12 @@ macro_rules! construct_hash {
 		}
 
 		/// `BitAnd` on references
-		impl <'a> ::core::ops::BitAnd for &'a $from {
-			type Output = $from;
+		impl <'a> ::core::ops::BitAnd for &'a $name {
+			type Output = $name;
 
 			fn bitand(self, rhs: Self) -> Self::Output {
-				let mut ret: $from = $from::default();
-				for i in 0..$size {
+				let mut ret: $name = $name::default();
+				for i in 0..$n_bytes {
 					ret.0[i] = self.0[i] & rhs.0[i];
 				}
 				ret
@@ -260,8 +260,8 @@ macro_rules! construct_hash {
 		}
 
 		/// Moving `BitAnd`
-		impl ::core::ops::BitAnd for $from {
-			type Output = $from;
+		impl ::core::ops::BitAnd for $name {
+			type Output = $name;
 
 			fn bitand(self, rhs: Self) -> Self::Output {
 				&self & &rhs
@@ -269,12 +269,12 @@ macro_rules! construct_hash {
 		}
 
 		/// `BitXor` on references
-		impl <'a> ::core::ops::BitXor for &'a $from {
-			type Output = $from;
+		impl <'a> ::core::ops::BitXor for &'a $name {
+			type Output = $name;
 
 			fn bitxor(self, rhs: Self) -> Self::Output {
-				let mut ret: $from = $from::default();
-				for i in 0..$size {
+				let mut ret: $name = $name::default();
+				for i in 0..$n_bytes {
 					ret.0[i] = self.0[i] ^ rhs.0[i];
 				}
 				ret
@@ -282,24 +282,24 @@ macro_rules! construct_hash {
 		}
 
 		/// Moving `BitXor`
-		impl ::core::ops::BitXor for $from {
-			type Output = $from;
+		impl ::core::ops::BitXor for $name {
+			type Output = $name;
 
 			fn bitxor(self, rhs: Self) -> Self::Output {
 				&self ^ &rhs
 			}
 		}
 
-		impl Default for $from {
-			fn default() -> Self { $from::new() }
+		impl Default for $name {
+			fn default() -> Self { $name::new() }
 		}
 
-		impl From<u64> for $from {
-			fn from(mut value: u64) -> $from {
-				let mut ret = $from::new();
+		impl From<u64> for $name {
+			fn from(mut value: u64) -> $name {
+				let mut ret = $name::new();
 				for i in 0..8 {
-					if i < $size {
-						ret.0[$size - i - 1] = (value & 0xff) as u8;
+					if i < $n_bytes {
+						ret.0[$n_bytes - i - 1] = (value & 0xff) as u8;
 						value >>= 8;
 					}
 				}
@@ -307,16 +307,16 @@ macro_rules! construct_hash {
 			}
 		}
 
-		impl<'a> From<&'a [u8]> for $from {
-			fn from(s: &'a [u8]) -> $from {
-				$from::from_slice(s)
+		impl<'a> From<&'a [u8]> for $name {
+			fn from(s: &'a [u8]) -> $name {
+				$name::from_slice(s)
 			}
 		}
 
-		impl_std_for_hash!($from, $size);
-		impl_heapsize_for_hash!($from);
-		impl_libc_for_hash!($from, $size);
-		impl_quickcheck_arbitrary_for_hash!($from, $size);
+		impl_std_for_hash!($name, $n_bytes);
+		impl_heapsize_for_hash!($name);
+		impl_libc_for_hash!($name, $n_bytes);
+		impl_quickcheck_arbitrary_for_hash!($name, $n_bytes);
 	}
 }
 
