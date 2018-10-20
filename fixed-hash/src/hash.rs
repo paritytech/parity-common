@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-/// Return `s` without the `0x` at the beginning of it, if any.
+/// Return the given string `s` without the `0x` at the beginning of it, if any.
 pub fn clean_0x(s: &str) -> &str {
 	if s.starts_with("0x") {
 		&s[2..]
