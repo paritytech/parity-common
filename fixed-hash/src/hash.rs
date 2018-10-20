@@ -42,14 +42,14 @@ macro_rules! construct_hash {
 		impl AsRef<[u8]> for $from {
 			#[inline]
 			fn as_ref(&self) -> &[u8] {
-				&self.0
+				self.as_bytes()
 			}
 		}
 
 		impl AsMut<[u8]> for $from {
 			#[inline]
 			fn as_mut(&mut self) -> &mut [u8] {
-				&mut self.0
+				self.as_bytes_mut()
 			}
 		}
 
@@ -67,6 +67,16 @@ macro_rules! construct_hash {
 			/// Get the size of this object in bytes.
 			pub fn len() -> usize {
 				$size
+			}
+
+			/// Extracts a byte slice containing the entire fixed hash.
+			pub fn as_bytes(&self) -> &[u8] {
+				&self.0
+			}
+
+			/// Extracts a mutable byte slice containing the entire fixed hash.
+			pub fn as_bytes_mut(&mut self) -> &mut [u8] {
+				&mut self.0
 			}
 
             /// Returns a constant raw pointer to the value
