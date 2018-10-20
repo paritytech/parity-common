@@ -40,15 +40,6 @@ macro_rules! construct_hash {
 			}
 		}
 
-		impl ::core::ops::Deref for $from {
-			type Target = [u8];
-
-			#[inline]
-			fn deref(&self) -> &[u8] {
-				&self.0
-			}
-		}
-
 		impl AsRef<[u8]> for $from {
 			#[inline]
 			fn as_ref(&self) -> &[u8] {
@@ -67,13 +58,6 @@ macro_rules! construct_hash {
 			#[inline]
 			fn as_ref(&self) -> &$from {
 				&self
-			}
-		}
-
-		impl ::core::ops::DerefMut for $from {
-			#[inline]
-			fn deref_mut(&mut self) -> &mut [u8] {
-				&mut self.0
 			}
 		}
 
