@@ -332,7 +332,7 @@ macro_rules! impl_hash_conversions {
 			fn from(value: $b) -> $a {
 				debug_assert!($a_size > $b_size && $a_size % 2 == 0 && $b_size %2 == 0);
 				let mut ret = $a::new();
-				ret.0[($a_size - $b_size)..$a_size].copy_from_slice(&value);
+				ret.0[($a_size - $b_size)..$a_size].copy_from_slice(value.as_bytes());
 				ret
 			}
 		}
@@ -349,7 +349,7 @@ macro_rules! impl_hash_conversions {
 		impl<'a> From<&'a $b> for $a {
 			fn from(value: &'a $b) -> $a {
 				let mut ret = $a::new();
-				ret.0[($a_size - $b_size)..$a_size].copy_from_slice(value);
+				ret.0[($a_size - $b_size)..$a_size].copy_from_slice(value.as_bytes());
 				ret
 			}
 		}
