@@ -124,7 +124,7 @@ macro_rules! construct_hash {
 			#[inline]
 			/// Assign self to be of the same value as a slice of bytes of length `len()`.
 			pub fn clone_from_slice(&mut self, src: &[u8]) -> usize {
-				let min = ::core::cmp::min($n_bytes, src.len());
+				let min = $crate::core::cmp::min($n_bytes, src.len());
 				self.0[..min].copy_from_slice(&src[..min]);
 				min
 			}
@@ -138,7 +138,7 @@ macro_rules! construct_hash {
 
 			/// Copy the data of this object into some mutable slice of length `len()`.
 			pub fn copy_to(&self, dest: &mut[u8]) {
-				let min = ::core::cmp::min($n_bytes, dest.len());
+				let min = $crate::core::cmp::min($n_bytes, dest.len());
 				dest[..min].copy_from_slice(&self.0[..min]);
 			}
 
@@ -155,7 +155,7 @@ macro_rules! construct_hash {
 			/// Returns the lowest 8 bytes interpreted as a BigEndian integer.
 			pub fn low_u64(&self) -> u64 {
 				let mut ret = 0u64;
-				for i in 0..::core::cmp::min($n_bytes, 8) {
+				for i in 0..$crate::core::cmp::min($n_bytes, 8) {
 					ret |= (self.0[$n_bytes - 1 - i] as u64) << (i * 8);
 				}
 				ret
@@ -164,14 +164,14 @@ macro_rules! construct_hash {
 			impl_std_for_hash_internals!($name, $n_bytes);
 		}
 
-		impl ::core::fmt::Debug for $name {
-			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+		impl $crate::core::fmt::Debug for $name {
+			fn fmt(&self, f: &mut $crate::core::fmt::Formatter) -> $crate::core::fmt::Result {
 				write!(f, "{:#x}", self)
 			}
 		}
 
-		impl ::core::fmt::Display for $name {
-			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+		impl $crate::core::fmt::Display for $name {
+			fn fmt(&self, f: &mut $crate::core::fmt::Formatter) -> $crate::core::fmt::Result {
 				write!(f, "0x")?;
 				for i in &self.0[0..2] {
 					write!(f, "{:02x}", i)?;
@@ -184,8 +184,8 @@ macro_rules! construct_hash {
 			}
 		}
 
-		impl ::core::fmt::LowerHex for $name {
-			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+		impl $crate::core::fmt::LowerHex for $name {
+			fn fmt(&self, f: &mut $crate::core::fmt::Formatter) -> $crate::core::fmt::Result {
 				if f.alternate() {
 					write!(f, "0x")?;
 				}
@@ -209,57 +209,57 @@ macro_rules! construct_hash {
 		impl Eq for $name {}
 
 		impl PartialOrd for $name {
-			fn partial_cmp(&self, other: &Self) -> Option<::core::cmp::Ordering> {
+			fn partial_cmp(&self, other: &Self) -> Option<$crate::core::cmp::Ordering> {
 				Some(self.cmp(other))
 			}
 		}
 
-		impl ::core::hash::Hash for $name {
-			fn hash<H>(&self, state: &mut H) where H: ::core::hash::Hasher {
+		impl $crate::core::hash::Hash for $name {
+			fn hash<H>(&self, state: &mut H) where H: $crate::core::hash::Hasher {
 				state.write(&self.0);
 				state.finish();
 			}
 		}
 
-		impl ::core::ops::Index<usize> for $name {
+		impl $crate::core::ops::Index<usize> for $name {
 			type Output = u8;
 
 			fn index(&self, index: usize) -> &u8 {
 				&self.0[index]
 			}
 		}
-		impl ::core::ops::IndexMut<usize> for $name {
+		impl $crate::core::ops::IndexMut<usize> for $name {
 			fn index_mut(&mut self, index: usize) -> &mut u8 {
 				&mut self.0[index]
 			}
 		}
-		impl ::core::ops::Index<::core::ops::Range<usize>> for $name {
+		impl $crate::core::ops::Index<$crate::core::ops::Range<usize>> for $name {
 			type Output = [u8];
 
-			fn index(&self, index: ::core::ops::Range<usize>) -> &[u8] {
+			fn index(&self, index: $crate::core::ops::Range<usize>) -> &[u8] {
 				&self.0[index]
 			}
 		}
-		impl ::core::ops::IndexMut<::core::ops::Range<usize>> for $name {
-			fn index_mut(&mut self, index: ::core::ops::Range<usize>) -> &mut [u8] {
+		impl $crate::core::ops::IndexMut<$crate::core::ops::Range<usize>> for $name {
+			fn index_mut(&mut self, index: $crate::core::ops::Range<usize>) -> &mut [u8] {
 				&mut self.0[index]
 			}
 		}
-		impl ::core::ops::Index<::core::ops::RangeFull> for $name {
+		impl $crate::core::ops::Index<$crate::core::ops::RangeFull> for $name {
 			type Output = [u8];
 
-			fn index(&self, _index: ::core::ops::RangeFull) -> &[u8] {
+			fn index(&self, _index: $crate::core::ops::RangeFull) -> &[u8] {
 				&self.0
 			}
 		}
-		impl ::core::ops::IndexMut<::core::ops::RangeFull> for $name {
-			fn index_mut(&mut self, _index: ::core::ops::RangeFull) -> &mut [u8] {
+		impl $crate::core::ops::IndexMut<$crate::core::ops::RangeFull> for $name {
+			fn index_mut(&mut self, _index: $crate::core::ops::RangeFull) -> &mut [u8] {
 				&mut self.0
 			}
 		}
 
 		/// `BitOr` on references
-		impl<'a> ::core::ops::BitOr for &'a $name {
+		impl<'a> $crate::core::ops::BitOr for &'a $name {
 			type Output = $name;
 
 			fn bitor(self, rhs: Self) -> Self::Output {
@@ -272,7 +272,7 @@ macro_rules! construct_hash {
 		}
 
 		/// Moving `BitOr`
-		impl ::core::ops::BitOr for $name {
+		impl $crate::core::ops::BitOr for $name {
 			type Output = $name;
 
 			fn bitor(self, rhs: Self) -> Self::Output {
@@ -281,7 +281,7 @@ macro_rules! construct_hash {
 		}
 
 		/// `BitAnd` on references
-		impl <'a> ::core::ops::BitAnd for &'a $name {
+		impl <'a> $crate::core::ops::BitAnd for &'a $name {
 			type Output = $name;
 
 			fn bitand(self, rhs: Self) -> Self::Output {
@@ -294,7 +294,7 @@ macro_rules! construct_hash {
 		}
 
 		/// Moving `BitAnd`
-		impl ::core::ops::BitAnd for $name {
+		impl $crate::core::ops::BitAnd for $name {
 			type Output = $name;
 
 			fn bitand(self, rhs: Self) -> Self::Output {
@@ -303,7 +303,7 @@ macro_rules! construct_hash {
 		}
 
 		/// `BitXor` on references
-		impl <'a> ::core::ops::BitXor for &'a $name {
+		impl <'a> $crate::core::ops::BitXor for &'a $name {
 			type Output = $name;
 
 			fn bitxor(self, rhs: Self) -> Self::Output {
@@ -316,7 +316,7 @@ macro_rules! construct_hash {
 		}
 
 		/// Moving `BitXor`
-		impl ::core::ops::BitXor for $name {
+		impl $crate::core::ops::BitXor for $name {
 			type Output = $name;
 
 			fn bitxor(self, rhs: Self) -> Self::Output {
@@ -395,7 +395,7 @@ macro_rules! impl_hash_conversions {
 #[macro_export]
 macro_rules! impl_hash_uint_conversions {
 	($hash: ident, $uint: ident) => {
-		debug_assert_eq!(::core::mem::size_of::<$hash>(), ::core::mem::size_of::<$uint>(), "Can't convert between differently sized uint/hash.");
+		debug_assert_eq!(::core::mem::size_of::<$hash>(), $crate::core::mem::size_of::<$uint>(), "Can't convert between differently sized uint/hash.");
 		impl From<$uint> for $hash {
 			fn from(value: $uint) -> $hash {
 				let mut ret = $hash::new();
@@ -468,7 +468,7 @@ macro_rules! impl_std_for_hash {
 			}
 		}
 
-		impl ::core::str::FromStr for $from {
+		impl $crate::core::str::FromStr for $from {
 			type Err = $crate::rustc_hex::FromHexError;
 
 			fn from_str(s: &str) -> Result<$from, $crate::rustc_hex::FromHexError> {
@@ -545,11 +545,11 @@ macro_rules! impl_libc_for_hash {
 		}
 
 		impl Ord for $from {
-			fn cmp(&self, other: &Self) -> ::core::cmp::Ordering {
+			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
 				let r = unsafe { $crate::libc::memcmp(self.0.as_ptr() as *const $crate::libc::c_void, other.0.as_ptr() as *const $crate::libc::c_void, $size) };
-				if r < 0 { return ::core::cmp::Ordering::Less }
-				if r > 0 { return ::core::cmp::Ordering::Greater }
-				return ::core::cmp::Ordering::Equal;
+				if r < 0 { return $crate::core::cmp::Ordering::Less }
+				if r > 0 { return $crate::core::cmp::Ordering::Greater }
+				return $crate::core::cmp::Ordering::Equal;
 			}
 		}
 	}
@@ -567,7 +567,7 @@ macro_rules! impl_libc_for_hash {
 		}
 
 		impl Ord for $from {
-			fn cmp(&self, other: &Self) -> ::core::cmp::Ordering {
+			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
 				self.0[..].cmp(&other.0[..])
 			}
 		}
