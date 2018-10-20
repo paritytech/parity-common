@@ -21,11 +21,10 @@ pub fn clean_0x(s: &str) -> &str {
 /// Example: `construct_hash!(H160, 20, cfg_attr(feature = "serialize", derive(Serialize, Deserialize)));`
 #[macro_export]
 macro_rules! construct_hash {
-	($from: ident, $size: expr $(, $m:meta)*) => {
+	($(#[$attr:meta])* $visibility:vis struct $from:ident ( $size:expr );) => {
 		#[repr(C)]
-		$(#[$m])*
-		/// Unformatted binary data of fixed length.
-		pub struct $from (pub [u8; $size]);
+		$(#[$attr])*
+		$visibility struct $from (pub [u8; $size]);
 
 		impl From<[u8; $size]> for $from {
 			fn from(bytes: [u8; $size]) -> Self {
@@ -565,11 +564,34 @@ macro_rules! impl_quickcheck_arbitrary_for_hash {
 
 #[cfg(test)]
 mod tests {
-	construct_hash!(H256, 32);
-	construct_hash!(H160, 20);
-	construct_hash!(H128, 16);
-	construct_hash!(H64, 8);
-	construct_hash!(H32, 4);
+	construct_hash!{
+		/// Unformatted hash type with 32 bits length.
+		pub struct H32(4);
+	}
+
+	construct_hash!{
+		/// Unformatted hash type with 64 bits length.
+		pub struct H64(8);
+	}
+
+	construct_hash!{
+		/// Unformatted hash type with 256 bits length.
+		pub struct H128(16);
+	}
+
+	construct_hash!{
+		/// Unformatted hash type with 160 bits length.
+		///
+		/// # Note
+		///
+		/// Mainly used for addresses in ethereum and solidity context.
+		struct H160(20);
+	}
+
+	construct_hash!{
+		/// Unformatted hash type with 256 bits length.
+		pub struct H256(32);
+	}
 
 	impl_hash_conversions!(H256, 32, H160, 20);
 
