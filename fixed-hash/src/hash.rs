@@ -609,7 +609,7 @@ mod tests {
 	}
 
 	construct_hash!{
-		/// Unformatted hash type with 256 bits length.
+		/// Unformatted hash type with 128 bits length.
 		pub struct H128(16);
 	}
 
