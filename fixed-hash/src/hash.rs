@@ -16,9 +16,43 @@ pub fn clean_0x(s: &str) -> &str {
 }
 
 /// Construct a fixed-size hash type.
-/// Takes the name of the type and the size in bytes and an optional third argument for meta data
-/// Example: `construct_hash!(H256, 32);`
-/// Example: `construct_hash!(H160, 20, cfg_attr(feature = "serialize", derive(Serialize, Deserialize)));`
+///
+/// # Examples
+///
+/// Create a public unformatted hash type with 32 bytes size.
+///
+/// ```
+/// # #[macro_use] extern crate fixed_hash;
+/// construct_hash!{ pub struct H256(32); }
+/// # fn main() {
+/// # 	assert_eq!(::std::mem::size_of::<H256>(), 32);
+/// # }
+/// ```
+///
+/// With additional attributes and doc comments.
+///
+/// ```
+/// # #[macro_use] extern crate fixed_hash;
+/// construct_hash!{
+/// 	/// My unformatted 160 bytes sized hash type.
+/// 	#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+/// 	pub struct H160(20);
+/// }
+/// # fn main() {
+/// # 	assert_eq!(::std::mem::size_of::<H160>(), 20);
+/// # }
+/// ```
+///
+/// As always, visibility modifier is optional.
+/// So for a private type go ahead with this.
+///
+/// ```
+/// #[macro_use] extern crate fixed_hash;
+/// construct_hash!{ struct H512(64); }
+/// # fn main() {
+/// # 	assert_eq!(::std::mem::size_of::<H512>(), 64);
+/// # }
+/// ```
 #[macro_export]
 macro_rules! construct_hash {
 	($(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_bytes:expr );) => {
