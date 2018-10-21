@@ -365,39 +365,76 @@ macro_rules! construct_hash {
 	}
 }
 
-/// Implements conversion to and from hash types of different sizes. Uses the
-/// last bytes, e.g. `From<H256> for H160` uses bytes 12..32
-/// CAUTION: make sure to call with correct sizes and the bigger type first or
-/// bad things will happen!
+/// Implements lossful conversions between the given types.
+///
+/// # Note
+///
+/// - Both types must be of different sizes.
+/// - Type `large_ty` must have a larger memory footprint compared to `small_ty`.
+///
+/// # Panics
+///
+/// Both `From` implementations will panic if sizes of the given types
+/// do not meet the requirements stated above.
+///
+/// # Example
+///
+/// ```
+/// #[macro_use] extern crate fixed_hash;
+/// construct_hash!{ struct H160(20); }
+/// construct_hash!{ struct H256(32); }
+/// impl_hash_conversions!(H256, H160);
+/// // now use it!
+/// # fn main() {
+/// assert_eq!(H256::from(H160::zero()), H256::zero());
+/// assert_eq!(H160::from(H256::zero()), H160::zero());
+/// # }
+/// ```
 #[macro_export]
 macro_rules! impl_hash_conversions {
-	($a: ident, $a_size: expr, $b: ident, $b_size: expr) => {
-		impl From<$b> for $a {
-			fn from(value: $b) -> $a {
-				debug_assert!($a_size > $b_size && $a_size % 2 == 0 && $b_size %2 == 0);
-				let mut ret = $a::new();
-				ret.0[($a_size - $b_size)..$a_size].copy_from_slice(value.as_bytes());
+	($large_ty:ident, $small_ty:ident) => {
+		impl From<$small_ty> for $large_ty {
+			fn from(value: $small_ty) -> $large_ty {
+				use std::mem;
+				let large_ty_size = mem::size_of::<$large_ty>();
+				let small_ty_size = mem::size_of::<$small_ty>();
+
+				debug_assert!(
+					large_ty_size > small_ty_size &&
+					large_ty_size % 2 == 0 &&
+					small_ty_size % 2 == 0
+				);
+
+				let mut ret = $large_ty::new();
+				ret
+					.as_bytes_mut()[(large_ty_size - small_ty_size)..large_ty_size]
+					.copy_from_slice(value.as_bytes());
 				ret
 			}
 		}
 
-		impl From<$a> for $b {
-			fn from(value: $a) -> $b {
-				debug_assert!($a_size > $b_size && $a_size % 2 == 0 && $b_size %2 == 0);
-				let mut ret = $b::new();
-				ret.0.copy_from_slice(&value[($a_size - $b_size)..$a_size]);
-				ret
-			}
-		}
+		impl From<$large_ty> for $small_ty {
+			fn from(value: $large_ty) -> $small_ty {
+				use std::mem;
+				let large_ty_size = mem::size_of::<$large_ty>();
+				let small_ty_size = mem::size_of::<$small_ty>();
 
-		impl<'a> From<&'a $b> for $a {
-			fn from(value: &'a $b) -> $a {
-				let mut ret = $a::new();
-				ret.0[($a_size - $b_size)..$a_size].copy_from_slice(value.as_bytes());
+				debug_assert!(
+					large_ty_size > small_ty_size &&
+					large_ty_size % 2 == 0 &&
+					small_ty_size % 2 == 0
+				);
+
+				let mut ret = $small_ty::new();
+				ret
+					.as_bytes_mut()
+					.copy_from_slice(
+						&value.as_bytes()[(large_ty_size - small_ty_size)..large_ty_size]
+					);
 				ret
 			}
 		}
-	}
+	};
 }
 
 /// Implements conversion to and from a hash type and the equally sized unsigned int.
@@ -638,7 +675,7 @@ mod tests {
 		pub struct H256(32);
 	}
 
-	impl_hash_conversions!(H256, 32, H160, 20);
+	impl_hash_conversions!(H256, H160);
 
 	#[test]
 	fn test_construct_hash() {
