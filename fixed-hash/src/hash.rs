@@ -55,7 +55,7 @@ pub fn clean_0x(s: &str) -> &str {
 /// ```
 #[macro_export]
 macro_rules! construct_hash {
-	($(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_bytes:expr );) => {
+	( $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_bytes:expr ); ) => {
 		#[repr(C)]
 		$(#[$attr])*
 		$visibility struct $name (pub [u8; $n_bytes]);
