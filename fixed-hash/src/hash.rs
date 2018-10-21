@@ -7,6 +7,10 @@
 // except according to those terms.
 
 /// Return the given string `s` without the `0x` at the beginning of it, if any.
+#[deprecated(
+	since = "0.3.0",
+	note = "the api did not fit into this library, implement it yourself if needed"
+)]
 pub fn clean_0x(s: &str) -> &str {
 	if s.starts_with("0x") {
 		&s[2..]
@@ -534,7 +538,7 @@ macro_rules! impl_std_for_hash {
 
 		impl From<&'static str> for $from {
 			fn from(s: &'static str) -> $from {
-				let s = $crate::clean_0x(s);
+				let s = if s.starts_with("0x") { &s[2..] } else { s };
 				if s.len() % 2 == 1 {
 					("0".to_owned() + s).parse().unwrap()
 				} else {
