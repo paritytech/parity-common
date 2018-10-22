@@ -212,6 +212,7 @@ macro_rules! construct_hash {
 		}
 
 		impl Copy for $name {}
+
 		#[cfg_attr(feature="dev", allow(expl_impl_clone_on_copy))]
 		impl Clone for $name {
 			fn clone(&self) -> $name {
@@ -243,11 +244,13 @@ macro_rules! construct_hash {
 				&self.0[index]
 			}
 		}
+
 		impl $crate::core::ops::IndexMut<usize> for $name {
 			fn index_mut(&mut self, index: usize) -> &mut u8 {
 				&mut self.0[index]
 			}
 		}
+
 		impl $crate::core::ops::Index<$crate::core::ops::Range<usize>> for $name {
 			type Output = [u8];
 
@@ -255,11 +258,13 @@ macro_rules! construct_hash {
 				&self.0[index]
 			}
 		}
+
 		impl $crate::core::ops::IndexMut<$crate::core::ops::Range<usize>> for $name {
 			fn index_mut(&mut self, index: $crate::core::ops::Range<usize>) -> &mut [u8] {
 				&mut self.0[index]
 			}
 		}
+
 		impl $crate::core::ops::Index<$crate::core::ops::RangeFull> for $name {
 			type Output = [u8];
 
@@ -267,6 +272,7 @@ macro_rules! construct_hash {
 				&self.0
 			}
 		}
+
 		impl $crate::core::ops::IndexMut<$crate::core::ops::RangeFull> for $name {
 			fn index_mut(&mut self, _index: $crate::core::ops::RangeFull) -> &mut [u8] {
 				&mut self.0
@@ -369,7 +375,7 @@ macro_rules! construct_hash {
 	}
 }
 
-/// Implements lossful conversions between the given types.
+/// Implements lossy conversions between the given types.
 ///
 /// # Note
 ///
@@ -447,7 +453,11 @@ macro_rules! impl_hash_conversions {
 #[macro_export]
 macro_rules! impl_hash_uint_conversions {
 	($hash: ident, $uint: ident) => {
-		debug_assert_eq!(::core::mem::size_of::<$hash>(), $crate::core::mem::size_of::<$uint>(), "Can't convert between differently sized uint/hash.");
+		debug_assert_eq!(
+			$crate::core::mem::size_of::<$hash>(), $crate::core::mem::size_of::<$uint>(),
+			"[fixed-hash] error: cannot convert between differently sized uint and hash types"
+		);
+
 		impl From<$uint> for $hash {
 			fn from(value: $uint) -> $hash {
 				let mut ret = $hash::new();
@@ -667,10 +677,6 @@ mod tests {
 
 	construct_hash!{
 		/// Unformatted hash type with 160 bits length.
-		///
-		/// # Note
-		///
-		/// Mainly used for addresses in ethereum and solidity context.
 		struct H160(20);
 	}
 
