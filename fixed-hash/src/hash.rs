@@ -652,17 +652,17 @@ macro_rules! impl_quickcheck_arbitrary_for_hash {
 mod tests {
 	construct_hash!{
 		/// Unformatted hash type with 32 bits length.
-		pub struct H32(4);
+		struct H32(4);
 	}
 
 	construct_hash!{
 		/// Unformatted hash type with 64 bits length.
-		pub struct H64(8);
+		struct H64(8);
 	}
 
 	construct_hash!{
 		/// Unformatted hash type with 128 bits length.
-		pub struct H128(16);
+		struct H128(16);
 	}
 
 	construct_hash!{
@@ -676,7 +676,7 @@ mod tests {
 
 	construct_hash!{
 		/// Unformatted hash type with 256 bits length.
-		pub struct H256(32);
+		struct H256(32);
 	}
 
 	impl_hash_conversions!(H256, H160);
