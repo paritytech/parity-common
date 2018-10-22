@@ -410,14 +410,13 @@ macro_rules! impl_hash_conversions {
 				let small_ty_size = mem::size_of::<$small_ty>();
 
 				debug_assert!(
-					large_ty_size > small_ty_size &&
-					large_ty_size % 2 == 0 &&
-					small_ty_size % 2 == 0
+					large_ty_size > small_ty_size
+						&& large_ty_size % 2 == 0
+						&& small_ty_size % 2 == 0
 				);
 
 				let mut ret = $large_ty::new();
-				ret
-					.as_bytes_mut()[(large_ty_size - small_ty_size)..large_ty_size]
+				ret.as_bytes_mut()[(large_ty_size - small_ty_size)..large_ty_size]
 					.copy_from_slice(value.as_bytes());
 				ret
 			}
@@ -430,17 +429,15 @@ macro_rules! impl_hash_conversions {
 				let small_ty_size = mem::size_of::<$small_ty>();
 
 				debug_assert!(
-					large_ty_size > small_ty_size &&
-					large_ty_size % 2 == 0 &&
-					small_ty_size % 2 == 0
+					large_ty_size > small_ty_size
+						&& large_ty_size % 2 == 0
+						&& small_ty_size % 2 == 0
 				);
 
 				let mut ret = $small_ty::new();
-				ret
-					.as_bytes_mut()
-					.copy_from_slice(
-						&value.as_bytes()[(large_ty_size - small_ty_size)..large_ty_size]
-					);
+				ret.as_bytes_mut().copy_from_slice(
+					&value.as_bytes()[(large_ty_size - small_ty_size)..large_ty_size],
+				);
 				ret
 			}
 		}
@@ -449,12 +446,13 @@ macro_rules! impl_hash_conversions {
 
 /// Implements conversion to and from a hash type and the equally sized unsigned int.
 /// CAUTION: Bad things will happen if the two types are not of the same size!
-#[cfg(feature="uint_conversions")]
+#[cfg(feature = "uint_conversions")]
 #[macro_export]
 macro_rules! impl_hash_uint_conversions {
 	($hash: ident, $uint: ident) => {
 		debug_assert_eq!(
-			$crate::core::mem::size_of::<$hash>(), $crate::core::mem::size_of::<$uint>(),
+			$crate::core::mem::size_of::<$hash>(),
+			$crate::core::mem::size_of::<$uint>(),
 			"[fixed-hash] error: cannot convert between differently sized uint and hash types"
 		);
 
@@ -485,11 +483,14 @@ macro_rules! impl_hash_uint_conversions {
 				$uint::from(value.as_ref() as &[u8])
 			}
 		}
-
-	}
+	};
 }
 
-#[cfg(all(feature="heapsizeof", feature="libc", not(target_os = "unknown")))]
+#[cfg(all(
+	feature = "heapsizeof",
+	feature = "libc",
+	not(target_os = "unknown")
+))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_hash {
@@ -499,24 +500,28 @@ macro_rules! impl_heapsize_for_hash {
 				0
 			}
 		}
-	}
+	};
 }
 
-#[cfg(any(not(feature="heapsizeof"), not(feature="libc"), target_os = "unknown"))]
+#[cfg(any(
+	not(feature = "heapsizeof"),
+	not(feature = "libc"),
+	target_os = "unknown"
+))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_hash {
-	($name: ident) => {}
+	($name: ident) => {};
 }
 
-#[cfg(feature="std")]
+#[cfg(feature = "std")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_std_for_hash {
 	($from: ident, $size: tt) => {
 		impl $from {
 			/// Get a hex representation.
-			#[deprecated(note="Use LowerHex or Debug formatting instead.")]
+			#[deprecated(note = "Use LowerHex or Debug formatting instead.")]
 			pub fn hex(&self) -> String {
 				format!("{:?}", self)
 			}
@@ -535,7 +540,7 @@ macro_rules! impl_std_for_hash {
 
 			fn from_str(s: &str) -> Result<$from, $crate::rustc_hex::FromHexError> {
 				use $crate::rustc_hex::FromHex;
-				let a : Vec<u8> = s.from_hex()?;
+				let a: Vec<u8> = s.from_hex()?;
 				if a.len() != $size {
 					return Err($crate::rustc_hex::FromHexError::InvalidHexLength);
 				}
@@ -556,19 +561,17 @@ macro_rules! impl_std_for_hash {
 				}
 			}
 		}
-	}
+	};
 }
 
-
-#[cfg(not(feature="std"))]
+#[cfg(not(feature = "std"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_std_for_hash {
-	($from: ident, $size: tt) => {}
+	($from: ident, $size: tt) => {};
 }
 
-
-#[cfg(feature="std")]
+#[cfg(feature = "std")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_std_for_hash_internals {
@@ -588,36 +591,52 @@ macro_rules! impl_std_for_hash_internals {
 	}
 }
 
-#[cfg(not(feature="std"))]
+#[cfg(not(feature = "std"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_std_for_hash_internals {
-	($from: ident, $size: tt) => {}
+	($from: ident, $size: tt) => {};
 }
 
-#[cfg(all(feature="libc", not(target_os = "unknown")))]
+#[cfg(all(feature = "libc", not(target_os = "unknown")))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_libc_for_hash {
 	($from: ident, $size: expr) => {
 		impl PartialEq for $from {
 			fn eq(&self, other: &Self) -> bool {
-				unsafe { $crate::libc::memcmp(self.0.as_ptr() as *const $crate::libc::c_void, other.0.as_ptr() as *const $crate::libc::c_void, $size) == 0 }
+				unsafe {
+					$crate::libc::memcmp(
+						self.0.as_ptr() as *const $crate::libc::c_void,
+						other.0.as_ptr() as *const $crate::libc::c_void,
+						$size,
+					) == 0
+				}
 			}
 		}
 
 		impl Ord for $from {
 			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
-				let r = unsafe { $crate::libc::memcmp(self.0.as_ptr() as *const $crate::libc::c_void, other.0.as_ptr() as *const $crate::libc::c_void, $size) };
-				if r < 0 { return $crate::core::cmp::Ordering::Less }
-				if r > 0 { return $crate::core::cmp::Ordering::Greater }
+				let r = unsafe {
+					$crate::libc::memcmp(
+						self.0.as_ptr() as *const $crate::libc::c_void,
+						other.0.as_ptr() as *const $crate::libc::c_void,
+						$size,
+					)
+				};
+				if r < 0 {
+					return $crate::core::cmp::Ordering::Less;
+				}
+				if r > 0 {
+					return $crate::core::cmp::Ordering::Greater;
+				}
 				return $crate::core::cmp::Ordering::Equal;
 			}
 		}
-	}
+	};
 }
 
-#[cfg(any(not(feature="libc"), target_os = "unknown"))]
+#[cfg(any(not(feature = "libc"), target_os = "unknown"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_libc_for_hash {
@@ -633,10 +652,10 @@ macro_rules! impl_libc_for_hash {
 				self.as_bytes().cmp(other.as_bytes())
 			}
 		}
-	}
+	};
 }
 
-#[cfg(feature="impl_quickcheck_arbitrary")]
+#[cfg(feature = "impl_quickcheck_arbitrary")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_hash {
@@ -648,14 +667,14 @@ macro_rules! impl_quickcheck_arbitrary_for_hash {
 				res.as_ref().into()
 			}
 		}
-	}
+	};
 }
 
-#[cfg(not(feature="impl_quickcheck_arbitrary"))]
+#[cfg(not(feature = "impl_quickcheck_arbitrary"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_hash {
-	($name: ty, $n_bytes: tt) => {}
+	($name: ty, $n_bytes: tt) => {};
 }
 
 #[cfg(test)]
@@ -694,15 +713,15 @@ mod tests {
 		assert_eq!(H128::len(), 16);
 	}
 
-	#[cfg(feature="heapsizeof")]
+	#[cfg(feature = "heapsizeof")]
 	#[test]
 	fn test_heapsizeof() {
 		use heapsize::HeapSizeOf;
 		let h = H128::zero();
-		assert_eq!(h.heap_size_of_children(),0);
+		assert_eq!(h.heap_size_of_children(), 0);
 	}
 
-	#[cfg(feature="std")]
+	#[cfg(feature = "std")]
 	#[test]
 	fn should_format_and_debug_correctly() {
 		let test = |x: u64, hex: &'static str, display: &'static str| {
@@ -735,7 +754,7 @@ mod tests {
 		assert_eq!(a | b, c);
 	}
 
-	#[cfg(feature="std")]
+	#[cfg(feature = "std")]
 	#[test]
 	fn from_and_to_address() {
 		let address: H160 = "ef2d6d194084c2de36e0dabfce45d046b37d1106".into();
@@ -744,20 +763,32 @@ mod tests {
 		assert_eq!(address, a);
 	}
 
-	#[cfg(feature="std")]
+	#[cfg(feature = "std")]
 	#[test]
 	fn from_u64() {
 		use core::str::FromStr;
 
-		assert_eq!(H128::from(0x1234567890abcdef), H128::from_str("00000000000000001234567890abcdef").unwrap());
-		assert_eq!(H64::from(0x1234567890abcdef), H64::from_str("1234567890abcdef").unwrap());
-		assert_eq!(H32::from(0x1234567890abcdef), H32::from_str("90abcdef").unwrap());
+		assert_eq!(
+			H128::from(0x1234567890abcdef),
+			H128::from_str("00000000000000001234567890abcdef").unwrap()
+		);
+		assert_eq!(
+			H64::from(0x1234567890abcdef),
+			H64::from_str("1234567890abcdef").unwrap()
+		);
+		assert_eq!(
+			H32::from(0x1234567890abcdef),
+			H32::from_str("90abcdef").unwrap()
+		);
 	}
 
-	#[cfg(feature="std")]
+	#[cfg(feature = "std")]
 	#[test]
 	fn from_str() {
-		assert_eq!(H64::from(0x1234567890abcdef), H64::from("0x1234567890abcdef"));
+		assert_eq!(
+			H64::from(0x1234567890abcdef),
+			H64::from("0x1234567890abcdef")
+		);
 		assert_eq!(H64::from(0x1234567890abcdef), H64::from("1234567890abcdef"));
 		assert_eq!(H64::from(0x234567890abcdef), H64::from("0x234567890abcdef"));
 	}
@@ -771,7 +802,10 @@ mod tests {
 
 		let u: U256 = 0x123456789abcdef0u64.into();
 		let h = H256::from(u);
-		assert_eq!(H256::from(u), H256::from("000000000000000000000000000000000000000000000000123456789abcdef0"));
+		assert_eq!(
+			H256::from(u),
+			H256::from("000000000000000000000000000000000000000000000000123456789abcdef0")
+		);
 		let h_ref = H256::from(&u);
 		assert_eq!(h, h_ref);
 		let r_ref: U256 = From::from(&h);
@@ -780,7 +814,7 @@ mod tests {
 		assert!(r == u)
 	}
 
-	#[cfg(feature="uint_conversions")]
+	#[cfg(feature = "uint_conversions")]
 	#[test]
 	#[should_panic(expected = "Can't convert between differently sized uint/hash.")]
 	fn converting_differently_sized_types_panics() {
