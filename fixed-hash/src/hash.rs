@@ -123,7 +123,7 @@ macro_rules! construct_hash {
 				&mut self.0
 			}
 
-            /// Returns a constant raw pointer to the value.
+			/// Returns a constant raw pointer to the value.
 			#[inline]
             pub fn as_ptr(&self) -> *const u8 {
                 self.0.as_ptr()
@@ -131,9 +131,9 @@ macro_rules! construct_hash {
 
 			/// Returns a mutable raw pointer to the value.
 			#[inline]
-            pub fn as_mut_ptr(&mut self) -> *mut u8 {
-                (&mut self.0).as_mut_ptr()
-            }
+			pub fn as_mut_ptr(&mut self) -> *mut u8 {
+				(&mut self.0).as_mut_ptr()
+			}
 
 			/// Assign self to be of the same value as a slice of bytes of length `len()`.
 			pub fn clone_from_slice(&mut self, src: &[u8]) -> usize {
