@@ -167,6 +167,7 @@ macro_rules! construct_hash {
 			)]
 			pub fn from_slice(src: &[u8]) -> Self {
 				let mut r = Self::zero();
+				#[allow(deprecated)]
 				r.clone_from_slice(src);
 				r
 			}
@@ -352,7 +353,7 @@ macro_rules! construct_hash {
 
 		impl<'a> $crate::core::convert::From<&'a [u8]> for $name {
 			fn from(s: &'a [u8]) -> $name {
-				$name::from_slice(s)
+				$name::from_bytes(s)
 			}
 		}
 
