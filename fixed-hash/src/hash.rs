@@ -279,72 +279,6 @@ macro_rules! construct_hash {
 			}
 		}
 
-		/// `BitOr` on references
-		impl<'a> $crate::core::ops::BitOr for &'a $name {
-			type Output = $name;
-
-			fn bitor(self, rhs: Self) -> Self::Output {
-				let mut ret: $name = $name::default();
-				for i in 0..$n_bytes {
-					ret.0[i] = self.0[i] | rhs.0[i];
-				}
-				ret
-			}
-		}
-
-		/// Moving `BitOr`
-		impl $crate::core::ops::BitOr for $name {
-			type Output = $name;
-
-			fn bitor(self, rhs: Self) -> Self::Output {
-				&self | &rhs
-			}
-		}
-
-		/// `BitAnd` on references
-		impl <'a> $crate::core::ops::BitAnd for &'a $name {
-			type Output = $name;
-
-			fn bitand(self, rhs: Self) -> Self::Output {
-				let mut ret: $name = $name::default();
-				for i in 0..$n_bytes {
-					ret.0[i] = self.0[i] & rhs.0[i];
-				}
-				ret
-			}
-		}
-
-		/// Moving `BitAnd`
-		impl $crate::core::ops::BitAnd for $name {
-			type Output = $name;
-
-			fn bitand(self, rhs: Self) -> Self::Output {
-				&self & &rhs
-			}
-		}
-
-		/// `BitXor` on references
-		impl <'a> $crate::core::ops::BitXor for &'a $name {
-			type Output = $name;
-
-			fn bitxor(self, rhs: Self) -> Self::Output {
-				let mut ret: $name = $name::default();
-				for i in 0..$n_bytes {
-					ret.0[i] = self.0[i] ^ rhs.0[i];
-				}
-				ret
-			}
-		}
-
-		/// Moving `BitXor`
-		impl $crate::core::ops::BitXor for $name {
-			type Output = $name;
-
-			fn bitxor(self, rhs: Self) -> Self::Output {
-				&self ^ &rhs
-			}
-		}
-
 		impl $crate::core::default::Default for $name {
 			fn default() -> Self { $name::new() }
 		}
@@ -368,11 +302,62 @@ macro_rules! construct_hash {
 			}
 		}
 
+		impl_ops_for_hash!($name, BitOr, bitor, BitOrAssign, bitor_assign, |, |=);
+		impl_ops_for_hash!($name, BitAnd, bitand, BitAndAssign, bitand_assign, &, &=);
+		impl_ops_for_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
+
 		impl_std_for_hash!($name, $n_bytes);
 		impl_heapsize_for_hash!($name);
 		impl_libc_for_hash!($name, $n_bytes);
 		impl_quickcheck_arbitrary_for_hash!($name, $n_bytes);
 	}
+}
+
+#[macro_export]
+macro_rules! impl_ops_for_hash {
+	(
+		$impl_for:ident,
+		$ops_trait_name:ident,
+		$ops_fn_name:ident,
+		$ops_assign_trait_name:ident,
+		$ops_assign_fn_name:ident,
+		$ops_tok:tt,
+		$ops_assign_tok:tt
+	) => {
+
+		impl<'r> $crate::core::ops::$ops_assign_trait_name<&'r $impl_for> for $impl_for {
+			fn $ops_assign_fn_name(&mut self, rhs: &'r $impl_for) {
+				for (lhs, rhs) in self.as_bytes_mut().iter_mut().zip(rhs.as_bytes()) {
+					*lhs $ops_assign_tok rhs;
+				}
+			}
+		}
+
+		impl $crate::core::ops::$ops_assign_trait_name<$impl_for> for $impl_for {
+			fn $ops_assign_fn_name(&mut self, rhs: $impl_for) {
+				*self $ops_assign_tok &rhs;
+			}
+		}
+
+		impl<'l, 'r> $crate::core::ops::$ops_trait_name<&'r $impl_for> for &'l $impl_for {
+			type Output = $impl_for;
+
+			fn $ops_fn_name(self, rhs: &'r $impl_for) -> Self::Output {
+				let mut ret = self.clone();
+				ret $ops_assign_tok rhs;
+				ret
+			}
+		}
+
+		impl $crate::core::ops::$ops_trait_name<$impl_for> for $impl_for {
+			type Output = $impl_for;
+
+			fn $ops_fn_name(self, rhs: Self) -> Self::Output {
+				&self $ops_tok &rhs
+			}
+		}
+
+	};
 }
 
 /// Implements lossy conversions between the given types.
