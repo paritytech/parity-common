@@ -164,7 +164,7 @@ macro_rules! construct_hash {
 			/// Returns `true` if no bits are set.
 			#[inline]
 			pub fn is_zero(&self) -> bool {
-				self.eq(&Self::new())
+				self.as_bytes().iter().all(|&byte| byte == 0u8)
 			}
 
 			/// Returns the lowest 8 bytes interpreted as a BigEndian integer.
