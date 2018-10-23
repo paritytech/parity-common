@@ -150,7 +150,7 @@ macro_rules! construct_hash {
 			}
 
 			/// Copy the data of this object into some mutable slice of length `len()`.
-			pub fn copy_to(&self, dest: &mut[u8]) {
+			pub fn copy_to(&self, dest: &mut [u8]) {
 				let min = $crate::core::cmp::min($n_bytes, dest.len());
 				dest[..min].copy_from_slice(&self.0[..min]);
 			}
