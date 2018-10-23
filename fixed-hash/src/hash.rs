@@ -215,6 +215,18 @@ macro_rules! construct_hash {
 			}
 		}
 
+		impl $crate::core::fmt::UpperHex for $name {
+			fn fmt(&self, f: &mut $crate::core::fmt::Formatter) -> $crate::core::fmt::Result {
+				if f.alternate() {
+					write!(f, "0X")?;
+				}
+				for i in &self.0[..] {
+					write!(f, "{:02X}", i)?;
+				}
+				Ok(())
+			}
+		}
+
 		impl $crate::core::marker::Copy for $name {}
 
 		#[cfg_attr(feature="dev", allow(expl_impl_clone_on_copy))]
