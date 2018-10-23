@@ -130,13 +130,13 @@ macro_rules! construct_hash {
 			/// Returns a constant raw pointer to the value.
 			#[inline]
 			pub fn as_ptr(&self) -> *const u8 {
-				self.0.as_ptr()
+				self.as_bytes().as_ptr()
 			}
 
 			/// Returns a mutable raw pointer to the value.
 			#[inline]
 			pub fn as_mut_ptr(&mut self) -> *mut u8 {
-				(&mut self.0).as_mut_ptr()
+				self.as_bytes_mut().as_mut_ptr()
 			}
 
 			/// Assign self to be of the same value as a slice of bytes of length `len()`.
