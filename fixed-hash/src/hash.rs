@@ -140,10 +140,24 @@ macro_rules! construct_hash {
 			}
 
 			/// Assign self to be of the same value as a slice of bytes of length `len()`.
+			#[deprecated(
+				since = "0.3.0",
+				note = "unconventional API for rust, should panic instead of adapting the actual size"
+			)]
 			pub fn clone_from_slice(&mut self, src: &[u8]) -> usize {
 				let min = $crate::core::cmp::min($n_bytes, src.len());
 				self.0[..min].copy_from_slice(&src[..min]);
 				min
+			}
+
+			/// Assign the bytes from the byte slice `src` to `self`.
+			/// 
+			/// # Panics
+			/// 
+			/// If the length of `src` and the number of bytes in `self` do not match.
+			pub fn assign_from_slice(&mut self, src: &[u8]) {
+				assert_eq!(src.len(), $n_bytes);
+				self.as_bytes_mut().clone_from_slice(src);
 			}
 
 			/// Convert a slice of bytes of length `len()` to an instance of this type.
