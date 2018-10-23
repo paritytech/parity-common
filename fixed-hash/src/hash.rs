@@ -161,10 +161,26 @@ macro_rules! construct_hash {
 			}
 
 			/// Convert a slice of bytes of length `len()` to an instance of this type.
+			#[deprecated(
+				since = "0.3.0",
+				note = "unconventional API without proper bounds checking, use `from_bytes` instead"
+			)]
 			pub fn from_slice(src: &[u8]) -> Self {
 				let mut r = Self::zero();
 				r.clone_from_slice(src);
 				r
+			}
+
+			/// Create a new fixed-hash from the given slice `src`.
+			/// 
+			/// # Panics
+			/// 
+			/// If the length of `src` and the number of bytes in `Self` do not match.
+			pub fn from_bytes(src: &[u8]) -> Self {
+				assert_eq!(src.len(), $n_bytes);
+				let mut ret = Self::zero();
+				ret.assign_from_slice(src);
+				ret
 			}
 
 			/// Copy the data of this object into some mutable slice of length `len()`.
