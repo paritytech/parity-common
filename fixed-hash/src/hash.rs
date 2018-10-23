@@ -214,8 +214,6 @@ macro_rules! construct_hash {
 				}
 				ret
 			}
-
-			impl_std_for_hash_internals!($name, $n_bytes);
 		}
 
 		impl $crate::core::fmt::Debug for $name {
@@ -361,6 +359,7 @@ macro_rules! construct_hash {
 		impl_ops_for_hash!($name, BitAnd, bitand, BitAndAssign, bitand_assign, &, &=);
 		impl_ops_for_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
 
+		impl_rand_for_hash!($name);
 		impl_std_for_hash!($name, $n_bytes);
 		impl_heapsize_for_hash!($name);
 		impl_libc_for_hash!($name, $n_bytes);
@@ -604,19 +603,21 @@ macro_rules! impl_std_for_hash {
 #[cfg(feature = "std")]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_std_for_hash_internals {
-	($from: ident, $size: tt) => {
-		/// Create a new, cryptographically random, instance.
-		pub fn random() -> $from {
-			let mut hash = $from::zero();
-			hash.randomize();
-			hash
-		}
+macro_rules! impl_rand_for_hash {
+	( $impl_for:ident ) => {
+		impl $impl_for {
+			/// Create a new, cryptographically random, instance.
+			pub fn random() -> $impl_for {
+				let mut hash = $impl_for::zero();
+				hash.randomize();
+				hash
+			}
 
-		/// Assign self have a cryptographically random value.
-		pub fn randomize(&mut self) {
-			let mut rng = $crate::rand::OsRng::new().unwrap();
-			*self = $crate::rand::Rand::rand(&mut rng);
+			/// Assign self have a cryptographically random value.
+			pub fn randomize(&mut self) {
+				let mut rng = $crate::rand::OsRng::new().unwrap();
+				*self = $crate::rand::Rand::rand(&mut rng);
+			}
 		}
 	}
 }
@@ -624,8 +625,8 @@ macro_rules! impl_std_for_hash_internals {
 #[cfg(not(feature = "std"))]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_std_for_hash_internals {
-	($from: ident, $size: tt) => {};
+macro_rules! impl_rand_for_hash {
+	($from: ident) => {};
 }
 
 #[cfg(all(feature = "libc", not(target_os = "unknown")))]
