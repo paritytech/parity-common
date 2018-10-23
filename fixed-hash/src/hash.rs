@@ -94,9 +94,13 @@ macro_rules! construct_hash {
 
 		impl $name {
 			/// Create a new, zero-initialised, instance.
+			#[deprecated(
+				since = "0.3.0",
+				note = "use the `zero` constructor for more clarity"
+			)]
 			#[inline]
 			pub fn new() -> $name {
-				$name([0; $n_bytes])
+				Self::zero()
 			}
 
 			/// Synonym for `new()`. Prefer to new as it's more readable.
@@ -283,6 +287,10 @@ macro_rules! construct_hash {
 			fn default() -> Self { $name::new() }
 		}
 
+		#[deprecated(
+			since = "0.3.0",
+			note = "missing clarity for endianess; try to use `From<[u8; 8]>` with byteorder crate instead"
+		)]
 		impl $crate::core::convert::From<u64> for $name {
 			fn from(mut value: u64) -> $name {
 				let mut ret = $name::new();
