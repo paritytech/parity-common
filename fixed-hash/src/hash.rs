@@ -445,9 +445,8 @@ macro_rules! impl_hash_conversions {
 	($large_ty:ident, $small_ty:ident) => {
 		impl From<$small_ty> for $large_ty {
 			fn from(value: $small_ty) -> $large_ty {
-				use $crate::core::mem;
-				let large_ty_size = mem::size_of::<$large_ty>();
-				let small_ty_size = mem::size_of::<$small_ty>();
+				let large_ty_size = $large_ty::len();
+				let small_ty_size = $small_ty::len();
 
 				debug_assert!(
 					large_ty_size > small_ty_size
@@ -464,9 +463,8 @@ macro_rules! impl_hash_conversions {
 
 		impl From<$large_ty> for $small_ty {
 			fn from(value: $large_ty) -> $small_ty {
-				use $crate::core::mem;
-				let large_ty_size = mem::size_of::<$large_ty>();
-				let small_ty_size = mem::size_of::<$small_ty>();
+				let large_ty_size = $large_ty::len();
+				let small_ty_size = $small_ty::len();
 
 				debug_assert!(
 					large_ty_size > small_ty_size
