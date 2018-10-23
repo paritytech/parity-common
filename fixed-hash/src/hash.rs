@@ -157,7 +157,7 @@ macro_rules! construct_hash {
 
 			/// Returns `true` if all bits set in `b` are also set in `self`.
 			#[inline]
-			pub fn contains<'a>(&'a self, b: &'a Self) -> bool {
+			pub fn contains(&self, b: &Self) -> bool {
 				&(b & self) == b
 			}
 
