@@ -148,7 +148,7 @@ macro_rules! construct_hash {
 
 			/// Convert a slice of bytes of length `len()` to an instance of this type.
 			pub fn from_slice(src: &[u8]) -> Self {
-				let mut r = Self::new();
+				let mut r = Self::zero();
 				r.clone_from_slice(src);
 				r
 			}
@@ -232,7 +232,7 @@ macro_rules! construct_hash {
 		#[cfg_attr(feature="dev", allow(expl_impl_clone_on_copy))]
 		impl $crate::core::clone::Clone for $name {
 			fn clone(&self) -> $name {
-				let mut ret = $name::new();
+				let mut ret = $name::zero();
 				ret.0.copy_from_slice(&self.0);
 				ret
 			}
@@ -296,7 +296,7 @@ macro_rules! construct_hash {
 		}
 
 		impl $crate::core::default::Default for $name {
-			fn default() -> Self { $name::new() }
+			fn default() -> Self { $name::zero() }
 		}
 
 		#[deprecated(
@@ -305,7 +305,7 @@ macro_rules! construct_hash {
 		)]
 		impl $crate::core::convert::From<u64> for $name {
 			fn from(mut value: u64) -> $name {
-				let mut ret = $name::new();
+				let mut ret = $name::zero();
 				for i in 0..8 {
 					if i < $n_bytes {
 						ret.0[$n_bytes - i - 1] = (value & 0xff) as u8;
@@ -420,7 +420,7 @@ macro_rules! impl_hash_conversions {
 						&& small_ty_size % 2 == 0
 				);
 
-				let mut ret = $large_ty::new();
+				let mut ret = $large_ty::zero();
 				ret.as_bytes_mut()[(large_ty_size - small_ty_size)..large_ty_size]
 					.copy_from_slice(value.as_bytes());
 				ret
@@ -439,7 +439,7 @@ macro_rules! impl_hash_conversions {
 						&& small_ty_size % 2 == 0
 				);
 
-				let mut ret = $small_ty::new();
+				let mut ret = $small_ty::zero();
 				ret.as_bytes_mut().copy_from_slice(
 					&value.as_bytes()[(large_ty_size - small_ty_size)..large_ty_size],
 				);
@@ -463,7 +463,7 @@ macro_rules! impl_hash_uint_conversions {
 
 		impl From<$uint> for $hash {
 			fn from(value: $uint) -> $hash {
-				let mut ret = $hash::new();
+				let mut ret = $hash::zero();
 				value.to_big_endian(&mut ret);
 				ret
 			}
@@ -471,7 +471,7 @@ macro_rules! impl_hash_uint_conversions {
 
 		impl<'a> From<&'a $uint> for $hash {
 			fn from(value: &'a $uint) -> $hash {
-				let mut ret: $hash = $hash::new();
+				let mut ret: $hash = $hash::zero();
 				value.to_big_endian(&mut ret);
 				ret
 			}
@@ -534,7 +534,7 @@ macro_rules! impl_std_for_hash {
 
 		impl $crate::rand::Rand for $from {
 			fn rand<R: $crate::rand::Rng>(r: &mut R) -> Self {
-				let mut hash = $from::new();
+				let mut hash = $from::zero();
 				r.fill_bytes(&mut hash.0);
 				hash
 			}
@@ -583,7 +583,7 @@ macro_rules! impl_std_for_hash_internals {
 	($from: ident, $size: tt) => {
 		/// Create a new, cryptographically random, instance.
 		pub fn random() -> $from {
-			let mut hash = $from::new();
+			let mut hash = $from::zero();
 			hash.randomize();
 			hash
 		}
@@ -713,8 +713,8 @@ mod tests {
 
 	#[test]
 	fn test_construct_hash() {
-		assert_eq!(H128::default(), H128::new());
-		assert_eq!(H128::new(), H128::zero());
+		assert_eq!(H128::default(), H128::zero());
+		assert_eq!(H128::zero(), H128::zero());
 		assert_eq!(H128::len(), 16);
 	}
 
