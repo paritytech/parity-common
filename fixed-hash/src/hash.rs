@@ -211,10 +211,10 @@ macro_rules! construct_hash {
 			}
 		}
 
-		impl Copy for $name {}
+		impl $crate::core::marker::Copy for $name {}
 
 		#[cfg_attr(feature="dev", allow(expl_impl_clone_on_copy))]
-		impl Clone for $name {
+		impl $crate::core::clone::Clone for $name {
 			fn clone(&self) -> $name {
 				let mut ret = $name::new();
 				ret.0.copy_from_slice(&self.0);
@@ -222,9 +222,9 @@ macro_rules! construct_hash {
 			}
 		}
 
-		impl Eq for $name {}
+		impl $crate::core::cmp::Eq for $name {}
 
-		impl PartialOrd for $name {
+		impl $crate::core::cmp::PartialOrd for $name {
 			fn partial_cmp(&self, other: &Self) -> Option<$crate::core::cmp::Ordering> {
 				Some(self.cmp(other))
 			}
@@ -345,11 +345,11 @@ macro_rules! construct_hash {
 			}
 		}
 
-		impl Default for $name {
+		impl $crate::core::default::Default for $name {
 			fn default() -> Self { $name::new() }
 		}
 
-		impl From<u64> for $name {
+		impl $crate::core::convert::From<u64> for $name {
 			fn from(mut value: u64) -> $name {
 				let mut ret = $name::new();
 				for i in 0..8 {
@@ -362,7 +362,7 @@ macro_rules! construct_hash {
 			}
 		}
 
-		impl<'a> From<&'a [u8]> for $name {
+		impl<'a> $crate::core::convert::From<&'a [u8]> for $name {
 			fn from(s: &'a [u8]) -> $name {
 				$name::from_slice(s)
 			}
