@@ -57,7 +57,7 @@ pub fn clean_0x(s: &str) -> &str {
 /// # 	assert_eq!(::std::mem::size_of::<H512>(), 64);
 /// # }
 /// ```
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! construct_hash {
 	( $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_bytes:expr ); ) => {
 		#[repr(C)]
@@ -156,7 +156,7 @@ macro_rules! construct_hash {
 			/// 
 			/// If the length of `src` and the number of bytes in `self` do not match.
 			pub fn assign_from_slice(&mut self, src: &[u8]) {
-				assert_eq!(src.len(), $n_bytes);
+				$crate::core::assert_eq!(src.len(), $n_bytes);
 				self.as_bytes_mut().clone_from_slice(src);
 			}
 
@@ -178,7 +178,7 @@ macro_rules! construct_hash {
 			/// 
 			/// If the length of `src` and the number of bytes in `Self` do not match.
 			pub fn from_bytes(src: &[u8]) -> Self {
-				assert_eq!(src.len(), $n_bytes);
+				$crate::core::assert_eq!(src.len(), $n_bytes);
 				let mut ret = Self::zero();
 				ret.assign_from_slice(src);
 				ret
@@ -218,19 +218,19 @@ macro_rules! construct_hash {
 
 		impl $crate::core::fmt::Debug for $name {
 			fn fmt(&self, f: &mut $crate::core::fmt::Formatter) -> $crate::core::fmt::Result {
-				write!(f, "{:#x}", self)
+				$crate::core::write!(f, "{:#x}", self)
 			}
 		}
 
 		impl $crate::core::fmt::Display for $name {
 			fn fmt(&self, f: &mut $crate::core::fmt::Formatter) -> $crate::core::fmt::Result {
-				write!(f, "0x")?;
+				$crate::core::write!(f, "0x")?;
 				for i in &self.0[0..2] {
-					write!(f, "{:02x}", i)?;
+					$crate::core::write!(f, "{:02x}", i)?;
 				}
-				write!(f, "…")?;
+				$crate::core::write!(f, "…")?;
 				for i in &self.0[$n_bytes - 2..$n_bytes] {
-					write!(f, "{:02x}", i)?;
+					$crate::core::write!(f, "{:02x}", i)?;
 				}
 				Ok(())
 			}
@@ -239,10 +239,10 @@ macro_rules! construct_hash {
 		impl $crate::core::fmt::LowerHex for $name {
 			fn fmt(&self, f: &mut $crate::core::fmt::Formatter) -> $crate::core::fmt::Result {
 				if f.alternate() {
-					write!(f, "0x")?;
+					$crate::core::write!(f, "0x")?;
 				}
 				for i in &self.0[..] {
-					write!(f, "{:02x}", i)?;
+					$crate::core::write!(f, "{:02x}", i)?;
 				}
 				Ok(())
 			}
@@ -251,10 +251,10 @@ macro_rules! construct_hash {
 		impl $crate::core::fmt::UpperHex for $name {
 			fn fmt(&self, f: &mut $crate::core::fmt::Formatter) -> $crate::core::fmt::Result {
 				if f.alternate() {
-					write!(f, "0X")?;
+					$crate::core::write!(f, "0X")?;
 				}
 				for i in &self.0[..] {
-					write!(f, "{:02X}", i)?;
+					$crate::core::write!(f, "{:02X}", i)?;
 				}
 				Ok(())
 			}
@@ -368,6 +368,7 @@ macro_rules! construct_hash {
 }
 
 #[macro_export]
+#[doc(hidden)]
 macro_rules! impl_ops_for_hash {
 	(
 		$impl_for:ident,
@@ -439,7 +440,7 @@ macro_rules! impl_ops_for_hash {
 /// assert_eq!(H160::from(H256::zero()), H160::zero());
 /// # }
 /// ```
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! impl_hash_conversions {
 	($large_ty:ident, $small_ty:ident) => {
 		impl From<$small_ty> for $large_ty {
@@ -447,7 +448,7 @@ macro_rules! impl_hash_conversions {
 				let large_ty_size = $large_ty::len();
 				let small_ty_size = $small_ty::len();
 
-				debug_assert!(
+				$crate::core::debug_assert!(
 					large_ty_size > small_ty_size
 						&& large_ty_size % 2 == 0
 						&& small_ty_size % 2 == 0
@@ -465,7 +466,7 @@ macro_rules! impl_hash_conversions {
 				let large_ty_size = $large_ty::len();
 				let small_ty_size = $small_ty::len();
 
-				debug_assert!(
+				$crate::core::debug_assert!(
 					large_ty_size > small_ty_size
 						&& large_ty_size % 2 == 0
 						&& small_ty_size % 2 == 0
