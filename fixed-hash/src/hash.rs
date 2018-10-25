@@ -9,7 +9,7 @@
 /// Return `s` without the `0x` at the beginning of it, if any.
 #[deprecated(
 	since = "0.2.5",
-	note = "implement this 3-liner yourself instead"
+	note = "out of scope for fixed-hash"
 )]
 pub fn clean_0x(s: &str) -> &str {
 	if s.starts_with("0x") {
@@ -126,7 +126,7 @@ macro_rules! construct_hash {
 			/// Assign self to be of the same value as a slice of bytes of length `len()`.
 			#[deprecated(
 				since = "0.2.5",
-				note = "unconventional API, will have a replacement in version 0.3"
+				note = "unconventional API, replaced by `assign_from_slice` in version 0.3"
 			)]
 			pub fn clone_from_slice(&mut self, src: &[u8]) -> usize {
 				let min = ::core::cmp::min($size, src.len());
@@ -137,7 +137,7 @@ macro_rules! construct_hash {
 			/// Convert a slice of bytes of length `len()` to an instance of this type.
 			#[deprecated(
 				since = "0.2.5",
-				note = "unconventional API, will have a replacement in version 0.3"
+				note = "unconventional API, replaced by `new_from_slice` in version 0.3"
 			)]
 			pub fn from_slice(src: &[u8]) -> Self {
 				let mut r = Self::new();
@@ -148,7 +148,7 @@ macro_rules! construct_hash {
 			/// Copy the data of this object into some mutable slice of length `len()`.
 			#[deprecated(
 				since = "0.2.5",
-				note = "simply use std slice API instead"
+				note = "use `std::slice` API instead"
 			)]
 			pub fn copy_to(&self, dest: &mut[u8]) {
 				let min = ::core::cmp::min($size, dest.len());
@@ -158,7 +158,7 @@ macro_rules! construct_hash {
 			/// Returns `true` if all bits set in `b` are also set in `self`.
 			#[deprecated(
 				since = "0.2.5",
-				note = "will be renamed in an upcoming version"
+				note = "will be renamed to `covers` in version 0.3"
 			)]
 			pub fn contains<'a>(&'a self, b: &'a Self) -> bool {
 				&(b & self) == b
@@ -172,7 +172,7 @@ macro_rules! construct_hash {
 			/// Returns the lowest 8 bytes interpreted as a BigEndian integer.
 			#[deprecated(
 				since = "0.2.5",
-				note = "will be renamed in an upcoming version"
+				note = "will be renamed to `low_u64_be` in version 0.3"
 			)]
 			pub fn low_u64(&self) -> u64 {
 				let mut ret = 0u64;
@@ -352,7 +352,7 @@ macro_rules! construct_hash {
 
 		#[deprecated(
 			since = "0.2.5",
-			note = "big-endian and little-endian confusion"
+			note = "will be removed because not big-/little-endian aware"
 		)]
 		impl From<u64> for $from {
 			fn from(mut value: u64) -> $from {
@@ -369,7 +369,7 @@ macro_rules! construct_hash {
 
 		#[deprecated(
 			since = "0.2.5",
-			note = "no proper error handling possible with out-of-bounds inputs"
+			note = "misses proper error handling; will be replaced by `new_from_slice` in version 0.3"
 		)]
 		impl<'a> From<&'a [u8]> for $from {
 			fn from(s: &'a [u8]) -> $from {
