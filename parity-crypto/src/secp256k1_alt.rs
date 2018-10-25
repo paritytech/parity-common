@@ -137,9 +137,21 @@ pub fn recover(signature: &[u8], message: &[u8]) -> Result<[u8;64], Error> {
 
 	Ok(res)
 }
+/// random secret key for rand 0.5
+pub fn random_sec<R: Rng>(rng: &mut R) -> SecretKey {
+	loop {
+		let mut ret = [0u8; 32];
+		rng.fill_bytes(&mut ret);
+
+		match SecretKey::parse(&ret) {
+			Ok(key) => return key,
+			Err(_) => (),
+		}
+	}
+}
 
 pub fn generate_keypair(r: &mut impl Rng) -> (SecretKey, PublicKey) {
-	let secret_key = SecretKey::random(r);
+	let secret_key = random_sec(r);
 	let public_key = PublicKey::from_secret_key(&secret_key);
 	(secret_key, public_key)
 }
