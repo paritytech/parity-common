@@ -488,7 +488,7 @@ macro_rules! impl_hash_conversions {
 #[macro_export]
 macro_rules! impl_hash_uint_conversions {
 	($hash: ident, $uint: ident) => {
-		debug_assert_eq!(
+		$crate::core::debug_assert_eq!(
 			$crate::core::mem::size_of::<$hash>(),
 			$crate::core::mem::size_of::<$uint>(),
 			"[fixed-hash] error: cannot convert between differently sized uint and hash types"
