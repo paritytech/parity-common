@@ -11,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 rand = "0.4"
+threadpool = "1.7"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = { version = "0.3", features = ["Window", "Crypto"], optional = true }

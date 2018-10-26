@@ -16,8 +16,8 @@
 
 //! rng adapter for wasm in browser (using websys crate)
 
-use web_sys::{Crypto};
-use rand::{CryptoRng, RngCore, Error, ErrorKind};
+use web_sys::Crypto;
+use rand::{ CryptoRng, RngCore, Error, ErrorKind };
 use std::fmt;
 use std::mem::transmute;
 

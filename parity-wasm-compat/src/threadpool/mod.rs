@@ -14,9 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Parity wasm compat crate.
-#![feature(fn_traits)]
 
-pub mod rng;
-pub mod threadpool;
+//! threadpool compatibility
 
+#[cfg(all(target_arch = "wasm32", feature = "browser-wasm"))]
+mod threadpool_browser_single;
+
+#[cfg(all(target_arch = "wasm32", feature = "browser-wasm"))]
+pub use self::threadpool_browser_single::{ Builder, ThreadPool };
+
+#[cfg(not(target_arch = "wasm32"))]
+mod threadpool_crate {
+	pub use threadpool::{ Builder, ThreadPool }; // need build then from pool max_count and execute
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use self::threadpool_crate::*;
