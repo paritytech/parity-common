@@ -5,7 +5,7 @@ authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 homepage = "https://github.com/paritytech/parity-common"
 repository = "https://github.com/paritytech/parity-common"
-description = "Fixed-size hashes"
+description = "Macros to define custom fixed-size hash types"
 
 [dependencies]
 heapsize = { version = "0.4", optional = true }
