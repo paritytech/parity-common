@@ -13,11 +13,15 @@
 pub extern crate libc;
 
 #[macro_use]
-extern crate static_assertions;
+#[doc(hidden)]
+pub extern crate static_assertions;
 
 #[cfg(feature="std")]
 #[doc(hidden)]
 pub extern crate core;
+
+#[doc(hidden)]
+pub extern crate byteorder;
 
 #[cfg(not(feature="libc"))]
 #[doc(hidden)]

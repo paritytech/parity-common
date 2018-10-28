@@ -165,12 +165,11 @@ macro_rules! construct_hash {
 			}
 
 			/// Returns the lowest 8 bytes interpreted as a big-endian integer.
-			pub fn low_u64(&self) -> u64 {
-				let mut ret = 0u64;
-				for i in 0..$crate::core::cmp::min($n_bytes, 8) {
-					ret |= (self.0[$n_bytes - 1 - i] as u64) << (i * 8);
-				}
-				ret
+			pub fn low_u64_be(&self) -> u64 {
+				use $crate::byteorder::{BigEndian, ByteOrder};
+				let max8 = $crate::core::cmp::min($n_bytes, 8);
+				let low_bytes = &self.as_bytes()[($n_bytes - 1)..max8];
+				BigEndian::read_u64(low_bytes)
 			}
 		}
 
