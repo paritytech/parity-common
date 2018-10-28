@@ -92,9 +92,9 @@ macro_rules! construct_hash {
 				$name::repeat_byte(0u8)
 			}
 
-			/// Get the size of this object in bytes.
+			/// Returns the size of this hash in bytes.
 			#[inline]
-			pub fn len() -> usize {
+			pub fn len_bytes() -> usize {
 				$n_bytes
 			}
 
