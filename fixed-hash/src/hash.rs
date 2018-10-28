@@ -312,7 +312,7 @@ macro_rules! construct_hash {
 		impl_ops_for_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
 
 		impl_rand_for_hash!($name);
-		impl_std_for_hash!($name, $n_bytes);
+		impl_rustc_hex_for_hash!($name);
 		impl_heapsize_for_hash!($name);
 		impl_libc_for_hash!($name);
 		impl_quickcheck_for_hash!($name);
@@ -470,9 +470,9 @@ macro_rules! impl_heapsize_for_hash {
 #[cfg(feature = "rustc-hex-support")]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_std_for_hash {
-	($from: ident, $size: tt) => {
-		impl $crate::core::str::FromStr for $from {
+macro_rules! impl_rustc_hex_for_hash {
+	( $name: ident ) => {
+		impl $crate::core::str::FromStr for $name {
 			type Err = $crate::rustc_hex::FromHexError;
 
 			fn from_str(s: &str)
@@ -506,8 +506,8 @@ macro_rules! impl_std_for_hash {
 #[cfg(not(feature = "rustc-hex-support"))]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_std_for_hash {
-	($from: ident, $size: tt) => {};
+macro_rules! impl_rustc_hex_for_hash {
+	($from: ident ) => {};
 }
 
 #[cfg(feature = "rand-support")]
