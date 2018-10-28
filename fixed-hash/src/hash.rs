@@ -706,7 +706,9 @@ mod tests {
 	#[cfg(feature = "rustc-hex-support")]
 	#[test]
 	fn from_and_to_address() {
-		let address: H160 = "ef2d6d194084c2de36e0dabfce45d046b37d1106".into();
+		use core::str::FromStr;
+
+		let address = H160::from_str("ef2d6d194084c2de36e0dabfce45d046b37d1106").unwrap();
 		let h = H256::from(address.clone());
 		let a = H160::from(h);
 		assert_eq!(address, a);
@@ -734,11 +736,13 @@ mod tests {
 	#[cfg(feature = "rustc-hex-support")]
 	#[test]
 	fn from_str() {
+		use core::str::FromStr;
+
 		assert_eq!(
 			H64::from(0x1234567890abcdef),
-			H64::from("0x1234567890abcdef")
+			H64::from_str("1234567890abcdef").unwrap()
 		);
-		assert_eq!(H64::from(0x1234567890abcdef), H64::from("1234567890abcdef"));
-		assert_eq!(H64::from(0x234567890abcdef), H64::from("0x234567890abcdef"));
+		assert_eq!(H64::from(0x1234567890abcdef), H64::from_str("1234567890abcdef").unwrap());
+		assert_eq!(H64::from( 0x234567890abcdef), H64::from_str("0234567890abcdef").unwrap());
 	}
 }
