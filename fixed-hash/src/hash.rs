@@ -383,6 +383,7 @@ macro_rules! impl_ops_for_hash {
 ///
 /// ```
 /// #[macro_use] extern crate fixed_hash;
+/// #[macro_use] extern crate static_assertions;
 /// construct_hash!{ struct H160(20); }
 /// construct_hash!{ struct H256(32); }
 /// impl_hash_conversions!(H256, H160);
