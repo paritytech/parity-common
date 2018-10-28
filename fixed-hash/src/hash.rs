@@ -475,29 +475,15 @@ macro_rules! impl_rustc_hex_for_hash {
 		impl $crate::core::str::FromStr for $name {
 			type Err = $crate::rustc_hex::FromHexError;
 
-			fn from_str(s: &str)
-				-> $crate::core::result::Result<$from, $crate::rustc_hex::FromHexError>
+			fn from_str(input: &str)
+				-> $crate::core::result::Result<$name, $crate::rustc_hex::FromHexError>
 			{
 				use $crate::rustc_hex::FromHex;
-				let a: Vec<u8> = s.from_hex()?;
-				if a.len() != $size {
+				let bytes: Vec<u8> = input.from_hex()?;
+				if bytes.len() != Self::len_bytes() {
 					return Err($crate::rustc_hex::FromHexError::InvalidHexLength);
 				}
-
-				let mut ret = [0; $size];
-				ret.copy_from_slice(&a);
-				Ok($from(ret))
-			}
-		}
-
-		impl From<&'static str> for $from {
-			fn from(s: &'static str) -> $from {
-				let s = if s.starts_with("0x") { &s[2..] } else { s };
-				if s.len() % 2 == 1 {
-					("0".to_owned() + s).parse().unwrap()
-				} else {
-					s.parse().unwrap()
-				}
+				Ok($name::from_bytes(&bytes))
 			}
 		}
 	};
