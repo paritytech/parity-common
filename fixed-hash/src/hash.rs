@@ -314,7 +314,7 @@ macro_rules! construct_hash {
 		impl_rand_for_hash!($name);
 		impl_std_for_hash!($name, $n_bytes);
 		impl_heapsize_for_hash!($name);
-		impl_libc_for_hash!($name, $n_bytes);
+		impl_libc_for_hash!($name);
 		impl_quickcheck_arbitrary_for_hash!($name, $n_bytes);
 	}
 }
