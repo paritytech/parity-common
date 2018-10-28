@@ -80,10 +80,16 @@ macro_rules! construct_hash {
 		}
 
 		impl $name {
+			/// Returns a new fixed hash where all bits are set.
+			#[inline]
+			pub fn repeat_byte(byte: u8) -> $name {
+				$name([byte; $n_bytes])
+			}
+
 			/// Returns a new zero-initialized fixed hash.
 			#[inline]
 			pub fn zero() -> $name {
-				$name([0; $n_bytes])
+				$name::repeat_byte(0u8)
 			}
 
 			/// Get the size of this object in bytes.
