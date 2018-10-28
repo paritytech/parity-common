@@ -6,19 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-/// Return the given string `s` without the `0x` at the beginning of it, if any.
-#[deprecated(
-	since = "0.3.0",
-	note = "the api did not fit into this library, implement it yourself if needed"
-)]
-pub fn clean_0x(s: &str) -> &str {
-	if s.starts_with("0x") {
-		&s[2..]
-	} else {
-		s
-	}
-}
-
 /// Construct a fixed-size hash type.
 ///
 /// # Examples
@@ -93,16 +80,6 @@ macro_rules! construct_hash {
 		}
 
 		impl $name {
-			/// Create a new, zero-initialised, instance.
-			#[deprecated(
-				since = "0.3.0",
-				note = "use the `zero` constructor for more clarity"
-			)]
-			#[inline]
-			pub fn new() -> $name {
-				Self::zero()
-			}
-
 			/// Synonym for `new()`. Prefer to new as it's more readable.
 			#[inline]
 			pub fn zero() -> $name {
@@ -139,17 +116,6 @@ macro_rules! construct_hash {
 				self.as_bytes_mut().as_mut_ptr()
 			}
 
-			/// Assign self to be of the same value as a slice of bytes of length `len()`.
-			#[deprecated(
-				since = "0.3.0",
-				note = "unconventional API for rust, should panic instead of adapting the actual size"
-			)]
-			pub fn clone_from_slice(&mut self, src: &[u8]) -> usize {
-				let min = $crate::core::cmp::min($n_bytes, src.len());
-				self.0[..min].copy_from_slice(&src[..min]);
-				min
-			}
-
 			/// Assign the bytes from the byte slice `src` to `self`.
 			/// 
 			/// # Panics
@@ -158,18 +124,6 @@ macro_rules! construct_hash {
 			pub fn assign_from_slice(&mut self, src: &[u8]) {
 				$crate::core::assert_eq!(src.len(), $n_bytes);
 				self.as_bytes_mut().clone_from_slice(src);
-			}
-
-			/// Convert a slice of bytes of length `len()` to an instance of this type.
-			#[deprecated(
-				since = "0.3.0",
-				note = "unconventional API without proper bounds checking, use `from_bytes` instead"
-			)]
-			pub fn from_slice(src: &[u8]) -> Self {
-				let mut r = Self::zero();
-				#[allow(deprecated)]
-				r.clone_from_slice(src);
-				r
 			}
 
 			/// Create a new fixed-hash from the given slice `src`.
@@ -182,16 +136,6 @@ macro_rules! construct_hash {
 				let mut ret = Self::zero();
 				ret.assign_from_slice(src);
 				ret
-			}
-
-			/// Copy the data of this object into some mutable slice of length `len()`.
-			#[deprecated(
-				since = "0.3.0",
-				note = "simply use std slice API instead"
-			)]
-			pub fn copy_to(&self, dest: &mut [u8]) {
-				let min = $crate::core::cmp::min($n_bytes, dest.len());
-				dest[..min].copy_from_slice(&self.0[..min]);
 			}
 
 			/// Returns `true` if all bits set in `b` are also set in `self`.
