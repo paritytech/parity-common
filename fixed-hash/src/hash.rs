@@ -440,7 +440,7 @@ macro_rules! impl_hash_conversions {
 }
 
 #[cfg(all(
-	feature = "heapsizeof",
+	feature = "heapsize-support",
 	feature = "libc",
 	not(target_os = "unknown")
 ))]
@@ -457,7 +457,7 @@ macro_rules! impl_heapsize_for_hash {
 }
 
 #[cfg(any(
-	not(feature = "heapsizeof"),
+	not(feature = "heapsize-support"),
 	not(feature = "libc"),
 	target_os = "unknown"
 ))]
@@ -467,7 +467,7 @@ macro_rules! impl_heapsize_for_hash {
 	($name: ident) => {};
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "rustc-hex-support")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_std_for_hash {
@@ -511,14 +511,14 @@ macro_rules! impl_std_for_hash {
 	};
 }
 
-#[cfg(not(feature = "std"))]
+#[cfg(not(feature = "rustc-hex-support"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_std_for_hash {
 	($from: ident, $size: tt) => {};
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "rand-support")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_rand_for_hash {
@@ -540,7 +540,7 @@ macro_rules! impl_rand_for_hash {
 	}
 }
 
-#[cfg(not(feature = "std"))]
+#[cfg(not(feature = "rand-support"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_rand_for_hash {
@@ -604,7 +604,7 @@ macro_rules! impl_libc_for_hash {
 	};
 }
 
-#[cfg(feature = "impl_quickcheck_arbitrary")]
+#[cfg(feature = "quickcheck-support")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_hash {
@@ -619,7 +619,7 @@ macro_rules! impl_quickcheck_arbitrary_for_hash {
 	};
 }
 
-#[cfg(not(feature = "impl_quickcheck_arbitrary"))]
+#[cfg(not(feature = "quickcheck-support"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_hash {
@@ -662,7 +662,7 @@ mod tests {
 		assert_eq!(H128::len_bytes(), 16);
 	}
 
-	#[cfg(feature = "heapsizeof")]
+	#[cfg(feature = "heapsize-support")]
 	#[test]
 	fn test_heapsizeof() {
 		use heapsize::HeapSizeOf;
@@ -703,7 +703,7 @@ mod tests {
 		assert_eq!(a | b, c);
 	}
 
-	#[cfg(feature = "std")]
+	#[cfg(feature = "rustc-hex-support")]
 	#[test]
 	fn from_and_to_address() {
 		let address: H160 = "ef2d6d194084c2de36e0dabfce45d046b37d1106".into();
@@ -712,7 +712,7 @@ mod tests {
 		assert_eq!(address, a);
 	}
 
-	#[cfg(feature = "std")]
+	#[cfg(feature = "rustc-hex-support")]
 	#[test]
 	fn from_u64() {
 		use core::str::FromStr;
@@ -731,7 +731,7 @@ mod tests {
 		);
 	}
 
-	#[cfg(feature = "std")]
+	#[cfg(feature = "rustc-hex-support")]
 	#[test]
 	fn from_str() {
 		assert_eq!(

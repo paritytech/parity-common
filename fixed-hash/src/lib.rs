@@ -15,36 +15,29 @@ pub extern crate libc;
 #[macro_use]
 extern crate static_assertions;
 
-#[cfg(not(feature="libc"))]
-#[doc(hidden)]
-pub mod libc { }
-
-#[cfg(feature="heapsizeof")]
-#[doc(hidden)]
-pub extern crate heapsize;
-
 #[cfg(feature="std")]
 #[doc(hidden)]
 pub extern crate core;
 
-#[cfg(feature="std")]
+#[cfg(not(feature="libc"))]
+#[doc(hidden)]
+pub mod libc { }
+
+#[cfg(feature="heapsize-support")]
+#[doc(hidden)]
+pub extern crate heapsize;
+
+#[cfg(feature="rustc-hex-support")]
 #[doc(hidden)]
 pub extern crate rustc_hex;
 
-#[cfg(feature="std")]
+#[cfg(feature="rand-support")]
 #[doc(hidden)]
 pub extern crate rand;
 
-#[cfg(feature="impl_quickcheck_arbitrary")]
+#[cfg(feature="quickcheck-support")]
 #[doc(hidden)]
 pub extern crate quickcheck;
-
-#[cfg(feature="serialize")]
-extern crate serde;
-
-#[cfg(feature="serialize")]
-#[macro_use]
-extern crate serde_derive;
 
 mod hash;
 pub use hash::*;
