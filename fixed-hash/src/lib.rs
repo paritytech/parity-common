@@ -12,6 +12,9 @@
 #[doc(hidden)]
 pub extern crate libc;
 
+#[macro_use]
+extern crate static_assertions;
+
 #[cfg(not(feature="libc"))]
 #[doc(hidden)]
 pub mod libc { }
@@ -45,4 +48,3 @@ extern crate serde_derive;
 
 mod hash;
 pub use hash::*;
-

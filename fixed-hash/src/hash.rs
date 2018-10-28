@@ -396,6 +396,10 @@ macro_rules! impl_ops_for_hash {
 #[macro_export(local_inner_macros)]
 macro_rules! impl_hash_conversions {
 	($large_ty:ident, $small_ty:ident) => {
+		static_assertions::const_assert!(VALID_SIZES;
+			$crate::core::mem::size_of::<$small_ty>() < $crate::core::mem::size_of::<$large_ty>()
+		);
+
 		impl From<$small_ty> for $large_ty {
 			fn from(value: $small_ty) -> $large_ty {
 				let large_ty_size = $large_ty::len();
