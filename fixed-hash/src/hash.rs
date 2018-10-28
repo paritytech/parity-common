@@ -432,48 +432,6 @@ macro_rules! impl_hash_conversions {
 	};
 }
 
-/// Implements conversion to and from a hash type and the equally sized unsigned int.
-/// CAUTION: Bad things will happen if the two types are not of the same size!
-#[cfg(feature = "uint_conversions")]
-#[macro_export]
-macro_rules! impl_hash_uint_conversions {
-	($hash: ident, $uint: ident) => {
-		$crate::core::debug_assert_eq!(
-			$crate::core::mem::size_of::<$hash>(),
-			$crate::core::mem::size_of::<$uint>(),
-			"[fixed-hash] error: cannot convert between differently sized uint and hash types"
-		);
-
-		impl From<$uint> for $hash {
-			fn from(value: $uint) -> $hash {
-				let mut ret = $hash::zero();
-				value.to_big_endian(&mut ret);
-				ret
-			}
-		}
-
-		impl<'a> From<&'a $uint> for $hash {
-			fn from(value: &'a $uint) -> $hash {
-				let mut ret: $hash = $hash::zero();
-				value.to_big_endian(&mut ret);
-				ret
-			}
-		}
-
-		impl From<$hash> for $uint {
-			fn from(value: $hash) -> $uint {
-				$uint::from(&value as &[u8])
-			}
-		}
-
-		impl<'a> From<&'a $hash> for $uint {
-			fn from(value: &'a $hash) -> $uint {
-				$uint::from(value.as_ref() as &[u8])
-			}
-		}
-	};
-}
-
 #[cfg(all(
 	feature = "heapsizeof",
 	feature = "libc",
@@ -773,35 +731,5 @@ mod tests {
 		);
 		assert_eq!(H64::from(0x1234567890abcdef), H64::from("1234567890abcdef"));
 		assert_eq!(H64::from(0x234567890abcdef), H64::from("0x234567890abcdef"));
-	}
-
-	#[cfg(feature = "uint_conversions")]
-	#[test]
-	fn from_and_to_u256() {
-		use uint::U256;
-
-		impl_hash_uint_conversions!(H256, U256);
-
-		let u: U256 = 0x123456789abcdef0u64.into();
-		let h = H256::from(u);
-		assert_eq!(
-			H256::from(u),
-			H256::from("000000000000000000000000000000000000000000000000123456789abcdef0")
-		);
-		let h_ref = H256::from(&u);
-		assert_eq!(h, h_ref);
-		let r_ref: U256 = From::from(&h);
-		assert!(r_ref == u);
-		let r: U256 = From::from(h);
-		assert!(r == u)
-	}
-
-	#[cfg(feature = "uint_conversions")]
-	#[test]
-	#[should_panic(expected = "Can't convert between differently sized uint/hash.")]
-	fn converting_differently_sized_types_panics() {
-		use uint::U512;
-
-		impl_hash_uint_conversions!(H256, U512);
 	}
 }
