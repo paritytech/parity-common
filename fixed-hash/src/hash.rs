@@ -402,8 +402,8 @@ macro_rules! impl_hash_conversions {
 
 		impl From<$small_ty> for $large_ty {
 			fn from(value: $small_ty) -> $large_ty {
-				let large_ty_size = $large_ty::len();
-				let small_ty_size = $small_ty::len();
+				let large_ty_size = $large_ty::len_bytes();
+				let small_ty_size = $small_ty::len_bytes();
 
 				$crate::core::debug_assert!(
 					large_ty_size > small_ty_size
@@ -420,8 +420,8 @@ macro_rules! impl_hash_conversions {
 
 		impl From<$large_ty> for $small_ty {
 			fn from(value: $large_ty) -> $small_ty {
-				let large_ty_size = $large_ty::len();
-				let small_ty_size = $small_ty::len();
+				let large_ty_size = $large_ty::len_bytes();
+				let small_ty_size = $small_ty::len_bytes();
 
 				$crate::core::debug_assert!(
 					large_ty_size > small_ty_size
@@ -657,7 +657,7 @@ mod tests {
 	fn test_construct_hash() {
 		assert_eq!(H128::default(), H128::zero());
 		assert_eq!(H128::zero(), H128::zero());
-		assert_eq!(H128::len(), 16);
+		assert_eq!(H128::len_bytes(), 16);
 	}
 
 	#[cfg(feature = "heapsizeof")]
