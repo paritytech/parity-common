@@ -243,45 +243,23 @@ macro_rules! construct_hash {
 			}
 		}
 
-		impl $crate::core::ops::Index<usize> for $name {
-			type Output = u8;
+		impl<I> $crate::core::ops::Index<I> for $name
+		where
+			I: $crate::core::slice::SliceIndex<[u8]>
+		{
+			type Output = I::Output;
 
-			fn index(&self, index: usize) -> &u8 {
-				&self.0[index]
+			fn index(&self, index: I) -> &I::Output {
+				&self.as_bytes()[index]
 			}
 		}
 
-		impl $crate::core::ops::IndexMut<usize> for $name {
-			fn index_mut(&mut self, index: usize) -> &mut u8 {
-				&mut self.0[index]
-			}
-		}
-
-		impl $crate::core::ops::Index<$crate::core::ops::Range<usize>> for $name {
-			type Output = [u8];
-
-			fn index(&self, index: $crate::core::ops::Range<usize>) -> &[u8] {
-				&self.0[index]
-			}
-		}
-
-		impl $crate::core::ops::IndexMut<$crate::core::ops::Range<usize>> for $name {
-			fn index_mut(&mut self, index: $crate::core::ops::Range<usize>) -> &mut [u8] {
-				&mut self.0[index]
-			}
-		}
-
-		impl $crate::core::ops::Index<$crate::core::ops::RangeFull> for $name {
-			type Output = [u8];
-
-			fn index(&self, _index: $crate::core::ops::RangeFull) -> &[u8] {
-				&self.0
-			}
-		}
-
-		impl $crate::core::ops::IndexMut<$crate::core::ops::RangeFull> for $name {
-			fn index_mut(&mut self, _index: $crate::core::ops::RangeFull) -> &mut [u8] {
-				&mut self.0
+		impl<I> $crate::core::ops::IndexMut<I> for $name
+		where
+			I: $crate::core::slice::SliceIndex<[u8], Output = [u8]>
+		{
+			fn index_mut(&mut self, index: I) -> &mut I::Output {
+				&mut self.as_bytes_mut()[index]
 			}
 		}
 
