@@ -315,7 +315,7 @@ macro_rules! construct_hash {
 		impl_std_for_hash!($name, $n_bytes);
 		impl_heapsize_for_hash!($name);
 		impl_libc_for_hash!($name);
-		impl_quickcheck_arbitrary_for_hash!($name, $n_bytes);
+		impl_quickcheck_for_hash!($name);
 	}
 }
 
@@ -607,12 +607,12 @@ macro_rules! impl_libc_for_hash {
 #[cfg(feature = "quickcheck-support")]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_quickcheck_arbitrary_for_hash {
-	($name: ty, $n_bytes: tt) => {
+macro_rules! impl_quickcheck_for_hash {
+	( $name:ty ) => {
 		impl $crate::quickcheck::Arbitrary for $name {
 			fn arbitrary<G: $crate::quickcheck::Gen>(g: &mut G) -> Self {
 				let mut res = [0u8; $n_bytes];
-				g.fill_bytes(&mut res[..$n_bytes]);
+				g.fill_bytes(&mut res[..Self::len_bytes()]);
 				res.as_ref().into()
 			}
 		}
@@ -622,8 +622,8 @@ macro_rules! impl_quickcheck_arbitrary_for_hash {
 #[cfg(not(feature = "quickcheck-support"))]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_quickcheck_arbitrary_for_hash {
-	($name: ty, $n_bytes: tt) => {};
+macro_rules! impl_quickcheck_for_hash {
+	( $name:ty ) => {};
 }
 
 #[cfg(test)]
