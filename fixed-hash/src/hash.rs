@@ -447,7 +447,7 @@ macro_rules! impl_hash_conversions {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_hash {
-	($name: ident) => {
+	( $name:ident ) => {
 		impl $crate::heapsize::HeapSizeOf for $name {
 			fn heap_size_of_children(&self) -> usize {
 				0
@@ -464,7 +464,7 @@ macro_rules! impl_heapsize_for_hash {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_hash {
-	($name: ident) => {};
+	( $name:ident ) => {};
 }
 
 #[cfg(feature = "rustc-hex-support")]
@@ -514,8 +514,7 @@ macro_rules! impl_rustc_hex_for_hash {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_rand_for_hash {
-	( $impl_for:ident ) => {
-		impl $impl_for {
+	( $name:ident ) => {
 		impl $crate::rand::Rand for $name {
 			fn rand<R: $crate::rand::Rng>(r: &mut R) -> Self {
 				let mut hash = $name::zero();
@@ -524,9 +523,10 @@ macro_rules! impl_rand_for_hash {
 			}
 		}
 
+		impl $name {
 			/// Create a new, cryptographically random, instance.
-			pub fn random() -> $impl_for {
-				let mut hash = $impl_for::zero();
+			pub fn random() -> $name {
+				let mut hash = $name::zero();
 				hash.randomize();
 				hash
 			}
@@ -544,7 +544,7 @@ macro_rules! impl_rand_for_hash {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_rand_for_hash {
-	($from: ident) => {};
+	( $from: ident ) => {};
 }
 
 #[cfg(all(feature = "libc", not(target_os = "unknown")))]
