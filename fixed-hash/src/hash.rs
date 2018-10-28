@@ -549,26 +549,26 @@ macro_rules! impl_rand_for_hash {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_libc_for_hash {
-	($from: ident, $size: expr) => {
-		impl PartialEq for $from {
+	( $name: ident ) => {
+		impl $crate::core::cmp::PartialEq for $name {
 			fn eq(&self, other: &Self) -> bool {
 				unsafe {
 					$crate::libc::memcmp(
-						self.0.as_ptr() as *const $crate::libc::c_void,
-						other.0.as_ptr() as *const $crate::libc::c_void,
-						$size,
+						self.as_bytes().as_ptr() as *const $crate::libc::c_void,
+						other.as_bytes().as_ptr() as *const $crate::libc::c_void,
+						Self::len_bytes(),
 					) == 0
 				}
 			}
 		}
 
-		impl Ord for $from {
+		impl $crate::core::cmp::Ord for $name {
 			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
 				let r = unsafe {
 					$crate::libc::memcmp(
-						self.0.as_ptr() as *const $crate::libc::c_void,
-						other.0.as_ptr() as *const $crate::libc::c_void,
-						$size,
+						self.as_bytes().as_ptr() as *const $crate::libc::c_void,
+						other.as_bytes().as_ptr() as *const $crate::libc::c_void,
+						Self::len_bytes(),
 					)
 				};
 				if r < 0 {
@@ -577,7 +577,7 @@ macro_rules! impl_libc_for_hash {
 				if r > 0 {
 					return $crate::core::cmp::Ordering::Greater;
 				}
-				return $crate::core::cmp::Ordering::Equal;
+				$crate::core::cmp::Ordering::Equal
 			}
 		}
 	};
