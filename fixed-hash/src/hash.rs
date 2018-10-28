@@ -112,6 +112,12 @@ macro_rules! construct_hash {
 				&mut self.0
 			}
 
+			/// Returns the inner byte array of `self`.
+			#[inline]
+			pub fn to_bytes(self) -> [u8; $n_bytes] {
+				self.0
+			}
+
 			/// Returns a constant raw pointer to the value.
 			#[inline]
 			pub fn as_ptr(&self) -> *const u8 {
