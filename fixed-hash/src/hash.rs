@@ -472,14 +472,6 @@ macro_rules! impl_heapsize_for_hash {
 #[doc(hidden)]
 macro_rules! impl_std_for_hash {
 	($from: ident, $size: tt) => {
-		impl $crate::rand::Rand for $from {
-			fn rand<R: $crate::rand::Rng>(r: &mut R) -> Self {
-				let mut hash = $from::zero();
-				r.fill_bytes(&mut hash.0);
-				hash
-			}
-		}
-
 		impl $crate::core::str::FromStr for $from {
 			type Err = $crate::rustc_hex::FromHexError;
 
@@ -524,6 +516,14 @@ macro_rules! impl_std_for_hash {
 macro_rules! impl_rand_for_hash {
 	( $impl_for:ident ) => {
 		impl $impl_for {
+		impl $crate::rand::Rand for $name {
+			fn rand<R: $crate::rand::Rng>(r: &mut R) -> Self {
+				let mut hash = $name::zero();
+				r.fill_bytes(&mut hash.0);
+				hash
+			}
+		}
+
 			/// Create a new, cryptographically random, instance.
 			pub fn random() -> $impl_for {
 				let mut hash = $impl_for::zero();
