@@ -80,7 +80,7 @@ macro_rules! construct_hash {
 		}
 
 		impl $name {
-			/// Synonym for `new()`. Prefer to new as it's more readable.
+			/// Returns a new zero-initialized fixed hash.
 			#[inline]
 			pub fn zero() -> $name {
 				$name([0; $n_bytes])
@@ -150,7 +150,7 @@ macro_rules! construct_hash {
 				self.as_bytes().iter().all(|&byte| byte == 0u8)
 			}
 
-			/// Returns the lowest 8 bytes interpreted as a BigEndian integer.
+			/// Returns the lowest 8 bytes interpreted as a big-endian integer.
 			pub fn low_u64(&self) -> u64 {
 				let mut ret = 0u64;
 				for i in 0..$crate::core::cmp::min($n_bytes, 8) {
