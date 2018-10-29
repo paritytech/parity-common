@@ -43,4 +43,8 @@ pub extern crate rand;
 #[doc(hidden)]
 pub extern crate quickcheck;
 
+#[macro_use]
 mod hash;
+
+#[cfg(test)]
+mod tests;
