@@ -157,8 +157,11 @@ macro_rules! construct_hash {
 			pub fn is_zero(&self) -> bool {
 				self.as_bytes().iter().all(|&byte| byte == 0u8)
 			}
+		}
 
-			#[cfg(feature="byteorder-support")]
+		/// Utilizies using the `byteorder` crate.
+		#[cfg(feature = "byteorder-support")]
+		impl $name {
 			fn low_u64_with_byteorder<B>(&self) -> u64
 			where
 				B: $crate::byteorder::ByteOrder
@@ -169,24 +172,20 @@ macro_rules! construct_hash {
 			}
 
 			/// Returns the lowest 8 bytes interpreted as big-endian.
-			#[cfg(feature="byteorder-support")]
 			pub fn low_u64_be(&self) -> u64 {
 				self.low_u64_with_byteorder::<$crate::byteorder::BigEndian>()
 			}
 
 			/// Returns the lowest 8 bytes interpreted as little-endian.
-			#[cfg(feature="byteorder-support")]
 			pub fn low_u64_le(&self) -> u64 {
 				self.low_u64_with_byteorder::<$crate::byteorder::LittleEndian>()
 			}
 
 			/// Returns the lowest 8 bytes interpreted as native-endian.
-			#[cfg(feature="byteorder-support")]
 			pub fn low_u64_ne(&self) -> u64 {
 				self.low_u64_with_byteorder::<$crate::byteorder::NativeEndian>()
 			}
 
-			#[cfg(feature="byteorder-support")]
 			fn from_u64_with_byteorder<B>(val: u64) -> Self
 			where
 				B: $crate::byteorder::ByteOrder
@@ -209,7 +208,6 @@ macro_rules! construct_hash {
 			/// # Panics
 			///
 			/// If this is called on a hash type with less than 8 bytes.
-			#[cfg(feature="byteorder-support")]
 			pub fn from_u64_be(val: u64) -> Self {
 				Self::from_u64_with_byteorder::<$crate::byteorder::BigEndian>(val)
 			}
@@ -223,7 +221,6 @@ macro_rules! construct_hash {
 			/// # Panics
 			///
 			/// If this is called on a hash type with less than 8 bytes.
-			#[cfg(feature="byteorder-support")]
 			pub fn from_u64_le(val: u64) -> Self {
 				Self::from_u64_with_byteorder::<$crate::byteorder::LittleEndian>(val)
 			}
@@ -237,7 +234,6 @@ macro_rules! construct_hash {
 			/// # Panics
 			///
 			/// If this is called on a hash type with less than 8 bytes.
-			#[cfg(feature="byteorder-support")]
 			pub fn from_u64_ne(val: u64) -> Self {
 				Self::from_u64_with_byteorder::<$crate::byteorder::NativeEndian>(val)
 			}
