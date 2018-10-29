@@ -74,7 +74,10 @@ impl ThreadPool {
 		0
 	}
 
-	pub fn max_count(&self) -> usize { std::usize::MAX }
+	pub fn max_count(&self) -> usize {
+		// single thread
+		1
+	}
 
 	pub fn panic_count(&self) -> usize { 0 }
 

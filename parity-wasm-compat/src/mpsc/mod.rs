@@ -14,10 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Parity wasm compat crate.
-#![feature(fn_traits)]
 
-pub mod rng;
-pub mod threadpool;
-pub mod mpsc;
+//! mpsc compatibility
 
+#[cfg(all(target_arch = "wasm32", feature = "browser-wasm"))]
+mod mpsc_browser_single;
+
+#[cfg(all(target_arch = "wasm32", feature = "browser-wasm"))]
+pub use self::mpsc_browser_single::*;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod mpsc_crate {
+	pub use std::sync::mpsc::{ sync_channel, SyncSender, Receiver }; // need build then from pool max_count and execute
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use self::mpsc_crate::*;
