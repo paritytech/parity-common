@@ -342,10 +342,26 @@ macro_rules! construct_hash {
 		impl_ops_for_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
 
 		impl_rand_for_hash!($name);
-		impl_rustc_hex_for_hash!($name);
 		impl_heapsize_for_hash!($name);
 		impl_libc_for_hash!($name);
 		impl_quickcheck_for_hash!($name);
+
+		#[cfg(feature = "rustc-hex-support")]
+		impl $crate::core::str::FromStr for $name {
+			type Err = $crate::rustc_hex::FromHexError;
+
+			fn from_str(
+				input: &str,
+			) -> $crate::core::result::Result<$name, $crate::rustc_hex::FromHexError> {
+				use $crate::rustc_hex::FromHex;
+				let bytes: Vec<u8> = input.from_hex()?;
+				if bytes.len() != Self::len_bytes() {
+					return Err($crate::rustc_hex::FromHexError::InvalidHexLength);
+				}
+				Ok($name::from_slice(&bytes))
+			}
+		}
+
 	}
 }
 
@@ -497,36 +513,6 @@ macro_rules! impl_heapsize_for_hash {
 macro_rules! impl_heapsize_for_hash {
 	( $name:ident ) => {};
 }
-
-#[cfg(feature = "rustc-hex-support")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_rustc_hex_for_hash {
-	( $name: ident ) => {
-		impl $crate::core::str::FromStr for $name {
-			type Err = $crate::rustc_hex::FromHexError;
-
-			fn from_str(
-				input: &str,
-			) -> $crate::core::result::Result<$name, $crate::rustc_hex::FromHexError> {
-				use $crate::rustc_hex::FromHex;
-				let bytes: Vec<u8> = input.from_hex()?;
-				if bytes.len() != Self::len_bytes() {
-					return Err($crate::rustc_hex::FromHexError::InvalidHexLength);
-				}
-				Ok($name::from_slice(&bytes))
-			}
-		}
-	};
-}
-
-#[cfg(not(feature = "rustc-hex-support"))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_rustc_hex_for_hash {
-	($from: ident ) => {};
-}
-
 #[cfg(feature = "rand-support")]
 #[macro_export]
 #[doc(hidden)]
