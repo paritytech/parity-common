@@ -541,7 +541,7 @@ macro_rules! impl_hash_conversions {
 
 				let mut ret = $small_ty::zero();
 				ret.as_bytes_mut().copy_from_slice(
-					&value.as_bytes()[(large_ty_size - small_ty_size)..large_ty_size],
+					&value[(large_ty_size - small_ty_size)..large_ty_size],
 				);
 				ret
 			}
