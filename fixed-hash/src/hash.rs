@@ -158,12 +158,46 @@ macro_rules! construct_hash {
 				self.as_bytes().iter().all(|&byte| byte == 0u8)
 			}
 
-			/// Returns the lowest 8 bytes interpreted as a big-endian integer.
-			pub fn low_u64_be(&self) -> u64 {
-				use $crate::byteorder::{BigEndian, ByteOrder};
+			#[cfg(feature="byteorder-support")]
+			fn low_u64_with_byteorder<B>(&self) -> u64
+			where
+				B: $crate::byteorder::ByteOrder
+			{
 				let max8 = $crate::core::cmp::min($n_bytes, 8);
 				let low_bytes = &self.as_bytes()[($n_bytes - 1)..max8];
-				BigEndian::read_u64(low_bytes)
+				B::read_u64(low_bytes)
+			}
+
+			/// Returns the lowest 8 bytes interpreted as big-endian.
+			#[cfg(feature="byteorder-support")]
+			pub fn low_u64_be(&self) -> u64 {
+				self.low_u64_with_byteorder::<$crate::byteorder::BigEndian>()
+			}
+
+			/// Returns the lowest 8 bytes interpreted as little-endian.
+			#[cfg(feature="byteorder-support")]
+			pub fn low_u64_le(&self) -> u64 {
+				self.low_u64_with_byteorder::<$crate::byteorder::LittleEndian>()
+			}
+
+			/// Returns the lowest 8 bytes interpreted as native-endian.
+			#[cfg(feature="byteorder-support")]
+			pub fn low_u64_ne(&self) -> u64 {
+				self.low_u64_with_byteorder::<$crate::byteorder::NativeEndian>()
+			}
+
+			#[cfg(feature="byteorder-support")]
+			fn from_u64_with_byteorder<B>(val: u64) -> Self
+			where
+				B: $crate::byteorder::ByteOrder
+			{
+				$crate::core::assert_eq!(
+					true,
+					$crate::core::mem::size_of::<u64>() <= Self::len_bytes()
+				);
+				let mut ret = Self::zero();
+				B::write_u64(&mut ret[(Self::len_bytes() - 8)..], val);
+				ret
 			}
 
 			/// Creates a new hash type from the given `u64` value.
@@ -175,12 +209,23 @@ macro_rules! construct_hash {
 			/// # Panics
 			///
 			/// If this is called on a hash type with less than 8 bytes.
+			#[cfg(feature="byteorder-support")]
 			pub fn from_u64_be(val: u64) -> Self {
-				use $crate::byteorder::{BigEndian, ByteOrder};
-				// $crate::core::assert!($crate::core::mem::size_of::<u64>() <= Self::len_bytes());
-				let mut ret = Self::zero();
-				BigEndian::write_u64(&mut ret[(Self::len_bytes() - 8)..], val);
-				ret
+				Self::from_u64_with_byteorder::<$crate::byteorder::BigEndian>(val)
+			}
+
+			/// Creates a new hash type from the given `u64` value.
+			///
+			/// # Note
+			///
+			/// The given `u64` value is interpreted as little endian.
+			///
+			/// # Panics
+			///
+			/// If this is called on a hash type with less than 8 bytes.
+			#[cfg(feature="byteorder-support")]
+			pub fn from_u64_le(val: u64) -> Self {
+				Self::from_u64_with_byteorder::<$crate::byteorder::LittleEndian>(val)
 			}
 
 			/// Creates a new hash type from the given `u64` value.
@@ -192,12 +237,9 @@ macro_rules! construct_hash {
 			/// # Panics
 			///
 			/// If this is called on a hash type with less than 8 bytes.
+			#[cfg(feature="byteorder-support")]
 			pub fn from_u64_ne(val: u64) -> Self {
-				use $crate::byteorder::{NativeEndian, ByteOrder};
-				// $crate::core::assert!($crate::core::mem::size_of::<u64>() <= Self::len_bytes());
-				let mut ret = Self::zero();
-				NativeEndian::write_u64(&mut ret[(Self::len_bytes() - 8)..], val);
-				ret
+				Self::from_u64_with_byteorder::<$crate::byteorder::NativeEndian>(val)
 			}
 		}
 

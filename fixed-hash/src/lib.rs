@@ -20,6 +20,7 @@ pub extern crate static_assertions;
 #[doc(hidden)]
 pub extern crate core;
 
+#[cfg(feature="byteorder-support")]
 #[doc(hidden)]
 pub extern crate byteorder;
 
