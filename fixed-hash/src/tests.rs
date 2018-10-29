@@ -318,4 +318,10 @@ mod from_str {
 		use core::str::FromStr;
         assert!(H64::from_str("Hello, World!").is_err())
 	}
+
+    #[test]
+    fn too_many_digits() {
+		use core::str::FromStr;
+        assert!(H64::from_str("0123456789ABCDEF0").is_err())
+    }
 }
