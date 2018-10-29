@@ -513,7 +513,7 @@ macro_rules! construct_hash {
 			fn arbitrary<G: $crate::quickcheck::Gen>(g: &mut G) -> Self {
 				let mut res = [0u8; $n_bytes];
 				g.fill_bytes(&mut res[..Self::len_bytes()]);
-				res.as_ref().into()
+				Self::from(res)
 			}
 		}
 	}
