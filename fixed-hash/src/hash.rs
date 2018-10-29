@@ -24,8 +24,8 @@
 ///
 /// ```
 /// # #[macro_use] extern crate fixed_hash;
-/// # extern crate serde;
-/// # #[macro_use] extern crate serde_derive;
+/// # // extern crate serde;
+/// # // #[macro_use] extern crate serde_derive;
 /// construct_hash!{
 /// 	/// My unformatted 160 bytes sized hash type.
 /// 	#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
