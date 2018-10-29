@@ -20,6 +20,7 @@
 pub mod rng;
 pub mod threadpool;
 pub mod mpsc;
+pub mod memmap;
 
 pub mod home {
 	#[cfg(not(target_arch = "wasm32"))]
