@@ -289,3 +289,33 @@ mod rand {
         )
     }
 }
+
+#[cfg(feature = "rustc-hex-support")]
+mod from_str {
+    use super::*;
+
+	#[test]
+	fn valid() {
+		use core::str::FromStr;
+
+        assert_eq!(
+            H64::from_str("0123456789ABCDEF").unwrap(),
+            H64::from([
+                0x01, 0x23, 0x45, 0x67,
+                0x89, 0xAB, 0xCD, 0xEF
+            ])
+        )
+	}
+
+	#[test]
+	fn empty_str() {
+		use core::str::FromStr;
+        assert!(H64::from_str("").is_err())
+	}
+
+	#[test]
+	fn invalid_digits() {
+		use core::str::FromStr;
+        assert!(H64::from_str("Hello, World!").is_err())
+	}
+}
