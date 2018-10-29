@@ -341,8 +341,58 @@ macro_rules! construct_hash {
 		impl_ops_for_hash!($name, BitAnd, bitand, BitAndAssign, bitand_assign, &, &=);
 		impl_ops_for_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
 
-		impl_rand_for_hash!($name);
 		impl_libc_for_hash!($name);
+
+		#[cfg(feature = "rand-support")]
+		impl $crate::rand::distributions::Distribution<$name>
+			for $crate::rand::distributions::Standard
+		{
+			fn sample<R: $crate::rand::Rng + ?Sized>(&self, rng: &mut R) -> $name {
+				let mut ret = $name::zero();
+				for byte in ret.as_bytes_mut().iter_mut() {
+					*byte = rng.gen();
+				}
+				ret
+			}
+		}
+
+		/// Utilities using the `rand` crate.
+		#[cfg(feature = "rand-support")]
+		impl $name {
+			/// Assign `self` to a cryptographically random value using the
+			/// given random number generator.
+			pub fn randomize_using<R>(&mut self, rng: &mut R)
+			where
+				R: $crate::rand::Rng + ?Sized
+			{
+				use $crate::rand::distributions::Distribution;
+				*self = $crate::rand::distributions::Standard.sample(rng);
+			}
+
+			/// Assign `self` to a cryptographically random value.
+			pub fn randomize(&mut self) {
+				let mut rng = $crate::rand::OsRng::new().unwrap();
+				self.randomize_using(&mut rng);
+			}
+
+			/// Create a new hash with cryptographically random content using the
+			/// given random number generator.
+			pub fn random_using<R>(rng: &mut R) -> Self
+			where
+				R: $crate::rand::Rng + ?Sized
+			{
+				let mut ret = Self::zero();
+				ret.randomize_using(rng);
+				ret
+			}
+
+			/// Create a new hash with cryptographically random content.
+			pub fn random() -> Self {
+				let mut hash = Self::zero();
+				hash.randomize();
+				hash
+			}
+		}
 
 		#[cfg(feature = "rustc-hex-support")]
 		impl $crate::core::str::FromStr for $name {
@@ -501,68 +551,6 @@ macro_rules! impl_hash_conversions {
 			}
 		}
 	};
-}
-
-#[cfg(feature = "rand-support")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_rand_for_hash {
-	( $name:ident ) => {
-		impl $crate::rand::distributions::Distribution<$name>
-			for $crate::rand::distributions::Standard
-		{
-			fn sample<R: $crate::rand::Rng + ?Sized>(&self, rng: &mut R) -> $name {
-				let mut ret = $name::zero();
-				for byte in ret.as_bytes_mut().iter_mut() {
-					*byte = rng.gen();
-				}
-				ret
-			}
-		}
-
-		impl $name {
-			/// Assign `self` to a cryptographically random value using the
-			/// given random number generator.
-			pub fn randomize_using<R>(&mut self, rng: &mut R)
-			where
-				R: $crate::rand::Rng + ?Sized
-			{
-				use $crate::rand::distributions::Distribution;
-				*self = $crate::rand::distributions::Standard.sample(rng);
-			}
-
-			/// Assign `self` to a cryptographically random value.
-			pub fn randomize(&mut self) {
-				let mut rng = $crate::rand::OsRng::new().unwrap();
-				self.randomize_using(&mut rng);
-			}
-
-			/// Create a new hash with cryptographically random content using the
-			/// given random number generator.
-			pub fn random_using<R>(rng: &mut R) -> Self
-			where
-				R: $crate::rand::Rng + ?Sized
-			{
-				let mut ret = Self::zero();
-				ret.randomize_using(rng);
-				ret
-			}
-
-			/// Create a new hash with cryptographically random content.
-			pub fn random() -> Self {
-				let mut hash = Self::zero();
-				hash.randomize();
-				hash
-			}
-		}
-	};
-}
-
-#[cfg(not(feature = "rand-support"))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_rand_for_hash {
-	( $from: ident ) => {};
 }
 
 #[cfg(all(feature = "libc", not(target_os = "unknown")))]
