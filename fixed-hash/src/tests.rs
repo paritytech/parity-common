@@ -259,3 +259,33 @@ mod from_low_u64 {
         )
     }
 }
+
+#[cfg(feature = "rand-support")]
+mod rand {
+    use super::*;
+    use rand::{XorShiftRng, SeedableRng};
+
+    #[test]
+    fn random() {
+        let default_seed = <XorShiftRng as SeedableRng>::Seed::default();
+        let mut rng = XorShiftRng::from_seed(default_seed);
+        assert_eq!(
+            H32::random_using(&mut rng),
+            H32::from([0x43, 0xCA, 0x64, 0xED])
+        );
+    }
+
+    #[test]
+    fn randomize() {
+        let default_seed = <XorShiftRng as SeedableRng>::Seed::default();
+        let mut rng = XorShiftRng::from_seed(default_seed);
+        assert_eq!(
+            {
+                let mut ret = H32::zero();
+                ret.randomize_using(&mut rng);
+                ret
+            },
+            H32::from([0x43, 0xCA, 0x64, 0xED])
+        )
+    }
+}
