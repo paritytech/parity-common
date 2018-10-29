@@ -177,6 +177,7 @@ macro_rules! construct_hash {
 			///
 			/// For hash type with less than 8 bytes the missing bytes
 			/// are interpreted as being zero.
+			#[inline]
 			pub fn to_low_u64_be(&self) -> u64 {
 				self.to_low_u64_with_byteorder::<$crate::byteorder::BigEndian>()
 			}
@@ -187,6 +188,7 @@ macro_rules! construct_hash {
 			///
 			/// For hash type with less than 8 bytes the missing bytes
 			/// are interpreted as being zero.
+			#[inline]
 			pub fn to_low_u64_le(&self) -> u64 {
 				self.to_low_u64_with_byteorder::<$crate::byteorder::LittleEndian>()
 			}
@@ -197,6 +199,7 @@ macro_rules! construct_hash {
 			///
 			/// For hash type with less than 8 bytes the missing bytes
 			/// are interpreted as being zero.
+			#[inline]
 			pub fn to_low_u64_ne(&self) -> u64 {
 				self.to_low_u64_with_byteorder::<$crate::byteorder::NativeEndian>()
 			}
@@ -220,6 +223,7 @@ macro_rules! construct_hash {
 			/// - The given `u64` value is interpreted as big endian.
 			/// - Ignores the most significant bits of the given value
 			///   if the hash type has less than 8 bytes.
+			#[inline]
 			pub fn from_low_u64_be(val: u64) -> Self {
 				Self::from_low_u64_with_byteorder::<$crate::byteorder::BigEndian>(val)
 			}
@@ -231,6 +235,7 @@ macro_rules! construct_hash {
 			/// - The given `u64` value is interpreted as little endian.
 			/// - Ignores the most significant bits of the given value
 			///   if the hash type has less than 8 bytes.
+			#[inline]
 			pub fn from_low_u64_le(val: u64) -> Self {
 				Self::from_low_u64_with_byteorder::<$crate::byteorder::LittleEndian>(val)
 			}
@@ -242,6 +247,7 @@ macro_rules! construct_hash {
 			/// - The given `u64` value is interpreted as native endian.
 			/// - Ignores the most significant bits of the given value
 			///   if the hash type has less than 8 bytes.
+			#[inline]
 			pub fn from_low_u64_ne(val: u64) -> Self {
 				Self::from_low_u64_with_byteorder::<$crate::byteorder::NativeEndian>(val)
 			}
@@ -338,7 +344,10 @@ macro_rules! construct_hash {
 		}
 
 		impl $crate::core::default::Default for $name {
-			fn default() -> Self { $name::zero() }
+			#[inline]
+			fn default() -> Self {
+				Self::zero()
+			}
 		}
 
 		impl_ops_for_hash!($name, BitOr, bitor, BitOrAssign, bitor_assign, |, |=);
@@ -347,6 +356,7 @@ macro_rules! construct_hash {
 
 		#[cfg(all(feature = "libc", not(target_os = "unknown")))]
 		impl $crate::core::cmp::PartialEq for $name {
+			#[inline]
 			fn eq(&self, other: &Self) -> bool {
 				unsafe {
 					$crate::libc::memcmp(
@@ -380,6 +390,7 @@ macro_rules! construct_hash {
 
 		#[cfg(any(not(feature = "libc"), target_os = "unknown"))]
 		impl $crate::core::cmp::PartialEq for $name {
+			#[inline]
 			fn eq(&self, other: &Self) -> bool {
 				self.as_bytes() == other.as_bytes()
 			}
@@ -387,6 +398,7 @@ macro_rules! construct_hash {
 
 		#[cfg(any(not(feature = "libc"), target_os = "unknown"))]
 		impl $crate::core::cmp::Ord for $name {
+			#[inline]
 			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
 				self.as_bytes().cmp(other.as_bytes())
 			}
@@ -465,6 +477,7 @@ macro_rules! construct_hash {
 			not(target_os = "unknown")
 		))]
 		impl $crate::heapsize::HeapSizeOf for $name {
+			#[inline]
 			fn heap_size_of_children(&self) -> usize {
 				0
 			}
