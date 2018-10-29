@@ -44,4 +44,3 @@ pub extern crate rand;
 pub extern crate quickcheck;
 
 mod hash;
-pub use hash::*;
