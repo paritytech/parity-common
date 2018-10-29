@@ -337,7 +337,52 @@ macro_rules! construct_hash {
 		impl_ops_for_hash!($name, BitAnd, bitand, BitAndAssign, bitand_assign, &, &=);
 		impl_ops_for_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
 
-		impl_libc_for_hash!($name);
+		#[cfg(all(feature = "libc", not(target_os = "unknown")))]
+		impl $crate::core::cmp::PartialEq for $name {
+			fn eq(&self, other: &Self) -> bool {
+				unsafe {
+					$crate::libc::memcmp(
+						self.as_ptr() as *const $crate::libc::c_void,
+						other.as_ptr() as *const $crate::libc::c_void,
+						Self::len_bytes(),
+					) == 0
+				}
+			}
+		}
+
+		#[cfg(all(feature = "libc", not(target_os = "unknown")))]
+		impl $crate::core::cmp::Ord for $name {
+			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
+				let r = unsafe {
+					$crate::libc::memcmp(
+						self.as_ptr() as *const $crate::libc::c_void,
+						other.as_ptr() as *const $crate::libc::c_void,
+						Self::len_bytes(),
+					)
+				};
+				if r < 0 {
+					return $crate::core::cmp::Ordering::Less;
+				}
+				if r > 0 {
+					return $crate::core::cmp::Ordering::Greater;
+				}
+				$crate::core::cmp::Ordering::Equal
+			}
+		}
+
+		#[cfg(any(not(feature = "libc"), target_os = "unknown"))]
+		impl $crate::core::cmp::PartialEq for $name {
+			fn eq(&self, other: &Self) -> bool {
+				self.as_bytes() == other.as_bytes()
+			}
+		}
+
+		#[cfg(any(not(feature = "libc"), target_os = "unknown"))]
+		impl $crate::core::cmp::Ord for $name {
+			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
+				self.as_bytes().cmp(other.as_bytes())
+			}
+		}
 
 		#[cfg(feature = "rand-support")]
 		impl $crate::rand::distributions::Distribution<$name>
@@ -544,63 +589,6 @@ macro_rules! impl_hash_conversions {
 					&value[(large_ty_size - small_ty_size)..large_ty_size],
 				);
 				ret
-			}
-		}
-	};
-}
-
-#[cfg(all(feature = "libc", not(target_os = "unknown")))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_libc_for_hash {
-	( $name: ident ) => {
-		impl $crate::core::cmp::PartialEq for $name {
-			fn eq(&self, other: &Self) -> bool {
-				unsafe {
-					$crate::libc::memcmp(
-						self.as_ptr() as *const $crate::libc::c_void,
-						other.as_ptr() as *const $crate::libc::c_void,
-						Self::len_bytes(),
-					) == 0
-				}
-			}
-		}
-
-		impl $crate::core::cmp::Ord for $name {
-			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
-				let r = unsafe {
-					$crate::libc::memcmp(
-						self.as_ptr() as *const $crate::libc::c_void,
-						other.as_ptr() as *const $crate::libc::c_void,
-						Self::len_bytes(),
-					)
-				};
-				if r < 0 {
-					return $crate::core::cmp::Ordering::Less;
-				}
-				if r > 0 {
-					return $crate::core::cmp::Ordering::Greater;
-				}
-				$crate::core::cmp::Ordering::Equal
-			}
-		}
-	};
-}
-
-#[cfg(any(not(feature = "libc"), target_os = "unknown"))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_libc_for_hash {
-	($from: ident, $size: expr) => {
-		impl $crate::core::cmp::PartialEq for $from {
-			fn eq(&self, other: &Self) -> bool {
-				self.as_bytes() == other.as_bytes()
-			}
-		}
-
-		impl $crate::core::cmp::Ord for $from {
-			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
-				self.as_bytes().cmp(other.as_bytes())
 			}
 		}
 	};
