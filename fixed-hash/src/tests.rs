@@ -325,3 +325,12 @@ mod from_str {
         assert!(H64::from_str("0123456789ABCDEF0").is_err())
     }
 }
+
+#[cfg(feature = "heapsize-support")]
+#[test]
+fn test_heapsizeof() {
+    use heapsize::HeapSizeOf;
+    let h = H128::zero();
+    assert_eq!(h.heap_size_of_children(), 0);
+}
+
