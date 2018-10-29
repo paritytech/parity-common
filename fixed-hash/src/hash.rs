@@ -342,7 +342,6 @@ macro_rules! construct_hash {
 		impl_ops_for_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
 
 		impl_rand_for_hash!($name);
-		impl_heapsize_for_hash!($name);
 		impl_libc_for_hash!($name);
 		impl_quickcheck_for_hash!($name);
 
@@ -362,6 +361,16 @@ macro_rules! construct_hash {
 			}
 		}
 
+		#[cfg(all(
+			feature = "heapsize-support",
+			feature = "libc",
+			not(target_os = "unknown")
+		))]
+		impl $crate::heapsize::HeapSizeOf for $name {
+			fn heap_size_of_children(&self) -> usize {
+				0
+			}
+		}
 	}
 }
 
@@ -486,33 +495,6 @@ macro_rules! impl_hash_conversions {
 	};
 }
 
-#[cfg(all(
-	feature = "heapsize-support",
-	feature = "libc",
-	not(target_os = "unknown")
-))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_heapsize_for_hash {
-	( $name:ident ) => {
-		impl $crate::heapsize::HeapSizeOf for $name {
-			fn heap_size_of_children(&self) -> usize {
-				0
-			}
-		}
-	};
-}
-
-#[cfg(any(
-	not(feature = "heapsize-support"),
-	not(feature = "libc"),
-	target_os = "unknown"
-))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_heapsize_for_hash {
-	( $name:ident ) => {};
-}
 #[cfg(feature = "rand-support")]
 #[macro_export]
 #[doc(hidden)]
