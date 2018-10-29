@@ -650,7 +650,10 @@ mod tests {
 		assert_eq!(h.heap_size_of_children(), 0);
 	}
 
-	#[cfg(feature = "std")]
+	#[cfg(all(
+		feature = "std",
+		feature = "byteorder-support"
+	))]
 	#[test]
 	fn should_format_and_debug_correctly() {
 		let test = |x: u64, hex: &'static str, display: &'static str| {
