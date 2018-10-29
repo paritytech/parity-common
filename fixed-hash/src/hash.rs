@@ -285,7 +285,7 @@ macro_rules! construct_hash {
 
 		impl $crate::core::marker::Copy for $name {}
 
-		#[cfg_attr(feature="dev", allow(expl_impl_clone_on_copy))]
+		#[cfg_attr(feature = "dev", allow(expl_impl_clone_on_copy))]
 		impl $crate::core::clone::Clone for $name {
 			fn clone(&self) -> $name {
 				let mut ret = $name::zero();
