@@ -162,13 +162,25 @@ macro_rules! construct_hash {
 		/// Utilizies using the `byteorder` crate.
 		#[cfg(feature = "byteorder-support")]
 		impl $name {
+			/// Returns the least significant `n` bytes as slice.
+			///
+			/// # Panics
+			///
+			/// If `n` is greater than the number of bytes in `self`.
+			#[inline]
+			fn least_significant_bytes(&self, n: usize) -> &[u8] {
+				$crate::core::assert_eq!(true, n <= Self::len_bytes());
+				&self[(Self::len_bytes() - n)..]
+			}
+
 			fn to_low_u64_with_byteorder<B>(&self) -> u64
 			where
 				B: $crate::byteorder::ByteOrder
 			{
-				let max8 = $crate::core::cmp::min($n_bytes, 8);
-				let low_bytes = &self.as_bytes()[($n_bytes - 1)..max8];
-				B::read_u64(low_bytes)
+				let mut buf = [0x0; 8];
+				let capped = $crate::core::cmp::min($n_bytes, 8);
+				buf[(8 - capped)..].copy_from_slice(self.least_significant_bytes(capped));
+				B::read_u64(&buf)
 			}
 
 			/// Returns the lowest 8 bytes interpreted as big-endian.
@@ -212,7 +224,7 @@ macro_rules! construct_hash {
 				B::write_u64(&mut buf, val);
 				let capped = $crate::core::cmp::min(Self::len_bytes(), 8);
 				let mut bytes = [0x0; $n_bytes];
-				bytes[($n_bytes - capped)..].copy_from_slice(&buf);
+				bytes[($n_bytes - capped)..].copy_from_slice(&buf[..capped]);
 				Self::from_slice(&bytes)
 			}
 
