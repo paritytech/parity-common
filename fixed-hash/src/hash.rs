@@ -685,7 +685,10 @@ mod tests {
 		assert_eq!(address, a);
 	}
 
-	#[cfg(feature = "rustc-hex-support")]
+	#[cfg(all(
+		feature = "rustc-hex-support",
+		feature = "byteorder-support"
+	))]
 	#[test]
 	fn from_u64() {
 		use core::str::FromStr;
@@ -704,7 +707,10 @@ mod tests {
 		// );
 	}
 
-	#[cfg(feature = "rustc-hex-support")]
+	#[cfg(all(
+		feature = "rustc-hex-support",
+		feature = "byteorder-support"
+	))]
 	#[test]
 	fn from_str() {
 		use core::str::FromStr;
