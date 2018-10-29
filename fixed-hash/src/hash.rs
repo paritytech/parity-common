@@ -125,9 +125,9 @@ macro_rules! construct_hash {
 			}
 
 			/// Assign the bytes from the byte slice `src` to `self`.
-			/// 
+			///
 			/// # Panics
-			/// 
+			///
 			/// If the length of `src` and the number of bytes in `self` do not match.
 			pub fn assign_from_slice(&mut self, src: &[u8]) {
 				$crate::core::assert_eq!(src.len(), $n_bytes);
@@ -135,9 +135,9 @@ macro_rules! construct_hash {
 			}
 
 			/// Create a new fixed-hash from the given slice `src`.
-			/// 
+			///
 			/// # Panics
-			/// 
+			///
 			/// If the length of `src` and the number of bytes in `Self` do not match.
 			pub fn from_bytes(src: &[u8]) -> Self {
 				$crate::core::assert_eq!(src.len(), $n_bytes);
@@ -384,7 +384,8 @@ macro_rules! impl_ops_for_hash {
 #[macro_export(local_inner_macros)]
 macro_rules! impl_hash_conversions {
 	($large_ty:ident, $small_ty:ident) => {
-		$crate::static_assertions::const_assert!(VALID_SIZES;
+		$crate::static_assertions::const_assert!(
+			VALID_SIZES;
 			$crate::core::mem::size_of::<$small_ty>() < $crate::core::mem::size_of::<$large_ty>()
 		);
 
@@ -463,9 +464,9 @@ macro_rules! impl_rustc_hex_for_hash {
 		impl $crate::core::str::FromStr for $name {
 			type Err = $crate::rustc_hex::FromHexError;
 
-			fn from_str(input: &str)
-				-> $crate::core::result::Result<$name, $crate::rustc_hex::FromHexError>
-			{
+			fn from_str(
+				input: &str,
+			) -> $crate::core::result::Result<$name, $crate::rustc_hex::FromHexError> {
 				use $crate::rustc_hex::FromHex;
 				let bytes: Vec<u8> = input.from_hex()?;
 				if bytes.len() != Self::len_bytes() {
@@ -511,7 +512,7 @@ macro_rules! impl_rand_for_hash {
 				*self = $crate::rand::Rand::rand(&mut rng);
 			}
 		}
-	}
+	};
 }
 
 #[cfg(not(feature = "rand-support"))]
@@ -716,7 +717,13 @@ mod tests {
 			H64::from_u64_be(0x1234567890abcdef),
 			H64::from_str("1234567890abcdef").unwrap()
 		);
-		assert_eq!(H64::from_u64_be(0x1234567890abcdef), H64::from_str("1234567890abcdef").unwrap());
-		assert_eq!(H64::from_u64_be( 0x234567890abcdef), H64::from_str("0234567890abcdef").unwrap());
+		assert_eq!(
+			H64::from_u64_be(0x1234567890abcdef),
+			H64::from_str("1234567890abcdef").unwrap()
+		);
+		assert_eq!(
+			H64::from_u64_be(0x234567890abcdef),
+			H64::from_str("0234567890abcdef").unwrap()
+		);
 	}
 }
