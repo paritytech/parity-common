@@ -384,7 +384,7 @@ macro_rules! impl_ops_for_hash {
 #[macro_export(local_inner_macros)]
 macro_rules! impl_hash_conversions {
 	($large_ty:ident, $small_ty:ident) => {
-		static_assertions::const_assert!(VALID_SIZES;
+		$crate::static_assertions::const_assert!(VALID_SIZES;
 			$crate::core::mem::size_of::<$small_ty>() < $crate::core::mem::size_of::<$large_ty>()
 		);
 
@@ -564,13 +564,13 @@ macro_rules! impl_libc_for_hash {
 #[doc(hidden)]
 macro_rules! impl_libc_for_hash {
 	($from: ident, $size: expr) => {
-		impl PartialEq for $from {
+		impl $crate::core::cmp::PartialEq for $from {
 			fn eq(&self, other: &Self) -> bool {
 				self.as_bytes() == other.as_bytes()
 			}
 		}
 
-		impl Ord for $from {
+		impl $crate::core::cmp::Ord for $from {
 			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
 				self.as_bytes().cmp(other.as_bytes())
 			}
