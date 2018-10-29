@@ -490,26 +490,51 @@ macro_rules! impl_rustc_hex_for_hash {
 #[doc(hidden)]
 macro_rules! impl_rand_for_hash {
 	( $name:ident ) => {
-		impl $crate::rand::Rand for $name {
-			fn rand<R: $crate::rand::Rng>(r: &mut R) -> Self {
-				let mut hash = $name::zero();
-				r.fill_bytes(&mut hash.0);
-				hash
+		impl $crate::rand::distributions::Distribution<$name>
+			for $crate::rand::distributions::Standard
+		{
+			fn sample<R: $crate::rand::Rng + ?Sized>(&self, rng: &mut R) -> $name {
+				let mut ret = $name::zero();
+				for byte in ret.as_bytes_mut().iter_mut() {
+					*byte = rng.gen();
+				}
+				ret
 			}
 		}
 
 		impl $name {
-			/// Create a new, cryptographically random, instance.
-			pub fn random() -> $name {
-				let mut hash = $name::zero();
-				hash.randomize();
-				hash
+			/// Assign `self` to a cryptographically random value using the
+			/// given random number generator.
+			pub fn randomize_using<R>(&mut self, rng: &mut R)
+			where
+				R: $crate::rand::Rng + ?Sized
+			{
+				use $crate::rand::distributions::Distribution;
+				*self = $crate::rand::distributions::Standard.sample(rng);
 			}
 
-			/// Assign self have a cryptographically random value.
+			/// Assign `self` to a cryptographically random value.
 			pub fn randomize(&mut self) {
 				let mut rng = $crate::rand::OsRng::new().unwrap();
-				*self = $crate::rand::Rand::rand(&mut rng);
+				self.randomize_using(&mut rng);
+			}
+
+			/// Create a new hash with cryptographically random content using the
+			/// given random number generator.
+			pub fn random_using<R>(rng: &mut R) -> Self
+			where
+				R: $crate::rand::Rng + ?Sized
+			{
+				let mut ret = Self::zero();
+				ret.randomize_using(rng);
+				ret
+			}
+
+			/// Create a new hash with cryptographically random content.
+			pub fn random() -> Self {
+				let mut hash = Self::zero();
+				hash.randomize();
+				hash
 			}
 		}
 	};
