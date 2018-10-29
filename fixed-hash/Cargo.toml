@@ -24,6 +24,6 @@ std = ["rustc-hex/std", "rand/std", "byteorder/std"]
 
 rustc-hex-support = ["rustc-hex"]
 rand-support = ["rand"]
+byteorder-support = ["byteorder"]
 heapsize-support = ["heapsize"]
 quickcheck-support = ["quickcheck"]
-byteorder-support = ["byteorder"]
