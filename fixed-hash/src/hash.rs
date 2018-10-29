@@ -530,8 +530,8 @@ macro_rules! impl_libc_for_hash {
 			fn eq(&self, other: &Self) -> bool {
 				unsafe {
 					$crate::libc::memcmp(
-						self.as_bytes().as_ptr() as *const $crate::libc::c_void,
-						other.as_bytes().as_ptr() as *const $crate::libc::c_void,
+						self.as_ptr() as *const $crate::libc::c_void,
+						other.as_ptr() as *const $crate::libc::c_void,
 						Self::len_bytes(),
 					) == 0
 				}
@@ -542,8 +542,8 @@ macro_rules! impl_libc_for_hash {
 			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
 				let r = unsafe {
 					$crate::libc::memcmp(
-						self.as_bytes().as_ptr() as *const $crate::libc::c_void,
-						other.as_bytes().as_ptr() as *const $crate::libc::c_void,
+						self.as_ptr() as *const $crate::libc::c_void,
+						other.as_ptr() as *const $crate::libc::c_void,
 						Self::len_bytes(),
 					)
 				};
