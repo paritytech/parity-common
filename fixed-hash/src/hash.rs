@@ -162,7 +162,7 @@ macro_rules! construct_hash {
 		/// Utilizies using the `byteorder` crate.
 		#[cfg(feature = "byteorder-support")]
 		impl $name {
-			fn low_u64_with_byteorder<B>(&self) -> u64
+			fn to_low_u64_with_byteorder<B>(&self) -> u64
 			where
 				B: $crate::byteorder::ByteOrder
 			{
@@ -172,70 +172,78 @@ macro_rules! construct_hash {
 			}
 
 			/// Returns the lowest 8 bytes interpreted as big-endian.
-			pub fn low_u64_be(&self) -> u64 {
-				self.low_u64_with_byteorder::<$crate::byteorder::BigEndian>()
+			///
+			/// # Note
+			///
+			/// For hash type with less than 8 bytes the missing bytes
+			/// are interpreted as being zero.
+			pub fn to_low_u64_be(&self) -> u64 {
+				self.to_low_u64_with_byteorder::<$crate::byteorder::BigEndian>()
 			}
 
 			/// Returns the lowest 8 bytes interpreted as little-endian.
-			pub fn low_u64_le(&self) -> u64 {
-				self.low_u64_with_byteorder::<$crate::byteorder::LittleEndian>()
+			///
+			/// # Note
+			///
+			/// For hash type with less than 8 bytes the missing bytes
+			/// are interpreted as being zero.
+			pub fn to_low_u64_le(&self) -> u64 {
+				self.to_low_u64_with_byteorder::<$crate::byteorder::LittleEndian>()
 			}
 
 			/// Returns the lowest 8 bytes interpreted as native-endian.
-			pub fn low_u64_ne(&self) -> u64 {
-				self.low_u64_with_byteorder::<$crate::byteorder::NativeEndian>()
+			///
+			/// # Note
+			///
+			/// For hash type with less than 8 bytes the missing bytes
+			/// are interpreted as being zero.
+			pub fn to_low_u64_ne(&self) -> u64 {
+				self.to_low_u64_with_byteorder::<$crate::byteorder::NativeEndian>()
 			}
 
-			fn from_u64_with_byteorder<B>(val: u64) -> Self
+			fn from_low_u64_with_byteorder<B>(val: u64) -> Self
 			where
 				B: $crate::byteorder::ByteOrder
 			{
-				$crate::core::assert_eq!(
-					true,
-					$crate::core::mem::size_of::<u64>() <= Self::len_bytes()
-				);
-				let mut ret = Self::zero();
-				B::write_u64(&mut ret[(Self::len_bytes() - 8)..], val);
-				ret
+				let mut buf = [0x0; 8];
+				B::write_u64(&mut buf, val);
+				let capped = $crate::core::cmp::min(Self::len_bytes(), 8);
+				let mut bytes = [0x0; $n_bytes];
+				bytes[($n_bytes - capped)..].copy_from_slice(&buf);
+				Self::from_slice(&bytes)
 			}
 
 			/// Creates a new hash type from the given `u64` value.
 			///
 			/// # Note
 			///
-			/// The given `u64` value is interpreted as big endian.
-			///
-			/// # Panics
-			///
-			/// If this is called on a hash type with less than 8 bytes.
-			pub fn from_u64_be(val: u64) -> Self {
-				Self::from_u64_with_byteorder::<$crate::byteorder::BigEndian>(val)
+			/// - The given `u64` value is interpreted as big endian.
+			/// - Ignores the most significant bits of the given value
+			///   if the hash type has less than 8 bytes.
+			pub fn from_low_u64_be(val: u64) -> Self {
+				Self::from_low_u64_with_byteorder::<$crate::byteorder::BigEndian>(val)
 			}
 
 			/// Creates a new hash type from the given `u64` value.
 			///
 			/// # Note
 			///
-			/// The given `u64` value is interpreted as little endian.
-			///
-			/// # Panics
-			///
-			/// If this is called on a hash type with less than 8 bytes.
-			pub fn from_u64_le(val: u64) -> Self {
-				Self::from_u64_with_byteorder::<$crate::byteorder::LittleEndian>(val)
+			/// - The given `u64` value is interpreted as little endian.
+			/// - Ignores the most significant bits of the given value
+			///   if the hash type has less than 8 bytes.
+			pub fn from_low_u64_le(val: u64) -> Self {
+				Self::from_low_u64_with_byteorder::<$crate::byteorder::LittleEndian>(val)
 			}
 
 			/// Creates a new hash type from the given `u64` value.
 			///
 			/// # Note
 			///
-			/// The given `u64` value is interpreted as native endian.
-			///
-			/// # Panics
-			///
-			/// If this is called on a hash type with less than 8 bytes.
-			pub fn from_u64_ne(val: u64) -> Self {
-				Self::from_u64_with_byteorder::<$crate::byteorder::NativeEndian>(val)
+			/// - The given `u64` value is interpreted as native endian.
+			/// - Ignores the most significant bits of the given value
+			///   if the hash type has less than 8 bytes.
+			pub fn from_low_u64_ne(val: u64) -> Self {
+				Self::from_low_u64_with_byteorder::<$crate::byteorder::NativeEndian>(val)
 			}
 		}
 
@@ -645,7 +653,7 @@ mod tests {
 	#[test]
 	fn should_format_and_debug_correctly() {
 		let test = |x: u64, hex: &'static str, display: &'static str| {
-			let hash = H128::from_u64_be(x);
+			let hash = H128::from_low_u64_be(x);
 			assert_eq!(format!("{}", hash), format!("0x{}", display));
 			assert_eq!(format!("{:?}", hash), format!("0x{}", hex));
 			assert_eq!(format!("{:x}", hash), hex);
@@ -694,11 +702,11 @@ mod tests {
 		use core::str::FromStr;
 
 		assert_eq!(
-			H128::from_u64_be(0x1234567890abcdef),
+			H128::from_low_u64_be(0x1234567890abcdef),
 			H128::from_str("00000000000000001234567890abcdef").unwrap()
 		);
 		assert_eq!(
-			H64::from_u64_be(0x1234567890abcdef),
+			H64::from_low_u64_be(0x1234567890abcdef),
 			H64::from_str("1234567890abcdef").unwrap()
 		);
 		// assert_eq!(
@@ -716,15 +724,15 @@ mod tests {
 		use core::str::FromStr;
 
 		assert_eq!(
-			H64::from_u64_be(0x1234567890abcdef),
+			H64::from_low_u64_be(0x1234567890abcdef),
 			H64::from_str("1234567890abcdef").unwrap()
 		);
 		assert_eq!(
-			H64::from_u64_be(0x1234567890abcdef),
+			H64::from_low_u64_be(0x1234567890abcdef),
 			H64::from_str("1234567890abcdef").unwrap()
 		);
 		assert_eq!(
-			H64::from_u64_be(0x234567890abcdef),
+			H64::from_low_u64_be(0x234567890abcdef),
 			H64::from_str("0234567890abcdef").unwrap()
 		);
 	}
