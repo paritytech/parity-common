@@ -484,6 +484,16 @@ macro_rules! construct_hash {
 		impl $crate::core::str::FromStr for $name {
 			type Err = $crate::rustc_hex::FromHexError;
 
+			/// Creates a hash type instance from the given string.
+			///
+			/// # Note
+			///
+			/// The given input string is interpreted in big endian.
+			///
+			/// # Errors
+			///
+			/// - When encountering invalid non hex-digits
+			/// - Upon empty string input or invalid input length in general
 			fn from_str(
 				input: &str,
 			) -> $crate::core::result::Result<$name, $crate::rustc_hex::FromHexError> {
