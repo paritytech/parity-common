@@ -20,7 +20,7 @@ libc = { version = "0.2", optional = true, default-features = false }
 
 [features]
 default = ["std", "libc", "rand-support", "rustc-hex-support", "byteorder-support"]
-std = ["rustc-hex/std", "rand/std"]
+std = ["rustc-hex/std", "rand/std", "byteorder/std"]
 
 rustc-hex-support = ["rustc-hex"]
 rand-support = ["rand"]
