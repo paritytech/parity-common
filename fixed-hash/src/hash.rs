@@ -54,6 +54,11 @@ macro_rules! construct_hash {
 		$visibility struct $name ([u8; $n_bytes]);
 
 		impl From<[u8; $n_bytes]> for $name {
+			/// Constructs a hash type from the given bytes.
+			///
+			/// # Note
+			///
+			/// The given bytes are interpreted in big endian order.
 			#[inline]
 			fn from(bytes: [u8; $n_bytes]) -> Self {
 				$name(bytes)
@@ -126,6 +131,10 @@ macro_rules! construct_hash {
 
 			/// Assign the bytes from the byte slice `src` to `self`.
 			///
+			/// # Note
+			///
+			/// The given bytes are interpreted in big endian order.
+			///
 			/// # Panics
 			///
 			/// If the length of `src` and the number of bytes in `self` do not match.
@@ -135,6 +144,10 @@ macro_rules! construct_hash {
 			}
 
 			/// Create a new fixed-hash from the given slice `src`.
+			///
+			/// # Note
+			///
+			/// The given bytes are interpreted in big endian order.
 			///
 			/// # Panics
 			///
