@@ -25,16 +25,6 @@ assert_eq!(H256::from(H160::zero()), H256::zero());
 assert_eq!(H160::from(H256::zero()), H160::zero());
 ```
 
-Opt-in to add conversions between a hash type and an equivalently sized
-unsigned integer type provided by the `uint` crate.
-
-```rust
-extern crate uint;
-construct_hash!{ struct H256(32); }
-use uint::U256;
-impl_hash_uint_conversions!(H256, U256);
-```
-
 It is possible to add attributes to your types, for example to make them serializable.
 
 ```rust
