@@ -149,3 +149,113 @@ mod is_zero {
         assert!(!H256::repeat_byte(42).is_zero());
     }
 }
+
+#[cfg(feature = "byteorder-support")]
+mod to_low_u64 {
+    use super::*;
+
+    #[test]
+    fn smaller_size() {
+        assert_eq!(
+            H32::from([0x01, 0x23, 0x45, 0x67]).to_low_u64_be(),
+            0x0123_4567
+        );
+        assert_eq!(
+            H32::from([0x01, 0x23, 0x45, 0x67]).to_low_u64_le(),
+            0x6745_2301_0000_0000
+        );
+    }
+
+    #[test]
+    fn equal_size() {
+        assert_eq!(
+            H64::from([
+                0x01, 0x23, 0x45, 0x67,
+                0x89, 0xAB, 0xCD, 0xEF
+            ]).to_low_u64_le(),
+            0xEFCD_AB89_6745_2301
+        );
+        assert_eq!(
+            H64::from([
+                0x01, 0x23, 0x45, 0x67,
+                0x89, 0xAB, 0xCD, 0xEF
+            ]).to_low_u64_be(),
+            0x0123_4567_89AB_CDEF
+        )
+    }
+
+    #[test]
+    fn larger_size() {
+        assert_eq!(
+            H128::from([
+                0x01, 0x23, 0x45, 0x67,
+                0x89, 0xAB, 0xCD, 0xEF,
+                0x09, 0x08, 0x07, 0x06,
+                0x05, 0x04, 0x03, 0x02
+            ]).to_low_u64_be(),
+            0x0908070605040302
+        );
+        assert_eq!(
+            H128::from([
+                0x01, 0x23, 0x45, 0x67,
+                0x89, 0xAB, 0xCD, 0xEF,
+                0x09, 0x08, 0x07, 0x06,
+                0x05, 0x04, 0x03, 0x02
+            ]).to_low_u64_le(),
+            0x0203040506070809
+        )
+    }
+}
+
+#[cfg(feature = "byteorder-support")]
+mod from_low_u64 {
+    use super::*;
+
+    #[test]
+    fn smaller_size() {
+        assert_eq!(
+            H32::from_low_u64_be(0x0123_4567_89AB_CDEF),
+            H32::from([0x01, 0x23, 0x45, 0x67])
+        );
+        assert_eq!(
+            H32::from_low_u64_le(0x0123_4567_89AB_CDEF),
+            H32::from([0xEF, 0xCD, 0xAB, 0x89])
+        );
+    }
+
+    #[test]
+    fn equal_size() {
+        assert_eq!(
+            H64::from_low_u64_be(0x0123_4567_89AB_CDEF),
+            H64::from([
+                0x01, 0x23, 0x45, 0x67,
+                0x89, 0xAB, 0xCD, 0xEF
+            ])
+        );
+        assert_eq!(
+            H64::from_low_u64_le(0x0123_4567_89AB_CDEF),
+            H64::from([
+                0xEF, 0xCD, 0xAB, 0x89,
+                0x67, 0x45, 0x23, 0x01
+            ])
+        )
+    }
+
+    #[test]
+    fn larger_size() {
+        assert_eq!(
+            H128::from_low_u64_be(0x0123_4567_89AB_CDEF),
+            H128::from([
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF
+            ])
+        );
+        assert_eq!(
+            H128::from_low_u64_le(0x0123_4567_89AB_CDEF),
+            H128::from([
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x01
+            ])
+        )
+    }
+}
