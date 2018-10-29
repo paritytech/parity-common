@@ -131,7 +131,7 @@ macro_rules! construct_hash {
 			/// If the length of `src` and the number of bytes in `self` do not match.
 			pub fn assign_from_slice(&mut self, src: &[u8]) {
 				$crate::core::assert_eq!(src.len(), $n_bytes);
-				self.as_bytes_mut().clone_from_slice(src);
+				self.as_bytes_mut().copy_from_slice(src);
 			}
 
 			/// Create a new fixed-hash from the given slice `src`.
