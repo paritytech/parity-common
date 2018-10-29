@@ -139,7 +139,7 @@ macro_rules! construct_hash {
 			/// # Panics
 			///
 			/// If the length of `src` and the number of bytes in `Self` do not match.
-			pub fn from_bytes(src: &[u8]) -> Self {
+			pub fn from_slice(src: &[u8]) -> Self {
 				$crate::core::assert_eq!(src.len(), $n_bytes);
 				let mut ret = Self::zero();
 				ret.assign_from_slice(src);
@@ -472,7 +472,7 @@ macro_rules! impl_rustc_hex_for_hash {
 				if bytes.len() != Self::len_bytes() {
 					return Err($crate::rustc_hex::FromHexError::InvalidHexLength);
 				}
-				Ok($name::from_bytes(&bytes))
+				Ok($name::from_slice(&bytes))
 			}
 		}
 	};
