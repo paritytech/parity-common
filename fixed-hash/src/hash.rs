@@ -278,12 +278,6 @@ macro_rules! construct_hash {
 			}
 		}
 
-		impl<'a> $crate::core::convert::From<&'a [u8]> for $name {
-			fn from(s: &'a [u8]) -> $name {
-				$name::from_bytes(s)
-			}
-		}
-
 		impl_ops_for_hash!($name, BitOr, bitor, BitOrAssign, bitor_assign, |, |=);
 		impl_ops_for_hash!($name, BitAnd, bitand, BitAndAssign, bitand_assign, &, &=);
 		impl_ops_for_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
