@@ -49,3 +49,9 @@ mod hash;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(feature = "api-dummy")]
+construct_hash!{
+    /// Go here for an overview of the hash type API.
+    pub struct ApiDummy(32);
+}

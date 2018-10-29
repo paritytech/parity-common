@@ -6,6 +6,10 @@ license = "MIT"
 homepage = "https://github.com/paritytech/parity-common"
 repository = "https://github.com/paritytech/parity-common"
 description = "Macros to define custom fixed-size hash types"
+documentation = "https://docs.rs/fixed-hash/"
+
+[package.metadata.docs.rs]
+features = ["heapsize-support", "quickcheck-support", "api-dummy"]
 
 [dependencies]
 heapsize = { version = "0.4", optional = true }
@@ -27,3 +31,5 @@ rand-support = ["rand"]
 byteorder-support = ["byteorder"]
 heapsize-support = ["heapsize"]
 quickcheck-support = ["quickcheck"]
+
+api-dummy = []
