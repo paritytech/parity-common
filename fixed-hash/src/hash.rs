@@ -16,7 +16,7 @@
 /// # #[macro_use] extern crate fixed_hash;
 /// construct_hash!{ pub struct H256(32); }
 /// # fn main() {
-/// # 	assert_eq!(::std::mem::size_of::<H256>(), 32);
+/// # 	assert_eq!(std::mem::size_of::<H256>(), 32);
 /// # }
 /// ```
 ///
@@ -32,7 +32,7 @@
 /// 	pub struct H160(20);
 /// }
 /// # fn main() {
-/// # 	assert_eq!(::std::mem::size_of::<H160>(), 20);
+/// # 	assert_eq!(std::mem::size_of::<H160>(), 20);
 /// # }
 /// ```
 ///
@@ -43,7 +43,7 @@
 /// # #[macro_use] extern crate fixed_hash;
 /// construct_hash!{ struct H512(64); }
 /// # fn main() {
-/// # 	assert_eq!(::std::mem::size_of::<H512>(), 64);
+/// # 	assert_eq!(std::mem::size_of::<H512>(), 64);
 /// # }
 /// ```
 #[macro_export(local_inner_macros)]
