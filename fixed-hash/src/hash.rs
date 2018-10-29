@@ -343,7 +343,6 @@ macro_rules! construct_hash {
 
 		impl_rand_for_hash!($name);
 		impl_libc_for_hash!($name);
-		impl_quickcheck_for_hash!($name);
 
 		#[cfg(feature = "rustc-hex-support")]
 		impl $crate::core::str::FromStr for $name {
@@ -369,6 +368,15 @@ macro_rules! construct_hash {
 		impl $crate::heapsize::HeapSizeOf for $name {
 			fn heap_size_of_children(&self) -> usize {
 				0
+			}
+		}
+
+		#[cfg(feature = "quickcheck-support")]
+		impl $crate::quickcheck::Arbitrary for $name {
+			fn arbitrary<G: $crate::quickcheck::Gen>(g: &mut G) -> Self {
+				let mut res = [0u8; $n_bytes];
+				g.fill_bytes(&mut res[..Self::len_bytes()]);
+				res.as_ref().into()
 			}
 		}
 	}
@@ -612,28 +620,6 @@ macro_rules! impl_libc_for_hash {
 			}
 		}
 	};
-}
-
-#[cfg(feature = "quickcheck-support")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_quickcheck_for_hash {
-	( $name:ty ) => {
-		impl $crate::quickcheck::Arbitrary for $name {
-			fn arbitrary<G: $crate::quickcheck::Gen>(g: &mut G) -> Self {
-				let mut res = [0u8; $n_bytes];
-				g.fill_bytes(&mut res[..Self::len_bytes()]);
-				res.as_ref().into()
-			}
-		}
-	};
-}
-
-#[cfg(not(feature = "quickcheck-support"))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_quickcheck_for_hash {
-	( $name:ty ) => {};
 }
 
 #[cfg(test)]
