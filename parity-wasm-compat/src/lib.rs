@@ -21,3 +21,17 @@ pub mod rng;
 pub mod threadpool;
 pub mod mpsc;
 
+pub mod home {
+	#[cfg(not(target_arch = "wasm32"))]
+	extern crate home;
+	#[cfg(not(target_arch = "wasm32"))]
+	pub use home::home_dir;
+
+	#[cfg(all(target_arch = "wasm32", feature = "browser-wasm"))]
+	use std::path::PathBuf;
+	#[cfg(all(target_arch = "wasm32", feature = "browser-wasm"))]
+	pub fn home_dir() -> Option<PathBuf> {
+		// need a dummy dir for whatever browser mapping we use
+		Some(PathBuf::from("/home"))
+	}
+}
