@@ -379,3 +379,84 @@ fn from_h256_to_h160_lossy() {
     ]);
     assert_eq!(h160, test);
 }
+
+#[cfg(all(
+    feature = "std",
+    feature = "byteorder-support"
+))]
+#[test]
+fn display_and_debug() {
+    fn test_for(x: u64, hex: &'static str, display: &'static str) {
+        let hash = H64::from_low_u64_be(x);
+
+        assert_eq!(format!("{}", hash), format!("0x{}", display));
+        assert_eq!(format!("{:?}", hash), format!("0x{}", hex));
+        assert_eq!(format!("{:x}", hash), hex);
+        assert_eq!(format!("{:#x}", hash), format!("0x{}", hex));
+    }
+
+    test_for(0x0001, "0000000000000001", "0000…0001");
+    test_for(0x000f, "000000000000000f", "0000…000f");
+    test_for(0x0010, "0000000000000010", "0000…0010");
+    test_for(0x00ff, "00000000000000ff", "0000…00ff");
+    test_for(0x0100, "0000000000000100", "0000…0100");
+    test_for(0x0fff, "0000000000000fff", "0000…0fff");
+    test_for(0x1000, "0000000000001000", "0000…1000");
+}
+
+mod ops {
+    use super::*;
+
+    fn lhs() -> H32 {
+        H32::from([
+            0b0011_0110, 0b0001_0011,
+            0b1010_1010, 0b0001_0010
+        ])
+    }
+
+    fn rhs() -> H32 {
+        H32::from([
+            0b0101_0101, 0b1111_1111,
+            0b1100_1100, 0b0000_1111
+        ])
+    }
+
+    #[test]
+    fn bitand() {
+        assert_eq!(
+            lhs() & rhs(),
+            H32::from([
+                0b0011_0110 & 0b0101_0101,
+                0b0001_0011 & 0b1111_1111,
+                0b1010_1010 & 0b1100_1100,
+                0b0001_0010 & 0b0000_1111
+            ])
+        )
+    }
+
+    #[test]
+    fn bitor() {
+        assert_eq!(
+            lhs() | rhs(),
+            H32::from([
+                0b0011_0110 | 0b0101_0101,
+                0b0001_0011 | 0b1111_1111,
+                0b1010_1010 | 0b1100_1100,
+                0b0001_0010 | 0b0000_1111
+            ])
+        )
+    }
+
+    #[test]
+    fn bitxor() {
+        assert_eq!(
+            lhs() ^ rhs(),
+            H32::from([
+                0b0011_0110 ^ 0b0101_0101,
+                0b0001_0011 ^ 0b1111_1111,
+                0b1010_1010 ^ 0b1100_1100,
+                0b0001_0010 ^ 0b0000_1111
+            ])
+        )
+    }
+}
