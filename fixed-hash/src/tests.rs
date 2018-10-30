@@ -312,7 +312,6 @@ mod from_str {
 
 #[cfg(all(
 	feature = "heapsize-support",
-	feature = "libc",
 	not(target_os = "unknown")
 ))]
 #[test]

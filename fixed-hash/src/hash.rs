@@ -514,7 +514,6 @@ macro_rules! construct_fixed_hash {
 
 		#[cfg(all(
 			feature = "heapsize-support",
-			feature = "libc",
 			not(target_os = "unknown")
 		))]
 		impl $crate::heapsize::HeapSizeOf for $name {
