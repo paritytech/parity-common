@@ -59,10 +59,13 @@ pub mod secp256k1_alt;
 #[cfg(target_arch = "wasm32")]
 pub mod secp256k1;
 
-// could create a less safe crate using RustCrypto or just switch
+#[cfg(all(not(target_arch = "wasm32"), test))]
+pub mod pbkdf2_alt;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod pbkdf2;
-// could create a less safe crate using RustCrypto or just switch
+#[path = "pbkdf2_alt.rs"]
+#[cfg(target_arch = "wasm32")]
+pub mod pbkdf2;
 
 pub use error::Error;
 
@@ -89,7 +92,6 @@ impl<T> Keccak256<[u8; 32]> for T where T: AsRef<[u8]> {
 	}
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 pub fn derive_key_iterations(password: &[u8], salt: &[u8], c: u32) -> (Vec<u8>, Vec<u8>) {
 	let mut derived_key = [0u8; KEY_LENGTH];
 	pbkdf2::sha256(c, pbkdf2::Salt(salt), pbkdf2::Secret(password), &mut derived_key);

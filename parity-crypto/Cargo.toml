@@ -31,8 +31,10 @@ hmac = "0.7"
 subtle = { version = "1.0", features = ["nightly"] }
 libsecp256k1 = { version = "0.1", package = "libsecp256k1" }
 rand = "0.5"
+pbkdf2 = { version = "0.3", default-features = false }
 
 [dev-dependencies]
 hmac = "0.7"
 libsecp256k1 = { version = "0.1", package = "libsecp256k1" }
+pbkdf2 = { version = "0.3", default-features = false }
 
