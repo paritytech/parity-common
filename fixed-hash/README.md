@@ -21,7 +21,7 @@ Opt-in to add conversions between differently sized hashes.
 construct_fixed_hash!{ struct H256(32); }
 construct_fixed_hash!{ struct H160(20); }
 // auto-implement conversions between H256 and H160
-impl_hash_conversions!(H256, H160);
+impl_fixed_hash_conversions!(H256, H160);
 // now use the generated conversions
 assert_eq!(H256::from(H160::zero()), H256::zero());
 assert_eq!(H160::from(H256::zero()), H160::zero());

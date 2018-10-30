@@ -4,7 +4,7 @@ construct_fixed_hash!{ struct H128(16); }
 construct_fixed_hash!{ struct H160(20); }
 construct_fixed_hash!{ struct H256(32); }
 
-impl_hash_conversions!(H256, H160);
+impl_fixed_hash_conversions!(H256, H160);
 
 mod repeat_byte {
 	use super::*;

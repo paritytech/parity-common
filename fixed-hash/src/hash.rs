@@ -592,7 +592,7 @@ macro_rules! impl_ops_for_hash {
 /// #[macro_use] extern crate static_assertions;
 /// construct_fixed_hash!{ struct H160(20); }
 /// construct_fixed_hash!{ struct H256(32); }
-/// impl_hash_conversions!(H256, H160);
+/// impl_fixed_hash_conversions!(H256, H160);
 /// // now use it!
 /// # fn main() {
 /// assert_eq!(H256::from(H160::zero()), H256::zero());
@@ -600,7 +600,7 @@ macro_rules! impl_ops_for_hash {
 /// # }
 /// ```
 #[macro_export(local_inner_macros)]
-macro_rules! impl_hash_conversions {
+macro_rules! impl_fixed_hash_conversions {
 	($large_ty:ident, $small_ty:ident) => {
 		$crate::static_assertions::const_assert!(
 			VALID_SIZES;
