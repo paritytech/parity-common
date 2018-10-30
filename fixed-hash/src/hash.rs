@@ -24,8 +24,9 @@
 ///
 /// ```
 /// # #[macro_use] extern crate fixed_hash;
-/// # // extern crate serde;
-/// # // #[macro_use] extern crate serde_derive;
+/// // Add the below two lines to import serde and its derive
+/// // extern crate serde;
+/// // #[macro_use] extern crate serde_derive;
 /// construct_hash!{
 /// 	/// My unformatted 160 bytes sized hash type.
 /// 	#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
@@ -36,8 +37,7 @@
 /// # }
 /// ```
 ///
-/// As always, visibility modifier is optional.
-/// So for a private type go ahead with this.
+/// The visibility modifier is optional and you can create a private hash type.
 ///
 /// ```
 /// # #[macro_use] extern crate fixed_hash;
