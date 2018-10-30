@@ -457,7 +457,7 @@ macro_rules! impl_hash_uint_conversions {
 	}
 }
 
-#[cfg(all(feature="heapsizeof", feature="libc", not(target_os = "unknown")))]
+#[cfg(all(feature="heapsizeof", any(not(target_os = "unknown"), target_arch = "wasm32")))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_hash {
@@ -470,7 +470,7 @@ macro_rules! impl_heapsize_for_hash {
 	}
 }
 
-#[cfg(any(not(feature="heapsizeof"), not(feature="libc"), target_os = "unknown"))]
+#[cfg(any(not(feature="heapsizeof"), all(target_os = "unknown", not(target_arch = "wasm32"))))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_hash {
