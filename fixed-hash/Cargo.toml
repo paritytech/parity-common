@@ -32,4 +32,4 @@ byteorder-support = ["byteorder"]
 heapsize-support = ["heapsize"]
 quickcheck-support = ["quickcheck"]
 
-api-dummy = []
+api-dummy = [] # Feature used by docs.rs to display documentation of hash types
