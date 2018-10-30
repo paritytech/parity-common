@@ -14,7 +14,7 @@
 ///
 /// ```
 /// # #[macro_use] extern crate fixed_hash;
-/// construct_hash!{ pub struct H256(32); }
+/// construct_fixed_hash!{ pub struct H256(32); }
 /// # fn main() {
 /// # 	assert_eq!(std::mem::size_of::<H256>(), 32);
 /// # }
@@ -27,7 +27,7 @@
 /// // Add the below two lines to import serde and its derive
 /// // extern crate serde;
 /// // #[macro_use] extern crate serde_derive;
-/// construct_hash!{
+/// construct_fixed_hash!{
 /// 	/// My unformatted 160 bytes sized hash type.
 /// 	#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 /// 	pub struct H160(20);
@@ -41,13 +41,13 @@
 ///
 /// ```
 /// # #[macro_use] extern crate fixed_hash;
-/// construct_hash!{ struct H512(64); }
+/// construct_fixed_hash!{ struct H512(64); }
 /// # fn main() {
 /// # 	assert_eq!(std::mem::size_of::<H512>(), 64);
 /// # }
 /// ```
 #[macro_export(local_inner_macros)]
-macro_rules! construct_hash {
+macro_rules! construct_fixed_hash {
 	( $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_bytes:expr ); ) => {
 		#[repr(C)]
 		$(#[$attr])*
@@ -590,8 +590,8 @@ macro_rules! impl_ops_for_hash {
 /// ```
 /// #[macro_use] extern crate fixed_hash;
 /// #[macro_use] extern crate static_assertions;
-/// construct_hash!{ struct H160(20); }
-/// construct_hash!{ struct H256(32); }
+/// construct_fixed_hash!{ struct H160(20); }
+/// construct_fixed_hash!{ struct H256(32); }
 /// impl_hash_conversions!(H256, H160);
 /// // now use it!
 /// # fn main() {

@@ -1,8 +1,8 @@
-construct_hash!{ struct H32(4); }
-construct_hash!{ struct H64(8); }
-construct_hash!{ struct H128(16); }
-construct_hash!{ struct H160(20); }
-construct_hash!{ struct H256(32); }
+construct_fixed_hash!{ struct H32(4); }
+construct_fixed_hash!{ struct H64(8); }
+construct_fixed_hash!{ struct H128(16); }
+construct_fixed_hash!{ struct H160(20); }
+construct_fixed_hash!{ struct H256(32); }
 
 impl_hash_conversions!(H256, H160);
 
