@@ -87,7 +87,7 @@ macro_rules! construct_hash {
 		}
 
 		impl $name {
-			/// Returns a new fixed hash where all bits are set.
+			/// Returns a new fixed hash where all bits are set to the given byte.
 			#[inline]
 			pub fn repeat_byte(byte: u8) -> $name {
 				$name([byte; $n_bytes])
