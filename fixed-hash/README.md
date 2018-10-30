@@ -52,6 +52,10 @@ fixed-hash = { version = "0.3", default-features = false }
 ### Available Features
 
 - `std`: Use the standard library instead of the core library.
+	- Using this feature enables the following features
+		- `rustc-hex/std`
+		- `rand/std`
+		- `byteorder/std`
     - Enabled by default.
 - `libc`: Use `libc` for implementations of `PartialEq` and `Ord`.
     - Enabled by default.
