@@ -39,3 +39,29 @@ construct_fixed_hash!{
     struct H160(20);
 }
 ```
+
+## Features
+
+By default this is an standard library depending crate.  
+For a `#[no_std]` environment use it as follows:
+
+```
+fixed-hash = { version = "0.3", default-features = false }
+```
+
+### Available Features
+
+- `std`: Use the standard library instead of the core library.
+    - Enabled by default.
+- `libc`: Use `libc` for implementations of `PartialEq` and `Ord`.
+    - Enabled by default.
+- `rand-support`: Provide API based on the `rand` crate.
+    - Enabled by default.
+- `byteorder-support`: Provide API based on the `byteorder` crate.
+    - Enabled by default.
+- `heapsize-support`: Provide `HeapsizeOf` implementation for hash types.
+    - Disabled by default.
+- `quickcheck-support`: Provide `quickcheck` implementation for hash types.
+    - Disabled by default.
+- `api-dummy`: Generate a dummy hash type for API documentation.
+    - Enabled by default at `docs.rs`
