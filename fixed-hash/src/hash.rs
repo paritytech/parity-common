@@ -172,7 +172,7 @@ macro_rules! construct_hash {
 			}
 		}
 
-		/// Utilizies using the `byteorder` crate.
+		/// Utilities using the `byteorder` crate.
 		#[cfg(feature = "byteorder-support")]
 		impl $name {
 			/// Returns the least significant `n` bytes as slice.
