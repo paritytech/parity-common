@@ -11,10 +11,10 @@ elastic-array = "0.10"
 fs-swap = "0.2.4"
 interleaved-ordered = "0.1.0"
 kvdb = { version = "0.1", path = "../kvdb" }
-log = "0.3"
+log = "0.4"
 num_cpus = "1.0"
 parking_lot = "0.6"
-regex = "0.2"
+regex = "1.0"
 parity-rocksdb = "0.5"
 
 [dev-dependencies]
