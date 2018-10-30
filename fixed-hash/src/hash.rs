@@ -512,7 +512,11 @@ macro_rules! construct_fixed_hash {
 			}
 		}
 
-		#[cfg(feature = "heapsize-support")]
+		#[cfg(all(
+			feature = "heapsize-support",
+			feature = "libc",
+			not(target_os = "unknown")
+		))]
 		impl $crate::heapsize::HeapSizeOf for $name {
 			#[inline]
 			fn heap_size_of_children(&self) -> usize {

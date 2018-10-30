@@ -310,7 +310,11 @@ mod from_str {
 	}
 }
 
-#[cfg(feature = "heapsize-support")]
+#[cfg(all(
+	feature = "heapsize-support",
+	feature = "libc",
+	not(target_os = "unknown")
+))]
 #[test]
 fn test_heapsizeof() {
 	use heapsize::HeapSizeOf;
