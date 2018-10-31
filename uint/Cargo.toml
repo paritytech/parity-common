@@ -14,10 +14,6 @@ rustc-hex = { version = "2.0", default-features = false }
 quickcheck = { version = "0.6", optional = true }
 crunchy = "0.1"
 
-[dev-dependencies]
-quickcheck = "0.6"
-rustc-hex = "2.0"
-
 [features]
 default = ["std"]
 std = ["byteorder/std", "rustc-hex/std"]
