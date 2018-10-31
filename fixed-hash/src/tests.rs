@@ -283,7 +283,7 @@ mod from_str {
 
 	#[test]
 	fn valid() {
-		use core::str::FromStr;
+		use core_::str::FromStr;
 
 		assert_eq!(
 			H64::from_str("0123456789ABCDEF").unwrap(),
@@ -293,19 +293,19 @@ mod from_str {
 
 	#[test]
 	fn empty_str() {
-		use core::str::FromStr;
+		use core_::str::FromStr;
 		assert!(H64::from_str("").is_err())
 	}
 
 	#[test]
 	fn invalid_digits() {
-		use core::str::FromStr;
+		use core_::str::FromStr;
 		assert!(H64::from_str("Hello, World!").is_err())
 	}
 
 	#[test]
 	fn too_many_digits() {
-		use core::str::FromStr;
+		use core_::str::FromStr;
 		assert!(H64::from_str("0123456789ABCDEF0").is_err())
 	}
 }

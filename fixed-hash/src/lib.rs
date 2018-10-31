@@ -8,6 +8,10 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+// Re-export libcore using an alias so that the macros can work without
+// requiring `extern crate core` downstream.
+#[doc(hidden)]
+pub extern crate core as core_;
 
 #[cfg(all(feature = "libc", not(target_os = "unknown")))]
 #[doc(hidden)]
@@ -20,9 +24,6 @@ pub extern crate static_assertions;
 // Export `const_assert` macro so that users of this crate do not
 // have to import the `static_assertions` crate themselves.
 pub use static_assertions::const_assert;
-#[cfg(feature = "std")]
-#[doc(hidden)]
-pub extern crate core;
 
 #[cfg(feature = "byteorder-support")]
 #[doc(hidden)]
