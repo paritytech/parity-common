@@ -8,7 +8,7 @@
 
 //! Efficient large, fixed-size big integers and hashes.
 
-#![cfg_attr(not(feature="std"), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 #[doc(hidden)]
 pub extern crate byteorder;
@@ -17,7 +17,7 @@ pub extern crate byteorder;
 #[doc(hidden)]
 pub extern crate heapsize;
 
-#[cfg(feature="std")]
+#[cfg(feature = "std")]
 #[doc(hidden)]
 pub extern crate core;
 
