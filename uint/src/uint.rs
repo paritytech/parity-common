@@ -1314,7 +1314,7 @@ macro_rules! impl_std_for_uint {
 }
 
 
-#[cfg(feature="heapsizeof")]
+#[cfg(feature="heapsize-support")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_uint {
@@ -1327,14 +1327,14 @@ macro_rules! impl_heapsize_for_uint {
 	}
 }
 
-#[cfg(not(feature="heapsizeof"))]
+#[cfg(not(feature="heapsize-support"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_uint {
 	($name: ident) => {}
 }
 
-#[cfg(feature="impl_quickcheck_arbitrary")]
+#[cfg(feature="quickcheck-support")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_uint {
@@ -1367,7 +1367,7 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 	}
 }
 
-#[cfg(not(feature="impl_quickcheck_arbitrary"))]
+#[cfg(not(feature="quickcheck-support"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_uint {

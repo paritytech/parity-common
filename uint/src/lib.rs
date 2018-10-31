@@ -13,7 +13,7 @@
 #[doc(hidden)]
 pub extern crate byteorder;
 
-#[cfg(feature="heapsizeof")]
+#[cfg(feature="heapsize-support")]
 #[doc(hidden)]
 pub extern crate heapsize;
 
@@ -24,7 +24,7 @@ pub extern crate core;
 #[doc(hidden)]
 pub extern crate rustc_hex;
 
-#[cfg(feature="impl_quickcheck_arbitrary")]
+#[cfg(feature="quickcheck-support")]
 #[doc(hidden)]
 pub extern crate quickcheck;
 

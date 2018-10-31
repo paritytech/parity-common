@@ -21,8 +21,8 @@ rustc-hex = "2.0"
 [features]
 default = ["std"]
 std = ["byteorder/std", "rustc-hex/std"]
-heapsizeof = ["heapsize"]
-impl_quickcheck_arbitrary = ["quickcheck"]
+heapsize-support = ["heapsize"]
+quickcheck-support = ["quickcheck"]
 
 [[example]]
 name = "modular"
@@ -31,4 +31,3 @@ required-features = ["std"]
 [[test]]
 name = "uint_tests"
 required-features = ["std"]
-
