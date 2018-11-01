@@ -21,8 +21,6 @@ std = ["byteorder/std", "rustc-hex/std"]
 
 [[example]]
 name = "modular"
-required-features = ["std"]
 
 [[test]]
 name = "uint_tests"
-required-features = ["std"]
