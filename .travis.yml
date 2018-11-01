@@ -1,8 +1,19 @@
 language: rust
-rust:
-  - stable
-  - nightly
+branches:
+  only:
+    - master
 matrix:
+  include:
+    - os: linux
+      rust: stable
+    - os: linux
+      rust: beta
+    - os: linux
+      rust: nightly
+    - os: osx
+      rust: stable
+    - os: windows
+      rust: stable
   allow_failures:
     - rust: nightly
 script:
