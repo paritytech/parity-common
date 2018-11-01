@@ -1334,7 +1334,7 @@ macro_rules! impl_heapsize_for_uint {
 	($name: ident) => {}
 }
 
-#[cfg(feature="quickcheck-support")]
+#[cfg(feature="quickcheck")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_uint {
@@ -1367,7 +1367,7 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 	}
 }
 
-#[cfg(not(feature="quickcheck-support"))]
+#[cfg(not(feature="quickcheck"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_uint {

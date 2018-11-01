@@ -5,7 +5,7 @@ extern crate uint;
 #[macro_use]
 extern crate crunchy;
 
-#[cfg(feature = "quickcheck-support")]
+#[cfg(feature = "quickcheck")]
 #[macro_use]
 extern crate quickcheck;
 
@@ -1030,7 +1030,7 @@ fn trailing_zeros() {
 	assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 256);
 }
 
-#[cfg(feature="quickcheck-support")]
+#[cfg(feature="quickcheck")]
 pub mod laws {
 	macro_rules! uint_laws {
 		($mod_name:ident, $uint_ty:ident) => {

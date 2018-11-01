@@ -18,8 +18,6 @@ crunchy = "0.2"
 [features]
 default = ["std"]
 std = ["byteorder/std", "rustc-hex/std"]
-heapsize-support = ["heapsize"]
-quickcheck-support = ["quickcheck"]
 
 [[example]]
 name = "modular"

@@ -24,7 +24,7 @@ pub extern crate core;
 #[doc(hidden)]
 pub extern crate rustc_hex;
 
-#[cfg(feature="quickcheck-support")]
+#[cfg(feature="quickcheck")]
 #[doc(hidden)]
 pub extern crate quickcheck;
 
