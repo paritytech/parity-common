@@ -32,4 +32,9 @@ pub extern crate quickcheck;
 extern crate crunchy;
 
 mod uint;
+
+#[cfg(feature = "common")]
 pub use uint::*;
+
+#[cfg(not(feature = "common"))]
+pub(crate) use uint::*;

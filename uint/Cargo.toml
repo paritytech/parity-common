@@ -16,8 +16,9 @@ quickcheck = { version = "0.6", optional = true }
 crunchy = "0.2"
 
 [features]
-default = ["std"]
+default = ["std", "common"]
 std = ["byteorder/std", "rustc-hex/std"]
+common = []
 
 [[example]]
 name = "modular"
