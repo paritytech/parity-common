@@ -18,9 +18,6 @@
 //! memmap non breaking compile implementation, note that it is non functional
 
 #[cfg(not(target_arch = "wasm32"))]
-extern crate memmap;
-
-#[cfg(not(target_arch = "wasm32"))]
 pub use memmap::MmapMut;
 
 #[cfg(target_arch = "wasm32")]

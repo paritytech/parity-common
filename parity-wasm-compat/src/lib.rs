@@ -16,12 +16,29 @@
 
 //! Parity wasm compat crate.
 #![feature(fn_traits)]
+#![feature(duration_float)]
+#![feature(set_stdio)]
 
 pub mod rng;
 pub mod threadpool;
 pub mod mpsc;
 pub mod memmap;
 pub mod snappy;
+pub mod time;
+pub mod fs;
+
+#[cfg(feature = "use-tempdir")]
+pub mod tempdir;
+#[cfg(all(target_arch = "wasm32", feature = "browser-wasm"))]
+mod hook_print;
+#[cfg(all(target_arch = "wasm32", feature = "browser-wasm"))]
+pub use self::hook_print::{ hook_std_io, hook_std_io_no_buff };
+
+#[cfg(not(all(target_arch = "wasm32", feature = "browser-wasm")))]
+pub fn hook_std_io_no_buff () { }
+
+#[cfg(not(all(target_arch = "wasm32", feature = "browser-wasm")))]
+pub fn hook_std_io () { }
 
 pub mod home {
 	#[cfg(not(target_arch = "wasm32"))]
@@ -36,4 +53,15 @@ pub mod home {
 		// need a dummy dir for whatever browser mapping we use
 		Some(PathBuf::from("/home"))
 	}
+}
+
+pub mod env {
+	#[cfg(not(target_arch = "wasm32"))]
+	pub use std::env::temp_dir;
+	#[cfg(all(target_arch = "wasm32", feature = "browser-wasm"))]
+	use std::path::PathBuf;
+	#[cfg(all(target_arch = "wasm32", feature = "browser-wasm"))]
+	pub fn temp_dir() -> PathBuf {
+		PathBuf::from("/temp")
+  }
 }
