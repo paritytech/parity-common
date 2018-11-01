@@ -1314,7 +1314,7 @@ macro_rules! impl_std_for_uint {
 }
 
 
-#[cfg(feature="heapsize-support")]
+#[cfg(feature="heapsize")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_uint {
@@ -1327,7 +1327,7 @@ macro_rules! impl_heapsize_for_uint {
 	}
 }
 
-#[cfg(not(feature="heapsize-support"))]
+#[cfg(not(feature="heapsize"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_uint {

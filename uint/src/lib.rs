@@ -13,7 +13,7 @@
 #[doc(hidden)]
 pub extern crate byteorder;
 
-#[cfg(feature="heapsize-support")]
+#[cfg(feature="heapsize")]
 #[doc(hidden)]
 pub extern crate heapsize;
 
