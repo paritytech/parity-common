@@ -117,6 +117,18 @@ macro_rules! construct_fixed_hash {
 				&mut self.0
 			}
 
+			/// Extracts a reference to the byte array containing the entire fixed hash.
+			#[inline]
+			pub fn as_fixed_bytes(&self) -> &[u8; $n_bytes] {
+				&self.0
+			}
+
+			/// Extracts a reference to the byte array containing the entire fixed hash.
+			#[inline]
+			pub fn as_fixed_bytes_mut(&mut self) -> &mut [u8; $n_bytes] {
+				&mut self.0
+			}
+
 			/// Returns the inner bytes array.
 			#[inline]
 			pub fn to_fixed_bytes(self) -> [u8; $n_bytes] {
