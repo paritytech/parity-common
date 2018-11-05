@@ -1181,19 +1181,6 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl_std_for_uint!($name, $n_words);
-		impl_heapsize_for_uint!($name);
-		// `$n_words * 8` because macro expects bytes and
-		// uints use 64 bit (8 byte) words
-		impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
-	);
-}
-
-#[cfg(feature="std")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_std_for_uint {
-	($name: ident, $n_words: tt) => {
 		impl $crate::core_::fmt::Debug for $name {
 			fn fmt(&self, f: &mut $crate::core_::fmt::Formatter) -> $crate::core_::fmt::Result {
 				$crate::core_::fmt::Display::fmt(self, f)
@@ -1222,23 +1209,10 @@ macro_rules! impl_std_for_uint {
 				}
 
 				// sequence of `'0'..'9'` chars is guaranteed to be a valid UTF8 string
-				let s = unsafe {::core::str::from_utf8_unchecked(&buf[i..])};
-				f.write_str(s)
-			}
-		}
-
-		impl ::core::str::FromStr for $name {
-			type Err = $crate::rustc_hex::FromHexError;
-
-			fn from_str(value: &str) -> Result<$name, Self::Err> {
-				use $crate::rustc_hex::FromHex;
-				let bytes: Vec<u8> = match value.len() % 2 == 0 {
-					true => value.from_hex()?,
-					false => ("0".to_owned() + value).from_hex()?
+				let s = unsafe {
+					$crate::core_::str::from_utf8_unchecked(&buf[i..])
 				};
-
-				let bytes_ref: &[u8] = &bytes;
-				Ok(From::from(bytes_ref))
+				f.write_str(s)
 			}
 		}
 
@@ -1270,6 +1244,34 @@ macro_rules! impl_std_for_uint {
 			}
 		}
 
+		impl_std_for_uint!($name, $n_words);
+		impl_heapsize_for_uint!($name);
+		// `$n_words * 8` because macro expects bytes and
+		// uints use 64 bit (8 byte) words
+		impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
+	);
+}
+
+#[cfg(feature = "std")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_std_for_uint {
+	($name: ident, $n_words: tt) => {
+		impl $crate::core_::str::FromStr for $name {
+			type Err = $crate::rustc_hex::FromHexError;
+
+			fn from_str(value: &str) -> Result<$name, Self::Err> {
+				use $crate::rustc_hex::FromHex;
+				let bytes: Vec<u8> = match value.len() % 2 == 0 {
+					true => value.from_hex()?,
+					false => ("0".to_owned() + value).from_hex()?
+				};
+
+				let bytes_ref: &[u8] = &bytes;
+				Ok(From::from(bytes_ref))
+			}
+		}
+
 		impl $crate::core_::convert::From<&'static str> for $name {
 			fn from(s: &'static str) -> Self {
 				s.parse().unwrap()
@@ -1284,7 +1286,6 @@ macro_rules! impl_std_for_uint {
 macro_rules! impl_std_for_uint {
 	($name: ident, $n_words: tt) => {}
 }
-
 
 #[cfg(feature="heapsize")]
 #[macro_export]
