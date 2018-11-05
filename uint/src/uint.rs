@@ -737,12 +737,6 @@ macro_rules! construct_uint {
 				}
 			}
 
-			/// Multiplication by u32.
-			#[deprecated(note = "Use Mul<u32> instead.")]
-			pub fn mul_u32(self, other: u32) -> Self {
-				self * other
-			}
-
 			/// Overflowing multiplication by u32.
 			fn overflowing_mul_u32(self, other: u32) -> (Self, bool) {
 				let $name(ref arr) = self;
