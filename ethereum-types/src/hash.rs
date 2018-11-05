@@ -31,16 +31,16 @@ macro_rules! impl_uint_conversions {
 	($hash: ident, $uint: ident) => {
 		impl From<$uint> for $hash {
 			fn from(value: $uint) -> Self {
-				let mut ret = $hash::new();
-				value.to_big_endian(&mut ret);
+				let mut ret = $hash::zero();
+				value.to_big_endian(ret.as_bytes_mut());
 				ret
 			}
 		}
 
 		impl<'a> From<&'a $uint> for $hash {
 			fn from(value: &'a $uint) -> Self {
-				let mut ret = $hash::new();
-				value.to_big_endian(&mut ret);
+				let mut ret = $hash::zero();
+				value.to_big_endian(ret.as_bytes_mut());
 				ret
 			}
 		}
@@ -68,14 +68,14 @@ impl_serde!(H264, 33);
 impl_serde!(H512, 64);
 impl_serde!(H520, 65);
 
-construct_hash!(H32, 4);
-construct_hash!(H64, 8);
-construct_hash!(H128, 16);
-construct_hash!(H160, 20);
-construct_hash!(H256, 32);
-construct_hash!(H264, 33);
-construct_hash!(H512, 64);
-construct_hash!(H520, 65);
+construct_fixed_hash!{ pub struct H32(4); }
+construct_fixed_hash!{ pub struct H64(8); }
+construct_fixed_hash!{ pub struct H128(16); }
+construct_fixed_hash!{ pub struct H160(20); }
+construct_fixed_hash!{ pub struct H256(32); }
+construct_fixed_hash!{ pub struct H264(33); }
+construct_fixed_hash!{ pub struct H512(64); }
+construct_fixed_hash!{ pub struct H520(65); }
 
 impl_uint_conversions!(H64, U64);
 impl_uint_conversions!(H128, U128);
@@ -85,7 +85,7 @@ impl_uint_conversions!(H512, U512);
 #[deprecated]
 impl From<H256> for H160 {
 	fn from(value: H256) -> H160 {
-		let mut ret = H160::new();
+		let mut ret = H160::zero();
 		ret.0.copy_from_slice(&value[12..32]);
 		ret
 	}
@@ -94,7 +94,7 @@ impl From<H256> for H160 {
 #[deprecated]
 impl From<H256> for H64 {
 	fn from(value: H256) -> H64 {
-		let mut ret = H64::new();
+		let mut ret = H64::zero();
 		ret.0.copy_from_slice(&value[20..28]);
 		ret
 	}
@@ -102,16 +102,16 @@ impl From<H256> for H64 {
 
 impl From<H160> for H256 {
 	fn from(value: H160) -> H256 {
-		let mut ret = H256::new();
-		ret.0[12..32].copy_from_slice(&value);
+		let mut ret = H256::zero();
+		ret.0[12..32].copy_from_slice(value.as_bytes());
 		ret
 	}
 }
 
 impl<'a> From<&'a H160> for H256 {
 	fn from(value: &'a H160) -> H256 {
-		let mut ret = H256::new();
-		ret.0[12..32].copy_from_slice(value);
+		let mut ret = H256::zero();
+		ret.0[12..32].copy_from_slice(value.as_bytes());
 		ret
 	}
 }
@@ -121,16 +121,17 @@ mod tests {
 	use super::{H160, H256};
 	use serde_json as ser;
 
+	// #[cfg(feature = "fixed-hash/byteorder-support")]
 	#[test]
 	fn test_serialize_h160() {
 		let tests = vec![
-			(H160::from(0), "0x0000000000000000000000000000000000000000"),
-			(H160::from(2), "0x0000000000000000000000000000000000000002"),
-			(H160::from(15), "0x000000000000000000000000000000000000000f"),
-			(H160::from(16), "0x0000000000000000000000000000000000000010"),
-			(H160::from(1_000), "0x00000000000000000000000000000000000003e8"),
-			(H160::from(100_000), "0x00000000000000000000000000000000000186a0"),
-			(H160::from(u64::max_value()), "0x000000000000000000000000ffffffffffffffff"),
+			(H160::from_low_u64_be(0), "0x0000000000000000000000000000000000000000"),
+			(H160::from_low_u64_be(2), "0x0000000000000000000000000000000000000002"),
+			(H160::from_low_u64_be(15), "0x000000000000000000000000000000000000000f"),
+			(H160::from_low_u64_be(16), "0x0000000000000000000000000000000000000010"),
+			(H160::from_low_u64_be(1_000), "0x00000000000000000000000000000000000003e8"),
+			(H160::from_low_u64_be(100_000), "0x00000000000000000000000000000000000186a0"),
+			(H160::from_low_u64_be(u64::max_value()), "0x000000000000000000000000ffffffffffffffff"),
 		];
 
 		for (number, expected) in tests {
@@ -139,16 +140,17 @@ mod tests {
 		}
 	}
 
+	#[cfg(feature = "byteorder-support")]
 	#[test]
 	fn test_serialize_h256() {
 		let tests = vec![
-			(H256::from(0), "0x0000000000000000000000000000000000000000000000000000000000000000"),
-			(H256::from(2), "0x0000000000000000000000000000000000000000000000000000000000000002"),
-			(H256::from(15), "0x000000000000000000000000000000000000000000000000000000000000000f"),
-			(H256::from(16), "0x0000000000000000000000000000000000000000000000000000000000000010"),
-			(H256::from(1_000), "0x00000000000000000000000000000000000000000000000000000000000003e8"),
-			(H256::from(100_000), "0x00000000000000000000000000000000000000000000000000000000000186a0"),
-			(H256::from(u64::max_value()), "0x000000000000000000000000000000000000000000000000ffffffffffffffff"),
+			(H256::from_low_u64_be(0), "0x0000000000000000000000000000000000000000000000000000000000000000"),
+			(H256::from_low_u64_be(2), "0x0000000000000000000000000000000000000000000000000000000000000002"),
+			(H256::from_low_u64_be(15), "0x000000000000000000000000000000000000000000000000000000000000000f"),
+			(H256::from_low_u64_be(16), "0x0000000000000000000000000000000000000000000000000000000000000010"),
+			(H256::from_low_u64_be(1_000), "0x00000000000000000000000000000000000000000000000000000000000003e8"),
+			(H256::from_low_u64_be(100_000), "0x00000000000000000000000000000000000000000000000000000000000186a0"),
+			(H256::from_low_u64_be(u64::max_value()), "0x000000000000000000000000000000000000000000000000ffffffffffffffff"),
 		];
 
 		for (number, expected) in tests {

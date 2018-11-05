@@ -11,7 +11,8 @@ repository = "https://github.com/paritytech/primitives"
 [dependencies]
 tiny-keccak = "1.4"
 crunchy = { version = "0.1.6", features = ["limit_256"] }
-fixed-hash = { version = "0.2", default_features = false }
+rustc-hex = { version = "2.0" }
+fixed-hash = { version = "0.3.0-beta.2", default_features = false }
 ethereum-types-serialize = { version = "0.2.1", path = "../serialize", optional = true }
 serde = { version = "1.0", optional = true }
 
@@ -20,7 +21,7 @@ rand = { version = "0.4" }
 hex-literal = "0.1.1"
 
 [features]
-default = ["std", "heapsizeof", "serialize", "fixed-hash/libc"]
+default = ["std", "heapsizeof", "serialize", "fixed-hash/libc", "fixed-hash/rustc-hex"]
 std = ["fixed-hash/std"]
-heapsizeof = ["fixed-hash/heapsizeof"]
+heapsizeof = ["fixed-hash/heapsize"]
 serialize = ["std", "ethereum-types-serialize", "serde"]

@@ -6,8 +6,6 @@ extern crate ethereum_types;
 extern crate ethbloom;
 extern crate fixed_hash;
 
-use ethereum_types::{Address, Public, Secret, Signature};
-
 #[start]
 fn start(_argc: isize, _argv: *const *const u8) -> isize {
    0
