@@ -1,4 +1,4 @@
-# Uint Big unsigned integer types
+# Uint
 
 ## Description
 
