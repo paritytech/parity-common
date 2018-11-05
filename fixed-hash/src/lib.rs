@@ -23,6 +23,7 @@ pub extern crate static_assertions;
 
 // Export `const_assert` macro so that users of this crate do not
 // have to import the `static_assertions` crate themselves.
+#[doc(hidden)]
 pub use static_assertions::const_assert;
 
 #[cfg(feature = "byteorder-support")]
