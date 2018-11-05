@@ -316,16 +316,6 @@ fn uint256_mul32() {
 }
 
 #[test]
-#[allow(deprecated)]
-fn uint256_mul32_old() {
-	assert_eq!(U256::from(0u64).mul_u32(2), U256::from(0u64));
-	assert_eq!(U256::from(1u64).mul_u32(2), U256::from(2u64));
-	assert_eq!(U256::from(10u64).mul_u32(2), U256::from(20u64));
-	assert_eq!(U256::from(10u64).mul_u32(5), U256::from(50u64));
-	assert_eq!(U256::from(1000u64).mul_u32(50), U256::from(50000u64));
-}
-
-#[test]
 fn uint256_pow() {
 	assert_eq!(U256::from(10).pow(U256::from(0)), U256::from(1));
 	assert_eq!(U256::from(10).pow(U256::from(1)), U256::from(10));
