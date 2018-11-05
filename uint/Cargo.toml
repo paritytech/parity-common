@@ -25,3 +25,4 @@ name = "modular"
 
 [[test]]
 name = "uint_tests"
+required-features = ["std", "common"]
