@@ -119,7 +119,7 @@ macro_rules! construct_fixed_hash {
 
 			/// Returns the inner bytes array.
 			#[inline]
-			pub fn to_bytes(self) -> [u8; $n_bytes] {
+			pub fn to_fixed_bytes(self) -> [u8; $n_bytes] {
 				self.0
 			}
 
