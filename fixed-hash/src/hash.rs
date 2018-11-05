@@ -178,112 +178,6 @@ macro_rules! construct_fixed_hash {
 			}
 		}
 
-		/// Utilities using the `byteorder` crate.
-		#[cfg(feature = "byteorder-support")]
-		impl $name {
-			/// Returns the least significant `n` bytes as slice.
-			///
-			/// # Panics
-			///
-			/// If `n` is greater than the number of bytes in `self`.
-			#[inline]
-			fn least_significant_bytes(&self, n: usize) -> &[u8] {
-				$crate::core_::assert_eq!(true, n <= Self::len_bytes());
-				&self[(Self::len_bytes() - n)..]
-			}
-
-			fn to_low_u64_with_byteorder<B>(&self) -> u64
-			where
-				B: $crate::byteorder::ByteOrder
-			{
-				let mut buf = [0x0; 8];
-				let capped = $crate::core_::cmp::min($n_bytes, 8);
-				buf[(8 - capped)..].copy_from_slice(self.least_significant_bytes(capped));
-				B::read_u64(&buf)
-			}
-
-			/// Returns the lowest 8 bytes interpreted as big-endian.
-			///
-			/// # Note
-			///
-			/// For hash type with less than 8 bytes the missing bytes
-			/// are interpreted as being zero.
-			#[inline]
-			pub fn to_low_u64_be(&self) -> u64 {
-				self.to_low_u64_with_byteorder::<$crate::byteorder::BigEndian>()
-			}
-
-			/// Returns the lowest 8 bytes interpreted as little-endian.
-			///
-			/// # Note
-			///
-			/// For hash type with less than 8 bytes the missing bytes
-			/// are interpreted as being zero.
-			#[inline]
-			pub fn to_low_u64_le(&self) -> u64 {
-				self.to_low_u64_with_byteorder::<$crate::byteorder::LittleEndian>()
-			}
-
-			/// Returns the lowest 8 bytes interpreted as native-endian.
-			///
-			/// # Note
-			///
-			/// For hash type with less than 8 bytes the missing bytes
-			/// are interpreted as being zero.
-			#[inline]
-			pub fn to_low_u64_ne(&self) -> u64 {
-				self.to_low_u64_with_byteorder::<$crate::byteorder::NativeEndian>()
-			}
-
-			fn from_low_u64_with_byteorder<B>(val: u64) -> Self
-			where
-				B: $crate::byteorder::ByteOrder
-			{
-				let mut buf = [0x0; 8];
-				B::write_u64(&mut buf, val);
-				let capped = $crate::core_::cmp::min(Self::len_bytes(), 8);
-				let mut bytes = [0x0; $n_bytes];
-				bytes[($n_bytes - capped)..].copy_from_slice(&buf[..capped]);
-				Self::from_slice(&bytes)
-			}
-
-			/// Creates a new hash type from the given `u64` value.
-			///
-			/// # Note
-			///
-			/// - The given `u64` value is interpreted as big endian.
-			/// - Ignores the most significant bits of the given value
-			///   if the hash type has less than 8 bytes.
-			#[inline]
-			pub fn from_low_u64_be(val: u64) -> Self {
-				Self::from_low_u64_with_byteorder::<$crate::byteorder::BigEndian>(val)
-			}
-
-			/// Creates a new hash type from the given `u64` value.
-			///
-			/// # Note
-			///
-			/// - The given `u64` value is interpreted as little endian.
-			/// - Ignores the most significant bits of the given value
-			///   if the hash type has less than 8 bytes.
-			#[inline]
-			pub fn from_low_u64_le(val: u64) -> Self {
-				Self::from_low_u64_with_byteorder::<$crate::byteorder::LittleEndian>(val)
-			}
-
-			/// Creates a new hash type from the given `u64` value.
-			///
-			/// # Note
-			///
-			/// - The given `u64` value is interpreted as native endian.
-			/// - Ignores the most significant bits of the given value
-			///   if the hash type has less than 8 bytes.
-			#[inline]
-			pub fn from_low_u64_ne(val: u64) -> Self {
-				Self::from_low_u64_with_byteorder::<$crate::byteorder::NativeEndian>(val)
-			}
-		}
-
 		impl $crate::core_::fmt::Debug for $name {
 			fn fmt(&self, f: &mut $crate::core_::fmt::Formatter) -> $crate::core_::fmt::Result {
 				$crate::core_::write!(f, "{:#x}", self)
@@ -385,57 +279,174 @@ macro_rules! construct_fixed_hash {
 		impl_ops_for_hash!($name, BitAnd, bitand, BitAndAssign, bitand_assign, &, &=);
 		impl_ops_for_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
 
-		#[cfg(all(feature = "libc", not(target_os = "unknown")))]
-		impl $crate::core_::cmp::PartialEq for $name {
+		impl_byteorder_for_fixed_hash!($name);
+		impl_rand_for_fixed_hash!($name);
+		impl_libc_for_fixed_hash!($name);
+		impl_rustc_hex_for_fixed_hash!($name);
+		impl_heapsize_for_fixed_hash!($name);
+		impl_quickcheck_for_fixed_hash!($name);
+	}
+}
+
+// Implementation for disabled byteorder crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `byteorder` crate feature in
+// a user crate.
+#[cfg(not(feature = "byteorder-support"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_byteorder_for_fixed_hash {
+	( $name:ident ) => {}
+}
+
+// Implementation for enabled byteorder crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `byteorder` crate feature in
+// a user crate.
+#[cfg(feature = "byteorder-support")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_byteorder_for_fixed_hash {
+	( $name:ident ) => {
+		/// Utilities using the `byteorder` crate.
+		impl $name {
+			/// Returns the least significant `n` bytes as slice.
+			///
+			/// # Panics
+			///
+			/// If `n` is greater than the number of bytes in `self`.
 			#[inline]
-			fn eq(&self, other: &Self) -> bool {
-				unsafe {
-					$crate::libc::memcmp(
-						self.as_ptr() as *const $crate::libc::c_void,
-						other.as_ptr() as *const $crate::libc::c_void,
-						Self::len_bytes(),
-					) == 0
-				}
+			fn least_significant_bytes(&self, n: usize) -> &[u8] {
+				$crate::core_::assert_eq!(true, n <= Self::len_bytes());
+				&self[(Self::len_bytes() - n)..]
 			}
-		}
 
-		#[cfg(all(feature = "libc", not(target_os = "unknown")))]
-		impl $crate::core_::cmp::Ord for $name {
-			fn cmp(&self, other: &Self) -> $crate::core_::cmp::Ordering {
-				let r = unsafe {
-					$crate::libc::memcmp(
-						self.as_ptr() as *const $crate::libc::c_void,
-						other.as_ptr() as *const $crate::libc::c_void,
-						Self::len_bytes(),
-					)
-				};
-				if r < 0 {
-					return $crate::core_::cmp::Ordering::Less;
-				}
-				if r > 0 {
-					return $crate::core_::cmp::Ordering::Greater;
-				}
-				$crate::core_::cmp::Ordering::Equal
+			fn to_low_u64_with_byteorder<B>(&self) -> u64
+			where
+				B: $crate::byteorder::ByteOrder
+			{
+				let mut buf = [0x0; 8];
+				let capped = $crate::core_::cmp::min(Self::len_bytes(), 8);
+				buf[(8 - capped)..].copy_from_slice(self.least_significant_bytes(capped));
+				B::read_u64(&buf)
 			}
-		}
 
-		#[cfg(any(not(feature = "libc"), target_os = "unknown"))]
-		impl $crate::core_::cmp::PartialEq for $name {
+			/// Returns the lowest 8 bytes interpreted as big-endian.
+			///
+			/// # Note
+			///
+			/// For hash type with less than 8 bytes the missing bytes
+			/// are interpreted as being zero.
 			#[inline]
-			fn eq(&self, other: &Self) -> bool {
-				self.as_bytes() == other.as_bytes()
+			pub fn to_low_u64_be(&self) -> u64 {
+				self.to_low_u64_with_byteorder::<$crate::byteorder::BigEndian>()
 			}
-		}
 
-		#[cfg(any(not(feature = "libc"), target_os = "unknown"))]
-		impl $crate::core_::cmp::Ord for $name {
+			/// Returns the lowest 8 bytes interpreted as little-endian.
+			///
+			/// # Note
+			///
+			/// For hash type with less than 8 bytes the missing bytes
+			/// are interpreted as being zero.
 			#[inline]
-			fn cmp(&self, other: &Self) -> $crate::core_::cmp::Ordering {
-				self.as_bytes().cmp(other.as_bytes())
+			pub fn to_low_u64_le(&self) -> u64 {
+				self.to_low_u64_with_byteorder::<$crate::byteorder::LittleEndian>()
+			}
+
+			/// Returns the lowest 8 bytes interpreted as native-endian.
+			///
+			/// # Note
+			///
+			/// For hash type with less than 8 bytes the missing bytes
+			/// are interpreted as being zero.
+			#[inline]
+			pub fn to_low_u64_ne(&self) -> u64 {
+				self.to_low_u64_with_byteorder::<$crate::byteorder::NativeEndian>()
+			}
+
+			fn from_low_u64_with_byteorder<B>(val: u64) -> Self
+			where
+				B: $crate::byteorder::ByteOrder
+			{
+				let mut buf = [0x0; 8];
+				B::write_u64(&mut buf, val);
+				let capped = $crate::core_::cmp::min(Self::len_bytes(), 8);
+				let mut bytes = [0x0; $crate::core_::mem::size_of::<Self>()];
+				bytes[(Self::len_bytes() - capped)..].copy_from_slice(&buf[..capped]);
+				Self::from_slice(&bytes)
+			}
+
+			/// Creates a new hash type from the given `u64` value.
+			///
+			/// # Note
+			///
+			/// - The given `u64` value is interpreted as big endian.
+			/// - Ignores the most significant bits of the given value
+			///   if the hash type has less than 8 bytes.
+			#[inline]
+			pub fn from_low_u64_be(val: u64) -> Self {
+				Self::from_low_u64_with_byteorder::<$crate::byteorder::BigEndian>(val)
+			}
+
+			/// Creates a new hash type from the given `u64` value.
+			///
+			/// # Note
+			///
+			/// - The given `u64` value is interpreted as little endian.
+			/// - Ignores the most significant bits of the given value
+			///   if the hash type has less than 8 bytes.
+			#[inline]
+			pub fn from_low_u64_le(val: u64) -> Self {
+				Self::from_low_u64_with_byteorder::<$crate::byteorder::LittleEndian>(val)
+			}
+
+			/// Creates a new hash type from the given `u64` value.
+			///
+			/// # Note
+			///
+			/// - The given `u64` value is interpreted as native endian.
+			/// - Ignores the most significant bits of the given value
+			///   if the hash type has less than 8 bytes.
+			#[inline]
+			pub fn from_low_u64_ne(val: u64) -> Self {
+				Self::from_low_u64_with_byteorder::<$crate::byteorder::NativeEndian>(val)
 			}
 		}
+	}
+}
 
-		#[cfg(feature = "rand-support")]
+// Implementation for disabled rand crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `rand` crate feature in
+// a user crate.
+#[cfg(not(feature = "rand-support"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_rand_for_fixed_hash {
+	( $name:ident ) => {}
+}
+
+// Implementation for enabled rand crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `rand` crate feature in
+// a user crate.
+#[cfg(feature = "rand-support")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_rand_for_fixed_hash {
+	( $name:ident ) => {
 		impl $crate::rand::distributions::Distribution<$name>
 			for $crate::rand::distributions::Standard
 		{
@@ -449,7 +460,6 @@ macro_rules! construct_fixed_hash {
 		}
 
 		/// Utilities using the `rand` crate.
-		#[cfg(feature = "rand-support")]
 		impl $name {
 			/// Assign `self` to a cryptographically random value using the
 			/// given random number generator.
@@ -485,8 +495,109 @@ macro_rules! construct_fixed_hash {
 				hash
 			}
 		}
+	}
+}
 
-		#[cfg(feature = "rustc-hex-support")]
+// Implementation for disabled libc crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `libc` crate feature in
+// a user crate.
+#[cfg(not(all(feature = "libc", not(target_os = "unknown"))))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_libc_for_fixed_hash {
+	( $name:ident ) => {
+		impl $crate::core_::cmp::PartialEq for $name {
+			#[inline]
+			fn eq(&self, other: &Self) -> bool {
+				self.as_bytes() == other.as_bytes()
+			}
+		}
+
+		impl $crate::core_::cmp::Ord for $name {
+			#[inline]
+			fn cmp(&self, other: &Self) -> $crate::core_::cmp::Ordering {
+				self.as_bytes().cmp(other.as_bytes())
+			}
+		}
+	}
+}
+
+// Implementation for enabled libc crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `libc` crate feature in
+// a user crate.
+#[cfg(all(feature = "libc", not(target_os = "unknown")))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_libc_for_fixed_hash {
+	( $name:ident ) => {
+		impl $crate::core_::cmp::PartialEq for $name {
+			#[inline]
+			fn eq(&self, other: &Self) -> bool {
+				unsafe {
+					$crate::libc::memcmp(
+						self.as_ptr() as *const $crate::libc::c_void,
+						other.as_ptr() as *const $crate::libc::c_void,
+						Self::len_bytes(),
+					) == 0
+				}
+			}
+		}
+
+		impl $crate::core_::cmp::Ord for $name {
+			fn cmp(&self, other: &Self) -> $crate::core_::cmp::Ordering {
+				let r = unsafe {
+					$crate::libc::memcmp(
+						self.as_ptr() as *const $crate::libc::c_void,
+						other.as_ptr() as *const $crate::libc::c_void,
+						Self::len_bytes(),
+					)
+				};
+				if r < 0 {
+					return $crate::core_::cmp::Ordering::Less;
+				}
+				if r > 0 {
+					return $crate::core_::cmp::Ordering::Greater;
+				}
+				$crate::core_::cmp::Ordering::Equal
+			}
+		}
+	}
+}
+
+// Implementation for disabled rustc-hex crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `rustc-hex` crate feature in
+// a user crate.
+#[cfg(not(feature = "rustc-hex-support"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_rustc_hex_for_fixed_hash {
+	( $name:ident ) => {}
+}
+
+// Implementation for enabled rustc-hex crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `rustc-hex` crate feature in
+// a user crate.
+#[cfg(feature = "rustc-hex-support")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_rustc_hex_for_fixed_hash {
+	( $name:ident ) => {
 		impl $crate::core_::str::FromStr for $name {
 			type Err = $crate::rustc_hex::FromHexError;
 
@@ -511,22 +622,77 @@ macro_rules! construct_fixed_hash {
 				Ok($name::from_slice(&bytes))
 			}
 		}
+	}
+}
 
-		#[cfg(all(
-			feature = "heapsize-support",
-			not(target_os = "unknown")
-		))]
+// Implementation for disabled heapsize crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `heapsize` crate feature in
+// a user crate.
+#[cfg(not(
+	all(feature = "heapsize-support", not(target_os = "unknown"))
+))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_heapsize_for_fixed_hash {
+	( $name:ident ) => {}
+}
+
+// Implementation for enabled heapsize crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `heapsize` crate feature in
+// a user crate.
+#[cfg(
+	all(feature = "heapsize-support", not(target_os = "unknown"))
+)]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_heapsize_for_fixed_hash {
+	( $name:ident ) => {
 		impl $crate::heapsize::HeapSizeOf for $name {
 			#[inline]
 			fn heap_size_of_children(&self) -> usize {
 				0
 			}
 		}
+	}
+}
 
-		#[cfg(feature = "quickcheck-support")]
+// Implementation for disabled quickcheck crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `quickcheck` crate feature in
+// a user crate.
+#[cfg(not(feature = "quickcheck-support"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_quickcheck_for_fixed_hash {
+	( $name:ident ) => {}
+}
+
+// Implementation for enabled quickcheck crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `quickcheck` crate feature in
+// a user crate.
+#[cfg(feature = "quickcheck-support")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_quickcheck_for_fixed_hash {
+	( $name:ident ) => {
 		impl $crate::quickcheck::Arbitrary for $name {
 			fn arbitrary<G: $crate::quickcheck::Gen>(g: &mut G) -> Self {
-				let mut res = [0u8; $n_bytes];
+				let mut res = [0u8; $crate::core_::mem::size_of::<Self>()];
 				g.fill_bytes(&mut res[..Self::len_bytes()]);
 				Self::from(res)
 			}
