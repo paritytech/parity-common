@@ -13,7 +13,7 @@ Support a very similar API as the built-in primitive integer types.
 In your `Cargo.toml` paste
 
 ```
-uint = "0.5"
+uint = "0.5.0-beta"
 ```
 
 Construct your own big unsigned integer type as follows.
