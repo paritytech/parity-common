@@ -13,11 +13,11 @@ byteorder = { version = "1", default-features = false }
 heapsize = { version = "0.4.2", optional = true }
 rustc-hex = { version = "2.0", default-features = false }
 quickcheck = { version = "0.6", optional = true }
-crunchy = "0.2"
+crunchy = { version = "0.2", default-features = true }
 
 [features]
 default = ["std", "common"]
-std = ["byteorder/std", "rustc-hex/std"]
+std = ["byteorder/std", "rustc-hex/std", "crunchy/std"]
 common = []
 
 [[example]]
