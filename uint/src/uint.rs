@@ -759,8 +759,6 @@ macro_rules! construct_uint {
 				($name(ret), carry > 0)
 			}
 
-			impl_std_for_uint_internals!($name, $n_words);
-
 			/// Converts from big endian representation bytes in memory.
 			pub fn from_big_endian(slice: &[u8]) -> Self {
 				assert!($n_words * 8 >= slice.len());
@@ -1195,26 +1193,6 @@ macro_rules! construct_uint {
 		// uints use 64 bit (8 byte) words
 		impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
 	);
-}
-
-#[cfg(feature="std")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_std_for_uint_internals {
-	($name: ident, $n_words: tt) => {
-		/// Convert to hex string.
-		#[deprecated(note = "Use LowerHex instead.")]
-		pub fn to_hex(&self) -> String {
-			format!("{:x}", self)
-		}
-	}
-}
-
-#[cfg(not(feature="std"))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_std_for_uint_internals {
-	($name: ident, $n_words: tt) => {}
 }
 
 #[cfg(feature="std")]
