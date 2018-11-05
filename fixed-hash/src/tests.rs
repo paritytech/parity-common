@@ -147,7 +147,7 @@ mod is_zero {
 	}
 }
 
-#[cfg(feature = "byteorder-support")]
+#[cfg(feature = "byteorder")]
 mod to_low_u64 {
 	use super::*;
 
@@ -199,7 +199,7 @@ mod to_low_u64 {
 	}
 }
 
-#[cfg(feature = "byteorder-support")]
+#[cfg(feature = "byteorder")]
 mod from_low_u64 {
 	use super::*;
 
@@ -247,7 +247,7 @@ mod from_low_u64 {
 	}
 }
 
-#[cfg(feature = "rand-support")]
+#[cfg(feature = "rand")]
 mod rand {
 	use super::*;
 	use rand::{SeedableRng, XorShiftRng};
@@ -277,7 +277,7 @@ mod rand {
 	}
 }
 
-#[cfg(feature = "rustc-hex-support")]
+#[cfg(feature = "rustc-hex")]
 mod from_str {
 	use super::*;
 
@@ -311,7 +311,7 @@ mod from_str {
 }
 
 #[cfg(all(
-	feature = "heapsize-support",
+	feature = "heapsize",
 	not(target_os = "unknown")
 ))]
 #[test]
@@ -368,7 +368,7 @@ fn from_h256_to_h160_lossy() {
 	assert_eq!(h160, expected);
 }
 
-#[cfg(all(feature = "std", feature = "byteorder-support"))]
+#[cfg(all(feature = "std", feature = "byteorder"))]
 #[test]
 fn display_and_debug() {
 	fn test_for(x: u64, hex: &'static str, display: &'static str) {

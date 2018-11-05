@@ -24,13 +24,7 @@ static_assertions = "0.2"
 libc = { version = "0.2", optional = true, default-features = false }
 
 [features]
-default = ["std", "libc", "rand-support", "rustc-hex-support", "byteorder-support"]
+default = ["std", "libc", "rand", "rustc-hex", "byteorder"]
 std = ["rustc-hex/std", "rand/std", "byteorder/std"]
-
-rustc-hex-support = ["rustc-hex"]
-rand-support = ["rand"]
-byteorder-support = ["byteorder"]
-heapsize-support = ["heapsize"]
-quickcheck-support = ["quickcheck"]
 
 api-dummy = [] # Feature used by docs.rs to display documentation of hash types

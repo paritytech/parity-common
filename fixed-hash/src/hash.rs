@@ -295,7 +295,7 @@ macro_rules! construct_fixed_hash {
 // Feature guarded macro definitions instead of feature guarded impl blocks
 // to work around the problems of introducing `byteorder` crate feature in
 // a user crate.
-#[cfg(not(feature = "byteorder-support"))]
+#[cfg(not(feature = "byteorder"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_byteorder_for_fixed_hash {
@@ -309,7 +309,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 // Feature guarded macro definitions instead of feature guarded impl blocks
 // to work around the problems of introducing `byteorder` crate feature in
 // a user crate.
-#[cfg(feature = "byteorder-support")]
+#[cfg(feature = "byteorder")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_byteorder_for_fixed_hash {
@@ -428,7 +428,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 // Feature guarded macro definitions instead of feature guarded impl blocks
 // to work around the problems of introducing `rand` crate feature in
 // a user crate.
-#[cfg(not(feature = "rand-support"))]
+#[cfg(not(feature = "rand"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_rand_for_fixed_hash {
@@ -442,7 +442,7 @@ macro_rules! impl_rand_for_fixed_hash {
 // Feature guarded macro definitions instead of feature guarded impl blocks
 // to work around the problems of introducing `rand` crate feature in
 // a user crate.
-#[cfg(feature = "rand-support")]
+#[cfg(feature = "rand")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_rand_for_fixed_hash {
@@ -579,7 +579,7 @@ macro_rules! impl_libc_for_fixed_hash {
 // Feature guarded macro definitions instead of feature guarded impl blocks
 // to work around the problems of introducing `rustc-hex` crate feature in
 // a user crate.
-#[cfg(not(feature = "rustc-hex-support"))]
+#[cfg(not(feature = "rustc-hex"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_rustc_hex_for_fixed_hash {
@@ -593,7 +593,7 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 // Feature guarded macro definitions instead of feature guarded impl blocks
 // to work around the problems of introducing `rustc-hex` crate feature in
 // a user crate.
-#[cfg(feature = "rustc-hex-support")]
+#[cfg(feature = "rustc-hex")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_rustc_hex_for_fixed_hash {
@@ -633,7 +633,7 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 // to work around the problems of introducing `heapsize` crate feature in
 // a user crate.
 #[cfg(not(
-	all(feature = "heapsize-support", not(target_os = "unknown"))
+	all(feature = "heapsize", not(target_os = "unknown"))
 ))]
 #[macro_export]
 #[doc(hidden)]
@@ -649,7 +649,7 @@ macro_rules! impl_heapsize_for_fixed_hash {
 // to work around the problems of introducing `heapsize` crate feature in
 // a user crate.
 #[cfg(
-	all(feature = "heapsize-support", not(target_os = "unknown"))
+	all(feature = "heapsize", not(target_os = "unknown"))
 )]
 #[macro_export]
 #[doc(hidden)]
@@ -671,7 +671,7 @@ macro_rules! impl_heapsize_for_fixed_hash {
 // Feature guarded macro definitions instead of feature guarded impl blocks
 // to work around the problems of introducing `quickcheck` crate feature in
 // a user crate.
-#[cfg(not(feature = "quickcheck-support"))]
+#[cfg(not(feature = "quickcheck"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_for_fixed_hash {
@@ -685,7 +685,7 @@ macro_rules! impl_quickcheck_for_fixed_hash {
 // Feature guarded macro definitions instead of feature guarded impl blocks
 // to work around the problems of introducing `quickcheck` crate feature in
 // a user crate.
-#[cfg(feature = "quickcheck-support")]
+#[cfg(feature = "quickcheck")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_for_fixed_hash {

@@ -26,7 +26,7 @@ pub extern crate static_assertions;
 #[doc(hidden)]
 pub use static_assertions::const_assert;
 
-#[cfg(feature = "byteorder-support")]
+#[cfg(feature = "byteorder")]
 #[doc(hidden)]
 pub extern crate byteorder;
 
@@ -34,19 +34,19 @@ pub extern crate byteorder;
 #[doc(hidden)]
 pub mod libc {}
 
-#[cfg(feature = "heapsize-support")]
+#[cfg(feature = "heapsize")]
 #[doc(hidden)]
 pub extern crate heapsize;
 
-#[cfg(feature = "rustc-hex-support")]
+#[cfg(feature = "rustc-hex")]
 #[doc(hidden)]
 pub extern crate rustc_hex;
 
-#[cfg(feature = "rand-support")]
+#[cfg(feature = "rand")]
 #[doc(hidden)]
 pub extern crate rand;
 
-#[cfg(feature = "quickcheck-support")]
+#[cfg(feature = "quickcheck")]
 #[doc(hidden)]
 pub extern crate quickcheck;
 
