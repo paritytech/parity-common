@@ -292,6 +292,7 @@ macro_rules! construct_fixed_hash {
 		{
 			type Output = I::Output;
 
+			#[inline]
 			fn index(&self, index: I) -> &I::Output {
 				&self.as_bytes()[index]
 			}
@@ -301,6 +302,7 @@ macro_rules! construct_fixed_hash {
 		where
 			I: $crate::core_::slice::SliceIndex<[u8], Output = [u8]>
 		{
+			#[inline]
 			fn index_mut(&mut self, index: I) -> &mut I::Output {
 				&mut self.as_bytes_mut()[index]
 			}
@@ -750,7 +752,6 @@ macro_rules! impl_ops_for_hash {
 		$ops_tok:tt,
 		$ops_assign_tok:tt
 	) => {
-
 		impl<'r> $crate::core_::ops::$ops_assign_trait_name<&'r $impl_for> for $impl_for {
 			fn $ops_assign_fn_name(&mut self, rhs: &'r $impl_for) {
 				for (lhs, rhs) in self.as_bytes_mut().iter_mut().zip(rhs.as_bytes()) {
@@ -760,6 +761,7 @@ macro_rules! impl_ops_for_hash {
 		}
 
 		impl $crate::core_::ops::$ops_assign_trait_name<$impl_for> for $impl_for {
+			#[inline]
 			fn $ops_assign_fn_name(&mut self, rhs: $impl_for) {
 				*self $ops_assign_tok &rhs;
 			}
@@ -778,11 +780,11 @@ macro_rules! impl_ops_for_hash {
 		impl $crate::core_::ops::$ops_trait_name<$impl_for> for $impl_for {
 			type Output = $impl_for;
 
+			#[inline]
 			fn $ops_fn_name(self, rhs: Self) -> Self::Output {
 				&self $ops_tok &rhs
 			}
 		}
-
 	};
 }
 
