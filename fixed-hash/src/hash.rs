@@ -54,7 +54,7 @@ macro_rules! construct_fixed_hash {
 		$visibility struct $name ([u8; $n_bytes]);
 
 		impl From<[u8; $n_bytes]> for $name {
-			/// Constructs a hash type from the given bytes.
+			/// Constructs a hash type from the given bytes array of fixed length.
 			///
 			/// # Note
 			///
@@ -62,6 +62,32 @@ macro_rules! construct_fixed_hash {
 			#[inline]
 			fn from(bytes: [u8; $n_bytes]) -> Self {
 				$name(bytes)
+			}
+		}
+
+		impl<'a> From<&'a [u8; $n_bytes]> for $name {
+			/// Constructs a hash type from the given reference
+			/// to the bytes array of fixed length. 
+			///
+			/// # Note
+			///
+			/// The given bytes are interpreted in big endian order.
+			#[inline]
+			fn from(bytes: &'a [u8; $n_bytes]) -> Self {
+				$name(*bytes)
+			}
+		}
+
+		impl<'a> From<&'a mut [u8; $n_bytes]> for $name {
+			/// Constructs a hash type from the given reference
+			/// to the mutable bytes array of fixed length. 
+			///
+			/// # Note
+			///
+			/// The given bytes are interpreted in big endian order.
+			#[inline]
+			fn from(bytes: &'a mut [u8; $n_bytes]) -> Self {
+				$name(*bytes)
 			}
 		}
 
