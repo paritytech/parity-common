@@ -18,5 +18,4 @@ members = [
 	"trie-standardmap",
 	"triehash",
 	"uint",
-  "parity-wasm-compat"
 ]
