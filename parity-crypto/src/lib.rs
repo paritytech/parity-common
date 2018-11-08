@@ -32,8 +32,17 @@ extern crate digest as rdigest;
 extern crate aes as raes;
 extern crate aes_ctr;
 extern crate block_modes;
+extern crate mem;
 
+/// reexport clear_on_drop crate
+pub mod clear_on_drop {
+  pub use mem::clear_on_drop::*;
+}
 
+/// reexport `Memzero` from `mem`
+pub use mem::Memzero;
+
+pub mod traits;
 pub mod aes;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod aes_gcm;
@@ -55,6 +64,7 @@ pub mod secp256k1;
 
 #[cfg(all(not(target_arch = "wasm32"), test))]
 pub mod secp256k1_alt;
+
 #[path = "secp256k1_alt.rs"]
 #[cfg(target_arch = "wasm32")]
 pub mod secp256k1;

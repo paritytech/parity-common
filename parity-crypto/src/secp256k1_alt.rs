@@ -20,7 +20,8 @@ extern crate libsecp256k1 as secp256k1;
 extern crate rand;
 
 use self::rand::Rng;
-
+use clear_on_drop::clear::Clear;
+use clear_on_drop::ClearOnDrop;
 
 pub use self::secp256k1::{
 	Error,
@@ -137,24 +138,40 @@ pub fn recover(signature: &[u8], message: &[u8]) -> Result<[u8;64], Error> {
 
 	Ok(res)
 }
+
+#[deprecated]
 /// random secret key for rand 0.5
 pub fn random_sec<R: Rng>(rng: &mut R) -> SecretKey {
 	loop {
 		let mut ret = [0u8; 32];
 		rng.fill_bytes(&mut ret);
 
-		match SecretKey::parse(&ret) {
+		match secret_from_slice(&ret) {
 			Ok(key) => return key,
 			Err(_) => (),
 		}
 	}
 }
 
+
+#[deprecated]
+/// deprecated, we rather not expose Rng trait, use `keypair_from_slice` instead.
+/// The intent is to avoid depending on `Rng` trait.
 pub fn generate_keypair(r: &mut impl Rng) -> (SecretKey, PublicKey) {
 	let secret_key = random_sec(r);
 	let public_key = PublicKey::from_secret_key(&secret_key);
 	(secret_key, public_key)
 }
+
+/// create a key pair from byte value of the secret key, the calling function is responsible for
+/// erasing the input of memory.
+pub fn keypair_from_slice(sk_bytes: &[u8]) -> Result<(SecretKey, PublicKey), Error> {
+	assert!(sk_bytes.len() == SECRET_KEY_SIZE);
+	let secret_key = secret_from_slice(sk_bytes)?;
+	let public_key = PublicKey::from_secret_key(&secret_key);
+	Ok((secret_key, public_key))
+}
+
 
 /// warning this returns 64 byte vec (we skip the first byte of 65 byte more standard
 /// representation)
@@ -177,14 +194,19 @@ pub fn public_to_compressed_vec(p: &PublicKey) -> impl AsRef<[u8]> {
 
 /// only for test (or make the result erasable)
 pub fn secret_to_vec(p: &SecretKey) -> impl AsRef<[u8]> {
-	p.serialize()
+  let mut b = p.serialize();
+	let res = ClearOnDrop::new(b.to_vec());
+  b.clear();
+  res
 }
 
 /// 32 sized slice
 pub fn secret_from_slice(secret: &[u8]) -> Result<SecretKey, Error> {
-	let mut buf = [0;32];
+	let mut buf = [0u8;32];
 	buf.copy_from_slice(&secret[..]); // panic on incorrect secret size
-	SecretKey::parse(&buf)
+	let res = SecretKey::parse(&buf)?;
+	buf.clear();
+	Ok(res)
 }
 
 pub fn shared_secret(publ: &PublicKey, sec: &SecretKey) -> Result<impl AsRef<[u8]>, Error> {
@@ -215,6 +237,7 @@ fn aff_to_public(aff_pub: &mut Affine) -> Result<PublicKey, Error> {
 	PublicKey::parse(&buff)
 
 }
+
 pub fn public_add(pub_key: PublicKey, other_public: &PublicKey) -> Result<PublicKey, Error> {
 	let mut aff_pub: Affine = pub_key.into();
 	let mut aff_pub_j = Jacobian::default();

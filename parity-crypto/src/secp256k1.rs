@@ -21,8 +21,10 @@
 
 extern crate secp256k1;
 extern crate rand;
+use clear_on_drop::ClearOnDrop;
 
 use self::rand::Rng;
+use super::traits::asym::*;
 
 // reexports
 pub use self::secp256k1::{
@@ -52,18 +54,22 @@ pub fn minus_one_key() -> &'static SecretKey {
 	&MINUS_ONE_KEY
 }
 
+pub const SIGN_SIZE: usize = 65;
 
 
-pub fn sign(secret: &[u8], message: &[u8]) -> Result<[u8;65], Error> {
+/// Warning we use 64 bit pubsize (first bytes of 65 bit representation is 4).
+pub const PUB_SIZE: usize = 64;
+
+pub fn sign(secret: &[u8], message: &[u8]) -> Result<[u8;SIGN_SIZE], Error> {
 	let context = &SECP256K1;
 	let sec = SecretKey::from_slice(context, &secret[..])?;
 	let s = context.sign_recoverable(&Message::from_slice(message)?, &sec)?;
 	let (rec_id, data) = s.serialize_compact(context);
-	let mut data_arr = [0; 65];
+	let mut data_arr = [0; SIGN_SIZE];
 
 	// no need to check if s is low, it always is
-	data_arr[0..64].copy_from_slice(&data[0..64]);
-	data_arr[64] = rec_id.to_i32() as u8;
+	data_arr[0..PUB_SIZE].copy_from_slice(&data[0..PUB_SIZE]);
+	data_arr[PUB_SIZE] = rec_id.to_i32() as u8;
 	Ok(data_arr)
 }
 
@@ -71,12 +77,12 @@ pub fn sign(secret: &[u8], message: &[u8]) -> Result<[u8;65], Error> {
 /// big doc about that!!
 pub fn verify_public(public: &[u8], signature: &[u8], message: &[u8]) -> Result<bool, Error> {
 	let context = &SECP256K1;
-	let rsig = RecoverableSignature::from_compact(context, &signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
+	let rsig = RecoverableSignature::from_compact(context, &signature[0..PUB_SIZE], RecoveryId::from_i32(signature[PUB_SIZE] as i32)?)?;
 	let sig = rsig.to_standard(context);
 
-	let pdata: [u8; 65] = {
-		let mut temp = [4u8; 65];
-		temp[1..65].copy_from_slice(&*public);
+	let pdata: [u8; SIGN_SIZE] = {
+		let mut temp = [4u8; SIGN_SIZE];
+		temp[1..SIGN_SIZE].copy_from_slice(&*public);
 		temp
 	};
 
@@ -88,31 +94,42 @@ pub fn verify_public(public: &[u8], signature: &[u8], message: &[u8]) -> Result<
 	}
 }
 
-pub fn recover(signature: &[u8], message: &[u8]) -> Result<[u8;64], Error> {
+pub fn recover(signature: &[u8], message: &[u8]) -> Result<[u8;PUB_SIZE], Error> {
 	let context = &SECP256K1;
-	let rsig = RecoverableSignature::from_compact(context, &signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
+	let rsig = RecoverableSignature::from_compact(context, &signature[0..PUB_SIZE], RecoveryId::from_i32(signature[PUB_SIZE] as i32)?)?;
 	let pubkey = context.recover(&Message::from_slice(message)?, &rsig)?;
 	let serialized = pubkey.serialize_vec(context, false);
 
-	let mut res = [0;64];
-	res.copy_from_slice(&serialized[1..65]);
+	let mut res = [0;PUB_SIZE];
+	res.copy_from_slice(&serialized[1..PUB_SIZE + 1]);
 	Ok(res)
 }
 
 
+#[deprecated]
+/// deprecated, we rather not expose Rng trait, use `keypair_from_slice` instead.
+/// The intent is to avoid depending on `Rng` trait.
 pub fn generate_keypair(r: &mut impl Rng) -> (SecretKey, PublicKey) {
 		SECP256K1.generate_keypair(r)
 			.expect("context always created with full capabilities; qed")
 }
 
+/// create a key pair from byte value of the secret key, the calling function is responsible for
+/// erasing the input of memory.
+pub fn keypair_from_slice(sk_bytes: &[u8]) -> Result<(SecretKey, PublicKey), Error> {
+	assert!(sk_bytes.len() == SECRET_KEY_SIZE);
+	let sk = SecretKey::from_slice(&SECP256K1, sk_bytes)?;
+	let pk = PublicKey::from_secret_key(&SECP256K1, &sk)?;
+	Ok((sk, pk))
+}
+
 // TODO change it to slicable u8 return type
 // Plus add comment explaining first bit removal
-/// warning this returns 64 byte vec (we skip the first byte of 65 byte more standard
+/// warning this returns PUB_SIZE byte vec (we skip the first byte of SIGN_SIZE byte more standard
 /// representation)
 pub fn public_to_vec(p: &PublicKey) -> impl AsRef<[u8]> {
 	let mut a_vec = p.serialize_vec(&SECP256K1, false);
-	// &a_vec[1..65]
-	let _ = a_vec.drain(65..);
+	let _ = a_vec.drain(SIGN_SIZE..);
 	a_vec.remove(0);
 	a_vec
 }
@@ -123,7 +140,7 @@ pub fn public_is_valid(p: &PublicKey) -> bool {
 
 /// only for test (or make the result erasable)
 pub fn secret_to_vec(p: &SecretKey) -> impl AsRef<[u8]> {
-	p[..].to_vec()
+	ClearOnDrop::new(p[..].to_vec())
 }
 
 pub fn public_to_compressed_vec(p: &PublicKey) -> impl AsRef<[u8]> {
@@ -150,8 +167,8 @@ pub fn shared_secret(publ: &PublicKey, sec: &SecretKey) -> Result<impl AsRef<[u8
 /// using a shortened 64bit public key as input
 pub fn public_from_slice(public_sec_raw: &[u8]) -> Result<PublicKey, Error> {
 	let pdata = {
-		let mut temp = [4u8; 65];
-		(&mut temp[1..65]).copy_from_slice(&public_sec_raw[0..64]);
+		let mut temp = [4u8; PUB_SIZE + 1];
+		(&mut temp[1..PUB_SIZE + 1]).copy_from_slice(&public_sec_raw[0..PUB_SIZE]);
 		temp
 	};
 
@@ -188,7 +205,12 @@ pub fn secret_inv(mut sec_key: SecretKey) -> Result<SecretKey, Error> {
 }
 
 
+struct Secp256k1;
 
+impl AsymScheme for Secp256k1 {
+  type PublicKey = PublicKey;
+  type SecretKey = SecretKey;
+}
 
 #[cfg(test)]
 mod tests {
@@ -198,7 +220,7 @@ mod tests {
 		secret_from_slice,
 		verify_public,
 		recover,
-		generate_keypair,
+		keypair_from_slice,
 		public_to_vec,
 		secret_to_vec,
 		public_add,
@@ -208,8 +230,10 @@ mod tests {
 		secret_mul,
 		secret_inv,
 		one_key,
+		SECRET_KEY_SIZE,
 	};
 	use self::rand::OsRng;
+	use self::rand::Rng;
 
 	#[test]
 	fn sign_val() {
@@ -222,7 +246,9 @@ mod tests {
 	#[test]
 	fn sign_and_recover_public() {
 		let mut osrng = OsRng::new().expect("test");
-		let (secret, public) = generate_keypair(&mut osrng);
+		let mut sec_buf = vec![0; SECRET_KEY_SIZE];
+		osrng.fill_bytes(&mut sec_buf[..]);
+		let (secret, public) = keypair_from_slice(&mut sec_buf).unwrap();
 		let message = vec![2;32];
 		let signature = sign(secret_to_vec(&secret).as_ref(), &message).unwrap();
 		assert_eq!(&public_to_vec(&public).as_ref()[..], &recover(&signature, &message).unwrap()[..]);
@@ -231,7 +257,9 @@ mod tests {
 	#[test]
 	fn sign_and_verify_public() {
 		let mut osrng = OsRng::new().expect("test");
-		let (secret, public) = generate_keypair(&mut osrng);
+		let mut sec_buf = vec![0; SECRET_KEY_SIZE];
+		osrng.fill_bytes(&mut sec_buf[..]);
+		let (secret, public) = keypair_from_slice(&mut sec_buf).unwrap();
 		let message = vec![0;32];
 		let signature = sign(secret_to_vec(&secret).as_ref(), &message).unwrap();
 		assert!(verify_public(&public_to_vec(&public).as_ref()[..], &signature, &message).unwrap());
@@ -263,8 +291,11 @@ mod tests {
 	#[test]
 	fn public_addition_is_commutative() {
 		let mut osrng = OsRng::new().expect("test");
-		let (_, public1) = generate_keypair(&mut osrng);
-		let (_, public2) = generate_keypair(&mut osrng);
+		let mut sec_buf = vec![0; SECRET_KEY_SIZE];
+		osrng.fill_bytes(&mut sec_buf[..]);
+		let (_, public1) = keypair_from_slice(&mut sec_buf).unwrap();
+		osrng.fill_bytes(&mut sec_buf[..]);
+		let (_, public2) = keypair_from_slice(&mut sec_buf).unwrap();
 
 		let left = public_add(public1.clone(), &public2).unwrap();
 
@@ -276,8 +307,11 @@ mod tests {
 	#[test]
 	fn public_addition_is_reversible_with_subtraction() {
 		let mut osrng = OsRng::new().expect("test");
-		let (_, public1) = generate_keypair(&mut osrng);
-		let (_, public2) = generate_keypair(&mut osrng);
+		let mut sec_buf = vec![0; SECRET_KEY_SIZE];
+		osrng.fill_bytes(&mut sec_buf[..]);
+		let (_, public1) = keypair_from_slice(&mut sec_buf).unwrap();
+		osrng.fill_bytes(&mut sec_buf[..]);
+		let (_, public2) = keypair_from_slice(&mut sec_buf).unwrap();
 
 		let sum = public_add(public1.clone(), &public2).unwrap();
 		let op = public_mul(public2.clone(), minus_one_key()).unwrap();
@@ -290,7 +324,10 @@ mod tests {
 	#[test]
 	fn multiplicating_secret_inversion_with_secret_gives_one() {
 		let mut osrng = OsRng::new().expect("test");
-		let (secret, _) = generate_keypair(&mut osrng);
+		let mut sec_buf = vec![0; SECRET_KEY_SIZE];
+		osrng.fill_bytes(&mut sec_buf[..]);
+		let (secret, _) = keypair_from_slice(&mut sec_buf).unwrap();
+
 		let inversion = secret_inv(secret.clone()).unwrap();
 		let inversion = secret_mul(inversion, &secret).unwrap();
 		assert_eq!(inversion, *one_key());
@@ -299,11 +336,15 @@ mod tests {
 	#[test]
 	fn secret_inversion_is_reversible_with_inversion() {
 		let mut osrng = OsRng::new().expect("test");
-		let (secret, _) = generate_keypair(&mut osrng);
+		let mut sec_buf = vec![0; SECRET_KEY_SIZE];
+		osrng.fill_bytes(&mut sec_buf[..]);
+		let (secret, _) = keypair_from_slice(&mut sec_buf).unwrap();
 		let inversion = secret_inv(secret.clone()).unwrap();
 		let inversion = secret_inv(inversion).unwrap();
 		assert_eq!(inversion, secret);
 	}
 
 }
+
+
 

@@ -1,0 +1,11 @@
+[package]
+name = "mem"
+version = "0.1.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+
+[dependencies]
+clear_on_drop = "0.2.3"
+
+[features]
+# when activated mem is removed through volatile primitive instead of clear_on_drop crate
+volatile-erase = []
