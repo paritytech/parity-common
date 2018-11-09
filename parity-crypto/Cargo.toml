@@ -23,6 +23,7 @@ mem = { path = "../mem" }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ring = "0.13"
 eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }
+arrayvec = "0.4" # needed for eth-secp256k1
 rand = "0.4"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

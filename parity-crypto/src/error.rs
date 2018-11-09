@@ -12,7 +12,7 @@
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// along with Parity.	If not, see <http://www.gnu.org/licenses/>.
 
 #[cfg(not(target_arch = "wasm32"))]
 use ring;
@@ -20,8 +20,7 @@ use rscrypt;
 use block_modes;
 use raes;
 use aes_ctr;
-
-
+use std::error::Error as StdError;
 
 quick_error! {
 	#[derive(Debug)]
@@ -34,7 +33,20 @@ quick_error! {
 			cause(e)
 			from()
 		}
+		AsymShort(det: &'static str) {
+      description(det)
+		}
+		AsymFull(e: Box<dyn StdError + Send>) {
+      cause(&**e)
+      description(e.description())
+    }
 	}
+}
+
+impl Into<std::io::Error> for Error {
+  fn into(self) -> std::io::Error {
+    std::io::Error::new(std::io::ErrorKind::Other, format!("Crypto error: {}",self))
+  }
 }
 
 quick_error! {
@@ -162,3 +174,5 @@ impl From<aes_ctr::stream_cipher::LoopError> for SymmError {
 		SymmError(PrivSymmErr::KeyStream(e))
 	}
 }
+
+
