@@ -22,6 +22,7 @@ extern crate rand;
 use self::rand::Rng;
 use clear_on_drop::clear::Clear;
 use clear_on_drop::ClearOnDrop;
+use ::traits::asym::{PublicKey as PublicKeyTrait};
 
 pub use self::secp256k1::{
 	Error,
@@ -308,7 +309,29 @@ pub fn secret_inv(sec_key: SecretKey) -> Result<SecretKey, Error> {
 	SecretKey::parse(&res.0.b32())
 }
 
+/*
+impl PublicKeyTrait for PublicKey {
+	type VecRepr = Vec<u8>;
 
+	fn to_vec(&self) -> Self::VecRepr {
+    unimplemented!()
+  }
+
+	/// Should move to another trait.
+	fn to_compressed_vec(p: &Self) -> Self::VecRepr {
+    unimplemented!()
+  }
+
+	fn is_valid(&self) -> bool {
+    unimplemented!()
+  }
+	
+  fn verify(&self, signature: &[u8], message: &[u8]) -> Result<bool, Error> {
+    unimplemented!()
+  }
+
+}
+*/
 
 
 
