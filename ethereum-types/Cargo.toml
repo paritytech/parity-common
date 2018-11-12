@@ -7,7 +7,7 @@ homepage = "https://github.com/paritytech/primitives"
 description = "Ethereum types"
 
 [dependencies]
-crunchy = "0.1"
+crunchy = { version = "0.2.1", default-features = false }
 ethbloom = { path = "../ethbloom", version = "0.5.0", default-features = false }
 ethereum-types-serialize = { version = "0.2.1", path = "../serialize", optional = true }
 fixed-hash = { version = "0.3.0-beta.2", default_features = false }
@@ -19,6 +19,6 @@ serde_json = "1.0"
 
 [features]
 default = ["std", "heapsize", "serialize", "fixed-hash/byteorder", "fixed-hash/rustc-hex"]
-std = ["uint/std", "fixed-hash/std", "ethbloom/std"]
+std = ["uint/std", "fixed-hash/std", "ethbloom/std", "crunchy/std"]
 heapsize = ["uint/heapsize", "fixed-hash/heapsize", "ethbloom/heapsize"]
 serialize = ["std", "ethereum-types-serialize", "serde", "ethbloom/serialize"]
