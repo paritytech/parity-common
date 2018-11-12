@@ -82,24 +82,6 @@ impl_uint_conversions!(H128, U128);
 impl_uint_conversions!(H256, U256);
 impl_uint_conversions!(H512, U512);
 
-#[deprecated]
-impl From<H256> for H160 {
-	fn from(value: H256) -> H160 {
-		let mut ret = H160::zero();
-		ret.0.copy_from_slice(&value[12..32]);
-		ret
-	}
-}
-
-#[deprecated]
-impl From<H256> for H64 {
-	fn from(value: H256) -> H64 {
-		let mut ret = H64::zero();
-		ret.0.copy_from_slice(&value[20..28]);
-		ret
-	}
-}
-
 impl From<H160> for H256 {
 	fn from(value: H160) -> H256 {
 		let mut ret = H256::zero();
