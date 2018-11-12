@@ -17,7 +17,7 @@ pub extern crate core as core_;
 #[doc(hidden)]
 pub extern crate libc;
 
-#[macro_use]
+#[macro_use(const_assert)]
 #[doc(hidden)]
 pub extern crate static_assertions;
 
