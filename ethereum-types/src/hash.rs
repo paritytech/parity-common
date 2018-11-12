@@ -1,14 +1,14 @@
 use {U64, U128, U256, U512};
 
-#[cfg(feature="serialize")]
+#[cfg(feature = "serialize")]
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
-#[cfg(feature="serialize")]
+#[cfg(feature = "serialize")]
 use ethereum_types_serialize;
 
 macro_rules! impl_serde {
 	($name: ident, $len: expr) => {
-		#[cfg(feature="serialize")]
+		#[cfg(feature = "serialize")]
 		impl Serialize for $name {
 			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
 				let mut slice = [0u8; 2 + 2 * $len];
@@ -16,7 +16,7 @@ macro_rules! impl_serde {
 			}
 		}
 
-		#[cfg(feature="serialize")]
+		#[cfg(feature = "serialize")]
 		impl<'de> Deserialize<'de> for $name {
 			fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
 				let mut bytes = [0u8; $len];
