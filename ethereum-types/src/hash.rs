@@ -133,7 +133,6 @@ mod tests {
 	use super::{H160, H256};
 	use serde_json as ser;
 
-	// #[cfg(feature = "fixed-hash/byteorder-support")]
 	#[test]
 	fn test_serialize_h160() {
 		let tests = vec![
@@ -152,7 +151,6 @@ mod tests {
 		}
 	}
 
-	#[cfg(feature = "byteorder-support")]
 	#[test]
 	fn test_serialize_h256() {
 		let tests = vec![
