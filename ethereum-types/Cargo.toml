@@ -20,5 +20,5 @@ serde_json = "1.0"
 [features]
 default = ["std", "heapsizeof", "serialize", "fixed-hash/byteorder", "fixed-hash/rustc-hex", "uint/common"]
 std = ["uint/std", "fixed-hash/std", "ethbloom/std"]
-heapsizeof = ["uint/heapsize", "fixed-hash/heapsize", "ethbloom/heapsizeof"]
+heapsize = ["uint/heapsize", "fixed-hash/heapsize", "ethbloom/heapsize"]
 serialize = ["std", "ethereum-types-serialize", "serde", "ethbloom/serialize"]
