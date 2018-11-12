@@ -25,14 +25,6 @@ pub use uint::{U64, U128, U256, U512};
 pub use hash::{H32, H64, H128, H160, H256, H264, H512, H520};
 pub use ethbloom::{Bloom, BloomRef, Input as BloomInput};
 
-/// Cuts away `"0x"` prefix on the given `input` if existing and returns the result.
-pub fn clean_0x(input: &str) -> &str {
-	if input.starts_with("0x") {
-		return &input[2..]
-	}
-	input
-}
-
 pub type Address = H160;
 pub type Secret = H256;
 pub type Public = H512;
