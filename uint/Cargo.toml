@@ -4,30 +4,25 @@ homepage = "http://parity.io"
 repository = "https://github.com/paritytech/parity-common"
 license = "MIT/Apache-2.0"
 name = "uint"
-version = "0.4.1"
+version = "0.5.0"
 authors = ["Parity Technologies <admin@parity.io>"]
+readme = "README.md"
 
 [dependencies]
 byteorder = { version = "1", default-features = false }
 heapsize = { version = "0.4.2", optional = true }
 rustc-hex = { version = "2.0", default-features = false }
 quickcheck = { version = "0.6", optional = true }
-crunchy = "0.1"
-
-[dev-dependencies]
-quickcheck = "0.6"
-rustc-hex = "2.0"
+crunchy = { version = "0.2", default-features = true }
 
 [features]
-std = ["byteorder/std", "rustc-hex/std"]
-heapsizeof = ["heapsize"]
-impl_quickcheck_arbitrary = ["quickcheck"]
+default = ["std", "common"]
+std = ["byteorder/std", "rustc-hex/std", "crunchy/std"]
+common = []
 
 [[example]]
 name = "modular"
-required-features = ["std"]
 
 [[test]]
 name = "uint_tests"
-required-features = ["std"]
-
+required-features = ["std", "common"]

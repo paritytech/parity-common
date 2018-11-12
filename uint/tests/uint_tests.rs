@@ -2,11 +2,13 @@ extern crate core;
 
 #[macro_use]
 extern crate uint;
-#[macro_use]
-extern crate crunchy;
-#[cfg(feature = "impl_quickcheck_arbitrary")]
+
+#[cfg(feature = "quickcheck")]
 #[macro_use]
 extern crate quickcheck;
+
+#[cfg_attr(all(test, feature = "quickcheck"), macro_use(unroll))]
+extern crate crunchy;
 
 use core::u64::MAX;
 use core::str::FromStr;
@@ -312,16 +314,6 @@ fn uint256_mul32() {
 	assert_eq!(U256::from(10u64) * 2u32, U256::from(20u64));
 	assert_eq!(U256::from(10u64) * 5u32, U256::from(50u64));
 	assert_eq!(U256::from(1000u64) * 50u32, U256::from(50000u64));
-}
-
-#[test]
-#[allow(deprecated)]
-fn uint256_mul32_old() {
-	assert_eq!(U256::from(0u64).mul_u32(2), U256::from(0u64));
-	assert_eq!(U256::from(1u64).mul_u32(2), U256::from(2u64));
-	assert_eq!(U256::from(10u64).mul_u32(2), U256::from(20u64));
-	assert_eq!(U256::from(10u64).mul_u32(5), U256::from(50u64));
-	assert_eq!(U256::from(1000u64).mul_u32(50), U256::from(50000u64));
 }
 
 #[test]
@@ -1029,7 +1021,7 @@ fn trailing_zeros() {
 	assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 256);
 }
 
-#[cfg(feature="impl_quickcheck_arbitrary")]
+#[cfg(feature="quickcheck")]
 pub mod laws {
 	macro_rules! uint_laws {
 		($mod_name:ident, $uint_ty:ident) => {
