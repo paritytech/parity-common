@@ -27,12 +27,10 @@ macro_rules! impl_serde {
 	}
 }
 
-construct_uint!(U64, 1);
 construct_uint!(U128, 2);
 construct_uint!(U256, 4);
 construct_uint!(U512, 8);
 
-impl_serde!(U64, 1);
 impl_serde!(U128, 2);
 impl_serde!(U256, 4);
 impl_serde!(U512, 8);
