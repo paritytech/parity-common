@@ -1,6 +1,6 @@
 [package]
 name = "ethbloom"
-version = "0.5.1"
+version = "0.6.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "Ethereum bloom filter"
 license = "MIT"
