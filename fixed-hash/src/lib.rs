@@ -18,6 +18,9 @@ pub extern crate core as core_;
 pub extern crate libc;
 
 #[macro_use(const_assert)]
+#[allow(unused)] // This disables a warning for unused #[macro_use(..)]
+                 // which is incorrect since the compiler does not check
+                 // for all available configurations.
 #[doc(hidden)]
 pub extern crate static_assertions;
 
