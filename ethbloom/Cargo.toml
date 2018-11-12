@@ -23,5 +23,5 @@ hex-literal = "0.1.1"
 [features]
 default = ["std", "heapsizeof", "serialize", "fixed-hash/libc", "fixed-hash/rustc-hex"]
 std = ["fixed-hash/std"]
-heapsizeof = ["fixed-hash/heapsize"]
+heapsize = ["fixed-hash/heapsize"]
 serialize = ["std", "ethereum-types-serialize", "serde"]
