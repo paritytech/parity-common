@@ -1,4 +1,4 @@
-use {U64, U128, U256, U512};
+use crate::{U256, U512};
 
 #[cfg(feature = "serialize")]
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
@@ -59,26 +59,16 @@ macro_rules! impl_uint_conversions {
 	}
 }
 
-impl_serde!(H32, 4);
-impl_serde!(H64, 8);
-impl_serde!(H128, 16);
 impl_serde!(H160, 20);
 impl_serde!(H256, 32);
-impl_serde!(H264, 33);
 impl_serde!(H512, 64);
 impl_serde!(H520, 65);
 
-construct_fixed_hash!{ pub struct H32(4); }
-construct_fixed_hash!{ pub struct H64(8); }
-construct_fixed_hash!{ pub struct H128(16); }
 construct_fixed_hash!{ pub struct H160(20); }
 construct_fixed_hash!{ pub struct H256(32); }
-construct_fixed_hash!{ pub struct H264(33); }
 construct_fixed_hash!{ pub struct H512(64); }
 construct_fixed_hash!{ pub struct H520(65); }
 
-impl_uint_conversions!(H64, U64);
-impl_uint_conversions!(H128, U128);
 impl_uint_conversions!(H256, U256);
 impl_uint_conversions!(H512, U512);
 
