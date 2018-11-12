@@ -116,6 +116,18 @@ impl<'a> From<&'a H160> for H256 {
 	}
 }
 
+impl From<u64> for H160 {
+	fn from(val: u64) -> Self {
+		H160::from_low_u64_be(val)
+	}
+}
+
+impl From<u64> for H256 {
+	fn from(val: u64) -> Self {
+		H256::from_low_u64_be(val)
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::{H160, H256};
