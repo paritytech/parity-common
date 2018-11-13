@@ -51,6 +51,7 @@ lazy_static! {
 	static ref MINUS_ONE_KEY: SecretKey = SecretKey(MINUS_ONE_BYTES);
 	static ref ONE_KEY: SecretKey = SecretKey(ONE_BYTES);
 	static ref ZERO_KEY: SecretKey = SecretKey(ZERO_BYTES);
+	static ref NULL_PUB_K: PublicKey = PublicKey::unsafe_empty();
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -81,6 +82,9 @@ impl PublicKey {
 		self.1 = a_vec;
 	}
 
+	fn unsafe_empty() -> Self {
+		PublicKey(PublicKeyInner::new(), [0;72].into())
+	}
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -248,31 +252,31 @@ impl FiniteField for Secp256k1 {
 	fn generator_y() -> &'static[u8] { &GENERATOR_Y[..] }
 	fn curve_order() -> &'static[u8] { &CURVE_ORDER[..] }
 
-	fn public_mul(mut pub_key: Self::PublicKey, sec_key: &Self::SecretKey) -> Result<Self::PublicKey, Error> {
+	fn public_mul(pub_key: &mut Self::PublicKey, sec_key: &Self::SecretKey) -> Result<(), Error> {
 		pub_key.0.mul_assign(&SECP256K1, &sec_key.0)?;
 		pub_key.refresh();
-		Ok(pub_key)
+		Ok(())
 	}
 
-	fn public_add(mut pub_key: Self::PublicKey, other_public: &Self::PublicKey) -> Result<Self::PublicKey, Error> {
+	fn public_add(pub_key: &mut Self::PublicKey, other_public: &Self::PublicKey) -> Result<(), Error> {
 		pub_key.0.add_assign(&SECP256K1, &other_public.0)?;
 		pub_key.refresh();
-		Ok(pub_key)
+		Ok(())
 	}
 
-	fn secret_mul(mut sec_key: Self::SecretKey, other_secret: &Self::SecretKey) -> Result<Self::SecretKey, Error> {
+	fn secret_mul(sec_key: &mut Self::SecretKey, other_secret: &Self::SecretKey) -> Result<(), Error> {
 		sec_key.0.mul_assign(&SECP256K1, &other_secret.0)?;
-		Ok(sec_key)
+		Ok(())
 	}
 
-	fn secret_add(mut sec_key: Self::SecretKey, other_secret: &Self::SecretKey) -> Result<Self::SecretKey, Error> {
+	fn secret_add(sec_key: &mut Self::SecretKey, other_secret: &Self::SecretKey) -> Result<(), Error> {
 		sec_key.0.add_assign(&SECP256K1, &other_secret.0)?;
-		Ok(sec_key)
+		Ok(())
 	}
 
-	fn secret_inv(mut sec_key: Self::SecretKey) -> Result<Self::SecretKey, Error> {
+	fn secret_inv(sec_key: &mut Self::SecretKey) -> Result<(), Error> {
 		sec_key.0.inv_assign(&SECP256K1)?;
-		Ok(sec_key)
+		Ok(())
 	}
 
 	fn one_key() -> &'static Self::SecretKey {
@@ -348,22 +352,22 @@ mod tests {
 	fn public_addition() {
 		let pk1 = [126, 60, 36, 91, 73, 177, 194, 111, 11, 3, 99, 246, 204, 86, 122, 109, 85, 28, 43, 169, 243, 35, 76, 152, 90, 76, 241, 17, 108, 232, 215, 115, 15, 19, 23, 164, 151, 43, 28, 44, 59, 141, 167, 134, 112, 105, 251, 15, 193, 183, 224, 238, 154, 204, 230, 163, 216, 235, 112, 77, 239, 98, 135, 132];
 		let pk2 = [40, 127, 167, 223, 38, 53, 6, 223, 67, 83, 204, 60, 226, 227, 107, 231, 172, 34, 3, 187, 79, 112, 167, 0, 217, 118, 69, 218, 189, 208, 150, 190, 54, 186, 220, 95, 80, 220, 183, 202, 117, 160, 18, 84, 245, 181, 23, 32, 51, 73, 178, 173, 92, 118, 92, 122, 83, 49, 54, 195, 194, 16, 229, 39];
-		let pub1 = Secp256k1::public_from_slice(&pk1[..]).unwrap();
+		let mut pub1 = Secp256k1::public_from_slice(&pk1[..]).unwrap();
 		let pub2 = Secp256k1::public_from_slice(&pk2[..]).unwrap();
-		let res = Secp256k1::public_add(pub1, &pub2).unwrap();
+		Secp256k1::public_add(&mut pub1, &pub2).unwrap();
 
-		assert_eq!(&res.as_ref()[..], &[101, 166, 20, 152, 34, 76, 121, 113, 139, 80, 13, 92, 122, 96, 38, 194, 205, 149, 93, 19, 147, 132, 195, 173, 42, 86, 26, 221, 170, 127, 180, 168, 145, 21, 75, 45, 248, 90, 114, 118, 62, 196, 194, 143, 245, 204, 184, 16, 175, 202, 175, 228, 207, 112, 219, 94, 237, 75, 105, 186, 56, 102, 46, 147][..]);
+		assert_eq!(&pub1.as_ref()[..], &[101, 166, 20, 152, 34, 76, 121, 113, 139, 80, 13, 92, 122, 96, 38, 194, 205, 149, 93, 19, 147, 132, 195, 173, 42, 86, 26, 221, 170, 127, 180, 168, 145, 21, 75, 45, 248, 90, 114, 118, 62, 196, 194, 143, 245, 204, 184, 16, 175, 202, 175, 228, 207, 112, 219, 94, 237, 75, 105, 186, 56, 102, 46, 147][..]);
 	}
 
 	#[test]
 	fn public_multiplication() {
 		let pk = [126, 60, 36, 91, 73, 177, 194, 111, 11, 3, 99, 246, 204, 86, 122, 109, 85, 28, 43, 169, 243, 35, 76, 152, 90, 76, 241, 17, 108, 232, 215, 115, 15, 19, 23, 164, 151, 43, 28, 44, 59, 141, 167, 134, 112, 105, 251, 15, 193, 183, 224, 238, 154, 204, 230, 163, 216, 235, 112, 77, 239, 98, 135, 132];
 		let sk = [213, 68, 220, 102, 106, 158, 142, 136, 198, 84, 32, 178, 49, 72, 194, 143, 116, 165, 155, 122, 20, 120, 169, 29, 129, 128, 206, 190, 48, 122, 97, 52];
-		let pubk = Secp256k1::public_from_slice(&pk[..]).unwrap();
+		let mut pubk = Secp256k1::public_from_slice(&pk[..]).unwrap();
 		let sec = Secp256k1::secret_from_slice(&sk[..]).unwrap();
-		let res = Secp256k1::public_mul(pubk, &sec).unwrap();
+		Secp256k1::public_mul(&mut pubk, &sec).unwrap();
 
-		assert_eq!(&res.as_ref()[..], &[98, 132, 11, 170, 93, 231, 41, 185, 180, 151, 185, 130, 77, 251, 41, 169, 160, 84, 133, 19, 82, 190, 137, 82, 0, 214, 148, 120, 165, 184, 17, 21, 237, 184, 119, 174, 13, 77, 50, 251, 16, 17, 197, 74, 232, 55, 142, 220, 27, 152, 4, 52, 69, 14, 76, 8, 156, 82, 0, 193, 179, 65, 63, 106][..]);
+		assert_eq!(&pubk.as_ref()[..], &[98, 132, 11, 170, 93, 231, 41, 185, 180, 151, 185, 130, 77, 251, 41, 169, 160, 84, 133, 19, 82, 190, 137, 82, 0, 214, 148, 120, 165, 184, 17, 21, 237, 184, 119, 174, 13, 77, 50, 251, 16, 17, 197, 74, 232, 55, 142, 220, 27, 152, 4, 52, 69, 14, 76, 8, 156, 82, 0, 193, 179, 65, 63, 106][..]);
 	}
 
 
@@ -376,9 +380,11 @@ mod tests {
 		osrng.fill_bytes(&mut sec_buf[..]);
 		let (_, public2) = Secp256k1::keypair_from_slice(&mut sec_buf).unwrap();
 
-		let left = Secp256k1::public_add(public1.clone(), &public2).unwrap();
+		let mut left = public1.clone();
+		Secp256k1::public_add(&mut left, &public2).unwrap();
 
-		let right = Secp256k1::public_add(public2.clone(), &public1).unwrap();
+		let mut right = public2.clone();
+		Secp256k1::public_add(&mut right, &public1).unwrap();
 
 		assert_eq!(left, right);
 	}
@@ -392,9 +398,11 @@ mod tests {
 		osrng.fill_bytes(&mut sec_buf[..]);
 		let (_, public2) = Secp256k1::keypair_from_slice(&mut sec_buf).unwrap();
 
-		let sum = Secp256k1::public_add(public1.clone(), &public2).unwrap();
-		let op = Secp256k1::public_mul(public2.clone(), Secp256k1::minus_one_key()).unwrap();
-		let sum = Secp256k1::public_add(sum, &op).unwrap();
+		let mut sum = public1.clone();
+		Secp256k1::public_add(&mut sum, &public2).unwrap();
+		let mut op = public2.clone();
+		Secp256k1::public_mul(&mut op, Secp256k1::minus_one_key()).unwrap();
+		Secp256k1::public_add(&mut sum, &op).unwrap();
 
 		assert_eq!(sum, public1);
 	}
@@ -407,8 +415,9 @@ mod tests {
 		osrng.fill_bytes(&mut sec_buf[..]);
 		let (secret, _) = Secp256k1::keypair_from_slice(&mut sec_buf).unwrap();
 
-		let inversion = Secp256k1::secret_inv(secret.clone()).unwrap();
-		let inversion = Secp256k1::secret_mul(inversion, &secret).unwrap();
+		let mut inversion = secret.clone();
+		Secp256k1::secret_inv(&mut inversion).unwrap();
+		Secp256k1::secret_mul(&mut inversion, &secret).unwrap();
 		assert_eq!(inversion, *Secp256k1::one_key());
 	}
 
@@ -418,9 +427,20 @@ mod tests {
 		let mut sec_buf = vec![0; Secp256k1::SECRET_SIZE];
 		osrng.fill_bytes(&mut sec_buf[..]);
 		let (secret, _) = Secp256k1::keypair_from_slice(&mut sec_buf).unwrap();
-		let inversion = Secp256k1::secret_inv(secret.clone()).unwrap();
-		let inversion = Secp256k1::secret_inv(inversion).unwrap();
+		let mut inversion = secret.clone();
+		Secp256k1::secret_inv(&mut inversion).unwrap();
+		Secp256k1::secret_inv(&mut inversion).unwrap();
 		assert_eq!(inversion, secret);
 	}
 
+}
+
+/// Default implementation is only for parity-ethereum secret-store
+/// It would be good to remove it (there is a bit of refactoring).
+/// Therefore the constraint is not explicit.
+/// Please note that it is an invalid publickey.
+impl Default for PublicKey {
+	fn default() -> Self {
+		NULL_PUB_K.clone()
+	}
 }

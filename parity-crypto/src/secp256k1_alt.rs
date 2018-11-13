@@ -195,10 +195,10 @@ pub fn public_to_compressed_vec(p: &PublicKey) -> impl AsRef<[u8]> {
 
 /// only for test (or make the result erasable)
 pub fn secret_to_vec(p: &SecretKey) -> impl AsRef<[u8]> {
-  let mut b = p.serialize();
+	let mut b = p.serialize();
 	let res = ClearOnDrop::new(b.to_vec());
-  b.clear();
-  res
+	b.clear();
+	res
 }
 
 /// 32 sized slice
@@ -314,25 +314,31 @@ impl PublicKeyTrait for PublicKey {
 	type VecRepr = Vec<u8>;
 
 	fn to_vec(&self) -> Self::VecRepr {
-    unimplemented!()
-  }
+		unimplemented!()
+	}
 
 	/// Should move to another trait.
 	fn to_compressed_vec(p: &Self) -> Self::VecRepr {
-    unimplemented!()
-  }
+		unimplemented!()
+	}
 
 	fn is_valid(&self) -> bool {
-    unimplemented!()
-  }
+		unimplemented!()
+	}
 	
-  fn verify(&self, signature: &[u8], message: &[u8]) -> Result<bool, Error> {
-    unimplemented!()
-  }
+	fn verify(&self, signature: &[u8], message: &[u8]) -> Result<bool, Error> {
+		unimplemented!()
+	}
 
 }
 */
 
+//#[test] failing test will make it difficulte to use secret-store
+fn zeroed_pk() {
+	let mut val = [0;65];
+	val[0] = 4;
+	assert!(PublicKey::parse(&val).is_ok());
+}
 
 
 #[cfg(test)]
