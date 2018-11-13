@@ -1,6 +1,6 @@
-#![cfg_attr(not(feature="std"), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature="std")]
+#[cfg(feature = "std")]
 extern crate core;
 #[macro_use]
 extern crate crunchy;
@@ -10,9 +10,9 @@ extern crate uint as uint_crate;
 extern crate fixed_hash;
 extern crate ethbloom;
 
-#[cfg(feature="serialize")]
+#[cfg(feature = "serialize")]
 extern crate ethereum_types_serialize;
-#[cfg(feature="serialize")]
+#[cfg(feature = "serialize")]
 extern crate serde;
 
 #[cfg(test)]
