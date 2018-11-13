@@ -21,8 +21,8 @@ extern crate serde_json;
 mod hash;
 mod uint;
 
-pub use uint::{U128, U256, U512};
-pub use hash::{H160, H256, H512, H520};
+pub use uint::{U64, U128, U256, U512};
+pub use hash::{H32, H64, H128, H160, H256, H264, H512, H520};
 pub use ethbloom::{Bloom, BloomRef, Input as BloomInput};
 
 pub type Address = H160;
