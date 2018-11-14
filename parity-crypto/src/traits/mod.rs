@@ -14,24 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate pbkdf2;
-extern crate hmac;
-use self::hmac::Hmac;
-
-use rsha2::{Sha256, Sha512};
-
-pub struct Salt<'a>(pub &'a [u8]);
-pub struct Secret<'a>(pub &'a [u8]);
-
-pub fn sha256(iter: u32, salt: Salt, sec: Secret, out: &mut [u8; 32]) {
-	self::pbkdf2::pbkdf2::<Hmac<Sha256>>(sec.0, salt.0, iter as usize, &mut out[..])
-}
-
-pub fn sha512(iter: u32, salt: Salt, sec: Secret, out: &mut [u8; 64]) {
-	self::pbkdf2::pbkdf2::<Hmac<Sha512>>(sec.0, salt.0, iter as usize, &mut out[..])
-}
 
 
-#[cfg(test)]
-::tests_pbkdf2!();
+//! trait module. Those traits expose current crypto usage in parity crates, event if they may evolve to
+//! better prototype, that is not the current target.
+//! The goal of those trait is to allow faster and more reliable switch of crypto dependencies.
+//! It is done by running tests at a trait level.
+//! Traits are only considering monomorphic usage (`dyn` usage is not covered).
+
+pub mod asym;
 

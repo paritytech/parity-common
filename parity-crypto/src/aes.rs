@@ -20,7 +20,7 @@ use block_modes::block_padding::ZeroPadding;
 use block_modes::{ Cbc, Ecb };
 use raes::{ Aes128, Aes256 };
 use aes_ctr::{ Aes128Ctr, Aes256Ctr };
-use aes_ctr::stream_cipher::{ NewFixStreamCipher, StreamCipherCore };
+use aes_ctr::stream_cipher::{ NewStreamCipher, SyncStreamCipher };
 use error::SymmError;
 use raes::block_cipher_trait::generic_array::GenericArray;
 
@@ -36,12 +36,16 @@ impl AesEcb256 {
 		Ok(AesEcb256(Ecb::new_varkey(key)?))
 	}
 
+	/// In place encrypt a content without padding, the content length must be a multiple 
+	/// of the block size.
 	#[inline]
 	pub fn encrypt(&mut self, content: &mut [u8]) -> Result<(), SymmError> {
 		self.0.encrypt_nopad(content)?;
 		Ok(())
 	}
 
+	/// In place decrypt a content without padding, the content length must be a multiple 
+	/// of the block size.
 	#[inline]
 	pub fn decrypt(&mut self, content: &mut [u8]) -> Result<(), SymmError> {
 		self.0.decrypt_nopad(content)?;
@@ -63,12 +67,16 @@ impl AesCtr256 {
 		))
 	}
 
+	/// In place encrypt a content without padding, the content length must be a multiple 
+	/// of the block size.
 	#[inline]
 	pub fn encrypt(&mut self, content: &mut[u8]) -> Result<(), SymmError> {
 		self.0.try_apply_keystream(content)?;
 		Ok(())
 	}
 
+	/// In place decrypt a content without padding, the content length must be a multiple 
+	/// of the block size.
 	#[inline]
 	pub fn decrypt(&mut self, content: &mut[u8]) -> Result<(), SymmError> {
 		self.0.try_apply_keystream(content)?;

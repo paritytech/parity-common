@@ -14,24 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate pbkdf2;
-extern crate hmac;
-use self::hmac::Hmac;
-
-use rsha2::{Sha256, Sha512};
-
-pub struct Salt<'a>(pub &'a [u8]);
-pub struct Secret<'a>(pub &'a [u8]);
-
-pub fn sha256(iter: u32, salt: Salt, sec: Secret, out: &mut [u8; 32]) {
-	self::pbkdf2::pbkdf2::<Hmac<Sha256>>(sec.0, salt.0, iter as usize, &mut out[..])
-}
-
-pub fn sha512(iter: u32, salt: Salt, sec: Secret, out: &mut [u8; 64]) {
-	self::pbkdf2::pbkdf2::<Hmac<Sha512>>(sec.0, salt.0, iter as usize, &mut out[..])
-}
+//! Renaming crate for libsecp256k1, this crate should be drop as soon as
+//! 'renaming-crates' functionality makes it to stable.
 
 
-#[cfg(test)]
-::tests_pbkdf2!();
+extern crate secp256k1;
 
+pub use secp256k1::*;

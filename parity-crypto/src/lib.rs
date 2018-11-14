@@ -36,7 +36,7 @@ extern crate mem;
 
 /// reexport clear_on_drop crate
 pub mod clear_on_drop {
-  pub use mem::clear_on_drop::*;
+	pub use mem::clear_on_drop::*;
 }
 
 /// reexport `Memzero` from `mem`
@@ -52,7 +52,7 @@ pub mod scrypt;
 pub mod digest;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod hmac;
-#[cfg(all(not(target_arch = "wasm32"), test))]
+#[cfg(all(not(target_arch = "wasm32"), any(test, feature="alt")))]
 pub mod hmac_alt;
 #[path = "hmac_alt.rs"]
 #[cfg(target_arch = "wasm32")]
@@ -62,14 +62,14 @@ pub mod hmac;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod secp256k1;
 
-#[cfg(all(not(target_arch = "wasm32"), test))]
+#[cfg(all(not(target_arch = "wasm32"), any(test, feature="alt")))]
 pub mod secp256k1_alt;
 
 #[path = "secp256k1_alt.rs"]
 #[cfg(target_arch = "wasm32")]
 pub mod secp256k1;
 
-#[cfg(all(not(target_arch = "wasm32"), test))]
+#[cfg(all(not(target_arch = "wasm32"), any(test, feature="alt")))]
 pub mod pbkdf2_alt;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod pbkdf2;

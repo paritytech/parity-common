@@ -12,7 +12,7 @@
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Parity.	If not, see <http://www.gnu.org/licenses/>.
+// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 #[cfg(not(target_arch = "wasm32"))]
 use ring;
@@ -34,19 +34,19 @@ quick_error! {
 			from()
 		}
 		AsymShort(det: &'static str) {
-      description(det)
+			description(det)
 		}
 		AsymFull(e: Box<dyn StdError + Send>) {
-      cause(&**e)
-      description(e.description())
-    }
+			cause(&**e)
+			description(e.description())
+		}
 	}
 }
 
 impl Into<std::io::Error> for Error {
-  fn into(self) -> std::io::Error {
-    std::io::Error::new(std::io::ErrorKind::Other, format!("Crypto error: {}",self))
-  }
+	fn into(self) -> std::io::Error {
+		std::io::Error::new(std::io::ErrorKind::Other, format!("Crypto error: {}",self))
+	}
 }
 
 quick_error! {
@@ -72,26 +72,6 @@ quick_error! {
 		}
 	}
 }
-
-/*
-#[cfg(not(target_arch = "wasm32"))]
-macro_rules! ring_error {
-	() => {
-		Ring(e: ring::error::Unspecified) {
-			display("symmetric crypto error")
-			cause(e)
-			from()
-		}
-	};
-}
-
-#[cfg(target_arch = "wasm32")]
-macro_rules! ring_error {
-	() => {
-	};
-}
-*/
-
 
 #[cfg(target_arch = "wasm32")]
 quick_error! {
