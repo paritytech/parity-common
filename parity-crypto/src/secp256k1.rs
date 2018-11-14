@@ -23,6 +23,7 @@ extern crate secp256k1;
 extern crate arrayvec;
 extern crate rand;
 use clear_on_drop::clear::Clear;
+use clear_on_drop::ClearOnDrop;
 
 use self::arrayvec::ArrayVec;
 use self::rand::Rng;
@@ -68,22 +69,16 @@ const PUB_SIZE: usize = 64;
 
 // not vec size could be reduce to 64 (higher instantiation cost)
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct PublicKey(PublicKeyInner, ArrayVec<[u8;72]>);
+pub struct PublicKey(PublicKeyInner);
 
 impl PublicKey {
 
 	fn new(inner: PublicKeyInner) -> Self {
-		let a_vec = inner.serialize_vec(&SECP256K1, false);
-		PublicKey(inner, a_vec)
-	}
-
-	fn refresh(&mut self) {
-		let a_vec = self.0.serialize_vec(&SECP256K1, false);
-		self.1 = a_vec;
+		PublicKey(inner)
 	}
 
 	fn unsafe_empty() -> Self {
-		PublicKey(PublicKeyInner::new(), [0;72].into())
+		PublicKey(PublicKeyInner::new())
 	}
 }
 
@@ -118,11 +113,6 @@ impl Asym for Secp256k1 {
 		let rsig = RecoverableSignature::from_compact(context, &signature[0..PUB_SIZE], RecoveryId::from_i32(signature[PUB_SIZE] as i32)?)?;
 		let pubkey = context.recover(&Message::from_slice(message)?, &rsig)?;
 		Ok(PublicKey::new(pubkey))
-		//let serialized = pubkey.serialize_vec(context, false);
-
-		//let mut res = vec![0;PUB_SIZE];
-		//res[..].copy_from_slice(&serialized[1..PUB_SIZE + 1]);
-		//Ok(res)
 	}
 
 
@@ -162,8 +152,6 @@ impl Asym for Secp256k1 {
 		Ok(SecretKey(SecretKeyInner::from_slice(&SECP256K1, secret)?))
 	}
 
-
-
 }
 
 impl FixAsymSharedSecret for SecretKey {
@@ -178,7 +166,7 @@ impl FixAsymSharedSecret for SecretKey {
 }
 
 impl SecretKeyTrait for SecretKey {
-	//type VecRepr = ClearOnDrop<Vec<u8>>;
+	type VecRepr = ClearOnDrop<Vec<u8>>;
 
 	fn sign(&self, message: &[u8]) -> Result<Vec<u8>, Error> {
 		let context = &SECP256K1;
@@ -192,30 +180,25 @@ impl SecretKeyTrait for SecretKey {
 		Ok(data_arr)
 	}
 
-	/*fn to_vec(&self) -> Self::VecRepr {
+	fn to_vec(&self) -> Self::VecRepr {
 		ClearOnDrop::new(self.0[..].to_vec())
-	}*/
-
-}
-
-impl AsRef<[u8]> for SecretKey {
-	fn as_ref(&self) -> &[u8] {
-		&self.0[..]
 	}
+
 }
 
 impl PublicKeyTrait for PublicKey {
 	type VecRepr = ArrayVec<[u8; 72]>;
+	type CompVecRepr = ArrayVec<[u8; 72]>;
 
-	/*fn to_vec(&self) -> Self::VecRepr {
-		let mut a_vec = self.serialize_vec(&SECP256K1, false);
+	fn to_vec(&self) -> Self::VecRepr {
+		let mut a_vec = self.0.serialize_vec(&SECP256K1, false);
 		let _ = a_vec.drain(PUB_SIZE + 1..);
 		a_vec.remove(0);
 		a_vec
-	}*/
+	}
 
 	/// Should move to another trait.
-	fn to_compressed_vec(&self) -> Self::VecRepr {
+	fn to_compressed_vec(&self) -> Self::CompVecRepr {
 		self.0.serialize_vec(&SECP256K1, true)
 	}
 
@@ -237,15 +220,6 @@ impl PublicKeyTrait for PublicKey {
 
 }
 
-// warning it returns PUB_SIZE byte vec (we skip the first byte of SIGN_SIZE byte more standard
-// representation)
-impl AsRef<[u8]> for PublicKey {
-	fn as_ref(&self) -> &[u8] {
-		&self.1[1 .. 1 + PUB_SIZE]
-	}
-}
-
-
 pub struct Secp256k1;
 
 impl FiniteField for Secp256k1 {
@@ -256,13 +230,11 @@ impl FiniteField for Secp256k1 {
 
 	fn public_mul(pub_key: &mut Self::PublicKey, sec_key: &Self::SecretKey) -> Result<(), Error> {
 		pub_key.0.mul_assign(&SECP256K1, &sec_key.0)?;
-		pub_key.refresh();
 		Ok(())
 	}
 
 	fn public_add(pub_key: &mut Self::PublicKey, other_public: &Self::PublicKey) -> Result<(), Error> {
 		pub_key.0.add_assign(&SECP256K1, &other_public.0)?;
-		pub_key.refresh();
 		Ok(())
 	}
 

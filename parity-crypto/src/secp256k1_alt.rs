@@ -21,6 +21,7 @@ extern crate rand;
 
 use self::rand::Rng;
 use clear_on_drop::clear::Clear;
+use clear_on_drop::ClearOnDrop;
 use ::traits::asym::{
 	Asym,
 	PublicKey as PublicKeyTrait,
@@ -94,7 +95,6 @@ lazy_static! {
 	static ref MINUS_ONE_KEY: SecretKey = SecretKey::new(SecretKeyInner::parse(&MINUS_ONE_BYTES).expect("static; qed"));
 	static ref ONE_KEY: SecretKey = SecretKey::new(SecretKeyInner::parse(&ONE_BYTES).expect("static; qed"));
 	static ref ZERO_KEY: SecretKey = SecretKey::new(SecretKeyInner::parse(&ZERO_BYTES).expect("static; qed"));
-	static ref NULL_PUB_K: PublicKey = PublicKey::unsafe_empty();
 }
 
 pub fn one_key() -> &'static SecretKey {
@@ -106,47 +106,19 @@ pub fn minus_one_key() -> &'static SecretKey {
 }
 
 
-//#[derive(PartialEq, Eq, Debug, Clone)]
-#[derive(Clone)]
-pub struct PublicKey(PublicKeyInner,[u8;65]);
-
-impl Eq for PublicKey { }
-
-
-impl PartialEq<PublicKey> for PublicKey {
-	fn eq(&self, other: &PublicKey) -> bool {
-		self.0.eq(&other.0)
-	}
-}
-
-impl std::fmt::Debug for PublicKey {
-	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		self.0.fmt(f)
-	}
-}
-
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct PublicKey(PublicKeyInner);
 
 impl PublicKey {
 
 	fn new(inner: PublicKeyInner) -> Self {
-		let a_vec = inner.serialize();
-		PublicKey(inner, a_vec)
+		PublicKey(inner)
 	}
 
-	fn unsafe_empty() -> Self {
-		PublicKey(PublicKeyInner::from_secret_key(&ONE_KEY.0), [0u8;65])
-	}
-
-}
-
-impl AsRef<[u8]> for PublicKey {
-	fn as_ref(&self) -> &[u8] {
-		&self.1[1 .. 1 + PUB_SIZE]
-	}
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct SecretKey(SecretKeyInner,[u8;32]);
+pub struct SecretKey(SecretKeyInner);
 
 impl Drop for SecretKey {
 	fn drop(&mut self) {
@@ -154,18 +126,10 @@ impl Drop for SecretKey {
 	}
 }
 
-impl AsRef<[u8]> for SecretKey {
-	fn as_ref(&self) -> &[u8] {
-		&self.1[..SECRET_SIZE]
-	}
-}
-
-
 impl SecretKey {
 
 	fn new(inner: SecretKeyInner) -> Self {
-		let a_vec = inner.serialize();
-		SecretKey(inner, a_vec)
+		SecretKey(inner)
 	}
 
 }
@@ -242,9 +206,14 @@ impl Asym for Secp256k1 {
 
 impl PublicKeyTrait for PublicKey {
 	type VecRepr = Vec<u8>;
+	type CompVecRepr = Vec<u8>;
+
+	fn to_vec(&self) -> Self::VecRepr {
+		self.0.serialize()[1..PUB_SIZE + 1].to_vec()
+	}
 
 	/// Should move to another trait.
-	fn to_compressed_vec(&self) -> Self::VecRepr {
+	fn to_compressed_vec(&self) -> Self::CompVecRepr {
 		self.0.serialize_compressed().to_vec()
 	}
 
@@ -269,7 +238,11 @@ impl PublicKeyTrait for PublicKey {
 }
 
 impl SecretKeyTrait for SecretKey {
-	//type VecRepr = ClearOnDrop<Vec<u8>>;
+	type VecRepr = ClearOnDrop<Vec<u8>>;
+
+	fn to_vec(&self) -> Self::VecRepr {
+		ClearOnDrop::new(self.0.serialize().to_vec())
+	}
 
 	fn sign(&self, message: &[u8]) -> Result<Vec<u8>, Error> {
 
@@ -440,12 +413,3 @@ type AsymTest = Secp256k1;
 #[cfg(test)]
 ::tests_asym!();
 
-/// Default implementation is only for parity-ethereum secret-store
-/// It would be good to remove it (there is a bit of refactoring).
-/// Therefore the constraint is not explicit.
-/// Please note that it is an invalid publickey.
-impl Default for PublicKey {
-	fn default() -> Self {
-		NULL_PUB_K.clone()
-	}
-}

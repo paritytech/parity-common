@@ -106,24 +106,32 @@ pub trait FiniteField: Asym {
 /// Contraint AsRef<[u8]>` is not memory efficient for ffi.
 /// Keeping in mind that the trait is here to make thing easier
 /// in a parity context. We assert that for use cases such as parity ethereum it is very usefull.
-/// In the future a switch to having only a function returning `impl AsRef<[u8]>`
-/// could be done but at the time it involves moving a huge amount of logic to this crate. 
-pub trait PublicKey: Sized + Eq + PartialEq + Clone + AsRef<[u8]> {
+pub trait PublicKey: Sized + Eq + PartialEq + Clone {
 	type VecRepr: AsRef<[u8]>;
+	type CompVecRepr: AsRef<[u8]>;
+
+	/// return serialize key
+	fn to_vec(&self) -> Self::VecRepr;
 
 	/// Should move to another trait.
-	fn to_compressed_vec(&self) -> Self::VecRepr;
+	fn to_compressed_vec(&self) -> Self::CompVecRepr;
 
 	/// Compatibility, this should disappear, public key should always be valid.
 	fn is_valid(&self) -> bool;
 	
 	fn verify(&self, signature: &[u8], message: &[u8]) -> Result<bool, Error>;
 
+
 }
 
 /// SecretKey (Private key).
-pub trait SecretKey: Sized + Eq + PartialEq + Clone + AsRef<[u8]> {
+pub trait SecretKey: Sized + Eq + PartialEq + Clone {
+	type VecRepr: AsRef<[u8]>;
 
+	/// return serialize key
+	fn to_vec(&self) -> Self::VecRepr;
+
+	/// Sign a fix length message, returns a fix length signature
 	fn sign(&self, message: &[u8]) -> Result<Vec<u8>, Error>;
 	
 }
@@ -183,7 +191,7 @@ mod tests {
 		let pub2 = AsymTest::public_from_slice(&pk2[..]).unwrap();
 		AsymTest::public_add(&mut pub1, &pub2).unwrap();
 
-		assert_eq!(&pub1.as_ref()[..], &[101, 166, 20, 152, 34, 76, 121, 113, 139, 80, 13, 92, 122, 96, 38, 194, 205, 149, 93, 19, 147, 132, 195, 173, 42, 86, 26, 221, 170, 127, 180, 168, 145, 21, 75, 45, 248, 90, 114, 118, 62, 196, 194, 143, 245, 204, 184, 16, 175, 202, 175, 228, 207, 112, 219, 94, 237, 75, 105, 186, 56, 102, 46, 147][..]);
+		assert_eq!(AsRef::<[u8]>::as_ref(&pub1.to_vec()), &[101, 166, 20, 152, 34, 76, 121, 113, 139, 80, 13, 92, 122, 96, 38, 194, 205, 149, 93, 19, 147, 132, 195, 173, 42, 86, 26, 221, 170, 127, 180, 168, 145, 21, 75, 45, 248, 90, 114, 118, 62, 196, 194, 143, 245, 204, 184, 16, 175, 202, 175, 228, 207, 112, 219, 94, 237, 75, 105, 186, 56, 102, 46, 147][..]);
 	}
 
 	#[test]
@@ -194,7 +202,7 @@ mod tests {
 		let sec = AsymTest::secret_from_slice(&sk[..]).unwrap();
 		AsymTest::public_mul(&mut pubk, &sec).unwrap();
 
-		assert_eq!(&pubk.as_ref()[..], &[98, 132, 11, 170, 93, 231, 41, 185, 180, 151, 185, 130, 77, 251, 41, 169, 160, 84, 133, 19, 82, 190, 137, 82, 0, 214, 148, 120, 165, 184, 17, 21, 237, 184, 119, 174, 13, 77, 50, 251, 16, 17, 197, 74, 232, 55, 142, 220, 27, 152, 4, 52, 69, 14, 76, 8, 156, 82, 0, 193, 179, 65, 63, 106][..]);
+		assert_eq!(AsRef::<[u8]>::as_ref(&pubk.to_vec()), &[98, 132, 11, 170, 93, 231, 41, 185, 180, 151, 185, 130, 77, 251, 41, 169, 160, 84, 133, 19, 82, 190, 137, 82, 0, 214, 148, 120, 165, 184, 17, 21, 237, 184, 119, 174, 13, 77, 50, 251, 16, 17, 197, 74, 232, 55, 142, 220, 27, 152, 4, 52, 69, 14, 76, 8, 156, 82, 0, 193, 179, 65, 63, 106][..]);
 	}
 
 
@@ -267,8 +275,8 @@ mod tests {
 		let ck = [2, 126, 60, 36, 91, 73, 177, 194, 111, 11, 3, 99, 246, 204, 86, 122, 109, 85, 28, 43, 169, 243, 35, 76, 152, 90, 76, 241, 17, 108, 232, 215, 115];
 		let pubk = AsymTest::public_from_slice(&pk[..]).unwrap();
 		let sec = AsymTest::secret_from_slice(&sk[..]).unwrap();
-		assert!(pubk.as_ref() == &pk[..]);
-		assert!(sec.as_ref() == &sk[..]);
+		assert!(AsRef::<[u8]>::as_ref(&pubk.to_vec()) == &pk[..]);
+		assert!(AsRef::<[u8]>::as_ref(&sec.to_vec()) == &sk[..]);
 		assert!(AsRef::<[u8]>::as_ref(&pubk.to_compressed_vec()) == &ck[..]);
 	}
 }
