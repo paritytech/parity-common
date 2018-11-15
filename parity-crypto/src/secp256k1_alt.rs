@@ -122,7 +122,10 @@ pub struct SecretKey(SecretKeyInner);
 
 impl Drop for SecretKey {
 	fn drop(&mut self) {
-		// TODO find a way to clear secret
+		// TODO find a way to clear secret, next lines break on mem replace
+		//let key = std::mem::replace(&mut self.0, ZERO_KEY.0.clone());
+		//let buf = &mut Into::<Scalar>::into(*key.inner).0;
+		//Clear::clear(buf);
 	}
 }
 
@@ -217,13 +220,6 @@ impl PublicKeyTrait for PublicKey {
 		self.0.serialize_compressed().to_vec()
 	}
 
-	fn is_valid(&self) -> bool {
-		// Check from other implementation only look for a non zero value in fields
-		// here we can
-		let aff: Affine = self.0.clone().into();
-		aff.is_valid_var()
-	}
-	
 	fn verify(&self, signature: &[u8], message: &[u8]) -> Result<bool, Error> {
 		let mut buf = [0;32];
 		buf.copy_from_slice(&message[..]); // panic on incorrect message size

@@ -26,7 +26,7 @@ pub use cod::clear::Clear;
 
 /// reexport clear_on_drop crate
 pub mod clear_on_drop {
-  pub use cod::*;
+	pub use cod::*;
 }
 
 /// Wrapper to zero out memory when dropped.
@@ -55,7 +55,7 @@ impl<T: AsMut<[u8]>> Drop for Memzero<T> {
 #[cfg(not(feature = "volatile-erase"))]
 impl<T: AsMut<[u8]>> Drop for Memzero<T> {
 	fn drop(&mut self) {
-    self.as_mut().clear();
+		self.as_mut().clear();
 	}
 }
 

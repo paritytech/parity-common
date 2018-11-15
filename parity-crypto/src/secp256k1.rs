@@ -202,10 +202,6 @@ impl PublicKeyTrait for PublicKey {
 		self.0.serialize_vec(&SECP256K1, true)
 	}
 
-	fn is_valid(&self) -> bool {
-		self.0.is_valid()
-	}
-
 	fn verify(&self, signature: &[u8], message: &[u8]) -> Result<bool, Error> {
 		let context = &SECP256K1;
 		let rsig = RecoverableSignature::from_compact(context, &signature[0..PUB_SIZE], RecoveryId::from_i32(signature[PUB_SIZE] as i32)?)?;
@@ -286,13 +282,3 @@ type AsymTest = Secp256k1;
 
 #[cfg(test)]
 ::tests_asym!();
-
-/// Default implementation is only for parity-ethereum secret-store
-/// It would be good to remove it (there is a bit of refactoring).
-/// Therefore the constraint is not explicit.
-/// Please note that it is an invalid publickey.
-impl Default for PublicKey {
-	fn default() -> Self {
-		NULL_PUB_K.clone()
-	}
-}

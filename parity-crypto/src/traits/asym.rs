@@ -116,11 +116,7 @@ pub trait PublicKey: Sized + Eq + PartialEq + Clone {
 	/// Should move to another trait.
 	fn to_compressed_vec(&self) -> Self::CompVecRepr;
 
-	/// Compatibility, this should disappear, public key should always be valid.
-	fn is_valid(&self) -> bool;
-	
 	fn verify(&self, signature: &[u8], message: &[u8]) -> Result<bool, Error>;
-
 
 }
 
