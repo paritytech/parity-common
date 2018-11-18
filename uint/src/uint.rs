@@ -972,17 +972,16 @@ macro_rules! construct_uint {
 				}
 
 				// Bitwise long division
-				let shift = my_bits - your_bits;
+				let mut shift = my_bits - your_bits;
 				shift_copy = shift_copy << shift;
-				for i in (1..=shift).rev() {
+				loop {
 					if sub_copy >= shift_copy {
-						ret[i / 64] |= 1 << (i % 64);
+						ret[shift / 64] |= 1 << (shift % 64);
 						sub_copy = overflowing!(sub_copy.overflowing_sub(shift_copy));
 					}
+					if shift == 0 { break; }
+					shift -= 1;
 					shift_copy = shift_copy >> 1usize;
-				}
-				if sub_copy >= shift_copy {
-					ret[0] |= 1;
 				}
 
 				$name(ret)
@@ -1038,12 +1037,14 @@ macro_rules! construct_uint {
 				}
 
 				// Bitwise long division
-				let shift = my_bits - your_bits;
+				let mut shift = my_bits - your_bits;
 				shift_copy = shift_copy << shift;
-				for _ in 0..=shift {
+				loop {
 					if *self >= shift_copy {
 						*self = overflowing!(self.overflowing_sub(shift_copy));
 					}
+					if shift == 0 { break; }
+					shift -= 1;
 					shift_copy = shift_copy >> 1usize;
 				}
 			}
