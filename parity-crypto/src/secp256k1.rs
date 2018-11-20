@@ -21,12 +21,10 @@
 
 extern crate secp256k1;
 extern crate arrayvec;
-extern crate rand;
 use clear_on_drop::clear::Clear;
 use clear_on_drop::ClearOnDrop;
 
 use self::arrayvec::ArrayVec;
-use self::rand::Rng;
 use super::traits::asym::{SecretKey as SecretKeyTrait, PublicKey as PublicKeyTrait, Asym, FiniteField, FixAsymSharedSecret};
 
 use super::error::Error;
@@ -113,15 +111,6 @@ impl Asym for Secp256k1 {
 		let rsig = RecoverableSignature::from_compact(context, &signature[0..PUB_SIZE], RecoveryId::from_i32(signature[PUB_SIZE] as i32)?)?;
 		let pubkey = context.recover(&Message::from_slice(message)?, &rsig)?;
 		Ok(PublicKey::new(pubkey))
-	}
-
-
-	/// deprecated, we rather not expose Rng trait, use `keypair_from_slice` instead.
-	/// The intent is to avoid depending on `Rng` trait.
-	fn generate_keypair(r: &mut impl Rng) -> (Self::SecretKey, Self::PublicKey) {
-		let (s, p) = SECP256K1.generate_keypair(r)
-			.expect("context always created with full capabilities; qed");
-		(SecretKey(s), PublicKey::new(p))
 	}
 
 	/// create a key pair from byte value of the secret key, the calling function is responsible for

@@ -30,7 +30,6 @@ mem = { path = "../mem" }
 ring = "0.13"
 eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }
 arrayvec = "0.4" # needed for eth-secp256k1
-rand = "0.4"
 hmac = { version = "0.7", optional = true }
 libsecp256k1 = { path = "./libsecp256k1", optional = true }
 pbkdf2 = { version = "0.3", default-features = false, optional = true }
@@ -40,7 +39,6 @@ hmac = "0.7"
 subtle = { version = "1.0" }
 # libsecp256k1 = { version = "0.1", package = "libsecp256k1" } // requires 'rename-dependency' in stable
 libsecp256k1 = { path = "./libsecp256k1" }
-rand = "0.5"
 pbkdf2 = { version = "0.3", default-features = false }
 
 [dev-dependencies]
@@ -49,6 +47,7 @@ hmac = "0.7"
 libsecp256k1 = { path = "./libsecp256k1" }
 pbkdf2 = { version = "0.3", default-features = false }
 criterion = "0.2"
+rand = "0.4"
 
 [features]
 # expose alternative wasm32 implementation for testing and benchmarks

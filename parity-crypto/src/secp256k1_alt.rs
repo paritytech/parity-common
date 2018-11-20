@@ -17,9 +17,7 @@
 //! secp256k1 for parity.
 
 extern crate libsecp256k1 as secp256k1;
-extern crate rand;
 
-use self::rand::Rng;
 use clear_on_drop::clear::Clear;
 use clear_on_drop::ClearOnDrop;
 use ::traits::asym::{
@@ -169,15 +167,6 @@ impl Asym for Secp256k1 {
 		Ok(PublicKey::new(public_key))
 	}
 
-
-	/// deprecated, we rather not expose Rng trait, use `keypair_from_slice` instead.
-	/// The intent is to avoid depending on `Rng` trait.
-	fn generate_keypair(r: &mut impl Rng) -> (Self::SecretKey, Self::PublicKey) {
-		let secret_key = random_sec(r);
-		let public_key = PublicKeyInner::from_secret_key(&secret_key.0);
-		(secret_key, PublicKey::new(public_key))
-	}
-
 	/// create a key pair from byte value of the secret key, the calling function is responsible for
 	/// erasing the input of memory.
 	fn keypair_from_slice(sk_bytes: &[u8]) -> Result<(Self::SecretKey, Self::PublicKey), Error> {
@@ -274,19 +263,6 @@ impl SecretKeyTrait for SecretKey {
 
 }
 
-/// random secret key for rand 0.5
-fn random_sec<R: Rng>(rng: &mut R) -> SecretKey {
-	loop {
-		let mut ret = [0u8; 32];
-		rng.fill_bytes(&mut ret);
-
-		match Secp256k1::secret_from_slice(&ret) {
-			Ok(key) => return key,
-			Err(_) => (),
-		}
-	}
-}
-
 impl FixAsymSharedSecret for SecretKey {
 	type Other = PublicKey;
 	type Result = SharedSecretAsRef;
@@ -326,14 +302,6 @@ impl Drop for SecretScalar {
 		self.0.clear();
 	}
 }
-
-/* private inner method but this would avoid a scalar instantiation
-fn mul_in_place_scalar(a: &mut Scalar, b: &Scalar) {
-	let mut l = [0u32; 16];
-	a.mul_512(b, &mut l);
-	a.reduce_512(&l);
-}
-*/
 
 impl FiniteField for Secp256k1 {
 

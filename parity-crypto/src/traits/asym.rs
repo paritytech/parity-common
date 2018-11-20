@@ -16,10 +16,7 @@
 
 //! asymetric trait
 
-extern crate rand;
-
 use ::error::Error;
-use self::rand::Rng;
 
 /// Trait for asymetric crypto
 pub trait Asym {
@@ -46,10 +43,6 @@ pub trait Asym {
 	/// Recover a public key from a signature over a message
 	/// This function could move to a more specific trait in the future
 	fn recover(signature: &[u8], message: &[u8]) -> Result<Self::PublicKey, Error>;
-
-	/// Generate a key pair from a random function.
-	#[deprecated]
-	fn generate_keypair(r: &mut impl Rng) -> (Self::SecretKey, Self::PublicKey);
 
 	/// Generate a keypair from a random input
 	fn keypair_from_slice(bytes: &[u8]) -> Result<(Self::SecretKey, Self::PublicKey), Error>;
