@@ -16,9 +16,9 @@
 
 use error::ScryptError;
 use super::{KEY_LENGTH_AES, KEY_LENGTH};
-use rscrypt:: {scrypt, ScryptParams};
+use rscrypt::{scrypt, ScryptParams};
 #[cfg(test)]
-use std::io::{ Error };
+use std::io::Error;
 
 pub fn derive_key(pass: &[u8], salt: &[u8], n: u32, p: u32, r: u32) -> Result<(Vec<u8>, Vec<u8>), ScryptError> {
 	// sanity checks

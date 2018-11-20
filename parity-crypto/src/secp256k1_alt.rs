@@ -153,10 +153,16 @@ impl Asym for Secp256k1 {
 
 	fn recover(signature: &[u8], message: &[u8]) -> Result<Self::PublicKey, Error> {
 		let mut buf = [0;32];
-		buf.copy_from_slice(&message[..]); // panic on incorrect message size
+		if message.len() != 32 {
+			return Err(InnerError::InvalidMessage.into());
+		}
+		buf.copy_from_slice(&message[..]);
 		let message = Message::parse(&buf);
 		let mut buf = [0;64];
-		buf.copy_from_slice(&signature[..64]); // panic on incorrect signature size
+		if signature.len() < 65 {
+			return Err(InnerError::InvalidSignature.into());
+		}
+		buf.copy_from_slice(&signature[..64]);
 		let recovery_id = RecoveryId::parse(signature[64])?; 
 		let signature = Signature::parse(&buf);
 		let public_key = secp256k1::recover(&message, &signature, &recovery_id)?;
@@ -187,16 +193,21 @@ impl Asym for Secp256k1 {
 
 	/// using a shortened 64bit public key as input
 	fn public_from_slice(public_sec_raw: &[u8]) -> Result<Self::PublicKey, Error> {
-
+		if public_sec_raw.len() < PUB_SIZE {
+			return Err(InnerError::InvalidPublicKey.into());
+		}
 		let pdata = {
 			let mut temp = [4u8; PUB_SIZE + 1];
-			(&mut temp[1..PUB_SIZE + 1]).copy_from_slice(&public_sec_raw[0..PUB_SIZE]);
+			(&mut temp[1..PUB_SIZE + 1]).copy_from_slice(&public_sec_raw[..PUB_SIZE]);
 			temp
 		};
 		Ok(PublicKey::new(PublicKeyInner::parse(&pdata)?))
 	}
 
 	fn secret_from_slice(secret: &[u8]) -> Result<Self::SecretKey, Error> {
+		if secret.len() < SECRET_SIZE {
+			return Err(InnerError::InvalidSecretKey.into());
+		}
 		let mut buf = [0;32];
 		buf[..].copy_from_slice(&secret[..SECRET_SIZE]);
 		let res = SecretKey::new(SecretKeyInner::parse(&buf)?);
@@ -222,10 +233,16 @@ impl PublicKeyTrait for PublicKey {
 
 	fn verify(&self, signature: &[u8], message: &[u8]) -> Result<bool, Error> {
 		let mut buf = [0;32];
-		buf.copy_from_slice(&message[..]); // panic on incorrect message size
+		if message.len() != 32 {
+			return Err(InnerError::InvalidMessage.into());
+		}
+		buf.copy_from_slice(&message[..]);
 		let message = Message::parse(&buf);
 		let mut buf = [0;64];
-		buf.copy_from_slice(&signature[..64]); // panic on incorrect signature size
+		if signature.len() < 64 {
+			return Err(InnerError::InvalidSignature.into());
+		}
+		buf.copy_from_slice(&signature[..64]);
 		let signature = Signature::parse(&buf);
 
 		Ok(secp256k1::verify(&message, &signature, &self.0))
@@ -243,7 +260,10 @@ impl SecretKeyTrait for SecretKey {
 	fn sign(&self, message: &[u8]) -> Result<Vec<u8>, Error> {
 
 	 	let mut buf = [0;32];
-		buf.copy_from_slice(&message[..]); // panic on incorrect message size
+		if message.len() != 32 {
+			return Err(InnerError::InvalidMessage.into());
+		}
+		buf.copy_from_slice(&message[..]);
 		let message = Message::parse(&buf);
 		let (sig, rec_id) = secp256k1::sign(&message, &self.0)?;
 		let mut data_arr = vec![0; 65];
