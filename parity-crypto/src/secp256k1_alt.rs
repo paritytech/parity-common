@@ -48,11 +48,7 @@ use self::secp256k1::{
 use self::secp256k1::curve::{
 	Affine,
 	Jacobian,
-	Scalar,
 };
-
-use self::secp256k1::curve::ECMULT_CONTEXT;
-
 
 const SIGN_SIZE: usize = 65;
 const PUB_SIZE: usize = 64;
@@ -120,10 +116,7 @@ pub struct SecretKey(SecretKeyInner);
 
 impl Drop for SecretKey {
 	fn drop(&mut self) {
-		// TODO find a way to clear secret, next lines break on mem replace
-		//let key = std::mem::replace(&mut self.0, ZERO_KEY.0.clone());
-		//let buf = &mut Into::<Scalar>::into(*key.inner).0;
-		//Clear::clear(buf);
+		Clear::clear(&mut self.0);
 	}
 }
 
@@ -150,19 +143,12 @@ impl Asym for Secp256k1 {
 	const KEYPAIR_INPUT_SIZE: usize = Self::SECRET_SIZE;
 
 	fn recover(signature: &[u8], message: &[u8]) -> Result<Self::PublicKey, Error> {
-		let mut buf = [0;32];
-		if message.len() != 32 {
-			return Err(InnerError::InvalidMessage.into());
-		}
-		buf.copy_from_slice(&message[..]);
-		let message = Message::parse(&buf);
-		let mut buf = [0;64];
+		let message = Message::parse_slice(&message[..])?;
 		if signature.len() < 65 {
 			return Err(InnerError::InvalidSignature.into());
 		}
-		buf.copy_from_slice(&signature[..64]);
 		let recovery_id = RecoveryId::parse(signature[64])?; 
-		let signature = Signature::parse(&buf);
+		let signature = Signature::parse_slice(&signature[..64])?;
 		let public_key = secp256k1::recover(&message, &signature, &recovery_id)?;
 		Ok(PublicKey::new(public_key))
 	}
@@ -221,18 +207,11 @@ impl PublicKeyTrait for PublicKey {
 	}
 
 	fn verify(&self, signature: &[u8], message: &[u8]) -> Result<bool, Error> {
-		let mut buf = [0;32];
-		if message.len() != 32 {
-			return Err(InnerError::InvalidMessage.into());
-		}
-		buf.copy_from_slice(&message[..]);
-		let message = Message::parse(&buf);
-		let mut buf = [0;64];
+		let message = Message::parse_slice(&message[..])?;
 		if signature.len() < 64 {
 			return Err(InnerError::InvalidSignature.into());
 		}
-		buf.copy_from_slice(&signature[..64]);
-		let signature = Signature::parse(&buf);
+		let signature = Signature::parse_slice(&signature[..64])?;
 
 		Ok(secp256k1::verify(&message, &signature, &self.0))
 	}
@@ -247,13 +226,7 @@ impl SecretKeyTrait for SecretKey {
 	}
 
 	fn sign(&self, message: &[u8]) -> Result<Vec<u8>, Error> {
-
-	 	let mut buf = [0;32];
-		if message.len() != 32 {
-			return Err(InnerError::InvalidMessage.into());
-		}
-		buf.copy_from_slice(&message[..]);
-		let message = Message::parse(&buf);
+		let message = Message::parse_slice(&message[..])?;
 		let (sig, rec_id) = secp256k1::sign(&message, &self.0)?;
 		let mut data_arr = vec![0; 65];
 		data_arr[0..64].copy_from_slice(&sig.serialize());
@@ -295,14 +268,6 @@ fn aff_to_public(aff_pub: &mut Affine) -> Result<PublicKeyInner, Error> {
 	Ok(PublicKeyInner::parse(&buff)?)
 }
 
-struct SecretScalar(pub Scalar);
-
-impl Drop for SecretScalar {
-	fn drop(&mut self) {
-		self.0.clear();
-	}
-}
-
 impl FiniteField for Secp256k1 {
 
 	fn generator_x() -> &'static[u8] { &GENERATOR_X[..] }
@@ -310,22 +275,14 @@ impl FiniteField for Secp256k1 {
 	fn curve_order() -> &'static[u8] { &CURVE_ORDER[..] }
 
 	fn public_mul(pub_key: &mut Self::PublicKey, sec_key: &Self::SecretKey) -> Result<(), Error> {
-		let sec_scal = SecretScalar(sec_key.0.clone().into());
-		let mut pub_aff: Affine = pub_key.0.clone().into();
-		let mut pub_jac = Jacobian::default();
-		pub_jac.set_ge(&pub_aff);
-		//ECMULT_GEN_CONTEXT.ecmult_gen(&mut pub_jac, &sec_scal);
-		//pub_aff.set_gej(&pub_jac);
-		let mut zero = Scalar::default();
-		zero.set_int(0);
-		let mut res = Jacobian::default();
-		ECMULT_CONTEXT.ecmult(&mut res, &pub_jac, &sec_scal.0, &zero);
-		pub_aff.set_gej(&res);
-		*pub_key = PublicKey::new(aff_to_public(&mut pub_aff)?);
+		pub_key.0.tweak_mul_assign(&sec_key.0)?;
 		Ok(())
 	}
 
 	fn public_add(pub_key: &mut Self::PublicKey, other_public: &Self::PublicKey) -> Result<(), Error> {
+		// combine with iterator param would avoid some clone
+		// let keys = [other_public.0.clone(), pub_key.0.clone()];
+		// *pub_key = PublicKey::new(PublicKeyInner::combine(&keys)?);
 		let mut aff_pub: Affine = pub_key.0.clone().into();
 		let mut aff_pub_j = Jacobian::default();
 		aff_pub_j.set_ge(&aff_pub);
@@ -338,30 +295,17 @@ impl FiniteField for Secp256k1 {
 	}
 
 	fn secret_mul(sec_key: &mut Self::SecretKey, other_sec_key: &Self::SecretKey) -> Result<(), Error> {
-		let sec_scal = SecretScalar(sec_key.0.clone().into());
-		let other_sec_scal = SecretScalar(other_sec_key.0.clone().into());
-		// we could use * operator instead.
-		let mut res = SecretScalar(Scalar::default());
-		res.0.mul_in_place(&sec_scal.0, &other_sec_scal.0);
-		*sec_key = SecretKey::new(SecretKeyInner::parse(&res.0.b32())?);
+		sec_key.0.tweak_mul_assign(&other_sec_key.0)?;
 		Ok(())
 	}
 
 	fn secret_add(sec_key: &mut Self::SecretKey, other_sec_key: &Self::SecretKey) -> Result<(), Error> {
-		let sec_scal = SecretScalar(sec_key.0.clone().into());
-		let other_sec_scal = SecretScalar(other_sec_key.0.clone().into());
-		// we could use + operator instead.
-		let mut res = SecretScalar(Scalar::default());
-		res.0.add_in_place(&sec_scal.0, &other_sec_scal.0);
-		*sec_key = SecretKey::new(SecretKeyInner::parse(&res.0.b32())?);
+		sec_key.0.tweak_add_assign(&other_sec_key.0)?;
 		Ok(())
 	}
 
 	fn secret_inv(sec_key: &mut Self::SecretKey) -> Result<(), Error> {
-		let sec_scal = SecretScalar(sec_key.0.clone().into());
-		let mut res = SecretScalar(Scalar::default());
-		res.0.inv_in_place(&sec_scal.0);
-		*sec_key = SecretKey::new(SecretKeyInner::parse(&res.0.b32())?);
+		*sec_key = SecretKey::new(sec_key.0.inv());
 		Ok(())
 	}
 
@@ -387,6 +331,8 @@ impl From<InnerError> for Error {
 			InnerError::InvalidPublicKey => Error::AsymShort("Invalid public"),
 			InnerError::InvalidSignature => Error::AsymShort("Invalid EC signature"),
 			InnerError::InvalidMessage => Error::AsymShort("Invalid AES message"),
+			InnerError::InvalidInputLength => Error::AsymShort("Invalid input Length"),
+			InnerError::TweakOutOfRange => Error::AsymShort("Tweak out of Range"),
 		}
 	}
 }

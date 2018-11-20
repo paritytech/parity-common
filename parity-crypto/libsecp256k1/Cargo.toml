@@ -7,4 +7,4 @@ description = "Renaming crate for libsecp256k1."
 license = "GPL-3.0"
 
 [dependencies]
-libsecp256k1 = { version = "0.1" }
+libsecp256k1 = { version = "0.2" }
