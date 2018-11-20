@@ -957,7 +957,6 @@ macro_rules! construct_uint {
 			fn div(self, other: T) -> $name {
 				let other: Self = other.into();
 				let mut sub_copy = self;
-				let mut shift_copy = other;
 				let mut ret = [0u64; $n_words];
 
 				let my_bits = self.bits();
@@ -973,15 +972,15 @@ macro_rules! construct_uint {
 
 				// Bitwise long division
 				let mut shift = my_bits - your_bits;
-				shift_copy = shift_copy << shift;
+				let mut shift_copy = other << shift;
 				loop {
 					if sub_copy >= shift_copy {
 						ret[shift / 64] |= 1 << (shift % 64);
 						sub_copy = overflowing!(sub_copy.overflowing_sub(shift_copy));
 					}
-					shift_copy = shift_copy >> 1usize;
 					if shift == 0 { break; }
 					shift -= 1;
+					shift_copy >>= 1usize;
 				}
 
 				$name(ret)
@@ -1006,8 +1005,9 @@ macro_rules! construct_uint {
 			type Output = $name;
 
 			fn rem(self, other: T) -> $name {
-				let times = self / other;
-				self - (times * other.into())
+				let mut sub_copy = self;
+				sub_copy %= other;
+				sub_copy
 			}
 		}
 
@@ -1021,8 +1021,30 @@ macro_rules! construct_uint {
 
 		impl<T> $crate::core_::ops::RemAssign<T> for $name where T: Into<$name> + Copy {
 			fn rem_assign(&mut self, other: T) {
-				let times = *self / other;
-				*self -= times * other.into()
+				let other: Self = other.into();
+
+				let my_bits = self.bits();
+				let your_bits = other.bits();
+
+				// Check for division by 0
+				assert!(your_bits != 0);
+
+				// Early return in case we are dividing by a larger number than us
+				if my_bits < your_bits {
+					return;
+				}
+
+				// Bitwise long division
+				let mut shift = my_bits - your_bits;
+				let mut shift_copy = other << shift;
+				loop {
+					if *self >= shift_copy {
+						*self = overflowing!(self.overflowing_sub(shift_copy));
+					}
+					if shift == 0 { break; }
+					shift -= 1;
+					shift_copy >>= 1usize;
+				}
 			}
 		}
 
