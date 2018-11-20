@@ -45,11 +45,6 @@ use self::secp256k1::{
 	RecoveryId,
 };
 
-use self::secp256k1::curve::{
-	Affine,
-	Jacobian,
-};
-
 const SIGN_SIZE: usize = 65;
 const PUB_SIZE: usize = 64;
 const SECRET_SIZE: usize = 32;
@@ -256,18 +251,6 @@ impl AsRef<[u8]> for SharedSecretAsRef {
 	}
 }
 
-fn aff_to_public(aff_pub: &mut Affine) -> Result<PublicKeyInner, Error> {
-	let mut buff = [4;65];
-	let mut buff2 = [0;32];
-	aff_pub.x.normalize();
-	aff_pub.x.fill_b32(&mut buff2);
-	buff[1..33].copy_from_slice(&buff2[..]);
-	aff_pub.y.normalize();
-	aff_pub.y.fill_b32(&mut buff2);
-	buff[33..65].copy_from_slice(&buff2[..]);
-	Ok(PublicKeyInner::parse(&buff)?)
-}
-
 impl FiniteField for Secp256k1 {
 
 	fn generator_x() -> &'static[u8] { &GENERATOR_X[..] }
@@ -280,17 +263,8 @@ impl FiniteField for Secp256k1 {
 	}
 
 	fn public_add(pub_key: &mut Self::PublicKey, other_public: &Self::PublicKey) -> Result<(), Error> {
-		// combine with iterator param would avoid some clone
-		// let keys = [other_public.0.clone(), pub_key.0.clone()];
-		// *pub_key = PublicKey::new(PublicKeyInner::combine(&keys)?);
-		let mut aff_pub: Affine = pub_key.0.clone().into();
-		let mut aff_pub_j = Jacobian::default();
-		aff_pub_j.set_ge(&aff_pub);
-		let aff_pub_other: Affine = other_public.0.clone().into();
-		let res_j = aff_pub_j.add_ge(&aff_pub_other);
-		aff_pub.set_gej(&res_j);
-		*pub_key = PublicKey::new(aff_to_public(&mut aff_pub)?);
-
+		let keys = [other_public.0.clone(), pub_key.0.clone()];
+		*pub_key = PublicKey::new(PublicKeyInner::combine(&keys)?);
 		Ok(())
 	}
 
