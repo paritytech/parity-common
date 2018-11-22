@@ -9,8 +9,8 @@ homepage = "https://github.com/paritytech/parity-common"
 categories = [ "no-std"]
 
 [dependencies]
-crunchy = "0.2.1"
+crunchy = { version = "0.2.1", default-features = false }
 
 [features]
 default = ["std"]
-std = []
+std = ["crunchy/std"]
