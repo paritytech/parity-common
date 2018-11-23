@@ -14,7 +14,6 @@ harness = false
 
 [dependencies]
 quick-error = "1.2.2"
-
 tiny-keccak = "1.4"
 scrypt = { version = "0.1.1", default-features = false }
 ripemd160 = "0.8.0"
@@ -24,12 +23,12 @@ aes = "0.3.2"
 aes-ctr = "0.3.0"
 block-modes = "0.2.0"
 lazy_static = "1.0" # for secp
-mem = { path = "../mem" }
+parity-util-mem = { version = "0.1", path = "../mem" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ring = "0.13"
-eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }
-arrayvec = "0.4" # needed for eth-secp256k1
+#secp256k1 = "0.11"
+secp256k1 = { git = "https://github.com/cheme/rust-secp256k1", branch = "parity-eth" }
 hmac = { version = "0.7", optional = true }
 libsecp256k1 = { path = "./libsecp256k1", optional = true }
 pbkdf2 = { version = "0.3", default-features = false, optional = true }
@@ -53,4 +52,4 @@ rand = "0.4"
 # expose alternative wasm32 implementation for testing and benchmarks
 alt = ["hmac", "libsecp256k1", "pbkdf2"]
 nightly = ["subtle/nightly"]
-volatile-erase = ["mem/volatile-erase"]
+volatile-erase = ["parity-util-mem/volatile-erase"]

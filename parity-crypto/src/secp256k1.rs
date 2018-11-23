@@ -20,11 +20,8 @@
 //! highly inefficient here.
 
 extern crate secp256k1;
-extern crate arrayvec;
-use clear_on_drop::clear::Clear;
-use clear_on_drop::ClearOnDrop;
+use clear_on_drop::clear::{Clear, ClearOnDrop};
 
-use self::arrayvec::ArrayVec;
 use super::traits::asym::{SecretKey as SecretKeyTrait, PublicKey as PublicKeyTrait, Asym, FiniteField, FixAsymSharedSecret};
 
 use super::error::Error;
@@ -37,7 +34,7 @@ pub use self::secp256k1::{
 pub use self::secp256k1::key::{SecretKey as SecretKeyInner, PublicKey as PublicKeyInner};
 use self::secp256k1::constants::{SECRET_KEY_SIZE, GENERATOR_X, GENERATOR_Y, CURVE_ORDER};
 
-use self::secp256k1::key::{ZERO_KEY as ZERO_BYTES, ONE_KEY as ONE_BYTES, MINUS_ONE_KEY as MINUS_ONE_BYTES};
+use self::secp256k1::key::{ZERO_KEY as ZERO_BYTES, ONE_KEY as ONE_BYTES};
 use self::secp256k1::{
 	Message,
 	RecoverableSignature,
@@ -45,12 +42,13 @@ use self::secp256k1::{
 	ecdh,
 };
 
+static MINUS_ONE_BYTES: [u8;32] = [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 254, 186, 174, 220, 230, 175, 72, 160, 59, 191, 210, 94, 140, 208, 54, 65, 64];
+
 lazy_static! {
-	pub static ref SECP256K1: self::secp256k1::Secp256k1 = self::secp256k1::Secp256k1::new();
-	static ref MINUS_ONE_KEY: SecretKey = SecretKey(MINUS_ONE_BYTES);
+	pub static ref SECP256K1: self::secp256k1::Secp256k1<self::secp256k1::All> = self::secp256k1::Secp256k1::new();
+	static ref MINUS_ONE_KEY: SecretKey = Secp256k1::secret_from_slice(&MINUS_ONE_BYTES[..]).expect("Init from valid const value; qed");
 	static ref ONE_KEY: SecretKey = SecretKey(ONE_BYTES);
 	static ref ZERO_KEY: SecretKey = SecretKey(ZERO_BYTES);
-	static ref NULL_PUB_K: PublicKey = PublicKey::unsafe_empty();
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -64,6 +62,7 @@ impl AsRef<[u8]> for SharedSecretAsRef {
 
 const SIGN_SIZE: usize = 65;
 const PUB_SIZE: usize = 64;
+const COMPRESSED_PUB_SIZE: usize = 33;
 
 // not vec size could be reduce to 64 (higher instantiation cost)
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -75,9 +74,6 @@ impl PublicKey {
 		PublicKey(inner)
 	}
 
-	fn unsafe_empty() -> Self {
-		PublicKey(PublicKeyInner::new())
-	}
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -108,7 +104,7 @@ impl Asym for Secp256k1 {
 
 	fn recover(signature: &[u8], message: &[u8]) -> Result<Self::PublicKey, Error> {
 		let context = &SECP256K1;
-		let rsig = RecoverableSignature::from_compact(context, &signature[0..PUB_SIZE], RecoveryId::from_i32(signature[PUB_SIZE] as i32)?)?;
+		let rsig = RecoverableSignature::from_compact(&signature[0..PUB_SIZE], RecoveryId::from_i32(signature[PUB_SIZE] as i32)?)?;
 		let pubkey = context.recover(&Message::from_slice(message)?, &rsig)?;
 		Ok(PublicKey::new(pubkey))
 	}
@@ -117,14 +113,14 @@ impl Asym for Secp256k1 {
 	/// erasing the input of memory.
 	fn keypair_from_slice(sk_bytes: &[u8]) -> Result<(Self::SecretKey, Self::PublicKey), Error> {
 		assert!(sk_bytes.len() == SECRET_KEY_SIZE);
-		let sk = SecretKeyInner::from_slice(&SECP256K1, sk_bytes)?;
+		let sk = SecretKeyInner::from_slice(sk_bytes)?;
 		let sc = SecretKey(sk);
-		let pk = PublicKeyInner::from_secret_key(&SECP256K1, &sc.0)?;
+		let pk = PublicKeyInner::from_secret_key(&SECP256K1, &sc.0);
 		Ok((sc, PublicKey::new(pk)))
 	}
 
 	fn public_from_secret(s: &Self::SecretKey) -> Result<Self::PublicKey, Error> {
-		Ok(PublicKey::new(PublicKeyInner::from_secret_key(&SECP256K1, &s.0)?))
+		Ok(PublicKey::new(PublicKeyInner::from_secret_key(&SECP256K1, &s.0)))
 	}
 
 	/// using a shortened 64bit public key as input
@@ -134,11 +130,11 @@ impl Asym for Secp256k1 {
 			(&mut temp[1..PUB_SIZE + 1]).copy_from_slice(&public_sec_raw[0..PUB_SIZE]);
 			temp
 		};
-		Ok(PublicKey::new(PublicKeyInner::from_slice(&SECP256K1, &pdata)?))
+		Ok(PublicKey::new(PublicKeyInner::from_slice(&pdata)?))
 	}
 
 	fn secret_from_slice(secret: &[u8]) -> Result<Self::SecretKey, Error> {
-		Ok(SecretKey(SecretKeyInner::from_slice(&SECP256K1, secret)?))
+		Ok(SecretKey(SecretKeyInner::from_slice(secret)?))
 	}
 
 }
@@ -148,7 +144,7 @@ impl FixAsymSharedSecret for SecretKey {
 	type Result = SharedSecretAsRef;
 
 	fn shared_secret(&self, publ: &Self::Other) -> Result<Self::Result, Error> {
-		let shared = ecdh::SharedSecret::new_raw(&SECP256K1, &publ.0, &self.0);
+		let shared = ecdh::SharedSecret::new_raw(&publ.0, &self.0);
 		Ok(SharedSecretAsRef(shared))
 	}
 
@@ -159,8 +155,8 @@ impl SecretKeyTrait for SecretKey {
 
 	fn sign(&self, message: &[u8]) -> Result<Vec<u8>, Error> {
 		let context = &SECP256K1;
-		let s = context.sign_recoverable(&Message::from_slice(message)?, &self.0)?;
-		let (rec_id, data) = s.serialize_compact(context);
+		let s = context.sign_recoverable(&Message::from_slice(message)?, &self.0);
+		let (rec_id, data) = s.serialize_compact();
 		let mut data_arr = vec![0; SIGN_SIZE];
 
 		// no need to check if s is low, it always is
@@ -176,25 +172,23 @@ impl SecretKeyTrait for SecretKey {
 }
 
 impl PublicKeyTrait for PublicKey {
-	type VecRepr = ArrayVec<[u8; 72]>;
-	type CompVecRepr = ArrayVec<[u8; 72]>;
+	const COMPRESSED_PUB_SIZE: usize = COMPRESSED_PUB_SIZE;
+	type VecRepr = Vec<u8>;
+	type CompVecRepr = Vec<u8>;
 
 	fn to_vec(&self) -> Self::VecRepr {
-		let mut a_vec = self.0.serialize_vec(&SECP256K1, false);
-		let _ = a_vec.drain(PUB_SIZE + 1..);
-		a_vec.remove(0);
-		a_vec
+		self.0.serialize_uncompressed()[1..PUB_SIZE + 1].to_vec()
 	}
 
 	/// Should move to another trait.
 	fn to_compressed_vec(&self) -> Self::CompVecRepr {
-		self.0.serialize_vec(&SECP256K1, true)
+		self.0.serialize().to_vec()
 	}
 
 	fn verify(&self, signature: &[u8], message: &[u8]) -> Result<bool, Error> {
 		let context = &SECP256K1;
-		let rsig = RecoverableSignature::from_compact(context, &signature[0..PUB_SIZE], RecoveryId::from_i32(signature[PUB_SIZE] as i32)?)?;
-		let sig = rsig.to_standard(context);
+		let rsig = RecoverableSignature::from_compact(&signature[0..PUB_SIZE], RecoveryId::from_i32(signature[PUB_SIZE] as i32)?)?;
+		let sig = rsig.to_standard();
 
 		match context.verify(&Message::from_slice(message)?, &sig, &self.0) {
 			Ok(_) => Ok(true),
@@ -219,22 +213,23 @@ impl FiniteField for Secp256k1 {
 	}
 
 	fn public_add(pub_key: &mut Self::PublicKey, other_public: &Self::PublicKey) -> Result<(), Error> {
-		pub_key.0.add_assign(&SECP256K1, &other_public.0)?;
+		let res = other_public.0.combine(&pub_key.0)?;
+		*pub_key = PublicKey::new(res);
 		Ok(())
 	}
 
 	fn secret_mul(sec_key: &mut Self::SecretKey, other_secret: &Self::SecretKey) -> Result<(), Error> {
-		sec_key.0.mul_assign(&SECP256K1, &other_secret.0)?;
+		sec_key.0.mul_assign(&other_secret.0)?;
 		Ok(())
 	}
 
 	fn secret_add(sec_key: &mut Self::SecretKey, other_secret: &Self::SecretKey) -> Result<(), Error> {
-		sec_key.0.add_assign(&SECP256K1, &other_secret.0)?;
+		sec_key.0.add_assign(&other_secret.0)?;
 		Ok(())
 	}
 
 	fn secret_inv(sec_key: &mut Self::SecretKey) -> Result<(), Error> {
-		sec_key.0.inv_assign(&SECP256K1)?;
+		sec_key.0.inv_assign()?;
 		Ok(())
 	}
 
@@ -261,7 +256,6 @@ impl From<InnerError> for Error {
 			InnerError::InvalidSignature |
 			InnerError::IncorrectSignature => Error::AsymShort("Invalid EC signature"),
 			InnerError::InvalidMessage => Error::AsymShort("Invalid AES message"),
-			_ => Error::AsymFull(Box::new(err))
 		}
 	}
 }

@@ -1,10 +1,13 @@
 [package]
-name = "mem"
+name = "parity-util-mem"
 version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>"]
+repository = "https://github.com/paritytech/parity-common"
+description = "Collection of memory related utilities"
+license = "GPL-3.0"
 
 [dependencies]
-clear_on_drop = "0.2.3"
+clear_on_drop = "0.2"
 
 [features]
 # when activated mem is removed through volatile primitive instead of clear_on_drop crate

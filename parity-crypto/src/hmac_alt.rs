@@ -21,7 +21,7 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use self::hmac::{Hmac, Mac};
 
-/// HMAC signature. Note the public interface of this module is a bit awkward for RustCrypto.
+/// HMAC signature. Note the public interface of this module is not really fit for RustCrypto
 pub struct Signature<T: Mac>(GenericArray<u8, T::OutputSize>, PhantomData<T>);
 
 impl<T: Mac> Deref for Signature<T> {

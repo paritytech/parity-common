@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
+
+//! Benches related to asym crypto, mainly signing and veryfing.
+
 use criterion::{Criterion, Bencher};
 
 use parity_crypto::traits::asym::*;

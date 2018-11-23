@@ -32,7 +32,7 @@ extern crate digest as rdigest;
 extern crate aes as raes;
 extern crate aes_ctr;
 extern crate block_modes;
-extern crate mem;
+extern crate parity_util_mem as mem;
 
 /// reexport clear_on_drop crate
 pub mod clear_on_drop {

@@ -47,6 +47,7 @@ use self::secp256k1::{
 
 const SIGN_SIZE: usize = 65;
 const PUB_SIZE: usize = 64;
+const COMPRESSED_PUB_SIZE: usize = 33;
 const SECRET_SIZE: usize = 32;
 
 const MINUS_ONE_BYTES: [u8;32] = [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 254, 186, 174, 220, 230, 175, 72, 160, 59, 191, 210, 94, 140, 208, 54, 65, 64];
@@ -99,11 +100,9 @@ pub fn minus_one_key() -> &'static SecretKey {
 pub struct PublicKey(PublicKeyInner);
 
 impl PublicKey {
-
 	fn new(inner: PublicKeyInner) -> Self {
 		PublicKey(inner)
 	}
-
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -116,11 +115,9 @@ impl Drop for SecretKey {
 }
 
 impl SecretKey {
-
 	fn new(inner: SecretKeyInner) -> Self {
 		SecretKey(inner)
 	}
-
 }
 
 impl Asym for Secp256k1 {
@@ -189,6 +186,7 @@ impl Asym for Secp256k1 {
 }
 
 impl PublicKeyTrait for PublicKey {
+	const COMPRESSED_PUB_SIZE: usize = COMPRESSED_PUB_SIZE;
 	type VecRepr = Vec<u8>;
 	type CompVecRepr = Vec<u8>;
 

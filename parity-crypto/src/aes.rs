@@ -36,7 +36,7 @@ impl AesEcb256 {
 		Ok(AesEcb256(Ecb::new_varkey(key)?))
 	}
 
-	/// In place encrypt a content without padding, the content length must be a multiple 
+	/// Encrypt data in place without padding. The data length must be a multiple
 	/// of the block size.
 	#[inline]
 	pub fn encrypt(&mut self, content: &mut [u8]) -> Result<(), SymmError> {
@@ -44,7 +44,7 @@ impl AesEcb256 {
 		Ok(())
 	}
 
-	/// In place decrypt a content without padding, the content length must be a multiple 
+	/// Decrypt data in place without padding. The data length must be a multiple
 	/// of the block size.
 	#[inline]
 	pub fn decrypt(&mut self, content: &mut [u8]) -> Result<(), SymmError> {
@@ -88,7 +88,7 @@ impl AesCtr256 {
 ///
 /// Key (`k`) length and initialisation vector (`iv`) length have to be 16 bytes each.
 /// An error is returned if the input lengths are invalid.
-/// If possible please use `inplace_encrypt_128_ctr` to avoid a slice copy.
+/// If possible prefer `inplace_encrypt_128_ctr` to avoid a slice copy.
 pub fn encrypt_128_ctr(k: &[u8], iv: &[u8], plain: &[u8], dest: &mut [u8]) -> Result<(), SymmError> {
 	let mut encryptor = Aes128Ctr::new(
 		GenericArray::from_slice(k),
@@ -100,6 +100,9 @@ pub fn encrypt_128_ctr(k: &[u8], iv: &[u8], plain: &[u8], dest: &mut [u8]) -> Re
 
 }
 
+/// Encrypt a message (CTR mode).
+///
+/// Key (`k`) length and initialisation vector (`iv`) length have to be 16 bytes each.
 /// An error is returned if the input lengths are invalid.
 pub fn inplace_encrypt_128_ctr(k: &[u8], iv: &[u8], data: &mut [u8]) -> Result<(), SymmError> {
 	let mut encryptor = Aes128Ctr::new(
@@ -115,7 +118,7 @@ pub fn inplace_encrypt_128_ctr(k: &[u8], iv: &[u8], data: &mut [u8]) -> Result<(
 ///
 /// Key (`k`) length and initialisation vector (`iv`) length have to be 16 bytes each.
 /// An error is returned if the input lengths are invalid.
-/// If possible please use `inplace_decrypt_128_ctr` instead.
+/// If possible prefer `inplace_decrypt_128_ctr` instead.
 pub fn decrypt_128_ctr(k: &[u8], iv: &[u8], encrypted: &[u8], dest: &mut [u8]) -> Result<(), SymmError> {
 	let mut encryptor = Aes128Ctr::new(
 		GenericArray::from_slice(k),
@@ -142,15 +145,6 @@ pub fn inplace_decrypt_128_ctr(k: &[u8], iv: &[u8], data: &mut [u8]) -> Result<(
 }
 
 
-#[cfg(test)]
-fn encrypt_128_cbc(k: &[u8], iv: &[u8], plain: &[u8], dest: &mut [u8]) -> Result<(), SymmError> {
-	let encryptor = Cbc::<Aes128, Pkcs7>::new_varkey(k, GenericArray::from_slice(iv))?;
-	&mut dest[..plain.len()].copy_from_slice(plain);
-	encryptor.encrypt_pad(dest, plain.len())?;
-	Ok(())
-}
-
-
 /// Decrypt a message (CBC mode).
 ///
 /// Key (`k`) length and initialisation vector (`iv`) length have to be 16 bytes each.
@@ -165,31 +159,43 @@ pub fn decrypt_128_cbc(k: &[u8], iv: &[u8], encrypted: &[u8], dest: &mut [u8]) -
 }
 
 
-// retrocomptibility test
-#[test]
-pub fn test_aes_short() -> Result<(),SymmError> {
-	let key = include_bytes!("../test/key1");
-	let salt = include_bytes!("../test/salt1");
-	let content = include_bytes!("../test/content");
-	let ctr_enc = include_bytes!("../test/result_128_ctr");
-	let cbc_enc = include_bytes!("../test/result_128_cbc");
-	let mut dest = vec![0;110];
-	let mut dest_padded = vec![0;112];
-	let mut dest_padded2 = vec![0;128]; // TODO RustLib need an extra 16bytes in dest : looks extra buggy but function is not currently use (keep it private for now)
-	encrypt_128_cbc(&key[..16], &salt[..16], content, &mut dest_padded2)?;
-	assert!(&dest_padded2[..112] == &cbc_enc[..]);
-	//	buffer2.write_all(&dest1[..]).unwrap();
-	encrypt_128_ctr(&key[..16], &salt[..16], content, &mut dest)?;
-	assert!(&dest[..] == &ctr_enc[..]);
-	let mut content_data = content.to_vec();
-	inplace_encrypt_128_ctr(&key[..16], &salt[..16], &mut content_data[..])?;
-	assert!(&content_data[..] == &ctr_enc[..]);
-	decrypt_128_ctr(&key[..16], &salt[..16], &ctr_enc[..], &mut dest)?;
-	assert!(&dest[..] == &content[..]);
-	let mut content_data = ctr_enc.to_vec();
-	inplace_decrypt_128_ctr(&key[..16], &salt[..16], &mut content_data[..])?;
-	assert!(&content_data[..] == &content[..]);
-	let l = decrypt_128_cbc(&key[..16], &salt[..16], &cbc_enc[..], &mut dest_padded)?;
-	assert!(&dest_padded[..l] == &content[..]);
-	Ok(())
+#[cfg(test)]
+mod tests {
+
+	use super::*;
+
+	// only use for test could be expose in the future
+	fn encrypt_128_cbc(k: &[u8], iv: &[u8], plain: &[u8], dest: &mut [u8]) -> Result<(), SymmError> {
+		let encryptor = Cbc::<Aes128, Pkcs7>::new_varkey(k, GenericArray::from_slice(iv))?;
+		&mut dest[..plain.len()].copy_from_slice(plain);
+		encryptor.encrypt_pad(dest, plain.len())?;
+		Ok(())
+	}
+
+	#[test]
+	pub fn test_aes_short() -> Result<(),SymmError> {
+		let key = include_bytes!("../test/key1");
+		let salt = include_bytes!("../test/salt1");
+		let content = include_bytes!("../test/content");
+		let ctr_enc = include_bytes!("../test/result_128_ctr");
+		let cbc_enc = include_bytes!("../test/result_128_cbc");
+		let mut dest = vec![0;110];
+		let mut dest_padded = vec![0;112];
+		let mut dest_padded2 = vec![0;128]; // TODO RustLib need an extra 16bytes in dest : looks extra buggy but function is not currently use (keep it private for now)
+		encrypt_128_cbc(&key[..16], &salt[..16], content, &mut dest_padded2)?;
+		assert!(&dest_padded2[..112] == &cbc_enc[..]);
+		encrypt_128_ctr(&key[..16], &salt[..16], content, &mut dest)?;
+		assert!(&dest[..] == &ctr_enc[..]);
+		let mut content_data = content.to_vec();
+		inplace_encrypt_128_ctr(&key[..16], &salt[..16], &mut content_data[..])?;
+		assert!(&content_data[..] == &ctr_enc[..]);
+		decrypt_128_ctr(&key[..16], &salt[..16], &ctr_enc[..], &mut dest)?;
+		assert!(&dest[..] == &content[..]);
+		let mut content_data = ctr_enc.to_vec();
+		inplace_decrypt_128_ctr(&key[..16], &salt[..16], &mut content_data[..])?;
+		assert!(&content_data[..] == &content[..]);
+		let l = decrypt_128_cbc(&key[..16], &salt[..16], &cbc_enc[..], &mut dest_padded)?;
+		assert!(&dest_padded[..l] == &content[..]);
+		Ok(())
+	}
 }

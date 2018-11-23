@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-//! asymetric trait
+//! Asymetric crypto traits.
 
 use ::error::Error;
 
-/// Trait for asymetric crypto
+/// Trait for asymetric crypto.
 pub trait Asym {
 
 	/// Signature expected size in bytes
@@ -100,6 +100,7 @@ pub trait FiniteField: Asym {
 /// Keeping in mind that the trait is here to make thing easier
 /// in a parity context. We assert that for use cases such as parity ethereum it is very usefull.
 pub trait PublicKey: Sized + Eq + PartialEq + Clone {
+	const COMPRESSED_PUB_SIZE: usize;
 	type VecRepr: AsRef<[u8]>;
 	type CompVecRepr: AsRef<[u8]>;
 
