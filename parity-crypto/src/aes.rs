@@ -31,14 +31,12 @@ pub struct AesEcb256(Ecb<Aes256, ZeroPadding>);
 impl AesEcb256 {
 
 	/// New encoder/decoder, no iv for ecb
-	#[inline]
 	pub fn new(key: &[u8]) -> Result<Self, SymmError> {
 		Ok(AesEcb256(Ecb::new_varkey(key)?))
 	}
 
 	/// Encrypt data in place without padding. The data length must be a multiple
 	/// of the block size.
-	#[inline]
 	pub fn encrypt(&mut self, content: &mut [u8]) -> Result<(), SymmError> {
 		self.0.encrypt_nopad(content)?;
 		Ok(())
@@ -46,7 +44,6 @@ impl AesEcb256 {
 
 	/// Decrypt data in place without padding. The data length must be a multiple
 	/// of the block size.
-	#[inline]
 	pub fn decrypt(&mut self, content: &mut [u8]) -> Result<(), SymmError> {
 		self.0.decrypt_nopad(content)?;
 		Ok(())
@@ -60,7 +57,6 @@ pub struct AesCtr256(Aes256Ctr);
 impl AesCtr256 {
 
 	/// New encoder/decoder
-	#[inline]
 	pub fn new(key: &[u8], iv: &[u8]) -> Result<Self, SymmError> {
 		Ok(AesCtr256(
 			Aes256Ctr::new(GenericArray::from_slice(key), GenericArray::from_slice(iv))
@@ -69,7 +65,6 @@ impl AesCtr256 {
 
 	/// In place encrypt a content without padding, the content length must be a multiple 
 	/// of the block size.
-	#[inline]
 	pub fn encrypt(&mut self, content: &mut[u8]) -> Result<(), SymmError> {
 		self.0.try_apply_keystream(content)?;
 		Ok(())
@@ -77,7 +72,6 @@ impl AesCtr256 {
 
 	/// In place decrypt a content without padding, the content length must be a multiple 
 	/// of the block size.
-	#[inline]
 	pub fn decrypt(&mut self, content: &mut[u8]) -> Result<(), SymmError> {
 		self.0.try_apply_keystream(content)?;
 		Ok(())

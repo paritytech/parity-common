@@ -20,7 +20,7 @@
 //! highly inefficient here.
 
 extern crate secp256k1;
-use clear_on_drop::clear::{Clear, ClearOnDrop};
+use clear_on_drop::{clear::Clear, ClearOnDrop};
 
 use super::traits::asym::{SecretKey as SecretKeyTrait, PublicKey as PublicKeyTrait, Asym, FiniteField, FixAsymSharedSecret};
 
