@@ -44,14 +44,13 @@ pub fn derive_key(pass: &[u8], salt: &[u8], n: u32, p: u32, r: u32) -> Result<(V
 // if previous crypto lib got a bug.
 #[test]
 pub fn test_derive() -> Result<(),Error> {
-	let pass = include_bytes!("../test/pass1");
-	let salt_v = include_bytes!("../test/salt1");
-	let mut salt = [0;32];
-	salt.copy_from_slice(&salt_v[..32]);
-	let r1 = include_bytes!("../test/right1_1");
-	let r2 = include_bytes!("../test/right1_2");
-	let l1 = include_bytes!("../test/left1_1");
-	let l2 = include_bytes!("../test/left1_2");
+	let pass = [109, 121, 112, 97, 115, 115, 10];
+	let salt = [109, 121, 115, 97, 108, 116, 115, 104, 111, 117, 108, 100, 102, 105,
+		108, 108, 115, 111, 109, 109, 101, 98, 121, 116, 101, 108, 101, 110, 103, 116, 104, 10];
+	let r1 = [93, 134, 79, 68, 223, 27, 44, 174, 236, 184, 179, 203, 74, 139, 73, 66];
+	let r2 = [2, 24, 239, 131, 172, 164, 18, 171, 132, 207, 22, 217, 150, 20, 203, 37];
+	let l1 = [6, 90, 119, 45, 67, 2, 99, 151, 81, 88, 166, 210, 244, 19, 123, 208];
+	let l2 = [253, 123, 132, 12, 188, 89, 196, 2, 107, 224, 239, 231, 135, 177, 125, 62];
 
 	let (l,r) = derive_key(&pass[..],&salt, 262, 1, 8).unwrap();
 	assert!(l == r1);

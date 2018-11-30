@@ -154,5 +154,3 @@ impl From<aes_ctr::stream_cipher::LoopError> for SymmError {
 		SymmError(PrivSymmErr::KeyStream(e))
 	}
 }
-
-
