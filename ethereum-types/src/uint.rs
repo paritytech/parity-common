@@ -1,12 +1,12 @@
-#[cfg(feature="serialize")]
+#[cfg(feature = "serialize")]
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
-#[cfg(feature="serialize")]
+#[cfg(feature = "serialize")]
 use ethereum_types_serialize;
 
 macro_rules! impl_serde {
 	($name: ident, $len: expr) => {
-		#[cfg(feature="serialize")]
+		#[cfg(feature = "serialize")]
 		impl Serialize for $name {
 			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
 				let mut slice = [0u8; 2 + 2 * $len * 8];
@@ -16,7 +16,7 @@ macro_rules! impl_serde {
 			}
 		}
 
-		#[cfg(feature="serialize")]
+		#[cfg(feature = "serialize")]
 		impl<'de> Deserialize<'de> for $name {
 			fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
 				let mut bytes = [0u8; $len * 8];
@@ -62,7 +62,7 @@ impl From<U512> for U256 {
 	fn from(value: U512) -> U256 {
 		let U512(ref arr) = value;
 		if arr[4] | arr[5] | arr[6] | arr[7] != 0 {
-			panic!("Overflow");
+			panic!("From<U512> for U256: encountered overflow")
 		}
 		let mut ret = [0; 4];
 		ret[0] = arr[0];
@@ -89,7 +89,7 @@ impl<'a> From<&'a U512> for U256 {
 	fn from(value: &'a U512) -> U256 {
 		let U512(ref arr) = *value;
 		if arr[4] | arr[5] | arr[6] | arr[7] != 0 {
-			panic!("Overflow");
+			panic!("From<&U512> for U256: encountered overflow")
 		}
 		let mut ret = [0; 4];
 		ret[0] = arr[0];
@@ -104,7 +104,7 @@ impl From<U256> for U128 {
 	fn from(value: U256) -> U128 {
 		let U256(ref arr) = value;
 		if arr[2] | arr[3] != 0 {
-			panic!("Overflow");
+			panic!("From<U256> for U128: encountered overflow")
 		}
 		let mut ret = [0; 2];
 		ret[0] = arr[0];
@@ -117,7 +117,7 @@ impl From<U512> for U128 {
 	fn from(value: U512) -> U128 {
 		let U512(ref arr) = value;
 		if arr[2] | arr[3] | arr[4] | arr[5] | arr[6] | arr[7] != 0 {
-			panic!("Overflow");
+			panic!("From<U512> for U128: encountered overflow")
 		}
 		let mut ret = [0; 2];
 		ret[0] = arr[0];

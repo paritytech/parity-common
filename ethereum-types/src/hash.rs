@@ -1,14 +1,14 @@
-use {U64, U128, U256, U512};
+use crate::{U64, U128, U256, U512};
 
-#[cfg(feature="serialize")]
+#[cfg(feature = "serialize")]
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
-#[cfg(feature="serialize")]
+#[cfg(feature = "serialize")]
 use ethereum_types_serialize;
 
 macro_rules! impl_serde {
 	($name: ident, $len: expr) => {
-		#[cfg(feature="serialize")]
+		#[cfg(feature = "serialize")]
 		impl Serialize for $name {
 			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
 				let mut slice = [0u8; 2 + 2 * $len];
@@ -16,7 +16,7 @@ macro_rules! impl_serde {
 			}
 		}
 
-		#[cfg(feature="serialize")]
+		#[cfg(feature = "serialize")]
 		impl<'de> Deserialize<'de> for $name {
 			fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
 				let mut bytes = [0u8; $len];
@@ -31,16 +31,16 @@ macro_rules! impl_uint_conversions {
 	($hash: ident, $uint: ident) => {
 		impl From<$uint> for $hash {
 			fn from(value: $uint) -> Self {
-				let mut ret = $hash::new();
-				value.to_big_endian(&mut ret);
+				let mut ret = $hash::zero();
+				value.to_big_endian(ret.as_bytes_mut());
 				ret
 			}
 		}
 
 		impl<'a> From<&'a $uint> for $hash {
 			fn from(value: &'a $uint) -> Self {
-				let mut ret = $hash::new();
-				value.to_big_endian(&mut ret);
+				let mut ret = $hash::zero();
+				value.to_big_endian(ret.as_bytes_mut());
 				ret
 			}
 		}
@@ -68,51 +68,45 @@ impl_serde!(H264, 33);
 impl_serde!(H512, 64);
 impl_serde!(H520, 65);
 
-construct_hash!(H32, 4);
-construct_hash!(H64, 8);
-construct_hash!(H128, 16);
-construct_hash!(H160, 20);
-construct_hash!(H256, 32);
-construct_hash!(H264, 33);
-construct_hash!(H512, 64);
-construct_hash!(H520, 65);
+construct_fixed_hash!{ pub struct H32(4); }
+construct_fixed_hash!{ pub struct H64(8); }
+construct_fixed_hash!{ pub struct H128(16); }
+construct_fixed_hash!{ pub struct H160(20); }
+construct_fixed_hash!{ pub struct H256(32); }
+construct_fixed_hash!{ pub struct H264(33); }
+construct_fixed_hash!{ pub struct H512(64); }
+construct_fixed_hash!{ pub struct H520(65); }
 
 impl_uint_conversions!(H64, U64);
 impl_uint_conversions!(H128, U128);
 impl_uint_conversions!(H256, U256);
 impl_uint_conversions!(H512, U512);
 
-#[deprecated]
-impl From<H256> for H160 {
-	fn from(value: H256) -> H160 {
-		let mut ret = H160::new();
-		ret.0.copy_from_slice(&value[12..32]);
-		ret
-	}
-}
-
-#[deprecated]
-impl From<H256> for H64 {
-	fn from(value: H256) -> H64 {
-		let mut ret = H64::new();
-		ret.0.copy_from_slice(&value[20..28]);
-		ret
-	}
-}
-
 impl From<H160> for H256 {
 	fn from(value: H160) -> H256 {
-		let mut ret = H256::new();
-		ret.0[12..32].copy_from_slice(&value);
+		let mut ret = H256::zero();
+		ret.0[12..32].copy_from_slice(value.as_bytes());
 		ret
 	}
 }
 
 impl<'a> From<&'a H160> for H256 {
 	fn from(value: &'a H160) -> H256 {
-		let mut ret = H256::new();
-		ret.0[12..32].copy_from_slice(value);
+		let mut ret = H256::zero();
+		ret.0[12..32].copy_from_slice(value.as_bytes());
 		ret
+	}
+}
+
+impl From<u64> for H160 {
+	fn from(val: u64) -> Self {
+		H160::from_low_u64_be(val)
+	}
+}
+
+impl From<u64> for H256 {
+	fn from(val: u64) -> Self {
+		H256::from_low_u64_be(val)
 	}
 }
 
