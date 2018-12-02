@@ -9,11 +9,14 @@ extern crate uint as uint_crate;
 #[macro_use]
 extern crate fixed_hash;
 extern crate ethbloom;
+extern crate primitive_types;
 
 #[cfg(feature = "serialize")]
-extern crate ethereum_types_serialize;
-#[cfg(feature = "serialize")]
-extern crate serde;
+#[macro_use]
+extern crate impl_serde;
+
+#[macro_use]
+extern crate impl_rlp;
 
 #[cfg(test)]
 extern crate serde_json;

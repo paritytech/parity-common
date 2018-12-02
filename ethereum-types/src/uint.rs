@@ -1,104 +1,12 @@
-#[cfg(feature = "serialize")]
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
-
-#[cfg(feature = "serialize")]
-use ethereum_types_serialize;
-
-macro_rules! impl_serde {
-	($name: ident, $len: expr) => {
-		#[cfg(feature = "serialize")]
-		impl Serialize for $name {
-			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-				let mut slice = [0u8; 2 + 2 * $len * 8];
-				let mut bytes = [0u8; $len * 8];
-				self.to_big_endian(&mut bytes);
-				ethereum_types_serialize::serialize_uint(&mut slice, &bytes, serializer)
-			}
-		}
-
-		#[cfg(feature = "serialize")]
-		impl<'de> Deserialize<'de> for $name {
-			fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-				let mut bytes = [0u8; $len * 8];
-				let wrote = ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Between(0, &mut bytes))?;
-				Ok(bytes[0..wrote].into())
-			}
-		}
-	}
-}
-
 construct_uint!(U64, 1);
+impl_uint_rlp!(U64, 1);
+#[cfg(feature = "serialize")] impl_uint_serde!(U64, 1);
+
 construct_uint!(U128, 2);
-construct_uint!(U256, 4);
-construct_uint!(U512, 8);
+impl_uint_rlp!(U128, 2);
+#[cfg(feature = "serialize")] impl_uint_serde!(U128, 2);
 
-impl_serde!(U64, 1);
-impl_serde!(U128, 2);
-impl_serde!(U256, 4);
-impl_serde!(U512, 8);
-
-impl U256 {
-	/// Multiplies two 256-bit integers to produce full 512-bit integer
-	/// No overflow possible
-	#[inline(always)]
-	pub fn full_mul(self, other: U256) -> U512 {
-		U512(uint_full_mul_reg!(U256, 4, self, other))
-	}
-}
-
-impl From<U256> for U512 {
-	fn from(value: U256) -> U512 {
-		let U256(ref arr) = value;
-		let mut ret = [0; 8];
-		ret[0] = arr[0];
-		ret[1] = arr[1];
-		ret[2] = arr[2];
-		ret[3] = arr[3];
-		U512(ret)
-	}
-}
-
-impl From<U512> for U256 {
-	fn from(value: U512) -> U256 {
-		let U512(ref arr) = value;
-		if arr[4] | arr[5] | arr[6] | arr[7] != 0 {
-			panic!("From<U512> for U256: encountered overflow")
-		}
-		let mut ret = [0; 4];
-		ret[0] = arr[0];
-		ret[1] = arr[1];
-		ret[2] = arr[2];
-		ret[3] = arr[3];
-		U256(ret)
-	}
-}
-
-impl<'a> From<&'a U256> for U512 {
-	fn from(value: &'a U256) -> U512 {
-		let U256(ref arr) = *value;
-		let mut ret = [0; 8];
-		ret[0] = arr[0];
-		ret[1] = arr[1];
-		ret[2] = arr[2];
-		ret[3] = arr[3];
-		U512(ret)
-	}
-}
-
-impl<'a> From<&'a U512> for U256 {
-	fn from(value: &'a U512) -> U256 {
-		let U512(ref arr) = *value;
-		if arr[4] | arr[5] | arr[6] | arr[7] != 0 {
-			panic!("From<&U512> for U256: encountered overflow")
-		}
-		let mut ret = [0; 4];
-		ret[0] = arr[0];
-		ret[1] = arr[1];
-		ret[2] = arr[2];
-		ret[3] = arr[3];
-		U256(ret)
-	}
-}
+pub use primitive_types::{U256, U512};
 
 impl From<U256> for U128 {
 	fn from(value: U256) -> U128 {
@@ -143,18 +51,6 @@ impl From<U128> for U256 {
 		ret[0] = arr[0];
 		ret[1] = arr[1];
 		U256(ret)
-	}
-}
-
-impl From<U256> for u64 {
-	fn from(value: U256) -> u64 {
-		value.as_u64()
-	}
-}
-
-impl From<U256> for u32 {
-	fn from(value: U256) -> u32 {
-		value.as_u32()
 	}
 }
 
