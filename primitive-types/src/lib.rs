@@ -118,6 +118,7 @@ construct_fixed_hash! {
 #[cfg(feature = "impl-codec")] impl_fixed_hash_codec!(H160, 20);
 #[cfg(feature = "impl-rlp")] impl_fixed_hash_rlp!(H160, 20);
 
+#[cfg(feature = "std")]
 impl From<u64> for H160 {
 	fn from(val: u64) -> Self {
 		Self::from_low_u64_be(val)
@@ -148,6 +149,7 @@ construct_fixed_hash! {
 #[cfg(feature = "impl-codec")] impl_fixed_hash_codec!(H256, 32);
 #[cfg(feature = "impl-rlp")] impl_fixed_hash_rlp!(H256, 32);
 
+#[cfg(feature = "std")]
 impl From<u64> for H256 {
 	fn from(val: u64) -> Self {
 		Self::from_low_u64_be(val)
@@ -162,6 +164,7 @@ construct_fixed_hash! {
 #[cfg(feature = "impl-codec")] impl_fixed_hash_codec!(H512, 64);
 #[cfg(feature = "impl-rlp")] impl_fixed_hash_rlp!(H512, 64);
 
+#[cfg(feature = "std")]
 impl From<u64> for H512 {
 	fn from(val: u64) -> Self {
 		Self::from_low_u64_be(val)
