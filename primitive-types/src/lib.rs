@@ -42,6 +42,74 @@ construct_uint!(U256, 4);
 #[cfg(feature = "impl-codec")] impl_uint_codec!(U256, 4);
 #[cfg(feature = "impl-rlp")] impl_uint_rlp!(U256, 4);
 
+impl U256 {
+	/// Multiplies two 256-bit integers to produce full 512-bit integer
+	/// No overflow possible
+	#[inline(always)]
+	pub fn full_mul(self, other: U256) -> U512 {
+		U512(uint_full_mul_reg!(U256, 4, self, other))
+	}
+}
+
+impl From<U256> for U512 {
+	fn from(value: U256) -> U512 {
+		let U256(ref arr) = value;
+		let mut ret = [0; 8];
+		ret[0] = arr[0];
+		ret[1] = arr[1];
+		ret[2] = arr[2];
+		ret[3] = arr[3];
+		U512(ret)
+	}
+}
+
+impl From<U512> for U256 {
+	fn from(value: U512) -> U256 {
+		let U512(ref arr) = value;
+		if arr[4] | arr[5] | arr[6] | arr[7] != 0 {
+			panic!("From<U512> for U256: encountered overflow")
+		}
+		let mut ret = [0; 4];
+		ret[0] = arr[0];
+		ret[1] = arr[1];
+		ret[2] = arr[2];
+		ret[3] = arr[3];
+		U256(ret)
+	}
+}
+
+impl<'a> From<&'a U256> for U512 {
+	fn from(value: &'a U256) -> U512 {
+		let U256(ref arr) = *value;
+		let mut ret = [0; 8];
+		ret[0] = arr[0];
+		ret[1] = arr[1];
+		ret[2] = arr[2];
+		ret[3] = arr[3];
+		U512(ret)
+	}
+}
+
+impl<'a> From<&'a U512> for U256 {
+	fn from(value: &'a U512) -> U256 {
+		let U512(ref arr) = *value;
+		if arr[4] | arr[5] | arr[6] | arr[7] != 0 {
+			panic!("From<&U512> for U256: encountered overflow")
+		}
+		let mut ret = [0; 4];
+		ret[0] = arr[0];
+		ret[1] = arr[1];
+		ret[2] = arr[2];
+		ret[3] = arr[3];
+		U256(ret)
+	}
+}
+
+construct_uint!(U512, 8);
+#[cfg(feature = "impl-serde")] impl_uint_serde!(U512, 8);
+#[cfg(feature = "impl-codec")] impl_uint_codec!(U512, 8);
+#[cfg(feature = "impl-rlp")] impl_uint_rlp!(U512, 8);
+
 construct_fixed_hash! {
 	/// Fixed-size uninterpreted hash type with 20 bytes (160 bits) size.
 	pub struct H160(20);
@@ -53,6 +121,22 @@ construct_fixed_hash! {
 impl From<u64> for H160 {
 	fn from(val: u64) -> Self {
 		Self::from_low_u64_be(val)
+	}
+}
+
+impl From<H160> for H256 {
+	fn from(value: H160) -> H256 {
+		let mut ret = H256::zero();
+		ret.0[12..32].copy_from_slice(value.as_bytes());
+		ret
+	}
+}
+
+impl<'a> From<&'a H160> for H256 {
+	fn from(value: &'a H160) -> H256 {
+		let mut ret = H256::zero();
+		ret.0[12..32].copy_from_slice(value.as_bytes());
+		ret
 	}
 }
 
