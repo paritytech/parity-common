@@ -18,5 +18,8 @@ members = [
 	"trie-standardmap",
 	"triehash",
 	"uint",
+	"impls/codec",
+	"impls/rlp",
+	"impls/serde",
 	"primitive-types",
 ]

@@ -20,3 +20,19 @@ macro_rules! impl_uint_codec {
 		}
 	}
 }
+
+#[macro_export]
+macro_rules! impl_fixed_hash_codec {
+	($name: ident, $len: expr) => {
+		impl $crate::codec::Encode for $name {
+			fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
+				self.0.using_encoded(f)
+			}
+		}
+		impl $crate::codec::Decode for $name {
+			fn decode<I: $crate::codec::Input>(input: &mut I) -> Option<Self> {
+				<[u8; $len] as $crate::codec::Decode>::decode(input).map($name)
+			}
+		}
+	}
+}

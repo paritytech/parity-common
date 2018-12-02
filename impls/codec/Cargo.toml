@@ -1,10 +1,10 @@
 [package]
-name = "uint-codec"
+name = "impl-codec"
 version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 homepage = "https://github.com/paritytech/parity-common"
-description = "Parity Codec serialization support for uint."
+description = "Parity Codec serialization support for uint and fixed hash."
 
 [dependencies]
 parity-codec = { version = "2.1", default-features = false }
