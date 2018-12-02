@@ -1,0 +1,10 @@
+[package]
+name = "uint-rlp"
+version = "0.1.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+license = "MIT"
+homepage = "https://github.com/paritytech/parity-common"
+description = "RLP serialization support for uint."
+
+[dependencies]
+rlp = { version = "0.3", path = "../../rlp" }

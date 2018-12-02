@@ -209,37 +209,6 @@ mod ethereum_traits {
 		}
 	}
 
-	macro_rules! impl_encodable_for_uint {
-		($name: ident, $size: expr) => {
-			impl Encodable for $name {
-				fn rlp_append(&self, s: &mut RlpStream) {
-					let leading_empty_bytes = $size - (self.bits() + 7) / 8;
-					let mut buffer = [0u8; $size];
-					self.to_big_endian(&mut buffer);
-					s.encoder().encode_value(&buffer[leading_empty_bytes..]);
-				}
-			}
-		}
-	}
-
-	macro_rules! impl_decodable_for_uint {
-		($name: ident, $size: expr) => {
-			impl Decodable for $name {
-				fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
-					rlp.decoder().decode_value(|bytes| {
-						if !bytes.is_empty() && bytes[0] == 0 {
-							Err(DecoderError::RlpInvalidIndirection)
-						} else if bytes.len() <= $size {
-							Ok($name::from(bytes))
-						} else {
-							Err(DecoderError::RlpIsTooBig)
-						}
-					})
-				}
-			}
-		}
-	}
-
 	impl_encodable_for_hash!(H64);
 	impl_encodable_for_hash!(H128);
 	impl_encodable_for_hash!(H160);
@@ -255,12 +224,6 @@ mod ethereum_traits {
 	impl_decodable_for_hash!(H512, 64);
 	impl_decodable_for_hash!(H520, 65);
 	impl_decodable_for_hash!(Bloom, 256);
-
-	impl_encodable_for_uint!(U256, 32);
-	impl_encodable_for_uint!(U128, 16);
-
-	impl_decodable_for_uint!(U256, 32);
-	impl_decodable_for_uint!(U128, 16);
 }
 
 impl<'a> Encodable for &'a str {

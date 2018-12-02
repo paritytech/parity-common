@@ -1,0 +1,21 @@
+[package]
+name = "primitive-types"
+version = "0.1.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+license = "MIT"
+homepage = "https://github.com/paritytech/parity-common"
+description = "Primitive types shared by Ethereum and Substrate"
+
+[dependencies]
+fixed-hash = { version = "0.3", path = "../fixed-hash", default-features = false }
+uint = { version = "0.5", path = "../uint", default-features = false }
+uint-serde = { version = "0.1", path = "../uint/serde", optional = true }
+uint-codec = { version = "0.1", path = "../uint/codec", optional = true }
+uint-rlp = { version = "0.1", path = "../uint/rlp", optional = true }
+
+[features]
+default = ["std"]
+std = ["uint/std", "fixed-hash/std"]
+serde = ["uint-serde"]
+codec = ["uint-codec"]
+rlp = ["uint-rlp"]

@@ -29,8 +29,8 @@ pub extern crate rustc_hex;
 #[doc(hidden)]
 pub extern crate quickcheck;
 
-#[macro_use]
 extern crate crunchy;
+pub use crunchy::unroll;
 
 #[macro_use]
 mod uint;

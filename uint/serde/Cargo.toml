@@ -1,0 +1,11 @@
+[package]
+name = "uint-serde"
+version = "0.1.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+license = "MIT"
+homepage = "https://github.com/paritytech/parity-common"
+description = "Serde serialization support for uint."
+
+[dependencies]
+serde = "1.0"
+rustc-hex = "2.0.1"
