@@ -1,14 +1,12 @@
 language: rust
 rust:
-  - stable
-  - beta
   - nightly
 matrix:
   allow_failures:
     - rust: nightly
 script:
   - cargo test --all --release
-  - if [ "$TRAVIS_RUST_VERSION" == "nightly" ]; then cd ethbloom && cargo build --no-default-features; fi
-  - if [ "$TRAVIS_RUST_VERSION" == "nightly" ]; then cd ethereum-types && cargo build --no-default-features; fi
+  - cd ethbloom && cargo build --no-default-features
+  - cd ethereum-types && cargo build --no-default-features
 env:
   - RUST_LOG=quickcheck
