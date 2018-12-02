@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! Serde serialization support for uint and fixed hash.
+
 #[doc(hidden)]
 pub extern crate serde;
 
@@ -15,6 +17,7 @@ pub extern crate rustc_hex;
 #[doc(hidden)]
 pub mod serialize;
 
+/// Add Serde serialization support to an integer created by `construct_uint!`.
 #[macro_export]
 macro_rules! impl_uint_serde {
 	($name: ident, $len: expr) => {
@@ -35,6 +38,7 @@ macro_rules! impl_uint_serde {
 	}
 }
 
+/// Add Serde serialization support to a fixed-sized hash type created by `construct_fixed_hash!`.
 #[macro_export]
 macro_rules! impl_fixed_hash_serde {
 	($name: ident, $len: expr) => {

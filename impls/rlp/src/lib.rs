@@ -6,12 +6,15 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! RLP serialization support for uint and fixed hash.
+
 #[doc(hidden)]
 pub extern crate rlp;
 
 #[doc(hidden)]
 pub extern crate core as core_;
 
+/// Add RLP serialization support to an integer created by `construct_uint!`.
 #[macro_export]
 macro_rules! impl_uint_rlp {
 	($name: ident, $size: expr) => {
@@ -40,6 +43,7 @@ macro_rules! impl_uint_rlp {
 	}
 }
 
+/// Add RLP serialization support to a fixed-sized hash type created by `construct_fixed_hash!`.
 #[macro_export]
 macro_rules! impl_fixed_hash_rlp {
 	($name: ident, $size: expr) => {
