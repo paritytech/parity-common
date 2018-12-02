@@ -1,4 +1,4 @@
-//! 
+//!
 //! ```rust
 //! extern crate ethbloom;
 //! #[macro_use] extern crate hex_literal;
@@ -26,7 +26,7 @@
 //!     ).unwrap();
 //! 	let address = hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106");
 //! 	let topic = hex!("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc");
-//! 	
+//!
 //! 	let mut my_bloom = Bloom::default();
 //! 	assert!(!my_bloom.contains_input(Input::Raw(&address)));
 //! 	assert!(!my_bloom.contains_input(Input::Raw(&topic)));
@@ -34,7 +34,7 @@
 //! 	my_bloom.accrue(Input::Raw(&address));
 //! 	assert!(my_bloom.contains_input(Input::Raw(&address)));
 //! 	assert!(!my_bloom.contains_input(Input::Raw(&topic)));
-//! 	
+//!
 //! 	my_bloom.accrue(Input::Raw(&topic));
 //! 	assert!(my_bloom.contains_input(Input::Raw(&address)));
 //! 	assert!(my_bloom.contains_input(Input::Raw(&topic)));
@@ -56,17 +56,12 @@ extern crate crunchy;
 extern crate fixed_hash;
 
 #[cfg(feature="serialize")]
-extern crate ethereum_types_serialize;
-
-#[cfg(feature="serialize")]
-extern crate serde;
+#[macro_use]
+extern crate impl_serde;
 
 #[cfg(test)]
 #[macro_use]
 extern crate hex_literal;
-
-#[cfg(feature="serialize")]
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
 use core::{ops, mem};
 use tiny_keccak::keccak256;
@@ -227,7 +222,7 @@ impl<'a> BloomRef<'a> {
 		let bloom: Bloom = input.into();
 		self.contains_bloom(&bloom)
 	}
-	
+
 	pub fn contains_bloom<'b, B>(&self, bloom: B) -> bool where BloomRef<'b>: From<B> {
 		let bloom_ref: BloomRef = bloom.into();
 		assert_eq!(self.0.len(), BLOOM_SIZE);
@@ -259,22 +254,8 @@ impl<'a> From<&'a Bloom> for BloomRef<'a> {
 	}
 }
 
-#[cfg(feature="serialize")]
-impl Serialize for Bloom {
-	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-		let mut slice = [0u8; 2 + 2 * BLOOM_SIZE];
-		ethereum_types_serialize::serialize(&mut slice, &self.0, serializer)
-	}
-}
-
-#[cfg(feature="serialize")]
-impl<'de> Deserialize<'de> for Bloom {
-	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-		let mut bytes = [0; BLOOM_SIZE];
-		ethereum_types_serialize::deserialize_check_len(deserializer, ethereum_types_serialize::ExpectedLen::Exact(&mut bytes))?;
-		Ok(Bloom(bytes))
-	}
-}
+#[cfg(feature = "serialize")]
+impl_fixed_hash_serde!(Bloom, BLOOM_SIZE);
 
 #[cfg(test)]
 mod tests {
