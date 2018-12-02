@@ -346,11 +346,11 @@ pub fn split_u128(a: u128) -> (u64, u64) {
 
 #[macro_export]
 macro_rules! construct_uint {
-	( $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_words:tt ); ) => {
+	($name:ident, $n_words: tt) => (
+		/// Little-endian large integer type
 		#[repr(C)]
-		$(#[$attr])*
 		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
-		$visibility struct $name ([u64; $n_words]);
+		pub struct $name(pub [u64; $n_words]);
 
 		impl AsRef<$name> for $name {
 			fn as_ref(&self) -> &$name {
@@ -1271,7 +1271,7 @@ macro_rules! construct_uint {
 		// `$n_words * 8` because macro expects bytes and
 		// uints use 64 bit (8 byte) words
 		impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
-	}
+	);
 }
 
 #[cfg(feature = "std")]

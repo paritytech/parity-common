@@ -9,13 +9,14 @@ description = "Primitive types shared by Ethereum and Substrate"
 [dependencies]
 fixed-hash = { version = "0.3", path = "../fixed-hash", default-features = false }
 uint = { version = "0.5", path = "../uint", default-features = false }
+crunchy = { version = "0.2", default-features = false }
 impl-serde = { version = "0.1", path = "../impls/serde", optional = true }
 impl-codec = { version = "0.1", path = "../impls/codec", optional = true }
 impl-rlp = { version = "0.1", path = "../impls/rlp", optional = true }
 
 [features]
 default = ["std"]
-std = ["uint/std", "fixed-hash/std"]
+std = ["uint/std", "fixed-hash/std", "crunchy/std"]
 serde = ["impl-serde"]
 codec = ["impl-codec"]
 rlp = ["impl-rlp"]
