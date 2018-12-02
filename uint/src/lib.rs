@@ -40,13 +40,11 @@ pub use uint::*;
 mod common {
 	construct_uint! {
 		/// Little-endian 256-bit integer type.
-		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 		pub struct U256(4);
 	}
 
 	construct_uint! {
 		/// Little-endian 512-bit integer type.
-		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 		pub struct U512(8);
 	}
 

@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! Primitive types shared by Substrate and Parity Ethereum.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(all(feature = "impl-serde", not(feature = "std")))]
@@ -34,7 +36,6 @@ extern crate impl_rlp;
 
 construct_uint! {
 	/// Little-endian 256-bit integer type.
-	#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 	pub struct U256(4);
 }
 #[cfg(feature = "impl-serde")] impl_uint_serde!(U256, 4);

@@ -349,6 +349,7 @@ macro_rules! construct_uint {
 	( $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_words:tt ); ) => {
 		#[repr(C)]
 		$(#[$attr])*
+		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 		$visibility struct $name ([u64; $n_words]);
 
 		impl AsRef<$name> for $name {
