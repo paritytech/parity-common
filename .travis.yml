@@ -7,6 +7,8 @@ matrix:
   allow_failures:
     - rust: nightly
 script:
-  - cargo test -p ethereum-types --no-default-features --release
+  - cargo test --all --release
+  - if [ "$TRAVIS_RUST_VERSION" == "nightly" ]; then cd ethbloom && cargo build --no-default-features; fi
+  - if [ "$TRAVIS_RUST_VERSION" == "nightly" ]; then cd ethereum-types && cargo build --no-default-features; fi
 env:
   - RUST_LOG=quickcheck
