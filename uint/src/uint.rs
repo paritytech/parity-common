@@ -351,7 +351,7 @@ macro_rules! construct_uint {
 		#[repr(C)]
 		$(#[$attr])*
 		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
-		$visibility struct $name ([u64; $n_words]);
+		$visibility struct $name (pub [u64; $n_words]);
 
 		impl AsRef<$name> for $name {
 			fn as_ref(&self) -> &$name {
