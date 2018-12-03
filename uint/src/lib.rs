@@ -38,6 +38,8 @@ pub use uint::*;
 
 #[cfg(feature = "common")]
 mod common {
+	use super::unroll;
+
 	construct_uint! {
 		/// Little-endian 256-bit integer type.
 		pub struct U256(4);
