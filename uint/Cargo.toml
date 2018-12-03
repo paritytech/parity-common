@@ -16,7 +16,7 @@ quickcheck = { version = "0.6", optional = true }
 crunchy = { version = "0.2", default-features = true }
 
 [features]
-default = ["std", "common"]
+default = ["std"]
 std = ["byteorder/std", "rustc-hex/std", "crunchy/std"]
 common = []
 

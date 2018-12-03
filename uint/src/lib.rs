@@ -29,8 +29,8 @@ pub extern crate rustc_hex;
 #[doc(hidden)]
 pub extern crate quickcheck;
 
-#[macro_use]
 extern crate crunchy;
+pub use crunchy::unroll;
 
 #[macro_use]
 mod uint;
@@ -38,8 +38,15 @@ pub use uint::*;
 
 #[cfg(feature = "common")]
 mod common {
-	construct_uint!(U256, 4);
-	construct_uint!(U512, 8);
+	construct_uint! {
+		/// Little-endian 256-bit integer type.
+		pub struct U256(4);
+	}
+
+	construct_uint! {
+		/// Little-endian 512-bit integer type.
+		pub struct U512(8);
+	}
 
 	#[doc(hidden)]
 	impl U256 {

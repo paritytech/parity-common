@@ -10,12 +10,11 @@
 extern crate core;
 
 #[macro_use]
-extern crate crunchy;
-
-#[macro_use]
 extern crate uint;
 
-construct_uint!(U256, 4);
+construct_uint! {
+	pub struct U256(4);
+}
 
 fn main() {
 	// Example modular arithmetic using bigint U256 primitives
