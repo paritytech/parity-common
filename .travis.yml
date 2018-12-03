@@ -1,12 +1,12 @@
 language: rust
 rust:
+  - stable
+  - beta
   - nightly
 matrix:
   allow_failures:
     - rust: nightly
 script:
-  - cargo test --all --release
-  - cd ethbloom && cargo build --no-default-features
-  - cd ethereum-types && cargo build --no-default-features
+  - cargo test -p ethereum-types --no-default-features --release
 env:
   - RUST_LOG=quickcheck
