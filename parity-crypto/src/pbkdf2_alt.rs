@@ -33,5 +33,5 @@ pub fn sha512(iter: u32, salt: Salt, sec: Secret, out: &mut [u8; 64]) {
 
 
 #[cfg(test)]
-::tests_pbkdf2!();
-
+#[path = "pbkdf2/test.rs"]
+mod test;

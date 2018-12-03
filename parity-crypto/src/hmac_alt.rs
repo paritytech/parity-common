@@ -84,4 +84,5 @@ pub fn verify<T: Mac>(k: &VerifyKey<T>, data: &[u8], sig: &[u8]) -> bool {
 }
 
 #[cfg(test)]
-::tests_hmac!();
+#[path = "hmac/test.rs"]
+mod test;
