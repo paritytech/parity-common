@@ -1,6 +1,6 @@
 [package]
 name = "primitive-types"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
@@ -17,6 +17,10 @@ impl-rlp = { version = "0.1", path = "../impls/rlp", default-features = false, o
 [features]
 default = ["std"]
 std = ["uint/std", "fixed-hash/std", "crunchy/std", "impl-codec/std"]
+heapsize = ["uint/heapsize", "fixed-hash/heapsize"]
+byteorder = ["fixed-hash/byteorder"]
+libc = ["fixed-hash/libc"]
+rustc-hex = ["fixed-hash/rustc-hex"]
 serde = ["impl-serde"]
 codec = ["impl-codec"]
 rlp = ["impl-rlp"]
