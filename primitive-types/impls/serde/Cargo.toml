@@ -8,4 +8,4 @@ description = "Serde serialization support for uint and fixed hash."
 
 [dependencies]
 serde = "1.0"
-rustc-hex = "2.0.1"
+rustc-hex = "2"
