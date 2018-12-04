@@ -14,12 +14,6 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(all(feature = "impl-serde", not(feature = "std")))]
-compile_error!("Feature \"impl-serde\" requires feature \"std\" to build.");
-
-#[cfg(all(feature = "impl-rlp", not(feature = "std")))]
-compile_error!("Feature \"impl-rlp\" requires feature \"std\" to build.");
-
 #[macro_use]
 extern crate uint;
 
