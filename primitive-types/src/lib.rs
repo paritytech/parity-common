@@ -159,7 +159,7 @@ impl_fixed_hash_codec!(H256, 32);
 #[cfg(feature = "impl-rlp")]
 impl_fixed_hash_rlp!(H256, 32);
 
-#[cfg(feature = "std")]
+#[cfg(feature = "fixed-hash/byteorder")]
 impl From<u64> for H256 {
 	fn from(val: u64) -> Self {
 		Self::from_low_u64_be(val)
@@ -177,7 +177,7 @@ impl_fixed_hash_codec!(H512, 64);
 #[cfg(feature = "impl-rlp")]
 impl_fixed_hash_rlp!(H512, 64);
 
-#[cfg(feature = "std")]
+#[cfg(feature = "fixed-hash/byteorder")]
 impl From<u64> for H512 {
 	fn from(val: u64) -> Self {
 		Self::from_low_u64_be(val)
