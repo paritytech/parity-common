@@ -125,21 +125,7 @@ impl_fixed_hash_codec!(H160, 20);
 #[cfg(feature = "impl-rlp")]
 impl_fixed_hash_rlp!(H160, 20);
 
-impl From<H160> for H256 {
-	fn from(value: H160) -> H256 {
-		let mut ret = H256::zero();
-		ret.0[12..32].copy_from_slice(value.as_bytes());
-		ret
-	}
-}
-
-impl<'a> From<&'a H160> for H256 {
-	fn from(value: &'a H160) -> H256 {
-		let mut ret = H256::zero();
-		ret.0[12..32].copy_from_slice(value.as_bytes());
-		ret
-	}
-}
+impl_fixed_hash_conversions!(H256, H160);
 
 construct_fixed_hash! {
 	/// Fixed-size uninterpreted hash type with 32 bytes (256 bits) size.
