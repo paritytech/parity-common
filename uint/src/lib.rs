@@ -35,31 +35,3 @@ pub use crunchy::unroll;
 #[macro_use]
 mod uint;
 pub use uint::*;
-
-#[cfg(feature = "common")]
-mod common {
-	use super::unroll;
-
-	construct_uint! {
-		/// Little-endian 256-bit integer type.
-		pub struct U256(4);
-	}
-
-	construct_uint! {
-		/// Little-endian 512-bit integer type.
-		pub struct U512(8);
-	}
-
-	#[doc(hidden)]
-	impl U256 {
-		/// Multiplies two 256-bit integers to produce full 512-bit integer
-		/// No overflow possible
-		#[inline(always)]
-		pub fn full_mul(self, other: U256) -> U512 {
-			U512(uint_full_mul_reg!(U256, 4, self, other))
-		}
-	}
-}
-
-#[cfg(feature = "common")]
-pub use common::{U256, U512};

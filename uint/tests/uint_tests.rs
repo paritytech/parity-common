@@ -12,7 +12,15 @@ extern crate crunchy;
 
 use core::u64::MAX;
 use core::str::FromStr;
-use uint::{U256, U512, FromDecStrErr};
+use uint::{FromDecStrErr};
+
+construct_uint! {
+	pub struct U256(4);
+}
+
+construct_uint! {
+	pub struct U512(8);
+}
 
 #[test]
 fn uint256_checked_ops() {
