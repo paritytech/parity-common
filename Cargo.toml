@@ -17,5 +17,6 @@ members = [
 	"trace-time",
 	"trie-standardmap",
 	"triehash",
-	"uint"
+	"uint",
+  "mem",
 ]
