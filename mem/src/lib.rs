@@ -29,6 +29,30 @@ use std::ptr;
 #[cfg(not(feature = "volatile-erase"))]
 pub use cod::clear::Clear;
 
+#[cfg(feature = "jemalloc-global")]
+extern crate jemallocator;
+
+#[cfg(feature = "dlmalloc-global")]
+extern crate dlmalloc;
+
+#[cfg(feature = "weealloc-global")]
+extern crate wee_alloc;
+
+#[cfg(feature = "jemalloc-global")]
+#[global_allocator]
+/// global allocator
+pub static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
+#[cfg(feature = "dlmalloc-global")]
+#[global_allocator]
+/// global allocator
+pub static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
+
+#[cfg(feature = "weealloc-global")]
+#[global_allocator]
+/// global allocator
+pub static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
 pub mod alloc;
 
 /// This is a copy of patched crate `malloc_size_of` as a module.
