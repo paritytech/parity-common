@@ -323,7 +323,6 @@ macro_rules! construct_fixed_hash {
 		impl_rand_for_fixed_hash!($name);
 		impl_libc_for_fixed_hash!($name);
 		impl_rustc_hex_for_fixed_hash!($name);
-		impl_heapsize_for_fixed_hash!($name);
 		impl_quickcheck_for_fixed_hash!($name);
 	}
 }
@@ -660,45 +659,6 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 					return Err($crate::rustc_hex::FromHexError::InvalidHexLength);
 				}
 				Ok($name::from_slice(&bytes))
-			}
-		}
-	}
-}
-
-// Implementation for disabled heapsize crate support.
-// 
-// # Note
-//
-// Feature guarded macro definitions instead of feature guarded impl blocks
-// to work around the problems of introducing `heapsize` crate feature in
-// a user crate.
-#[cfg(not(
-	all(feature = "heapsize", not(target_os = "unknown"))
-))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_heapsize_for_fixed_hash {
-	( $name:ident ) => {}
-}
-
-// Implementation for enabled heapsize crate support.
-// 
-// # Note
-//
-// Feature guarded macro definitions instead of feature guarded impl blocks
-// to work around the problems of introducing `heapsize` crate feature in
-// a user crate.
-#[cfg(
-	all(feature = "heapsize", not(target_os = "unknown"))
-)]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_heapsize_for_fixed_hash {
-	( $name:ident ) => {
-		impl $crate::heapsize::HeapSizeOf for $name {
-			#[inline]
-			fn heap_size_of_children(&self) -> usize {
-				0
 			}
 		}
 	}

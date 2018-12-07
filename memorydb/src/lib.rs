@@ -16,14 +16,14 @@
 
 //! Reference-counted memory-based `HashDB` implementation.
 extern crate hashdb;
-extern crate heapsize;
+extern crate parity_util_mem as malloc_size_of;
 extern crate rlp;
 #[cfg(test)] extern crate keccak_hasher;
 #[cfg(test)] extern crate tiny_keccak;
 #[cfg(test)] extern crate ethereum_types;
 
 use hashdb::{HashDB, Hasher as KeyHasher, AsHashDB};
-use heapsize::HeapSizeOf;
+use malloc_size_of::{MallocSizeOf, MallocSizeOfOps, MallocSizeOfExt};
 use rlp::NULL_RLP;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -91,7 +91,7 @@ pub struct MemoryDB<H: KeyHasher, T> {
 impl<'a, H, T> Default for MemoryDB<H, T>
 where
 	H: KeyHasher,
-	H::Out: HeapSizeOf,
+	H::Out: MallocSizeOf,
 	T: From<&'a [u8]> + Clone
 {
 	fn default() -> Self { Self::new() }
@@ -100,7 +100,7 @@ where
 impl<'a, H, T> MemoryDB<H, T>
 where
 	H: KeyHasher,
-	H::Out: HeapSizeOf,
+	H::Out: MallocSizeOf,
 	T: From<&'a [u8]> + Clone,
 {
 	/// Create a new instance of the memory DB.
@@ -112,7 +112,7 @@ where
 impl<H, T> MemoryDB<H, T>
 where
 	H: KeyHasher,
-	H::Out: HeapSizeOf,
+	H::Out: MallocSizeOf,
 	T: Default,
 {
 	/// Remove an element and delete it from storage if reference count reaches zero.
@@ -216,16 +216,29 @@ impl<H: KeyHasher, T: Clone> MemoryDB<H, T> {
 
 impl<H, T> MemoryDB<H, T>
 where
-	H: KeyHasher,
-	H::Out: HeapSizeOf,
-	T: HeapSizeOf,
+H: KeyHasher,
+	H::Out: MallocSizeOf,
+	T: MallocSizeOf,
 {
 	/// Returns the size of allocated heap memory
 	pub fn mem_used(&self) -> usize {
-		self.data.heap_size_of_children()
+		self.m_size_of()
 	}
 }
 
+impl<H, T> MallocSizeOf for MemoryDB<H, T>
+where
+H: KeyHasher,
+	H::Out: MallocSizeOf,
+	T: MallocSizeOf,
+{
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.data.size_of(ops)
+			+ self.null_node_data.size_of(ops)
+			+ self.hashed_null_node.size_of(ops)
+	}
+}
+	
 impl<H, T> HashDB<H, T> for MemoryDB<H, T>
 where
 	H: KeyHasher,
