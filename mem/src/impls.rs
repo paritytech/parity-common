@@ -27,7 +27,12 @@ use self::elastic_array::*;
 use self::parking_lot::{Mutex, RwLock};
 use super::{MallocSizeOf, MallocSizeOfOps};
 
+#[cfg(not(feature = "std"))]
+use core as std;
+
+#[cfg(feature = "std")]
 malloc_size_of_is_0!(std::time::Instant);
+malloc_size_of_is_0!(std::time::Duration);
 
 malloc_size_of_is_0!(
 	U64, U128, U256, U512, H32, H64,

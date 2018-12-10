@@ -39,7 +39,10 @@ use malloc_size::{MallocSizeOfOps, VoidPtrToSizeFn, MallocSizeOf};
 use malloc_size::MallocConditionalSizeOf;
 #[cfg(not(feature = "conditional-mettering"))]
 use malloc_size::MallocUnconditionalSizeOf;
+#[cfg(feature = "std")]
 use std::os::raw::c_void;
+#[cfg(not(feature = "std"))]
+use core::ffi::c_void;
 
 #[cfg(not(feature = "weealloc-global"))]
 #[cfg(not(feature = "dlmalloc-global"))]
@@ -218,6 +221,7 @@ impl<T: MallocSizeOf> MallocSizeOfExt for T {}
 /// we default to unconditional mettering
 /// It would be interesting to run some test with global mutex other weak handle in ops to check
 /// how much we measure multiple times
+#[cfg(feature = "std")]
 #[cfg(not(feature = "conditional-mettering"))]
 impl<T: MallocSizeOf> MallocSizeOf for std::sync::Arc<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
@@ -225,6 +229,7 @@ impl<T: MallocSizeOf> MallocSizeOf for std::sync::Arc<T> {
 	}
 }
 
+#[cfg(feature = "std")]
 #[cfg(feature = "conditional-mettering")]
 impl<T: MallocSizeOf> MallocSizeOf for std::sync::Arc<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {

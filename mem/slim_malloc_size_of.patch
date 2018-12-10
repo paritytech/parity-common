@@ -71,7 +71,7 @@ index 22840c89d8..dbf1208ed9 100644
  [target.'cfg(target_os = "android")'.dependencies]
  mozjs = { version = "0.9.5", optional = true, features=["init_once"]}
 diff --git a/components/malloc_size_of/lib.rs b/components/malloc_size_of/lib.rs
-index 778082b5f0..1a89015a32 100644
+index 778082b5f0..75ba0909e8 100644
 --- a/components/malloc_size_of/lib.rs
 +++ b/components/malloc_size_of/lib.rs
 @@ -43,11 +43,18 @@
@@ -93,7 +93,7 @@ index 778082b5f0..1a89015a32 100644
  extern crate hashglobe;
  #[cfg(feature = "servo")]
  extern crate hyper;
-@@ -57,41 +64,51 @@ extern crate hyper_serde;
+@@ -57,41 +64,68 @@ extern crate hyper_serde;
  extern crate keyboard_types;
  #[cfg(feature = "servo")]
  extern crate mozjs as js;
@@ -105,6 +105,7 @@ index 778082b5f0..1a89015a32 100644
 -#[cfg(feature = "servo")]
 +#[cfg(any(feature = "servo", feature = "serde_only"))]
  extern crate serde_bytes;
++#[cfg(feature = "std")]
 +#[cfg(feature = "extra")]
  extern crate servo_arc;
 +#[cfg(feature = "extra")]
@@ -128,6 +129,17 @@ index 778082b5f0..1a89015a32 100644
  
 -#[cfg(feature = "servo")]
 -use serde_bytes::ByteBuf;
++#[cfg(not(feature = "std"))]
++use alloc::vec::Vec;
++#[cfg(not(feature = "std"))]
++use alloc::string::String;
++#[cfg(not(feature = "std"))]
++mod std {
++  pub use core::*;
++  pub use alloc::collections;
++}
++
++#[cfg(feature = "std")]
 +#[cfg(not(feature = "extra"))]
 +use std::sync as servo_arc;
 +
@@ -137,7 +149,12 @@ index 778082b5f0..1a89015a32 100644
  use std::mem::size_of;
  use std::ops::Range;
  use std::ops::{Deref, DerefMut};
++#[cfg(feature = "std")]
  use std::os::raw::c_void;
++#[cfg(not(feature = "std"))]
++use core::ffi::c_void;
++#[cfg(not(feature = "std"))]
++pub use alloc::boxed::Box;
 +#[cfg(feature = "extra")]
  use void::Void;
  
@@ -151,7 +168,7 @@ index 778082b5f0..1a89015a32 100644
  
  /// Operations used when measuring heap usage of data structures.
  pub struct MallocSizeOfOps {
-@@ -216,6 +233,7 @@ pub trait MallocConditionalShallowSizeOf {
+@@ -216,6 +250,7 @@ pub trait MallocConditionalShallowSizeOf {
      fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
  }
  
@@ -159,7 +176,7 @@ index 778082b5f0..1a89015a32 100644
  impl MallocSizeOf for String {
      fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          unsafe { ops.malloc_size_of(self.as_ptr()) }
-@@ -229,6 +247,7 @@ impl<'a, T: ?Sized> MallocSizeOf for &'a T {
+@@ -229,6 +264,7 @@ impl<'a, T: ?Sized> MallocSizeOf for &'a T {
      }
  }
  
@@ -167,7 +184,7 @@ index 778082b5f0..1a89015a32 100644
  impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
      fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          unsafe { ops.malloc_size_of(&**self) }
-@@ -241,6 +260,7 @@ impl<T: MallocSizeOf + ?Sized> MallocSizeOf for Box<T> {
+@@ -241,6 +277,7 @@ impl<T: MallocSizeOf + ?Sized> MallocSizeOf for Box<T> {
      }
  }
  
@@ -175,7 +192,7 @@ index 778082b5f0..1a89015a32 100644
  impl<T> MallocShallowSizeOf for thin_slice::ThinBoxedSlice<T> {
      fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          let mut n = 0;
-@@ -253,6 +273,7 @@ impl<T> MallocShallowSizeOf for thin_slice::ThinBoxedSlice<T> {
+@@ -253,6 +290,7 @@ impl<T> MallocShallowSizeOf for thin_slice::ThinBoxedSlice<T> {
      }
  }
  
@@ -183,7 +200,15 @@ index 778082b5f0..1a89015a32 100644
  impl<T: MallocSizeOf> MallocSizeOf for thin_slice::ThinBoxedSlice<T> {
      fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          self.shallow_size_of(ops) + (**self).size_of(ops)
-@@ -351,14 +372,15 @@ impl<T: MallocSizeOf> MallocSizeOf for [T] {
+@@ -329,6 +367,7 @@ impl<T: MallocSizeOf> MallocSizeOf for std::cell::RefCell<T> {
+     }
+ }
+ 
++#[cfg(feature = "std")]
+ impl<'a, B: ?Sized + ToOwned> MallocSizeOf for std::borrow::Cow<'a, B>
+ where
+     B::Owned: MallocSizeOf,
+@@ -351,14 +390,15 @@ impl<T: MallocSizeOf> MallocSizeOf for [T] {
      }
  }
  
@@ -201,7 +226,7 @@ index 778082b5f0..1a89015a32 100644
  impl MallocSizeOf for ByteBuf {
      fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          let mut n = self.shallow_size_of(ops);
-@@ -369,6 +391,7 @@ impl MallocSizeOf for ByteBuf {
+@@ -369,6 +409,7 @@ impl MallocSizeOf for ByteBuf {
      }
  }
  
@@ -209,7 +234,7 @@ index 778082b5f0..1a89015a32 100644
  impl<T> MallocShallowSizeOf for Vec<T> {
      fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          unsafe { ops.malloc_size_of(self.as_ptr()) }
-@@ -412,6 +435,7 @@ impl<T: MallocSizeOf> MallocSizeOf for std::collections::VecDeque<T> {
+@@ -412,6 +453,7 @@ impl<T: MallocSizeOf> MallocSizeOf for std::collections::VecDeque<T> {
      }
  }
  
@@ -217,7 +242,7 @@ index 778082b5f0..1a89015a32 100644
  impl<A: smallvec::Array> MallocShallowSizeOf for smallvec::SmallVec<A> {
      fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          if self.spilled() {
-@@ -422,6 +446,7 @@ impl<A: smallvec::Array> MallocShallowSizeOf for smallvec::SmallVec<A> {
+@@ -422,6 +464,7 @@ impl<A: smallvec::Array> MallocShallowSizeOf for smallvec::SmallVec<A> {
      }
  }
  
@@ -225,7 +250,23 @@ index 778082b5f0..1a89015a32 100644
  impl<A> MallocSizeOf for smallvec::SmallVec<A>
  where
      A: smallvec::Array,
-@@ -471,6 +496,7 @@ where
+@@ -436,6 +479,7 @@ where
+     }
+ }
+ 
++#[cfg(feature = "std")]
+ impl<T, S> MallocShallowSizeOf for std::collections::HashSet<T, S>
+ where
+     T: Eq + Hash,
+@@ -457,6 +501,7 @@ where
+     }
+ }
+ 
++#[cfg(feature = "std")]
+ impl<T, S> MallocSizeOf for std::collections::HashSet<T, S>
+ where
+     T: Eq + Hash + MallocSizeOf,
+@@ -471,6 +516,7 @@ where
      }
  }
  
@@ -233,7 +274,7 @@ index 778082b5f0..1a89015a32 100644
  impl<T, S> MallocShallowSizeOf for hashglobe::hash_set::HashSet<T, S>
  where
      T: Eq + Hash,
-@@ -488,6 +514,7 @@ where
+@@ -488,6 +534,7 @@ where
      }
  }
  
@@ -241,7 +282,7 @@ index 778082b5f0..1a89015a32 100644
  impl<T, S> MallocSizeOf for hashglobe::hash_set::HashSet<T, S>
  where
      T: Eq + Hash + MallocSizeOf,
-@@ -502,6 +529,7 @@ where
+@@ -502,6 +549,7 @@ where
      }
  }
  
@@ -249,7 +290,7 @@ index 778082b5f0..1a89015a32 100644
  impl<T, S> MallocShallowSizeOf for hashglobe::fake::HashSet<T, S>
  where
      T: Eq + Hash,
-@@ -513,6 +541,7 @@ where
+@@ -513,6 +561,7 @@ where
      }
  }
  
@@ -257,7 +298,23 @@ index 778082b5f0..1a89015a32 100644
  impl<T, S> MallocSizeOf for hashglobe::fake::HashSet<T, S>
  where
      T: Eq + Hash + MallocSizeOf,
-@@ -587,6 +616,7 @@ where
+@@ -524,6 +573,7 @@ where
+     }
+ }
+ 
++#[cfg(feature = "std")]
+ impl<K, V, S> MallocShallowSizeOf for std::collections::HashMap<K, V, S>
+ where
+     K: Eq + Hash,
+@@ -541,6 +591,7 @@ where
+     }
+ }
+ 
++#[cfg(feature = "std")]
+ impl<K, V, S> MallocSizeOf for std::collections::HashMap<K, V, S>
+ where
+     K: Eq + Hash + MallocSizeOf,
+@@ -587,6 +638,7 @@ where
      }
  }
  
@@ -265,7 +322,7 @@ index 778082b5f0..1a89015a32 100644
  impl<K, V, S> MallocShallowSizeOf for hashglobe::hash_map::HashMap<K, V, S>
  where
      K: Eq + Hash,
-@@ -604,6 +634,7 @@ where
+@@ -604,6 +656,7 @@ where
      }
  }
  
@@ -273,7 +330,7 @@ index 778082b5f0..1a89015a32 100644
  impl<K, V, S> MallocSizeOf for hashglobe::hash_map::HashMap<K, V, S>
  where
      K: Eq + Hash + MallocSizeOf,
-@@ -620,6 +651,7 @@ where
+@@ -620,6 +673,7 @@ where
      }
  }
  
@@ -281,7 +338,7 @@ index 778082b5f0..1a89015a32 100644
  impl<K, V, S> MallocShallowSizeOf for hashglobe::fake::HashMap<K, V, S>
  where
      K: Eq + Hash,
-@@ -631,6 +663,7 @@ where
+@@ -631,6 +685,7 @@ where
      }
  }
  
@@ -289,21 +346,24 @@ index 778082b5f0..1a89015a32 100644
  impl<K, V, S> MallocSizeOf for hashglobe::fake::HashMap<K, V, S>
  where
      K: Eq + Hash + MallocSizeOf,
-@@ -657,9 +690,21 @@ impl<T> MallocSizeOf for std::marker::PhantomData<T> {
+@@ -657,21 +712,38 @@ impl<T> MallocSizeOf for std::marker::PhantomData<T> {
  //impl<T> !MallocSizeOf for Arc<T> { }
  //impl<T> !MallocShallowSizeOf for Arc<T> { }
  
++#[cfg(feature = "std")]
 +#[cfg(feature = "extra")]
 +fn arc_ptr<T>(s: &servo_arc::Arc<T>) -> * const T {
 +  s.heap_ptr()
 +}
 +
++#[cfg(feature = "std")]
 +#[cfg(not(feature = "extra"))]
 +fn arc_ptr<T>(s: &servo_arc::Arc<T>) -> * const T {
 +  let sc = s.clone();
 +  servo_arc::Arc::into_raw(sc)
 +}
 +
++#[cfg(feature = "std")]
 +#[cfg(not(feature = "no_ops_shallow"))]
  impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
      fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
@@ -312,8 +372,14 @@ index 778082b5f0..1a89015a32 100644
      }
  }
  
-@@ -671,7 +716,7 @@ impl<T: MallocSizeOf> MallocUnconditionalSizeOf for servo_arc::Arc<T> {
++#[cfg(feature = "std")]
+ impl<T: MallocSizeOf> MallocUnconditionalSizeOf for servo_arc::Arc<T> {
+     fn unconditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+         self.unconditional_shallow_size_of(ops) + (**self).size_of(ops)
+     }
+ }
  
++#[cfg(feature = "std")]
  impl<T> MallocConditionalShallowSizeOf for servo_arc::Arc<T> {
      fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 -        if ops.have_seen_ptr(self.heap_ptr()) {
@@ -321,8 +387,11 @@ index 778082b5f0..1a89015a32 100644
              0
          } else {
              self.unconditional_shallow_size_of(ops)
-@@ -681,7 +726,7 @@ impl<T> MallocConditionalShallowSizeOf for servo_arc::Arc<T> {
+@@ -679,9 +751,10 @@ impl<T> MallocConditionalShallowSizeOf for servo_arc::Arc<T> {
+     }
+ }
  
++#[cfg(feature = "std")]
  impl<T: MallocSizeOf> MallocConditionalSizeOf for servo_arc::Arc<T> {
      fn conditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 -        if ops.have_seen_ptr(self.heap_ptr()) {
@@ -330,7 +399,14 @@ index 778082b5f0..1a89015a32 100644
              0
          } else {
              self.unconditional_size_of(ops)
-@@ -701,6 +746,7 @@ impl<T: MallocSizeOf> MallocSizeOf for std::sync::Mutex<T> {
+@@ -695,12 +768,14 @@ impl<T: MallocSizeOf> MallocConditionalSizeOf for servo_arc::Arc<T> {
+ /// If a mutex is stored inside of an Arc value as a member of a data type that is being measured,
+ /// the Arc will not be automatically measured so there is no risk of overcounting the mutex's
+ /// contents.
++#[cfg(feature = "std")]
+ impl<T: MallocSizeOf> MallocSizeOf for std::sync::Mutex<T> {
+     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+         (*self.lock().unwrap()).size_of(ops)
      }
  }
  
@@ -338,7 +414,7 @@ index 778082b5f0..1a89015a32 100644
  impl MallocSizeOf for smallbitvec::SmallBitVec {
      fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          if let Some(ptr) = self.heap_ptr() {
-@@ -711,30 +757,35 @@ impl MallocSizeOf for smallbitvec::SmallBitVec {
+@@ -711,30 +786,35 @@ impl MallocSizeOf for smallbitvec::SmallBitVec {
      }
  }
  
@@ -374,7 +450,7 @@ index 778082b5f0..1a89015a32 100644
  impl<T: MallocSizeOf, U> MallocSizeOf for euclid::TypedSideOffsets2D<T, U> {
      fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          self.top.size_of(ops) +
-@@ -744,12 +795,14 @@ impl<T: MallocSizeOf, U> MallocSizeOf for euclid::TypedSideOffsets2D<T, U> {
+@@ -744,12 +824,14 @@ impl<T: MallocSizeOf, U> MallocSizeOf for euclid::TypedSideOffsets2D<T, U> {
      }
  }
  
@@ -389,7 +465,7 @@ index 778082b5f0..1a89015a32 100644
  impl<T: MallocSizeOf, Src, Dst> MallocSizeOf for euclid::TypedTransform2D<T, Src, Dst> {
      fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          self.m11.size_of(ops) +
-@@ -761,6 +814,7 @@ impl<T: MallocSizeOf, Src, Dst> MallocSizeOf for euclid::TypedTransform2D<T, Src
+@@ -761,6 +843,7 @@ impl<T: MallocSizeOf, Src, Dst> MallocSizeOf for euclid::TypedTransform2D<T, Src
      }
  }
  
@@ -397,7 +473,7 @@ index 778082b5f0..1a89015a32 100644
  impl<T: MallocSizeOf, Src, Dst> MallocSizeOf for euclid::TypedTransform3D<T, Src, Dst> {
      fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          self.m11.size_of(ops) +
-@@ -782,12 +836,14 @@ impl<T: MallocSizeOf, Src, Dst> MallocSizeOf for euclid::TypedTransform3D<T, Src
+@@ -782,12 +865,14 @@ impl<T: MallocSizeOf, Src, Dst> MallocSizeOf for euclid::TypedTransform3D<T, Src
      }
  }
  
@@ -412,7 +488,7 @@ index 778082b5f0..1a89015a32 100644
  impl MallocSizeOf for selectors::parser::AncestorHashes {
      fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          let selectors::parser::AncestorHashes { ref packed_hashes } = *self;
-@@ -795,6 +851,7 @@ impl MallocSizeOf for selectors::parser::AncestorHashes {
+@@ -795,6 +880,7 @@ impl MallocSizeOf for selectors::parser::AncestorHashes {
      }
  }
  
@@ -420,7 +496,7 @@ index 778082b5f0..1a89015a32 100644
  impl<Impl: selectors::parser::SelectorImpl> MallocSizeOf for selectors::parser::Selector<Impl>
  where
      Impl::NonTSPseudoClass: MallocSizeOf,
-@@ -815,6 +872,7 @@ where
+@@ -815,6 +901,7 @@ where
      }
  }
  
@@ -428,7 +504,7 @@ index 778082b5f0..1a89015a32 100644
  impl<Impl: selectors::parser::SelectorImpl> MallocSizeOf for selectors::parser::Component<Impl>
  where
      Impl::NonTSPseudoClass: MallocSizeOf,
-@@ -860,6 +918,7 @@ where
+@@ -860,6 +947,7 @@ where
      }
  }
  
@@ -436,7 +512,7 @@ index 778082b5f0..1a89015a32 100644
  impl<Impl: selectors::parser::SelectorImpl> MallocSizeOf
      for selectors::attr::AttrSelectorWithOptionalNamespace<Impl>
  {
-@@ -868,6 +927,7 @@ impl<Impl: selectors::parser::SelectorImpl> MallocSizeOf
+@@ -868,6 +956,7 @@ impl<Impl: selectors::parser::SelectorImpl> MallocSizeOf
      }
  }
  
@@ -444,7 +520,7 @@ index 778082b5f0..1a89015a32 100644
  impl MallocSizeOf for Void {
      #[inline]
      fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-@@ -929,8 +989,10 @@ malloc_size_of_is_0!(Range<u8>, Range<u16>, Range<u32>, Range<u64>, Range<usize>
+@@ -929,8 +1018,10 @@ malloc_size_of_is_0!(Range<u8>, Range<u16>, Range<u32>, Range<u64>, Range<usize>
  malloc_size_of_is_0!(Range<i8>, Range<i16>, Range<i32>, Range<i64>, Range<isize>);
  malloc_size_of_is_0!(Range<f32>, Range<f64>);
  

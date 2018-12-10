@@ -16,6 +16,13 @@
 
 //! Memory related utilities.
 
+#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(feature = "std"), feature(core_intrinsics))]
+#![cfg_attr(not(feature = "std"), feature(alloc))]
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
 extern crate clear_on_drop as cod;
 
 //extern crate malloc_size_of as malloc_size;
@@ -53,10 +60,13 @@ pub static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
 /// global allocator
 pub static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-pub mod alloc;
+pub mod allocators;
 
 #[cfg(feature = "estimate-heapsize")]
 pub mod sizeof;
+
+#[cfg(not(feature = "std"))]
+use core as std;
 
 /// This is a copy of patched crate `malloc_size_of` as a module.
 /// We need to have it as an inner module to be able to define our own traits implementation,
@@ -78,7 +88,7 @@ pub use malloc_size::{
  	MallocSizeOfOps,
 	MallocSizeOf,
 };
-pub use alloc::MallocSizeOfExt;
+pub use allocators::MallocSizeOfExt;
 
 /// Wrapper to zero out memory when dropped.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

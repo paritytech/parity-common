@@ -20,7 +20,8 @@ ethereum-types = { version = "*", optional = true }
 parking_lot = { version = "*", optional = true }
 
 [features]
-default = ["ethereum-impls", "estimate-heapsize"]
+default = ["std", "ethereum-impls"]
+std = []
 # when activated mem is removed through volatile primitive instead of clear_on_drop crate
 volatile-erase = []
 # use dlmalloc as global allocator

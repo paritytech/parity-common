@@ -70,6 +70,7 @@ extern crate selectors;
 extern crate serde;
 #[cfg(any(feature = "servo", feature = "serde_only"))]
 extern crate serde_bytes;
+#[cfg(feature = "std")]
 #[cfg(feature = "extra")]
 extern crate servo_arc;
 #[cfg(feature = "extra")]
@@ -91,6 +92,17 @@ extern crate webrender_api;
 #[cfg(feature = "servo")]
 extern crate xml5ever;
 
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+#[cfg(not(feature = "std"))]
+mod std {
+  pub use core::*;
+  pub use alloc::collections;
+}
+
+#[cfg(feature = "std")]
 #[cfg(not(feature = "extra"))]
 use std::sync as servo_arc;
 
@@ -100,7 +112,12 @@ use std::hash::{BuildHasher, Hash};
 use std::mem::size_of;
 use std::ops::Range;
 use std::ops::{Deref, DerefMut};
+#[cfg(feature = "std")]
 use std::os::raw::c_void;
+#[cfg(not(feature = "std"))]
+use core::ffi::c_void;
+#[cfg(not(feature = "std"))]
+pub use alloc::boxed::Box;
 #[cfg(feature = "extra")]
 use void::Void;
 
@@ -350,6 +367,7 @@ impl<T: MallocSizeOf> MallocSizeOf for std::cell::RefCell<T> {
     }
 }
 
+#[cfg(feature = "std")]
 impl<'a, B: ?Sized + ToOwned> MallocSizeOf for std::borrow::Cow<'a, B>
 where
     B::Owned: MallocSizeOf,
@@ -461,6 +479,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<T, S> MallocShallowSizeOf for std::collections::HashSet<T, S>
 where
     T: Eq + Hash,
@@ -482,6 +501,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<T, S> MallocSizeOf for std::collections::HashSet<T, S>
 where
     T: Eq + Hash + MallocSizeOf,
@@ -553,6 +573,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<K, V, S> MallocShallowSizeOf for std::collections::HashMap<K, V, S>
 where
     K: Eq + Hash,
@@ -570,6 +591,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<K, V, S> MallocSizeOf for std::collections::HashMap<K, V, S>
 where
     K: Eq + Hash + MallocSizeOf,
@@ -690,17 +712,20 @@ impl<T> MallocSizeOf for std::marker::PhantomData<T> {
 //impl<T> !MallocSizeOf for Arc<T> { }
 //impl<T> !MallocShallowSizeOf for Arc<T> { }
 
+#[cfg(feature = "std")]
 #[cfg(feature = "extra")]
 fn arc_ptr<T>(s: &servo_arc::Arc<T>) -> * const T {
   s.heap_ptr()
 }
 
+#[cfg(feature = "std")]
 #[cfg(not(feature = "extra"))]
 fn arc_ptr<T>(s: &servo_arc::Arc<T>) -> * const T {
   let sc = s.clone();
   servo_arc::Arc::into_raw(sc)
 }
 
+#[cfg(feature = "std")]
 #[cfg(not(feature = "no_ops_shallow"))]
 impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
     fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
@@ -708,12 +733,14 @@ impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
     }
 }
 
+#[cfg(feature = "std")]
 impl<T: MallocSizeOf> MallocUnconditionalSizeOf for servo_arc::Arc<T> {
     fn unconditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         self.unconditional_shallow_size_of(ops) + (**self).size_of(ops)
     }
 }
 
+#[cfg(feature = "std")]
 impl<T> MallocConditionalShallowSizeOf for servo_arc::Arc<T> {
     fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         if ops.have_seen_ptr(arc_ptr(self)) {
@@ -724,6 +751,7 @@ impl<T> MallocConditionalShallowSizeOf for servo_arc::Arc<T> {
     }
 }
 
+#[cfg(feature = "std")]
 impl<T: MallocSizeOf> MallocConditionalSizeOf for servo_arc::Arc<T> {
     fn conditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         if ops.have_seen_ptr(arc_ptr(self)) {
@@ -740,6 +768,7 @@ impl<T: MallocSizeOf> MallocConditionalSizeOf for servo_arc::Arc<T> {
 /// If a mutex is stored inside of an Arc value as a member of a data type that is being measured,
 /// the Arc will not be automatically measured so there is no risk of overcounting the mutex's
 /// contents.
+#[cfg(feature = "std")]
 impl<T: MallocSizeOf> MallocSizeOf for std::sync::Mutex<T> {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         (*self.lock().unwrap()).size_of(ops)
