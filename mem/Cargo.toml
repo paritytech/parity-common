@@ -12,22 +12,29 @@ malloc_size_of_derive = { path = "./malloc_size_of_derive" }
 dlmalloc = { version = "0.1", features = ["global"], optional = true }
 wee_alloc = { version = "0.4", optional = true }
 jemallocator = { version = "0.1", optional = true }
+serde = { version = "1.0", optional = true }
+serde_bytes = { version = "0.10", optional = true }
 
 elastic-array = { version = "*", optional = true }
 ethereum-types = { version = "*", optional = true }
 parking_lot = { version = "*", optional = true }
 
 [features]
-default = ["ethereum-impls"]
+default = ["ethereum-impls", "estimate-heapsize"]
 # when activated mem is removed through volatile primitive instead of clear_on_drop crate
 volatile-erase = []
 # use dlmalloc as global allocator
-dlmalloc-global = ["dlmalloc"]
+dlmalloc-global = ["dlmalloc", "estimate-heapsize"]
 # use wee_alloc as global allocator
-weealloc-global = ["wee_alloc"]
+weealloc-global = ["wee_alloc", "estimate-heapsize"]
 # use jemalloc as global allocator
 jemalloc-global = ["jemallocator"]
 # implement additional types
 ethereum-impls = ["ethereum-types", "elastic-array", "parking_lot"]
 # Default malloc to conditional mettering
 conditional-mettering = []
+# Use serde impl from mallocsizeof
+serde_only = ["serde", "serde_bytes"]
+# Full estimate: no call to allocator
+estimate-heapsize = ["no_ops_shallow"]
+no_ops_shallow = []

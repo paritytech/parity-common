@@ -55,6 +55,9 @@ pub static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 pub mod alloc;
 
+#[cfg(feature = "estimate-heapsize")]
+pub mod sizeof;
+
 /// This is a copy of patched crate `malloc_size_of` as a module.
 /// We need to have it as an inner module to be able to define our own traits implementation,
 /// if at some point the trait become standard enough we could use the right way of doing it
@@ -73,7 +76,7 @@ pub mod clear_on_drop {
 pub use malloc_size_derive::*;
 pub use malloc_size::{
  	MallocSizeOfOps,
-  MallocSizeOf,
+	MallocSizeOf,
 };
 pub use alloc::MallocSizeOfExt;
 

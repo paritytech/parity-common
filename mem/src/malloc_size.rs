@@ -95,7 +95,7 @@ extern crate xml5ever;
 use std::sync as servo_arc;
 
 #[cfg(any(feature = "servo", feature = "serde_only"))]
-use serde_bytes::ByteBuf;
+use self::serde_bytes::ByteBuf;
 use std::hash::{BuildHasher, Hash};
 use std::mem::size_of;
 use std::ops::Range;
@@ -233,6 +233,7 @@ pub trait MallocConditionalShallowSizeOf {
     fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
 }
 
+#[cfg(not(feature = "no_ops_shallow"))]
 impl MallocSizeOf for String {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         unsafe { ops.malloc_size_of(self.as_ptr()) }
@@ -246,6 +247,7 @@ impl<'a, T: ?Sized> MallocSizeOf for &'a T {
     }
 }
 
+#[cfg(not(feature = "no_ops_shallow"))]
 impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
     fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         unsafe { ops.malloc_size_of(&**self) }
@@ -370,6 +372,7 @@ impl<T: MallocSizeOf> MallocSizeOf for [T] {
     }
 }
 
+#[cfg(not(feature = "no_ops_shallow"))]
 #[cfg(any(feature = "servo", feature = "serde_only"))]
 impl MallocShallowSizeOf for ByteBuf {
     fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
@@ -388,6 +391,7 @@ impl MallocSizeOf for ByteBuf {
     }
 }
 
+#[cfg(not(feature = "no_ops_shallow"))]
 impl<T> MallocShallowSizeOf for Vec<T> {
     fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         unsafe { ops.malloc_size_of(self.as_ptr()) }
@@ -697,6 +701,7 @@ fn arc_ptr<T>(s: &servo_arc::Arc<T>) -> * const T {
   servo_arc::Arc::into_raw(sc)
 }
 
+#[cfg(not(feature = "no_ops_shallow"))]
 impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
     fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         unsafe { ops.malloc_size_of(arc_ptr(self)) }

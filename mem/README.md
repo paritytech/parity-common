@@ -5,8 +5,8 @@ Collection of memory related utilities.
 ## Features
 
 - volatile-erase : Not set by default, `Memzero` erase memory with `write_volatile`.
+- estimate-heapsize : Do not use allocator, but `size_of` or `size_of_val`.
 - conditional-metering : Try to avoid counting `Arc` twice. For test only.
-
 Others feature are here to define global allocator, see `src/alloc.rs`.
 
 ## Dependency

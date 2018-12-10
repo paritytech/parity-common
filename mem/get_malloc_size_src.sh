@@ -10,4 +10,4 @@ git apply ../slim_malloc_size_of.patch
 cp components/malloc_size_of/lib.rs ../src/malloc_size.rs
 cp -r components/malloc_size_of_derive ..
 cd ..
-rm -rf ./servo
+#rm -rf ./servo

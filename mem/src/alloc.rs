@@ -54,7 +54,7 @@ mod usable_size {
 	use std::os::raw::c_void;
 
 	/// Get the size of a heap block.
-  pub unsafe extern "C" fn malloc_usable_size(mut ptr: *const c_void) -> usize {
+	pub unsafe extern "C" fn malloc_usable_size(mut ptr: *const c_void) -> usize {
 
 		let heap = GetProcessHeap();
 
@@ -100,7 +100,7 @@ mod usable_size {
 
 	/// Warning this is for compatibility only TODO dlmalloc impl
 	pub unsafe extern "C" fn malloc_usable_size(mut ptr: *const c_void) -> usize {
-		0
+		panic!("Please run with `estimate-heapsize` feature")
 	}
 
 	#[inline]
@@ -129,7 +129,7 @@ mod usable_size {
 
 	/// Warning this is for compatibility only TODO dlmalloc impl
 	pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
-    0
+		panic!("Running estimation this code should never be reached")
 	}
 
 	#[inline]
@@ -144,7 +144,7 @@ mod usable_size {
 
 	/// Warning this is for compatibility only
 	pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
-    0
+		panic!("Running estimation this code should never be reached")
 	}
 
 	#[inline]
@@ -230,59 +230,4 @@ impl<T: MallocSizeOf> MallocSizeOf for std::sync::Arc<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.conditional_size_of(ops)
 	}
-}
-
-#[test]
-fn inner_vec_test() {
- let vec1 = [0u8;20].to_vec();
- let vec2 = [0u8;2000].to_vec();
- let vec3:Vec<u8> = Vec::with_capacity(1000);
- let vec4:Vec<Vec<u8>> = vec![vec1.clone(), vec3.clone(), vec3.clone()];
- //let vec5:Vec<Vec<u8>> = vec![vec![0,2], vec![1,2,3,54]];
- 
- 
- let mut s :usize = 0;
- s = std::mem::size_of_val(&*vec1);
- println!("{}",s);
- s = std::mem::size_of_val(&*vec2);
- println!("{}",s);
- s = std::mem::size_of_val(&*vec3);
- println!("{}",s);
- s = std::mem::size_of_val(&*vec4);
- println!("{}",s);
- let mut man_count = 0;
- let mut man_count2 = 0;
- let mut man_count3 = 0;
- for i in vec4.iter() {
-   man_count += std::mem::size_of_val(&*i);
-   man_count2 += std::mem::size_of_val(&i);
-   man_count3 += std::mem::size_of_val(&**i);
- }
- println!("man {}",man_count);
- println!("man2 {}",man_count2);
- println!("man3 {}",man_count3);
- let s1 = vec1.m_size_of();
- println!("{}",s1);
- let s2 = vec2.m_size_of();
- println!("{}",s2);
- let s3 = vec3.m_size_of();
- println!("{}",s3);
- let s4 = vec4.m_size_of();
- println!("{}",s);
- let mut man_count = 0;
- let mut man_count2 = 0;
- let mut man_count3 = 0;
- for i in vec4.iter() {
-//   man_count += unsafe { usable_size::malloc_usable_size(i.as_ptr() as *const c_void) };
-   man_count += (*i).m_size_of();
-   man_count2 += i.m_size_of();
-   man_count3 += (&*i).m_size_of();
- }
- println!("man {}",man_count);
- println!("man2 {}",man_count2);
- println!("man3 {}",man_count3);
- 
- //let s = vec5.m_size_of();
- //println!("{}",s);
- assert!(s4 >= s1 + s2 + s3)
 }
