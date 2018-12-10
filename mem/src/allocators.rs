@@ -36,14 +36,19 @@
 
 use malloc_size::{MallocSizeOfOps, VoidPtrToSizeFn, MallocSizeOf};
 #[cfg(feature = "conditional-mettering")]
-use malloc_size::MallocConditionalSizeOf;
+use malloc_size::{MallocConditionalSizeOf, VoidPtrToBoolFnMut};
+#[cfg(feature = "std")]
 #[cfg(not(feature = "conditional-mettering"))]
 use malloc_size::MallocUnconditionalSizeOf;
 #[cfg(feature = "std")]
 use std::os::raw::c_void;
 #[cfg(not(feature = "std"))]
 use core::ffi::c_void;
-
+#[cfg(not(feature = "std"))]
+use alloc::collections::btree_set::BTreeSet;
+#[cfg(not(feature = "std"))]
+#[cfg(feature = "conditional-mettering")]
+pub use alloc::boxed::Box;
 #[cfg(not(feature = "weealloc-global"))]
 #[cfg(not(feature = "dlmalloc-global"))]
 #[cfg(not(feature = "jemalloc-global"))]
@@ -171,14 +176,27 @@ pub fn new_count_malloc_size_ops(count_fn: Box<VoidPtrToBoolFnMut>) -> MallocSiz
 	MallocSizeOfOps::new(
 		usable_size::malloc_usable_size,
 		usable_size::new_enclosing_size_fn(),
-		count_fn,
+		Some(count_fn),
 	)
 }
 
 #[cfg(feature = "conditional-mettering")]
+#[cfg(feature = "std")]
+fn new_set<V: std::hash::Hash + Eq>() -> std::collections::HashSet<V> {
+	std::collections::HashSet::new()
+}
+
+#[cfg(feature = "conditional-mettering")]
+#[cfg(not(feature = "std"))]
+fn new_set<V: Ord>() -> BTreeSet<V> {
+	BTreeSet::new()
+}
+
+
+#[cfg(feature = "conditional-mettering")]
 /// count function for testing purpose only (slow)
 pub fn test_count() -> Box<FnMut(*const c_void) -> bool> {
-	let mut set = std::collections::HashSet::new();
+	let mut set = new_set();
 	Box::new(move |ptr| {
 		let r = if set.contains(&ptr) {
 			true
@@ -190,28 +208,11 @@ pub fn test_count() -> Box<FnMut(*const c_void) -> bool> {
 	})
 }
 
-#[cfg(not(feature = "conditional-mettering"))]
 /// Extension methods for `MallocSizeOf`
 pub trait MallocSizeOfExt: MallocSizeOf {
 	fn m_size_of(&self) -> usize {
 		let mut ops = new_malloc_size_ops();
 		<Self as MallocSizeOf>::size_of(self, &mut ops)
-	}
-}
-
-// TODO remove this implementation (conditional metering on purpose only)
-#[cfg(feature = "conditional-mettering")]
-/// Extension methods for `MallocSizeOf`
-pub trait MallocSizeOfExt: MallocSizeOf {
-	fn m_size_of(&self) -> usize {
-		let mut ops = new_malloc_size_ops();
-		let mut opscond = new_count_malloc_size_ops(test_count());
-		let cond = <Self as MallocSizeOf>::size_of(self, &mut opscond);
-		let notcond = Self as MallocSizeOf>::size_of(self, &mut ops);
-		if cond != notcond {
-			println!("conditional mettering did absorb: {}", notcond - cond);
-		}
-		cond
 	}
 }
 
