@@ -14,7 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Memory related utilities.
+//! Crate for parity memory management related utilities.
+//! It includes global allocator choice, heap measurement and
+//! memory erasure.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), feature(core_intrinsics))]
@@ -25,7 +27,6 @@ extern crate alloc;
 
 extern crate clear_on_drop as cod;
 
-//extern crate malloc_size_of as malloc_size;
 #[macro_use] extern crate malloc_size_of_derive as malloc_size_derive;
 
 use std::ops::{Deref, DerefMut};
@@ -47,17 +48,17 @@ extern crate wee_alloc;
 
 #[cfg(feature = "jemalloc-global")]
 #[global_allocator]
-/// global allocator
+/// Global allocator
 pub static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 #[cfg(feature = "dlmalloc-global")]
 #[global_allocator]
-/// global allocator
+/// Global allocator
 pub static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
 
 #[cfg(feature = "weealloc-global")]
 #[global_allocator]
-/// global allocator
+/// Global allocator
 pub static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 pub mod allocators;
@@ -71,14 +72,14 @@ use core as std;
 /// This is a copy of patched crate `malloc_size_of` as a module.
 /// We need to have it as an inner module to be able to define our own traits implementation,
 /// if at some point the trait become standard enough we could use the right way of doing it
-/// by implementing it in our type traits crates. At this time a move on this trait if implemented 
-/// at primitive types level would impact to much of the dependency to be easilly manageable.
+/// by implementing it in our type traits crates. At this time moving this trait to the primitive
+/// types level would impact too much of the dependencies to be easily manageable.
 #[macro_use] mod malloc_size;
 
 #[cfg(feature = "ethereum-impls")]
 pub mod impls;
 
-/// reexport clear_on_drop crate
+/// Reexport clear_on_drop crate.
 pub mod clear_on_drop {
 	pub use cod::*;
 }

@@ -35,10 +35,10 @@
 
 
 use malloc_size::{MallocSizeOfOps, VoidPtrToSizeFn, MallocSizeOf};
-#[cfg(feature = "conditional-mettering")]
+#[cfg(feature = "conditional-metering")]
 use malloc_size::{MallocConditionalSizeOf, VoidPtrToBoolFnMut};
 #[cfg(feature = "std")]
-#[cfg(not(feature = "conditional-mettering"))]
+#[cfg(not(feature = "conditional-metering"))]
 use malloc_size::MallocUnconditionalSizeOf;
 #[cfg(feature = "std")]
 use std::os::raw::c_void;
@@ -47,7 +47,7 @@ use core::ffi::c_void;
 #[cfg(not(feature = "std"))]
 use alloc::collections::btree_set::BTreeSet;
 #[cfg(not(feature = "std"))]
-#[cfg(feature = "conditional-mettering")]
+#[cfg(feature = "conditional-metering")]
 pub use alloc::boxed::Box;
 #[cfg(not(feature = "weealloc-global"))]
 #[cfg(not(feature = "dlmalloc-global"))]
@@ -62,6 +62,7 @@ mod usable_size {
 	use std::os::raw::c_void;
 
 	/// Get the size of a heap block.
+	/// Call windows allocator through `winapi` crate
 	pub unsafe extern "C" fn malloc_usable_size(mut ptr: *const c_void) -> usize {
 
 		let heap = GetProcessHeap();
@@ -73,6 +74,7 @@ mod usable_size {
 		HeapSize(heap, 0, ptr) as usize
 	}
 
+	/// No enclosing function defined.
 	#[inline]
 	pub fn new_enclosing_size_fn() -> Option<VoidPtrToSizeFn> {
 		None
@@ -87,11 +89,15 @@ mod usable_size {
 mod usable_size {
 	use super::*;
 
+	/// Default allocators for different platforms.
+	/// Macos, ios and android calls jemalloc.
+	/// Linux call system allocator (currently malloc).
 	extern "C" {
 		#[cfg_attr(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android"), link_name = "je_malloc_usable_size")]
 		pub fn malloc_usable_size(ptr: *const c_void) -> usize;
 	}
 
+	/// No enclosing function defined.
 	#[inline]
 	pub fn new_enclosing_size_fn() -> Option<VoidPtrToSizeFn> {
 		None
@@ -106,11 +112,14 @@ mod usable_size {
 mod usable_size {
 	use super::*;
 
-	/// Warning this is for compatibility only TODO dlmalloc impl
+	/// Warning this is for compatibility only.
+	/// This function does panic: `estimate-heapsize` feature needs to be activated
+	/// to avoid this function call.
 	pub unsafe extern "C" fn malloc_usable_size(mut ptr: *const c_void) -> usize {
 		panic!("Please run with `estimate-heapsize` feature")
 	}
 
+	/// No enclosing function defined.
 	#[inline]
 	pub fn new_enclosing_size_fn() -> Option<VoidPtrToSizeFn> {
 		None
@@ -121,10 +130,12 @@ mod usable_size {
 mod usable_size {
 	use super::*;
 
+	/// Use of jemalloc usable size C function through jemallocator crate call.
 	pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
 		jemallocator::usable_size(ptr)
 	}
 
+	/// No enclosing function defined.
 	#[inline]
 	pub fn new_enclosing_size_fn() -> Option<VoidPtrToSizeFn> {
 		None
@@ -135,11 +146,14 @@ mod usable_size {
 mod usable_size {
 	use super::*;
 
-	/// Warning this is for compatibility only TODO dlmalloc impl
+	/// Warning this is for compatibility only.
+	/// Feature: `estimate-heapsize` is on with `dlmalloc-global` and this code 
+	/// should never be called (it panics otherwhise).
 	pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
 		panic!("Running estimation this code should never be reached")
 	}
 
+	/// No enclosing function defined.
 	#[inline]
 	pub fn new_enclosing_size_fn() -> Option<VoidPtrToSizeFn> {
 		None
@@ -150,11 +164,14 @@ mod usable_size {
 mod usable_size {
 	use super::*;
 
-	/// Warning this is for compatibility only
+	/// Warning this is for compatibility only.
+	/// Feature: `estimate-heapsize` is on with `weealloc-global` and this code 
+	/// should never be called (it panics otherwhise).
 	pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
 		panic!("Running estimation this code should never be reached")
 	}
 
+	/// No enclosing function defined.
 	#[inline]
 	pub fn new_enclosing_size_fn() -> Option<VoidPtrToSizeFn> {
 		None
@@ -170,7 +187,7 @@ pub fn new_malloc_size_ops() -> MallocSizeOfOps {
 	)
 }
 
-#[cfg(feature = "conditional-mettering")]
+#[cfg(feature = "conditional-metering")]
 /// Get a new instance of a MallocSizeOfOps with a haveseen ptr function
 pub fn new_count_malloc_size_ops(count_fn: Box<VoidPtrToBoolFnMut>) -> MallocSizeOfOps {
 	MallocSizeOfOps::new(
@@ -180,20 +197,20 @@ pub fn new_count_malloc_size_ops(count_fn: Box<VoidPtrToBoolFnMut>) -> MallocSiz
 	)
 }
 
-#[cfg(feature = "conditional-mettering")]
+#[cfg(feature = "conditional-metering")]
 #[cfg(feature = "std")]
 fn new_set<V: std::hash::Hash + Eq>() -> std::collections::HashSet<V> {
 	std::collections::HashSet::new()
 }
 
-#[cfg(feature = "conditional-mettering")]
+#[cfg(feature = "conditional-metering")]
 #[cfg(not(feature = "std"))]
 fn new_set<V: Ord>() -> BTreeSet<V> {
 	BTreeSet::new()
 }
 
 
-#[cfg(feature = "conditional-mettering")]
+#[cfg(feature = "conditional-metering")]
 /// count function for testing purpose only (slow)
 pub fn test_count() -> Box<FnMut(*const c_void) -> bool> {
 	let mut set = new_set();
@@ -208,9 +225,14 @@ pub fn test_count() -> Box<FnMut(*const c_void) -> bool> {
 	})
 }
 
-/// Extension methods for `MallocSizeOf`
+/// Extension methods for `MallocSizeOf` trait, do not implement
+/// directly.
+/// It allows getting heapsize without exposing `MallocSizeOfOps` 
+/// (a single default `MallocSizeOfOps` is used for each call).
 pub trait MallocSizeOfExt: MallocSizeOf {
-	fn m_size_of(&self) -> usize {
+  /// Method to launch a heapsize measurement with a 
+  /// fresh state.
+	fn malloc_size_of(&self) -> usize {
 		let mut ops = new_malloc_size_ops();
 		<Self as MallocSizeOf>::size_of(self, &mut ops)
 	}
@@ -219,11 +241,11 @@ pub trait MallocSizeOfExt: MallocSizeOf {
 impl<T: MallocSizeOf> MallocSizeOfExt for T {}
 
 /// we currently do not have use case where a conditional fn is use so
-/// we default to unconditional mettering
+/// we default to unconditional metering
 /// It would be interesting to run some test with global mutex other weak handle in ops to check
 /// how much we measure multiple times
 #[cfg(feature = "std")]
-#[cfg(not(feature = "conditional-mettering"))]
+#[cfg(not(feature = "conditional-metering"))]
 impl<T: MallocSizeOf> MallocSizeOf for std::sync::Arc<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.unconditional_size_of(ops)
@@ -231,7 +253,7 @@ impl<T: MallocSizeOf> MallocSizeOf for std::sync::Arc<T> {
 }
 
 #[cfg(feature = "std")]
-#[cfg(feature = "conditional-mettering")]
+#[cfg(feature = "conditional-metering")]
 impl<T: MallocSizeOf> MallocSizeOf for std::sync::Arc<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.conditional_size_of(ops)
