@@ -32,9 +32,6 @@ weealloc-global = ["wee_alloc", "estimate-heapsize"]
 jemalloc-global = ["jemallocator"]
 # implement additional types
 ethereum-impls = ["ethereum-types", "elastic-array", "parking_lot"]
-# Include conditional metering
-# (keep state to avoid multiple measurement of counted references).
-conditional-metering = []
 # Include serde related struct metering.
 serde_only = ["serde", "serde_bytes"]
 # Full estimate: no call to allocator

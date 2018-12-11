@@ -6,7 +6,6 @@ Collection of memory related utilities.
 
 - volatile-erase : Not set by default, `Memzero` struct will be erasing memory throug a simple [`write_volatile`](https://doc.rust-lang.org/std/ptr/fn.write_volatile.html) call.
 - estimate-heapsize : Do not use allocator, but `size_of` or `size_of_val`.
-- conditional-metering : Try to avoid counting `Arc` twice. For test only.
 
 Others features define global allocator, see `src/alloc.rs`.
 

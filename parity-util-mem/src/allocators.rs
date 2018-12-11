@@ -35,10 +35,7 @@
 
 
 use malloc_size::{MallocSizeOfOps, VoidPtrToSizeFn, MallocSizeOf};
-#[cfg(feature = "conditional-metering")]
-use malloc_size::{MallocConditionalSizeOf, VoidPtrToBoolFnMut};
 #[cfg(feature = "std")]
-#[cfg(not(feature = "conditional-metering"))]
 use malloc_size::MallocUnconditionalSizeOf;
 #[cfg(feature = "std")]
 use std::os::raw::c_void;
@@ -46,9 +43,6 @@ use std::os::raw::c_void;
 use core::ffi::c_void;
 #[cfg(not(feature = "std"))]
 use alloc::collections::btree_set::BTreeSet;
-#[cfg(not(feature = "std"))]
-#[cfg(feature = "conditional-metering")]
-pub use alloc::boxed::Box;
 #[cfg(not(feature = "weealloc-global"))]
 #[cfg(not(feature = "dlmalloc-global"))]
 #[cfg(not(feature = "jemalloc-global"))]
@@ -187,44 +181,6 @@ pub fn new_malloc_size_ops() -> MallocSizeOfOps {
 	)
 }
 
-#[cfg(feature = "conditional-metering")]
-/// Get a new instance of a MallocSizeOfOps with a haveseen ptr function
-pub fn new_count_malloc_size_ops(count_fn: Box<VoidPtrToBoolFnMut>) -> MallocSizeOfOps {
-	MallocSizeOfOps::new(
-		usable_size::malloc_usable_size,
-		usable_size::new_enclosing_size_fn(),
-		Some(count_fn),
-	)
-}
-
-#[cfg(feature = "conditional-metering")]
-#[cfg(feature = "std")]
-fn new_set<V: std::hash::Hash + Eq>() -> std::collections::HashSet<V> {
-	std::collections::HashSet::new()
-}
-
-#[cfg(feature = "conditional-metering")]
-#[cfg(not(feature = "std"))]
-fn new_set<V: Ord>() -> BTreeSet<V> {
-	BTreeSet::new()
-}
-
-
-#[cfg(feature = "conditional-metering")]
-/// count function for testing purpose only (slow)
-pub fn test_count() -> Box<FnMut(*const c_void) -> bool> {
-	let mut set = new_set();
-	Box::new(move |ptr| {
-		let r = if set.contains(&ptr) {
-			true
-		} else {
-			set.insert(ptr);
-			false
-		};
-		r
-	})
-}
-
 /// Extension methods for `MallocSizeOf` trait, do not implement
 /// directly.
 /// It allows getting heapsize without exposing `MallocSizeOfOps` 
@@ -240,22 +196,9 @@ pub trait MallocSizeOfExt: MallocSizeOf {
 
 impl<T: MallocSizeOf> MallocSizeOfExt for T {}
 
-/// we currently do not have use case where a conditional fn is use so
-/// we default to unconditional metering
-/// It would be interesting to run some test with global mutex other weak handle in ops to check
-/// how much we measure multiple times
 #[cfg(feature = "std")]
-#[cfg(not(feature = "conditional-metering"))]
 impl<T: MallocSizeOf> MallocSizeOf for std::sync::Arc<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.unconditional_size_of(ops)
-	}
-}
-
-#[cfg(feature = "std")]
-#[cfg(feature = "conditional-metering")]
-impl<T: MallocSizeOf> MallocSizeOf for std::sync::Arc<T> {
-	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-		self.conditional_size_of(ops)
 	}
 }
