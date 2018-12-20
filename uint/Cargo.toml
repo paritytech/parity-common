@@ -4,7 +4,7 @@ homepage = "http://parity.io"
 repository = "https://github.com/paritytech/parity-common"
 license = "MIT/Apache-2.0"
 name = "uint"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 readme = "README.md"
 
@@ -16,13 +16,12 @@ quickcheck = { version = "0.6", optional = true }
 crunchy = { version = "0.2", default-features = true }
 
 [features]
-default = ["std", "common"]
+default = ["std"]
 std = ["byteorder/std", "rustc-hex/std", "crunchy/std"]
-common = []
 
 [[example]]
 name = "modular"
 
 [[test]]
 name = "uint_tests"
-required-features = ["std", "common"]
+required-features = ["std"]
