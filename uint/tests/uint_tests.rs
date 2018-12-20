@@ -1196,10 +1196,18 @@ pub mod laws {
 		}
 	}
 
-	construct_uint!(U64, 1);
-	construct_uint!(U256, 4);
-	construct_uint!(U512, 8);
-	construct_uint!(U1024, 16);
+	construct_uint! {
+		pub struct U64(1);
+	}
+	construct_uint! {
+		pub struct U256(4);
+	}
+	construct_uint! {
+		pub struct U512(8);
+	}
+	construct_uint! {
+		pub struct U1024(16);
+	}
 
 	uint_laws!(u64, U64);
 	uint_laws!(u256, U256);
