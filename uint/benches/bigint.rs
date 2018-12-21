@@ -16,9 +16,23 @@
 
 extern crate core;
 extern crate test;
+#[macro_use]
 extern crate uint;
 
-use uint::{U256, U512};
+construct_uint! {
+	pub struct U256(4);
+}
+
+construct_uint! {
+	pub struct U512(8);
+}
+
+impl U256 {
+	#[inline(always)]
+	pub fn full_mul(self, other: U256) -> U512 {
+		U512(uint_full_mul_reg!(U256, 4, self, other))
+	}
+}
 
 use test::{Bencher, black_box};
 
