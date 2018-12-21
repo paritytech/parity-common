@@ -20,9 +20,6 @@ extern crate uint;
 #[macro_use]
 extern crate fixed_hash;
 
-#[macro_use]
-extern crate crunchy;
-
 #[cfg(feature = "impl-serde")]
 #[macro_use]
 extern crate impl_serde;
