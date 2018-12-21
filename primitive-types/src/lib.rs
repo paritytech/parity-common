@@ -35,7 +35,10 @@ extern crate impl_codec;
 #[macro_use]
 extern crate impl_rlp;
 
-construct_uint!(U256, 4);
+construct_uint! {
+	/// 256-bit unsigned integer.
+	pub struct U256(4);
+}
 #[cfg(feature = "impl-serde")]
 impl_uint_serde!(U256, 4);
 #[cfg(feature = "impl-codec")]
@@ -106,7 +109,10 @@ impl<'a> From<&'a U512> for U256 {
 	}
 }
 
-construct_uint!(U512, 8);
+construct_uint! {
+	/// 512-bits unsigned integer.
+	pub struct U512(8);
+}
 #[cfg(feature = "impl-serde")]
 impl_uint_serde!(U512, 8);
 #[cfg(feature = "impl-codec")]
