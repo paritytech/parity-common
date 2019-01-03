@@ -222,7 +222,7 @@ H: KeyHasher,
 {
 	/// Returns the size of allocated heap memory
 	pub fn mem_used(&self) -> usize {
-		self.m_size_of()
+		self.malloc_size_of()
 	}
 }
 
