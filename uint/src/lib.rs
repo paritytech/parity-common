@@ -25,28 +25,9 @@ pub extern crate rustc_hex;
 #[doc(hidden)]
 pub extern crate quickcheck;
 
-#[macro_use]
 extern crate crunchy;
+pub use crunchy::unroll;
 
 #[macro_use]
 mod uint;
 pub use uint::*;
-
-#[cfg(feature = "common")]
-mod common {
-	construct_uint!(U256, 4);
-	construct_uint!(U512, 8);
-
-	#[doc(hidden)]
-	impl U256 {
-		/// Multiplies two 256-bit integers to produce full 512-bit integer
-		/// No overflow possible
-		#[inline(always)]
-		pub fn full_mul(self, other: U256) -> U512 {
-			U512(uint_full_mul_reg!(U256, 4, self, other))
-		}
-	}
-}
-
-#[cfg(feature = "common")]
-pub use common::{U256, U512};
