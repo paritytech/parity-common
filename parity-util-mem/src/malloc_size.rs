@@ -507,17 +507,29 @@ impl<T> MallocSizeOf for std::marker::PhantomData<T> {
 
 #[cfg(feature = "std")]
 fn arc_ptr<T>(s: &servo_arc::Arc<T>) -> * const T {
-  let sc = s.clone();
-  servo_arc::Arc::into_raw(sc)
+  &(**s) as *const T
 }
 
+
+// currently this seems only fine with jemalloc
 #[cfg(feature = "std")]
 #[cfg(not(feature = "no_ops_shallow"))]
+#[cfg(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global"))]
 impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
     fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         unsafe { ops.malloc_size_of(arc_ptr(self)) }
     }
 }
+
+#[cfg(feature = "std")]
+#[cfg(not(feature = "no_ops_shallow"))]
+#[cfg(not(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global")))]
+impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
+    fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		    size_of::<T>()
+   }
+}
+
 
 #[cfg(feature = "std")]
 impl<T: MallocSizeOf> MallocUnconditionalSizeOf for servo_arc::Arc<T> {

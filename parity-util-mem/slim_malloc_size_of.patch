@@ -1,5 +1,5 @@
 diff --git a/components/malloc_size_of/lib.rs b/components/malloc_size_of/lib.rs
-index 778082b5f0..f1cc08b3e4 100644
+index 778082b5f0..6bbe400204 100644
 --- a/components/malloc_size_of/lib.rs
 +++ b/components/malloc_size_of/lib.rs
 @@ -43,55 +43,45 @@
@@ -333,18 +333,20 @@ index 778082b5f0..f1cc08b3e4 100644
  // PhantomData is always 0.
  impl<T> MallocSizeOf for std::marker::PhantomData<T> {
      fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-@@ -657,21 +505,31 @@ impl<T> MallocSizeOf for std::marker::PhantomData<T> {
+@@ -657,21 +505,43 @@ impl<T> MallocSizeOf for std::marker::PhantomData<T> {
  //impl<T> !MallocSizeOf for Arc<T> { }
  //impl<T> !MallocShallowSizeOf for Arc<T> { }
  
 +#[cfg(feature = "std")]
 +fn arc_ptr<T>(s: &servo_arc::Arc<T>) -> * const T {
-+  let sc = s.clone();
-+  servo_arc::Arc::into_raw(sc)
++  &(**s) as *const T
 +}
 +
++
++// currently this seems only fine with jemalloc
 +#[cfg(feature = "std")]
 +#[cfg(not(feature = "no_ops_shallow"))]
++#[cfg(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global"))]
  impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
      fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 -        unsafe { ops.malloc_size_of(self.heap_ptr()) }
@@ -352,6 +354,16 @@ index 778082b5f0..f1cc08b3e4 100644
      }
  }
  
++#[cfg(feature = "std")]
++#[cfg(not(feature = "no_ops_shallow"))]
++#[cfg(not(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global")))]
++impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
++    fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
++		    size_of::<T>()
++   }
++}
++
++
 +#[cfg(feature = "std")]
  impl<T: MallocSizeOf> MallocUnconditionalSizeOf for servo_arc::Arc<T> {
      fn unconditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
@@ -367,7 +379,7 @@ index 778082b5f0..f1cc08b3e4 100644
              0
          } else {
              self.unconditional_shallow_size_of(ops)
-@@ -679,9 +537,10 @@ impl<T> MallocConditionalShallowSizeOf for servo_arc::Arc<T> {
+@@ -679,9 +549,10 @@ impl<T> MallocConditionalShallowSizeOf for servo_arc::Arc<T> {
      }
  }
  
@@ -379,7 +391,7 @@ index 778082b5f0..f1cc08b3e4 100644
              0
          } else {
              self.unconditional_size_of(ops)
-@@ -695,203 +554,13 @@ impl<T: MallocSizeOf> MallocConditionalSizeOf for servo_arc::Arc<T> {
+@@ -695,203 +566,13 @@ impl<T: MallocSizeOf> MallocConditionalSizeOf for servo_arc::Arc<T> {
  /// If a mutex is stored inside of an Arc value as a member of a data type that is being measured,
  /// the Arc will not be automatically measured so there is no risk of overcounting the mutex's
  /// contents.
@@ -584,7 +596,7 @@ index 778082b5f0..f1cc08b3e4 100644
  #[macro_export]
  macro_rules! malloc_size_of_is_0(
      ($($ty:ty),+) => (
-@@ -929,117 +598,6 @@ malloc_size_of_is_0!(Range<u8>, Range<u16>, Range<u32>, Range<u64>, Range<usize>
+@@ -929,117 +610,6 @@ malloc_size_of_is_0!(Range<u8>, Range<u16>, Range<u32>, Range<u64>, Range<usize>
  malloc_size_of_is_0!(Range<i8>, Range<i16>, Range<i32>, Range<i64>, Range<isize>);
  malloc_size_of_is_0!(Range<f32>, Range<f64>);
  
