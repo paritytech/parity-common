@@ -51,8 +51,8 @@ use alloc::collections::btree_set::BTreeSet;
 mod usable_size {
 	extern crate winapi;
 
+	use super::*;
 	use self::winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
-	use std::os::raw::c_void;
 
 	/// Get the size of a heap block.
 	/// Call windows allocator through `winapi` crate
