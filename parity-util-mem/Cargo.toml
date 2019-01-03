@@ -19,6 +19,9 @@ elastic-array = { version = "*", optional = true }
 ethereum-types = { version = "*", optional = true }
 parking_lot = { version = "*", optional = true }
 
+[target."cfg(windows)".dependencies.winapi]
+version = "0.3.4"
+
 [features]
 default = ["std", "ethereum-impls"]
 std = []
