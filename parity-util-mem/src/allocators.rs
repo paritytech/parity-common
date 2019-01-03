@@ -43,16 +43,15 @@ use std::os::raw::c_void;
 use core::ffi::c_void;
 #[cfg(not(feature = "std"))]
 use alloc::collections::btree_set::BTreeSet;
+
 #[cfg(not(feature = "weealloc-global"))]
 #[cfg(not(feature = "dlmalloc-global"))]
 #[cfg(not(feature = "jemalloc-global"))]
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 mod usable_size {
-	#[cfg(target_os = "windows")]
 	extern crate winapi;
 
-	#[cfg(target_os = "windows")]
-	use winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
+	use self::winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
 	use std::os::raw::c_void;
 
 	/// Get the size of a heap block.
@@ -186,8 +185,8 @@ pub fn new_malloc_size_ops() -> MallocSizeOfOps {
 /// It allows getting heapsize without exposing `MallocSizeOfOps` 
 /// (a single default `MallocSizeOfOps` is used for each call).
 pub trait MallocSizeOfExt: MallocSizeOf {
-  /// Method to launch a heapsize measurement with a 
-  /// fresh state.
+	/// Method to launch a heapsize measurement with a 
+	/// fresh state.
 	fn malloc_size_of(&self) -> usize {
 		let mut ops = new_malloc_size_ops();
 		<Self as MallocSizeOf>::size_of(self, &mut ops)
