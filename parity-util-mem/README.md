@@ -4,7 +4,7 @@ Collection of memory related utilities.
 
 ## Features
 
-- volatile-erase : Not set by default, `Memzero` struct will be erasing memory throug a simple [`write_volatile`](https://doc.rust-lang.org/std/ptr/fn.write_volatile.html) call.
+- volatile-erase : Not set by default, `Memzero` struct will be erasing memory through a simple [`write_volatile`](https://doc.rust-lang.org/std/ptr/fn.write_volatile.html) call.
 - estimate-heapsize : Do not use allocator, but `size_of` or `size_of_val`.
 
 Others features define global allocator, see `src/alloc.rs`.
