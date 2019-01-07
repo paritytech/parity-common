@@ -8,6 +8,7 @@ license = "GPL-3.0"
 
 [dependencies]
 clear_on_drop = "0.2"
+cfg-if = "0.1.6"
 malloc_size_of_derive = { path = "./malloc_size_of_derive" }
 dlmalloc = { version = "0.1", features = ["global"], optional = true }
 wee_alloc = { version = "0.4", optional = true }
@@ -38,5 +39,4 @@ ethereum-impls = ["ethereum-types", "elastic-array", "parking_lot"]
 # Include serde related struct metering.
 serde_only = ["serde", "serde_bytes"]
 # Full estimate: no call to allocator
-estimate-heapsize = ["no_ops_shallow"]
-no_ops_shallow = []
+estimate-heapsize = []

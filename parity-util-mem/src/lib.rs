@@ -22,6 +22,9 @@
 #![cfg_attr(not(feature = "std"), feature(core_intrinsics))]
 #![cfg_attr(not(feature = "std"), feature(alloc))]
 
+#[macro_use]
+extern crate cfg_if;
+
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
@@ -37,29 +40,32 @@ use std::ptr;
 #[cfg(not(feature = "volatile-erase"))]
 pub use cod::clear::Clear;
 
-#[cfg(feature = "jemalloc-global")]
-extern crate jemallocator;
 
-#[cfg(feature = "dlmalloc-global")]
-extern crate dlmalloc;
-
-#[cfg(feature = "weealloc-global")]
-extern crate wee_alloc;
-
-#[cfg(feature = "jemalloc-global")]
-#[global_allocator]
-/// Global allocator
-pub static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
-
-#[cfg(feature = "dlmalloc-global")]
-#[global_allocator]
-/// Global allocator
-pub static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
-
-#[cfg(feature = "weealloc-global")]
-#[global_allocator]
-/// Global allocator
-pub static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+cfg_if! {
+	if #[cfg(all(
+		feature = "jemalloc-global",
+		feature = "jemalloc-global",
+		not(target_os = "windows"),
+		not(target_arch = "wasm32")
+	))] {
+		extern crate jemallocator;
+		#[global_allocator]
+		/// Global allocator
+		pub static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+	} else if #[cfg(feature = "dlmalloc-global")] {
+		extern crate dlmalloc;
+		#[global_allocator]
+		/// Global allocator
+		pub static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
+	} else if #[cfg(feature = "weealloc-global")] {
+		extern crate wee_alloc;
+		#[global_allocator]
+		/// Global allocator
+		pub static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+	} else {
+		// default allocator used
+	}
+}
 
 pub mod allocators;
 
@@ -135,14 +141,16 @@ impl<T: AsMut<[u8]>> DerefMut for Memzero<T> {
 	}
 }
 
+#[cfg(test)]
 mod test {
-  use std::sync::Arc;
-  use super::MallocSizeOfExt;
-  #[test]
-  fn test_arc() {
-    let val = Arc::new("test".to_string());
-    let s = val.malloc_size_of();
-    assert!(s > 0);
+	use std::sync::Arc;
+	use super::MallocSizeOfExt;
 
-  }
+	#[test]
+	fn test_arc() {
+		let val = Arc::new("test".to_string());
+		let s = val.malloc_size_of();
+		assert!(s > 0);
+	}
+
 }

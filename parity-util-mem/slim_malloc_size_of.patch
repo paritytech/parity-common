@@ -90,7 +90,7 @@ index 778082b5f0..6bbe400204 100644
      fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
  }
  
-+#[cfg(not(feature = "no_ops_shallow"))]
++#[cfg(not(feature = "estimate-heapsize"))]
  impl MallocSizeOf for String {
      fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          unsafe { ops.malloc_size_of(self.as_ptr()) }
@@ -98,7 +98,7 @@ index 778082b5f0..6bbe400204 100644
      }
  }
  
-+#[cfg(not(feature = "no_ops_shallow"))]
++#[cfg(not(feature = "estimate-heapsize"))]
  impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
      fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          unsafe { ops.malloc_size_of(&**self) }
@@ -140,7 +140,7 @@ index 778082b5f0..6bbe400204 100644
  }
  
 -#[cfg(feature = "servo")]
-+#[cfg(not(feature = "no_ops_shallow"))]
++#[cfg(not(feature = "estimate-heapsize"))]
 +#[cfg(feature = "serde_only")]
  impl MallocShallowSizeOf for ByteBuf {
      fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
@@ -157,7 +157,7 @@ index 778082b5f0..6bbe400204 100644
      }
  }
  
-+#[cfg(not(feature = "no_ops_shallow"))]
++#[cfg(not(feature = "estimate-heapsize"))]
  impl<T> MallocShallowSizeOf for Vec<T> {
      fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
          unsafe { ops.malloc_size_of(self.as_ptr()) }
@@ -345,7 +345,7 @@ index 778082b5f0..6bbe400204 100644
 +
 +// currently this seems only fine with jemalloc
 +#[cfg(feature = "std")]
-+#[cfg(not(feature = "no_ops_shallow"))]
++#[cfg(not(feature = "estimate-heapsize"))]
 +#[cfg(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global"))]
  impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
      fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
@@ -355,7 +355,7 @@ index 778082b5f0..6bbe400204 100644
  }
  
 +#[cfg(feature = "std")]
-+#[cfg(not(feature = "no_ops_shallow"))]
++#[cfg(not(feature = "estimate-heapsize"))]
 +#[cfg(not(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global")))]
 +impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
 +    fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {

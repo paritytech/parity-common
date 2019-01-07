@@ -18,19 +18,18 @@
 //! Features are:
 //! - windows:
 //!	 - no features: default implementation from servo `heapsize` crate
-//!	 - weealloc: return 0 for compatibility
-//!	 - dlmalloc: enable, does not work, for compatibility only
-//!	 - jemalloc: compile error
+//!	 - weealloc: default to `estimate_size`
+//!	 - dlmalloc: default to `estimate_size`
+//!	 - jemalloc: default windows allocator is used instead
 //! - arch x86:
 //!	 - no features: use default alloc
 //!	 - jemalloc: use jemallocator crate
-//!	 - weealloc: return 0 for compatibility
-//!	 - dlmalloc: enable, does not work, for compatibility only
+//!	 - weealloc: default to `estimate_size`
+//!	 - dlmalloc: default to `estimate_size`
 //! - arch wasm32:
-//!	 - no features: return 0 for compatibility
-//!	 - dlmalloc: return 0 for compatibility (usable_size could be implemented if needed in
-//!	 dlmalloc crate)
-//!	 - weealloc: return 0 for compatibility
+//!	 - no features: default to `estimate_size`
+//!	 - weealloc: default to `estimate_size`
+//!	 - dlmalloc: default to `estimate_size`
 //!	 - jemalloc: compile error
 
 
@@ -44,125 +43,68 @@ use core::ffi::c_void;
 #[cfg(not(feature = "std"))]
 use alloc::collections::btree_set::BTreeSet;
 
-#[cfg(not(feature = "weealloc-global"))]
-#[cfg(not(feature = "dlmalloc-global"))]
-#[cfg(not(feature = "jemalloc-global"))]
-#[cfg(target_os = "windows")]
 mod usable_size {
-	extern crate winapi;
 
 	use super::*;
-	use self::winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
 
-	/// Get the size of a heap block.
-	/// Call windows allocator through `winapi` crate
-	pub unsafe extern "C" fn malloc_usable_size(mut ptr: *const c_void) -> usize {
+cfg_if! {
 
-		let heap = GetProcessHeap();
+	if #[cfg(any(
+		target_arch = "wasm32",
+		feature = "estimate-heapsize",
+		feature = "weealloc-global",
+		feature = "dlmalloc-global",
+	))] {
 
-		if HeapValidate(heap, 0, ptr) == 0 {
-			ptr = *(ptr as *const *const c_void).offset(-1);
+		// do not try system allocator
+
+		/// Warning this is for compatibility only.
+		/// This function does panic: `estimate-heapsize` feature needs to be activated
+		/// to avoid this function call.
+		pub unsafe extern "C" fn malloc_usable_size(_ptr: *const c_void) -> usize {
+			unreachable!("estimate heapsize only")
 		}
 
-		HeapSize(heap, 0, ptr) as usize
+	} else if #[cfg(target_os = "windows")] {
+
+		// default windows allocator
+		extern crate winapi;
+
+		use self::winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
+
+		/// Get the size of a heap block.
+		/// Call windows allocator through `winapi` crate
+		pub unsafe extern "C" fn malloc_usable_size(mut ptr: *const c_void) -> usize {
+
+			let heap = GetProcessHeap();
+
+			if HeapValidate(heap, 0, ptr) == 0 {
+				ptr = *(ptr as *const *const c_void).offset(-1);
+			}
+
+			HeapSize(heap, 0, ptr) as usize
+		}
+
+	} else if #[cfg(feature = "jemalloc-global")] {
+
+		/// Use of jemalloc usable size C function through jemallocator crate call.
+		pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
+			jemallocator::usable_size(ptr)
+		}
+
+	} else	{
+
+		// default allocator used
+		/// Macos, ios and android calls jemalloc.
+		/// Linux call system allocator (currently malloc).
+		extern "C" {
+			#[cfg_attr(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android"), link_name = "je_malloc_usable_size")]
+			pub fn malloc_usable_size(ptr: *const c_void) -> usize;
+		}
+
 	}
 
-	/// No enclosing function defined.
-	#[inline]
-	pub fn new_enclosing_size_fn() -> Option<VoidPtrToSizeFn> {
-		None
-	}
 }
-
-#[cfg(not(feature = "weealloc-global"))]
-#[cfg(not(feature = "dlmalloc-global"))]
-#[cfg(not(feature = "jemalloc-global"))]
-#[cfg(all(not(windows), not(target_arch = "wasm32")))]
-// default
-mod usable_size {
-	use super::*;
-
-	/// Default allocators for different platforms.
-	/// Macos, ios and android calls jemalloc.
-	/// Linux call system allocator (currently malloc).
-	extern "C" {
-		#[cfg_attr(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android"), link_name = "je_malloc_usable_size")]
-		pub fn malloc_usable_size(ptr: *const c_void) -> usize;
-	}
-
-	/// No enclosing function defined.
-	#[inline]
-	pub fn new_enclosing_size_fn() -> Option<VoidPtrToSizeFn> {
-		None
-	}
-
-}
-
-#[cfg(not(feature = "weealloc-global"))]
-#[cfg(not(feature = "dlmalloc-global"))]
-#[cfg(not(feature = "jemalloc-global"))]
-#[cfg(target_arch = "wasm32")]
-mod usable_size {
-	use super::*;
-
-	/// Warning this is for compatibility only.
-	/// This function does panic: `estimate-heapsize` feature needs to be activated
-	/// to avoid this function call.
-	pub unsafe extern "C" fn malloc_usable_size(mut ptr: *const c_void) -> usize {
-		panic!("Please run with `estimate-heapsize` feature")
-	}
-
-	/// No enclosing function defined.
-	#[inline]
-	pub fn new_enclosing_size_fn() -> Option<VoidPtrToSizeFn> {
-		None
-	}
-}
-
-#[cfg(feature = "jemalloc-global")]
-mod usable_size {
-	use super::*;
-
-	/// Use of jemalloc usable size C function through jemallocator crate call.
-	pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
-		jemallocator::usable_size(ptr)
-	}
-
-	/// No enclosing function defined.
-	#[inline]
-	pub fn new_enclosing_size_fn() -> Option<VoidPtrToSizeFn> {
-		None
-	}
-}
-
-#[cfg(feature = "dlmalloc-global")]
-mod usable_size {
-	use super::*;
-
-	/// Warning this is for compatibility only.
-	/// Feature: `estimate-heapsize` is on with `dlmalloc-global` and this code 
-	/// should never be called (it panics otherwhise).
-	pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
-		panic!("Running estimation this code should never be reached")
-	}
-
-	/// No enclosing function defined.
-	#[inline]
-	pub fn new_enclosing_size_fn() -> Option<VoidPtrToSizeFn> {
-		None
-	}
-}
-
-#[cfg(feature = "weealloc-global")]
-mod usable_size {
-	use super::*;
-
-	/// Warning this is for compatibility only.
-	/// Feature: `estimate-heapsize` is on with `weealloc-global` and this code 
-	/// should never be called (it panics otherwhise).
-	pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
-		panic!("Running estimation this code should never be reached")
-	}
 
 	/// No enclosing function defined.
 	#[inline]
@@ -193,7 +135,7 @@ pub trait MallocSizeOfExt: MallocSizeOf {
 	}
 }
 
-impl<T: MallocSizeOf> MallocSizeOfExt for T {}
+impl<T: MallocSizeOf> MallocSizeOfExt for T { }
 
 #[cfg(feature = "std")]
 impl<T: MallocSizeOf> MallocSizeOf for std::sync::Arc<T> {
