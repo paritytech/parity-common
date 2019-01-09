@@ -1,0 +1,10 @@
+[package]
+name = "impl-rlp"
+version = "0.1.1"
+authors = ["Parity Technologies <admin@parity.io>"]
+license = "Apache-2.0/MIT"
+homepage = "https://github.com/paritytech/parity-common"
+description = "RLP serialization support for uint and fixed hash."
+
+[dependencies]
+rlp = { version = "0.3", path = "../../../rlp", default-features = false }

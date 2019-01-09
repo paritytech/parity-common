@@ -19,4 +19,5 @@ members = [
 	"triehash",
 	"uint",
 	"parity-util-mem",
+	"primitive-types",
 ]
