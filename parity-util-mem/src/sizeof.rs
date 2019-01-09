@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
+// Copyright 2015-2019 Parity Technologies (UK) Ltd.
 // This file is part of Parity.
 
 // Parity is free software: you can redistribute it and/or modify
@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Estimation for heapsize calculation. Usable to replace call to allocator method (for some
-//! allocators or simply because we just need a determinist indicator of cunsumption).
+//! allocators or simply because we just need a deterministic cunsumption measurement).
 
 #[cfg(feature = "serde_only")]
 extern crate serde_bytes;

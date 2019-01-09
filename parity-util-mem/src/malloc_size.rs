@@ -46,10 +46,6 @@
 
 // This file is patched at commit 5bdea7dc1c80790a852a3fb03edfb2b8fbd403dc DO NOT EDIT.
 
-#[cfg(feature = "serde_only")]
-extern crate serde;
-#[cfg(feature = "serde_only")]
-extern crate serde_bytes;
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
@@ -64,8 +60,6 @@ mod std {
 #[cfg(feature = "std")]
 use std::sync as servo_arc;
 
-#[cfg(feature = "serde_only")]
-use self::serde_bytes::ByteBuf;
 use std::hash::{BuildHasher, Hash};
 use std::mem::size_of;
 use std::ops::Range;
@@ -319,25 +313,6 @@ where
 impl<T: MallocSizeOf> MallocSizeOf for [T] {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         let mut n = 0;
-        for elem in self.iter() {
-            n += elem.size_of(ops);
-        }
-        n
-    }
-}
-
-#[cfg(not(feature = "estimate-heapsize"))]
-#[cfg(feature = "serde_only")]
-impl MallocShallowSizeOf for ByteBuf {
-    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        unsafe { ops.malloc_size_of(self.as_ptr()) }
-    }
-}
-
-#[cfg(feature = "serde_only")]
-impl MallocSizeOf for ByteBuf {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        let mut n = self.shallow_size_of(ops);
         for elem in self.iter() {
             n += elem.size_of(ops);
         }
