@@ -7,7 +7,7 @@ repository = "https://github.com/paritytech/parity-common"
 license = "GPL-3.0"
 
 [dependencies]
-parity-util-mem = { path = "../../parity-common/parity-util-mem" } # TODO switch to any published version (aka >= 0.1)
+parity-util-mem = { git = "https://github.com/cheme/parity-common", branch = "mem-tools2" }
 hashdb = { version = "0.3.0" }
 plain_hasher = { version = "0.2", path = "../plain_hasher", default-features = false }
 rlp = { version = "0.3.0", path = "../rlp", default-features = false }
@@ -15,5 +15,5 @@ rlp = { version = "0.3.0", path = "../rlp", default-features = false }
 [dev-dependencies]
 tiny-keccak = "1.4.2"
 ethereum-types = "0.4"
-keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
-keccak-hash = { version = "0.1", path = "../keccak-hash" }
+keccak-hasher = { version = "*" } # ,  path = "../test-support/keccak-hasher" }
+keccak-hash = { version = "*" } #, path = "../keccak-hash" }
