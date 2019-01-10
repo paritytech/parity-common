@@ -17,8 +17,6 @@
 //! Estimation for heapsize calculation. Usable to replace call to allocator method (for some
 //! allocators or simply because we just need a deterministic cunsumption measurement).
 
-#[cfg(feature = "serde_only")]
-extern crate serde_bytes;
 
 use crate::malloc_size::{
 	MallocSizeOf,
@@ -27,8 +25,6 @@ use crate::malloc_size::{
 	MallocSizeOfOps
 };
 use std::mem::{size_of, size_of_val};
-#[cfg(feature = "serde_only")]
-use self::serde_bytes::ByteBuf;
 
 impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
 	fn shallow_size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
@@ -39,13 +35,6 @@ impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
 impl MallocSizeOf for String {
 	fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
 		self.capacity() * size_of::<u8>()
-	}
-}
-
-#[cfg(feature = "serde_only")]
-impl MallocShallowSizeOf for ByteBuf {
-	fn shallow_size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-		AsRef::<Vec<u8>>::as_ref(self).capacity() * size_of::<u8>()
 	}
 }
 

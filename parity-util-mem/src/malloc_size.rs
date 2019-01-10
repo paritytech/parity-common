@@ -58,7 +58,7 @@ mod std {
 }
 
 #[cfg(feature = "std")]
-use std::sync as servo_arc;
+use std::sync::Arc;
 
 use std::hash::{BuildHasher, Hash};
 use std::mem::size_of;
@@ -481,7 +481,7 @@ impl<T> MallocSizeOf for std::marker::PhantomData<T> {
 //impl<T> !MallocShallowSizeOf for Arc<T> { }
 
 #[cfg(feature = "std")]
-fn arc_ptr<T>(s: &servo_arc::Arc<T>) -> * const T {
+fn arc_ptr<T>(s: &Arc<T>) -> * const T {
   &(**s) as *const T
 }
 
@@ -490,7 +490,7 @@ fn arc_ptr<T>(s: &servo_arc::Arc<T>) -> * const T {
 #[cfg(feature = "std")]
 #[cfg(not(feature = "estimate-heapsize"))]
 #[cfg(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global"))]
-impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
+impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
     fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         unsafe { ops.malloc_size_of(arc_ptr(self)) }
     }
@@ -499,7 +499,7 @@ impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
 #[cfg(feature = "std")]
 #[cfg(not(feature = "estimate-heapsize"))]
 #[cfg(not(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global")))]
-impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
+impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
     fn unconditional_shallow_size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
 		    size_of::<T>()
    }
@@ -507,14 +507,14 @@ impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
 
 
 #[cfg(feature = "std")]
-impl<T: MallocSizeOf> MallocUnconditionalSizeOf for servo_arc::Arc<T> {
+impl<T: MallocSizeOf> MallocUnconditionalSizeOf for Arc<T> {
     fn unconditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         self.unconditional_shallow_size_of(ops) + (**self).size_of(ops)
     }
 }
 
 #[cfg(feature = "std")]
-impl<T> MallocConditionalShallowSizeOf for servo_arc::Arc<T> {
+impl<T> MallocConditionalShallowSizeOf for Arc<T> {
     fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         if ops.have_seen_ptr(arc_ptr(self)) {
             0
@@ -525,7 +525,7 @@ impl<T> MallocConditionalShallowSizeOf for servo_arc::Arc<T> {
 }
 
 #[cfg(feature = "std")]
-impl<T: MallocSizeOf> MallocConditionalSizeOf for servo_arc::Arc<T> {
+impl<T: MallocSizeOf> MallocConditionalSizeOf for Arc<T> {
     fn conditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         if ops.have_seen_ptr(arc_ptr(self)) {
             0

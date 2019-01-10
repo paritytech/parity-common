@@ -141,6 +141,7 @@ impl<T: AsMut<[u8]>> DerefMut for Memzero<T> {
 	}
 }
 
+#[cfg(std)]
 #[cfg(test)]
 mod test {
 	use std::sync::Arc;
