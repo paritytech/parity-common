@@ -23,8 +23,18 @@ construct_uint! {
 }
 
 #[test]
+fn u128_conversions() {
+	let mut a = U256::from(u128::max_value());
+	assert_eq!(a.low_u128(), u128::max_value());
+	a += 2u128.into();
+	assert_eq!(a.low_u128(), 1u128);
+	a -= 3u128.into();
+	assert_eq!(a.low_u128(), u128::max_value() - 1);
+}
+
+#[test]
 fn uint256_checked_ops() {
-	let z = U256::from(0u128);
+	let z = U256::from(0);
 	let a = U256::from(10);
 	let b = !U256::from(1);
 

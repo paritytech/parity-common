@@ -305,11 +305,6 @@ macro_rules! impl_mul_from {
 		}
 	}
 }
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_if {
-	( $t:tt ) => ( $t )
-}
 
 #[macro_export]
 #[doc(hidden)]
