@@ -8,7 +8,7 @@
 
 //! Primitive types shared by Substrate and Parity Ethereum.
 //!
-//! Those are uint types `U256` and `U512`, and fixed hash types `H160`,
+//! Those are uint types `U128`, `U256` and `U512`, and fixed hash types `H160`,
 //! `H256` and `H512`, with optional serde serialization, parity-codec and
 //! rlp encoding.
 
@@ -33,15 +33,74 @@ extern crate impl_codec;
 extern crate impl_rlp;
 
 construct_uint! {
+	/// 128-bit unsigned integer.
+	pub struct U128(2);
+}
+
+construct_uint! {
 	/// 256-bit unsigned integer.
 	pub struct U256(4);
 }
+
+construct_uint! {
+	/// 512-bits unsigned integer.
+	pub struct U512(8);
+}
+
+construct_fixed_hash! {
+	/// Fixed-size uninterpreted hash type with 20 bytes (160 bits) size.
+	pub struct H160(20);
+}
+construct_fixed_hash! {
+	/// Fixed-size uninterpreted hash type with 32 bytes (256 bits) size.
+	pub struct H256(32);
+}
+construct_fixed_hash! {
+	/// Fixed-size uninterpreted hash type with 64 bytes (512 bits) size.
+	pub struct H512(64);
+}
+
 #[cfg(feature = "impl-serde")]
-impl_uint_serde!(U256, 4);
+mod serde {
+	use super::*;
+
+	impl_uint_serde!(U128, 2);
+	impl_uint_serde!(U256, 4);
+	impl_uint_serde!(U512, 8);
+
+	impl_fixed_hash_serde!(H160, 20);
+	impl_fixed_hash_serde!(H256, 32);
+	impl_fixed_hash_serde!(H512, 64);
+}
+
 #[cfg(feature = "impl-codec")]
-impl_uint_codec!(U256, 4);
+mod codec {
+	use super::*;
+
+	impl_uint_codec!(U128, 2);
+	impl_uint_codec!(U256, 4);
+	impl_uint_codec!(U512, 8);
+
+	impl_fixed_hash_codec!(H160, 20);
+	impl_fixed_hash_codec!(H256, 32);
+	impl_fixed_hash_codec!(H512, 64);
+}
+
 #[cfg(feature = "impl-rlp")]
-impl_uint_rlp!(U256, 4);
+mod rlp {
+	use super::*;
+
+	impl_uint_rlp!(U128, 2);
+	impl_uint_rlp!(U256, 4);
+	impl_uint_rlp!(U512, 8);
+
+	impl_fixed_hash_rlp!(H160, 20);
+	impl_fixed_hash_rlp!(H256, 32);
+	impl_fixed_hash_rlp!(H512, 64);
+}
+
+
+impl_fixed_hash_conversions!(H256, H160);
 
 impl U256 {
 	/// Multiplies two 256-bit integers to produce full 512-bit integer
@@ -105,49 +164,3 @@ impl<'a> From<&'a U512> for U256 {
 		U256(ret)
 	}
 }
-
-construct_uint! {
-	/// 512-bits unsigned integer.
-	pub struct U512(8);
-}
-#[cfg(feature = "impl-serde")]
-impl_uint_serde!(U512, 8);
-#[cfg(feature = "impl-codec")]
-impl_uint_codec!(U512, 8);
-#[cfg(feature = "impl-rlp")]
-impl_uint_rlp!(U512, 8);
-
-construct_fixed_hash! {
-	/// Fixed-size uninterpreted hash type with 20 bytes (160 bits) size.
-	pub struct H160(20);
-}
-#[cfg(feature = "impl-serde")]
-impl_fixed_hash_serde!(H160, 20);
-#[cfg(feature = "impl-codec")]
-impl_fixed_hash_codec!(H160, 20);
-#[cfg(feature = "impl-rlp")]
-impl_fixed_hash_rlp!(H160, 20);
-
-impl_fixed_hash_conversions!(H256, H160);
-
-construct_fixed_hash! {
-	/// Fixed-size uninterpreted hash type with 32 bytes (256 bits) size.
-	pub struct H256(32);
-}
-#[cfg(feature = "impl-serde")]
-impl_fixed_hash_serde!(H256, 32);
-#[cfg(feature = "impl-codec")]
-impl_fixed_hash_codec!(H256, 32);
-#[cfg(feature = "impl-rlp")]
-impl_fixed_hash_rlp!(H256, 32);
-
-construct_fixed_hash! {
-	/// Fixed-size uninterpreted hash type with 64 bytes (512 bits) size.
-	pub struct H512(64);
-}
-#[cfg(feature = "impl-serde")]
-impl_fixed_hash_serde!(H512, 64);
-#[cfg(feature = "impl-codec")]
-impl_fixed_hash_codec!(H512, 64);
-#[cfg(feature = "impl-rlp")]
-impl_fixed_hash_rlp!(H512, 64);

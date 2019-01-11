@@ -24,7 +24,7 @@ construct_uint! {
 
 #[test]
 fn uint256_checked_ops() {
-	let z = U256::from(0);
+	let z = U256::from(0u128);
 	let a = U256::from(10);
 	let b = !U256::from(1);
 
