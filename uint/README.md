@@ -52,5 +52,3 @@ cargo bench
 	- Enabled by default.
 - `quickcheck`: Enable quickcheck-style property testing
 	- Use with `cargo test --release --features=quickcheck`.
-- `heapsize`: Implement base trait of the `heapsizeof` crate
-	- Use with `cargo build --feature=heapsize`.
