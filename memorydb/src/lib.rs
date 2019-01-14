@@ -16,6 +16,7 @@
 
 //! Reference-counted memory-based `HashDB` implementation.
 extern crate hashdb;
+extern crate parity_util_mem as malloc_size_of;
 extern crate heapsize;
 extern crate rlp;
 #[cfg(test)] extern crate keccak_hasher;
@@ -23,6 +24,7 @@ extern crate rlp;
 #[cfg(test)] extern crate ethereum_types;
 
 use hashdb::{HashDB, Hasher as KeyHasher, AsHashDB};
+use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
 use heapsize::HeapSizeOf;
 use rlp::NULL_RLP;
 use std::collections::hash_map::Entry;
@@ -91,7 +93,6 @@ pub struct MemoryDB<H: KeyHasher, T> {
 impl<'a, H, T> Default for MemoryDB<H, T>
 where
 	H: KeyHasher,
-	H::Out: HeapSizeOf,
 	T: From<&'a [u8]> + Clone
 {
 	fn default() -> Self { Self::new() }
@@ -100,7 +101,6 @@ where
 impl<'a, H, T> MemoryDB<H, T>
 where
 	H: KeyHasher,
-	H::Out: HeapSizeOf,
 	T: From<&'a [u8]> + Clone,
 {
 	/// Create a new instance of the memory DB.
@@ -112,7 +112,6 @@ where
 impl<H, T> MemoryDB<H, T>
 where
 	H: KeyHasher,
-	H::Out: HeapSizeOf,
 	T: Default,
 {
 	/// Remove an element and delete it from storage if reference count reaches zero.
@@ -220,9 +219,23 @@ where
 	H::Out: HeapSizeOf,
 	T: HeapSizeOf,
 {
+	#[deprecated(since="0.4.0", note="please use `malloc_size_of` instead")]
 	/// Returns the size of allocated heap memory
 	pub fn mem_used(&self) -> usize {
 		self.data.heap_size_of_children()
+	}
+}
+
+impl<H, T> MallocSizeOf for MemoryDB<H, T>
+where
+H: KeyHasher,
+	H::Out: MallocSizeOf,
+	T: MallocSizeOf,
+{
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.data.size_of(ops)
+			+ self.null_node_data.size_of(ops)
+			+ self.hashed_null_node.size_of(ops)
 	}
 }
 
