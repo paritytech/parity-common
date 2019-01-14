@@ -347,11 +347,11 @@ pub fn split_u128(a: u128) -> (u64, u64) {
 #[macro_export]
 macro_rules! construct_uint {
 	( $(#[$attr:meta])* $visibility:vis struct $name:ident (1); ) => {
-		construct_uint!{ @construct $($attr)* $visibility struct $name (1); }
+		construct_uint!{ @construct $(#[$attr])* $visibility struct $name (1); }
 	};
 
 	( $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_words:tt ); ) => {
-			construct_uint! { @construct $($attr)* $visibility struct $name ($n_words); }
+			construct_uint! { @construct $(#[$attr])* $visibility struct $name ($n_words); }
 
 			impl $crate::core_::convert::From<u128> for $name {
 				fn from(value: u128) -> $name {
@@ -387,7 +387,7 @@ macro_rules! construct_uint {
 				#[inline]
 				pub fn as_u128(&self) -> u128 {
 					let &$name(ref arr) = self;
-					for i in (2..$n_words) {
+					for i in 2..$n_words {
 						if arr[i] != 0 {
 							panic!("Integer overflow when casting to u128")
 						}
@@ -464,7 +464,7 @@ macro_rules! construct_uint {
 			pub fn as_u32(&self) -> u32 {
 				let &$name(ref arr) = self;
 				if (arr[0] & (0xffffffffu64 << 32)) != 0 {
-					panic!("Integer overflow when casting to u64")
+					panic!("Integer overflow when casting to u32")
 				}
 				self.as_u64() as u32
 			}
@@ -890,7 +890,7 @@ macro_rules! construct_uint {
 		impl_map_from!($name, i32, i64);
 		impl_map_from!($name, isize, i64);
 
-		// Converts from big endian representation of $name
+		// Converts from big endian representation.
 		impl<'a> $crate::core_::convert::From<&'a [u8]> for $name {
 			fn from(bytes: &[u8]) -> $name {
 				Self::from_big_endian(bytes)
