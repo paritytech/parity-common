@@ -15,5 +15,5 @@ rlp = { version = "0.3.0", path = "../rlp", default-features = false }
 [dev-dependencies]
 tiny-keccak = "1.4.2"
 ethereum-types = "0.4"
-keccak-hasher = { version = "0.1", path = "../test-support/keccak-hasher" }
-keccak-hash = { version = "0.1", path = "../keccak-hash" }
+keccak-hasher = { version = "*" } # ,  path = "../test-support/keccak-hasher" }
+keccak-hash = { version = "*" } #, path = "../keccak-hash" }
