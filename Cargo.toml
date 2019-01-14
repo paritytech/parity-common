@@ -18,5 +18,5 @@ members = [
 	"trie-standardmap",
 	"triehash",
 	"uint",
-  "mem",
+	"parity-util-mem",
 ]

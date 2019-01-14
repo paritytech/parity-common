@@ -14,20 +14,43 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Implementation of common types.
-//! Note that the implementation (there is some macro call redundancy here) could be done in the types crate,
-//! but it creates some hard to maintain/update trait dependencies.
+//! Implementation of `MallocSize` for common types :
+//! - etheureum types uint and fixed hash.
+//! - elastic_array arrays
+//! - parking_lot mutex structures
 
 extern crate elastic_array;
 extern crate ethereum_types;
 extern crate parking_lot;
 
-use self::ethereum_types::*;
-use self::elastic_array::*;
+use self::ethereum_types::{
+	U64, U128, U256, U512, H32, H64,
+	H128, H160, H256, H264, H512, H520,
+	Bloom
+};
+use self::elastic_array::{
+	ElasticArray2,
+	ElasticArray4,
+	ElasticArray8,
+	ElasticArray16,
+	ElasticArray32,
+	ElasticArray36,
+	ElasticArray64,
+	ElasticArray128,
+	ElasticArray256,
+	ElasticArray512,
+	ElasticArray1024,
+	ElasticArray2048,
+};
 use self::parking_lot::{Mutex, RwLock};
 use super::{MallocSizeOf, MallocSizeOfOps};
 
+#[cfg(not(feature = "std"))]
+use core as std;
+
+#[cfg(feature = "std")]
 malloc_size_of_is_0!(std::time::Instant);
+malloc_size_of_is_0!(std::time::Duration);
 
 malloc_size_of_is_0!(
 	U64, U128, U256, U512, H32, H64,

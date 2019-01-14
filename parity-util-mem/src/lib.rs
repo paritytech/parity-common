@@ -14,11 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Memory related utilities.
+//! Crate for parity memory management related utilities.
+//! It includes global allocator choice, heap measurement and
+//! memory erasure.
+
+#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(feature = "std"), feature(core_intrinsics))]
+#![cfg_attr(not(feature = "std"), feature(alloc))]
+
+#[macro_use]
+extern crate cfg_if;
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
 
 extern crate clear_on_drop as cod;
 
-//extern crate malloc_size_of as malloc_size;
 #[macro_use] extern crate malloc_size_of_derive as malloc_size_derive;
 
 use std::ops::{Deref, DerefMut};
@@ -29,19 +40,52 @@ use std::ptr;
 #[cfg(not(feature = "volatile-erase"))]
 pub use cod::clear::Clear;
 
-pub mod alloc;
+
+cfg_if! {
+	if #[cfg(all(
+		feature = "jemalloc-global",
+		feature = "jemalloc-global",
+		not(target_os = "windows"),
+		not(target_arch = "wasm32")
+	))] {
+		extern crate jemallocator;
+		#[global_allocator]
+		/// Global allocator
+		pub static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+	} else if #[cfg(feature = "dlmalloc-global")] {
+		extern crate dlmalloc;
+		#[global_allocator]
+		/// Global allocator
+		pub static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
+	} else if #[cfg(feature = "weealloc-global")] {
+		extern crate wee_alloc;
+		#[global_allocator]
+		/// Global allocator
+		pub static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+	} else {
+		// default allocator used
+	}
+}
+
+pub mod allocators;
+
+#[cfg(feature = "estimate-heapsize")]
+pub mod sizeof;
+
+#[cfg(not(feature = "std"))]
+use core as std;
 
 /// This is a copy of patched crate `malloc_size_of` as a module.
 /// We need to have it as an inner module to be able to define our own traits implementation,
 /// if at some point the trait become standard enough we could use the right way of doing it
-/// by implementing it in our type traits crates. At this time a move on this trait if implemented 
-/// at primitive types level would impact to much of the dependency to be easilly manageable.
+/// by implementing it in our type traits crates. At this time moving this trait to the primitive
+/// types level would impact too much of the dependencies to be easily manageable.
 #[macro_use] mod malloc_size;
 
 #[cfg(feature = "ethereum-impls")]
 pub mod impls;
 
-/// reexport clear_on_drop crate
+/// Reexport clear_on_drop crate.
 pub mod clear_on_drop {
 	pub use cod::*;
 }
@@ -49,9 +93,9 @@ pub mod clear_on_drop {
 pub use malloc_size_derive::*;
 pub use malloc_size::{
  	MallocSizeOfOps,
-  MallocSizeOf,
+	MallocSizeOf,
 };
-pub use alloc::MallocSizeOfExt;
+pub use allocators::MallocSizeOfExt;
 
 /// Wrapper to zero out memory when dropped.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -95,4 +139,18 @@ impl<T: AsMut<[u8]>> DerefMut for Memzero<T> {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		&mut self.mem
 	}
+}
+
+#[cfg(test)]
+mod test {
+	use std::sync::Arc;
+	use super::MallocSizeOfExt;
+
+	#[test]
+	fn test_arc() {
+		let val = Arc::new("test".to_string());
+		let s = val.malloc_size_of();
+		assert!(s > 0);
+	}
+
 }
