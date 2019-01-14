@@ -10,14 +10,14 @@ license = "GPL-3.0"
 elastic-array = "0.10"
 log = "0.3"
 rand = "0.4"
-hashdb = { version = "0.3.0", path = "../hashdb" }
+hashdb = { version = "0.3.0" }
 parity-bytes = { version = "0.1", path = "../parity-bytes" }
 
 [dev-dependencies]
 env_logger = "0.5"
 ethereum-types = "0.4"
 keccak-hash = { version = "0.1", path = "../keccak-hash" }
-memorydb = { version = "0.4.0", path = "../memorydb", default-features = false }
+memorydb = { version = "0.3.0", default-features = false }
 rlp = { version = "0.3.0", path = "../rlp", default-features = false }
 trie-standardmap = { version = "0.1", path = "../trie-standardmap", default-features = false }
 triehash = { version = "0.3.0", path = "../triehash", default-features = false }
