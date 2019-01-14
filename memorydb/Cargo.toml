@@ -1,13 +1,13 @@
 [package]
 name = "memorydb"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "in-memory implementation of hashdb"
 repository = "https://github.com/paritytech/parity-common"
 license = "GPL-3.0"
 
 [dependencies]
-parity-util-mem = { path = "../mem" } # TODO switch to any published version (aka >= 0.1)
+parity-util-mem = { version = "0.1", path = "../parity-util-mem" }
 hashdb = { version = "0.3.0", path = "../hashdb" }
 plain_hasher = { version = "0.2", path = "../plain_hasher", default-features = false }
 rlp = { version = "0.3.0", path = "../rlp", default-features = false }

@@ -91,7 +91,6 @@ pub struct MemoryDB<H: KeyHasher, T> {
 impl<'a, H, T> Default for MemoryDB<H, T>
 where
 	H: KeyHasher,
-	H::Out: MallocSizeOf,
 	T: From<&'a [u8]> + Clone
 {
 	fn default() -> Self { Self::new() }
@@ -100,7 +99,6 @@ where
 impl<'a, H, T> MemoryDB<H, T>
 where
 	H: KeyHasher,
-	H::Out: MallocSizeOf,
 	T: From<&'a [u8]> + Clone,
 {
 	/// Create a new instance of the memory DB.
@@ -112,7 +110,6 @@ where
 impl<H, T> MemoryDB<H, T>
 where
 	H: KeyHasher,
-	H::Out: MallocSizeOf,
 	T: Default,
 {
 	/// Remove an element and delete it from storage if reference count reaches zero.
@@ -222,7 +219,7 @@ H: KeyHasher,
 {
 	/// Returns the size of allocated heap memory
 	pub fn mem_used(&self) -> usize {
-		self.m_size_of()
+		self.malloc_size_of()
 	}
 }
 
@@ -238,7 +235,7 @@ H: KeyHasher,
 			+ self.hashed_null_node.size_of(ops)
 	}
 }
-	
+
 impl<H, T> HashDB<H, T> for MemoryDB<H, T>
 where
 	H: KeyHasher,
