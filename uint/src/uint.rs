@@ -346,7 +346,58 @@ pub fn split_u128(a: u128) -> (u64, u64) {
 
 #[macro_export]
 macro_rules! construct_uint {
+	( $(#[$attr:meta])* $visibility:vis struct $name:ident (1); ) => {
+		construct_uint!{ @construct $(#[$attr])* $visibility struct $name (1); }
+	};
+
 	( $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_words:tt ); ) => {
+			construct_uint! { @construct $(#[$attr])* $visibility struct $name ($n_words); }
+
+			impl $crate::core_::convert::From<u128> for $name {
+				fn from(value: u128) -> $name {
+					let mut ret = [0; $n_words];
+					ret[0] = value as u64;
+					ret[1] = (value >> 64) as u64;
+					$name(ret)
+				}
+			}
+
+			impl $crate::core_::convert::From<i128> for $name {
+				fn from(value: i128) -> $name {
+					match value >= 0 {
+						true => From::from(value as u128),
+						false => { panic!("Unsigned integer can't be created from negative value"); }
+					}
+				}
+			}
+
+			impl $name {
+				/// Low 2 words (u128)
+				#[inline]
+				pub fn low_u128(&self) -> u128 {
+					let &$name(ref arr) = self;
+					((arr[1] as u128) << 64) + arr[0] as u128
+				}
+
+				/// Conversion to u128 with overflow checking
+				///
+				/// # Panics
+				///
+				/// Panics if the number is larger than 2^128.
+				#[inline]
+				pub fn as_u128(&self) -> u128 {
+					let &$name(ref arr) = self;
+					for i in 2..$n_words {
+						if arr[i] != 0 {
+							panic!("Integer overflow when casting to u128")
+						}
+
+					}
+					self.low_u128()
+				}
+			}
+	};
+	( @construct $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_words:tt ); ) => {
 		/// Little-endian large integer type
 		#[repr(C)]
 		$(#[$attr])*
@@ -366,7 +417,6 @@ macro_rules! construct_uint {
 		}
 
 		impl $name {
-
 			/// Maximum value.
 			pub const MAX: $name = $name([u64::max_value(); $n_words]);
 
@@ -414,7 +464,7 @@ macro_rules! construct_uint {
 			pub fn as_u32(&self) -> u32 {
 				let &$name(ref arr) = self;
 				if (arr[0] & (0xffffffffu64 << 32)) != 0 {
-					panic!("Integer overflow when casting U256")
+					panic!("Integer overflow when casting to u32")
 				}
 				self.as_u64() as u32
 			}
@@ -429,7 +479,7 @@ macro_rules! construct_uint {
 				let &$name(ref arr) = self;
 				for i in 1..$n_words {
 					if arr[i] != 0 {
-						panic!("Integer overflow when casting U256")
+						panic!("Integer overflow when casting to u64")
 					}
 				}
 				arr[0]
@@ -445,11 +495,11 @@ macro_rules! construct_uint {
 				let &$name(ref arr) = self;
 				for i in 1..$n_words {
 					if arr[i] != 0 {
-						panic!("Integer overflow when casting U256")
+						panic!("Integer overflow when casting to usize")
 					}
 				}
 				if arr[0] > usize::max_value() as u64 {
-					panic!("Integer overflow when casting U256")
+					panic!("Integer overflow when casting to usize")
 				}
 				arr[0] as usize
 			}
@@ -821,7 +871,6 @@ macro_rules! construct_uint {
 			}
 		}
 
-
 		impl_map_from!($name, u8, u64);
 		impl_map_from!($name, u16, u64);
 		impl_map_from!($name, u32, u64);
@@ -841,7 +890,7 @@ macro_rules! construct_uint {
 		impl_map_from!($name, i32, i64);
 		impl_map_from!($name, isize, i64);
 
-		// Converts from big endian representation of U256
+		// Converts from big endian representation.
 		impl<'a> $crate::core_::convert::From<&'a [u8]> for $name {
 			fn from(bytes: &[u8]) -> $name {
 				Self::from_big_endian(bytes)
