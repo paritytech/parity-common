@@ -121,6 +121,19 @@ impl From<U256> for U512 {
 	}
 }
 
+impl From<U256> for U128 {
+	fn from(value: U256) -> U128 {
+		let U256(ref arr) = value;
+		if arr[2] | arr[3] != 0 {
+			panic!("From<U256> for U128: encountered overflow")
+		}
+		let mut ret = [0; 2];
+		ret[0] = arr[0];
+		ret[1] = arr[1];
+		U128(ret)
+	}
+}
+
 impl From<U512> for U256 {
 	fn from(value: U512) -> U256 {
 		let U512(ref arr) = value;
@@ -132,6 +145,39 @@ impl From<U512> for U256 {
 		ret[1] = arr[1];
 		ret[2] = arr[2];
 		ret[3] = arr[3];
+		U256(ret)
+	}
+}
+
+impl From<U512> for U128 {
+	fn from(value: U512) -> U128 {
+		let U512(ref arr) = value;
+		if arr[2] | arr[3] | arr[4] | arr[5] | arr[6] | arr[7] != 0 {
+			panic!("From<U512> for U128: encountered overflow")
+		}
+		let mut ret = [0; 2];
+		ret[0] = arr[0];
+		ret[1] = arr[1];
+		U128(ret)
+	}
+}
+
+impl From<U128> for U512 {
+	fn from(value: U128) -> U512 {
+		let U128(ref arr) = value;
+		let mut ret = [0; 8];
+		ret[0] = arr[0];
+		ret[1] = arr[1];
+		U512(ret)
+	}
+}
+
+impl From<U128> for U256 {
+	fn from(value: U128) -> U256 {
+		let U128(ref arr) = value;
+		let mut ret = [0; 4];
+		ret[0] = arr[0];
+		ret[1] = arr[1];
 		U256(ret)
 	}
 }
