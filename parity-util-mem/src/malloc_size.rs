@@ -240,12 +240,12 @@ impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
    }
 }
 
-}
-
 impl MallocSizeOf for String {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         unsafe { ops.malloc_size_of(self.as_ptr()) }
     }
+}
+
 }
 
 impl<'a, T: ?Sized> MallocSizeOf for &'a T {
