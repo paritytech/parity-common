@@ -98,7 +98,7 @@ cfg_if! {
 		/// Macos, ios and android calls jemalloc.
 		/// Linux call system allocator (currently malloc).
 		extern "C" {
-			#[cfg_attr(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android"), link_name = "je_malloc_usable_size")]
+			#[cfg_attr(any(prefixed_jemalloc), link_name = "je_malloc_usable_size")]
 			pub fn malloc_usable_size(ptr: *const c_void) -> usize;
 		}
 
