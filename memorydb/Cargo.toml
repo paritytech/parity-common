@@ -9,7 +9,7 @@ license = "GPL-3.0"
 [dependencies]
 parity-util-mem = { version = "0.1", path = "../parity-util-mem" }
 heapsize = "0.4"
-hashdb = { version = "0.3.0" }
+hashdb = { version = "0.3.0", path = "../hashdb" }
 plain_hasher = { version = "0.2", path = "../plain_hasher", default-features = false }
 rlp = { version = "0.3.0", path = "../rlp", default-features = false }
 
