@@ -1,5 +1,5 @@
 diff --git a/components/malloc_size_of/lib.rs b/components/malloc_size_of/lib.rs
-index 778082b5f0..7f527c930e 100644
+index 778082b5f0..e13745d6af 100644
 --- a/components/malloc_size_of/lib.rs
 +++ b/components/malloc_size_of/lib.rs
 @@ -43,55 +43,39 @@
@@ -82,23 +82,67 @@ index 778082b5f0..7f527c930e 100644
  
  /// Operations used when measuring heap usage of data structures.
  pub struct MallocSizeOfOps {
-@@ -216,6 +200,7 @@ pub trait MallocConditionalShallowSizeOf {
+@@ -216,44 +200,62 @@ pub trait MallocConditionalShallowSizeOf {
      fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
  }
  
-+#[cfg(not(feature = "estimate-heapsize"))]
- impl MallocSizeOf for String {
-     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-         unsafe { ops.malloc_size_of(self.as_ptr()) }
-@@ -229,6 +214,7 @@ impl<'a, T: ?Sized> MallocSizeOf for &'a T {
+-impl MallocSizeOf for String {
+-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+-        unsafe { ops.malloc_size_of(self.as_ptr()) }
++#[cfg(not(any(
++	all(
++		target_os = "macos",
++		not(feature = "jemalloc-global"),
++	),
++	feature = "estimate-heapsize"
++)))]
++pub mod inner_allocator_use {
++
++use super::*;
++
++impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
++    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
++        unsafe { ops.malloc_size_of(&**self) }
      }
  }
  
-+#[cfg(not(feature = "estimate-heapsize"))]
- impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
-     fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-         unsafe { ops.malloc_size_of(&**self) }
-@@ -241,24 +227,6 @@ impl<T: MallocSizeOf + ?Sized> MallocSizeOf for Box<T> {
+-impl<'a, T: ?Sized> MallocSizeOf for &'a T {
+-    fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
+-        // Zero makes sense for a non-owning reference.
+-        0
++impl<T> MallocShallowSizeOf for Vec<T> {
++    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
++        unsafe { ops.malloc_size_of(self.as_ptr()) }
+     }
+ }
+ 
+-impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
+-    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+-        unsafe { ops.malloc_size_of(&**self) }
++// currently this seems only fine with jemalloc
++#[cfg(feature = "std")]
++#[cfg(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global"))]
++impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
++    fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
++        unsafe { ops.malloc_size_of(arc_ptr(self)) }
+     }
+ }
+ 
+-impl<T: MallocSizeOf + ?Sized> MallocSizeOf for Box<T> {
++#[cfg(feature = "std")]
++#[cfg(not(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global")))]
++impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
++    fn unconditional_shallow_size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
++		    size_of::<T>()
++   }
++}
++
++}
++
++impl MallocSizeOf for String {
+     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+-        self.shallow_size_of(ops) + (**self).size_of(ops)
++        unsafe { ops.malloc_size_of(self.as_ptr()) }
      }
  }
  
@@ -111,19 +155,19 @@ index 778082b5f0..7f527c930e 100644
 -            n += ops.malloc_size_of(&**self);
 -        }
 -        n
--    }
--}
--
++impl<'a, T: ?Sized> MallocSizeOf for &'a T {
++    fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
++        // Zero makes sense for a non-owning reference.
++        0
+     }
+ }
+ 
 -impl<T: MallocSizeOf> MallocSizeOf for thin_slice::ThinBoxedSlice<T> {
--    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
--        self.shallow_size_of(ops) + (**self).size_of(ops)
--    }
--}
--
- impl MallocSizeOf for () {
-     fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-         0
-@@ -329,6 +297,7 @@ impl<T: MallocSizeOf> MallocSizeOf for std::cell::RefCell<T> {
++impl<T: MallocSizeOf + ?Sized> MallocSizeOf for Box<T> {
+     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+         self.shallow_size_of(ops) + (**self).size_of(ops)
+     }
+@@ -329,6 +331,7 @@ impl<T: MallocSizeOf> MallocSizeOf for std::cell::RefCell<T> {
      }
  }
  
@@ -131,7 +175,7 @@ index 778082b5f0..7f527c930e 100644
  impl<'a, B: ?Sized + ToOwned> MallocSizeOf for std::borrow::Cow<'a, B>
  where
      B::Owned: MallocSizeOf,
-@@ -351,24 +320,7 @@ impl<T: MallocSizeOf> MallocSizeOf for [T] {
+@@ -351,30 +354,6 @@ impl<T: MallocSizeOf> MallocSizeOf for [T] {
      }
  }
  
@@ -153,11 +197,16 @@ index 778082b5f0..7f527c930e 100644
 -    }
 -}
 -
-+#[cfg(not(feature = "estimate-heapsize"))]
- impl<T> MallocShallowSizeOf for Vec<T> {
-     fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-         unsafe { ops.malloc_size_of(self.as_ptr()) }
-@@ -412,30 +364,7 @@ impl<T: MallocSizeOf> MallocSizeOf for std::collections::VecDeque<T> {
+-impl<T> MallocShallowSizeOf for Vec<T> {
+-    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+-        unsafe { ops.malloc_size_of(self.as_ptr()) }
+-    }
+-}
+-
+ impl<T: MallocSizeOf> MallocSizeOf for Vec<T> {
+     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+         let mut n = self.shallow_size_of(ops);
+@@ -412,30 +391,7 @@ impl<T: MallocSizeOf> MallocSizeOf for std::collections::VecDeque<T> {
      }
  }
  
@@ -189,7 +238,7 @@ index 778082b5f0..7f527c930e 100644
  impl<T, S> MallocShallowSizeOf for std::collections::HashSet<T, S>
  where
      T: Eq + Hash,
-@@ -457,6 +386,7 @@ where
+@@ -457,6 +413,7 @@ where
      }
  }
  
@@ -197,7 +246,7 @@ index 778082b5f0..7f527c930e 100644
  impl<T, S> MallocSizeOf for std::collections::HashSet<T, S>
  where
      T: Eq + Hash + MallocSizeOf,
-@@ -471,59 +401,7 @@ where
+@@ -471,59 +428,7 @@ where
      }
  }
  
@@ -258,7 +307,7 @@ index 778082b5f0..7f527c930e 100644
  impl<K, V, S> MallocShallowSizeOf for std::collections::HashMap<K, V, S>
  where
      K: Eq + Hash,
-@@ -541,6 +419,7 @@ where
+@@ -541,6 +446,7 @@ where
      }
  }
  
@@ -266,7 +315,7 @@ index 778082b5f0..7f527c930e 100644
  impl<K, V, S> MallocSizeOf for std::collections::HashMap<K, V, S>
  where
      K: Eq + Hash + MallocSizeOf,
-@@ -587,62 +466,6 @@ where
+@@ -587,62 +493,6 @@ where
      }
  }
  
@@ -329,39 +378,20 @@ index 778082b5f0..7f527c930e 100644
  // PhantomData is always 0.
  impl<T> MallocSizeOf for std::marker::PhantomData<T> {
      fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-@@ -657,21 +480,43 @@ impl<T> MallocSizeOf for std::marker::PhantomData<T> {
+@@ -657,21 +507,22 @@ impl<T> MallocSizeOf for std::marker::PhantomData<T> {
  //impl<T> !MallocSizeOf for Arc<T> { }
  //impl<T> !MallocShallowSizeOf for Arc<T> { }
  
 -impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
+-    fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+-        unsafe { ops.malloc_size_of(self.heap_ptr()) }
+-    }
 +#[cfg(feature = "std")]
 +fn arc_ptr<T>(s: &Arc<T>) -> * const T {
 +  &(**s) as *const T
-+}
-+
-+
-+// currently this seems only fine with jemalloc
-+#[cfg(feature = "std")]
-+#[cfg(not(feature = "estimate-heapsize"))]
-+#[cfg(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global"))]
-+impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
-     fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
--        unsafe { ops.malloc_size_of(self.heap_ptr()) }
-+        unsafe { ops.malloc_size_of(arc_ptr(self)) }
-     }
  }
  
 -impl<T: MallocSizeOf> MallocUnconditionalSizeOf for servo_arc::Arc<T> {
-+#[cfg(feature = "std")]
-+#[cfg(not(feature = "estimate-heapsize"))]
-+#[cfg(not(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global")))]
-+impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
-+    fn unconditional_shallow_size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-+		    size_of::<T>()
-+   }
-+}
-+
-+
 +#[cfg(feature = "std")]
 +impl<T: MallocSizeOf> MallocUnconditionalSizeOf for Arc<T> {
      fn unconditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
@@ -378,7 +408,7 @@ index 778082b5f0..7f527c930e 100644
              0
          } else {
              self.unconditional_shallow_size_of(ops)
-@@ -679,9 +524,10 @@ impl<T> MallocConditionalShallowSizeOf for servo_arc::Arc<T> {
+@@ -679,9 +530,10 @@ impl<T> MallocConditionalShallowSizeOf for servo_arc::Arc<T> {
      }
  }
  
@@ -391,7 +421,7 @@ index 778082b5f0..7f527c930e 100644
              0
          } else {
              self.unconditional_size_of(ops)
-@@ -695,203 +541,13 @@ impl<T: MallocSizeOf> MallocConditionalSizeOf for servo_arc::Arc<T> {
+@@ -695,203 +547,13 @@ impl<T: MallocSizeOf> MallocConditionalSizeOf for servo_arc::Arc<T> {
  /// If a mutex is stored inside of an Arc value as a member of a data type that is being measured,
  /// the Arc will not be automatically measured so there is no risk of overcounting the mutex's
  /// contents.
@@ -596,7 +626,7 @@ index 778082b5f0..7f527c930e 100644
  #[macro_export]
  macro_rules! malloc_size_of_is_0(
      ($($ty:ty),+) => (
-@@ -929,117 +585,6 @@ malloc_size_of_is_0!(Range<u8>, Range<u16>, Range<u32>, Range<u64>, Range<usize>
+@@ -929,117 +591,6 @@ malloc_size_of_is_0!(Range<u8>, Range<u16>, Range<u32>, Range<u64>, Range<usize>
  malloc_size_of_is_0!(Range<i8>, Range<i16>, Range<i32>, Range<i64>, Range<isize>);
  malloc_size_of_is_0!(Range<f32>, Range<f64>);
  

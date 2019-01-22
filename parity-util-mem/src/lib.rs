@@ -22,11 +22,6 @@
 #![cfg_attr(not(feature = "std"), feature(core_intrinsics))]
 #![cfg_attr(not(feature = "std"), feature(alloc))]
 
-// no direct call in macos system allocator
-#![cfg_attr(all(
-		target_os = "macos",
-		not(feature = "jemalloc-global")
-	), feature(estimate-heapsize))]
 
 #[macro_use]
 extern crate cfg_if;
@@ -74,7 +69,13 @@ cfg_if! {
 
 pub mod allocators;
 
-#[cfg(feature = "estimate-heapsize")]
+#[cfg(any(
+	all(
+		target_os = "macos",
+		not(feature = "jemalloc-global"),
+	),
+	feature = "estimate-heapsize"
+))]
 pub mod sizeof;
 
 #[cfg(not(feature = "std"))]

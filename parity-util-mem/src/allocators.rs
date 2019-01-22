@@ -26,6 +26,11 @@
 //!	 - jemalloc: use jemallocator crate
 //!	 - weealloc: default to `estimate_size`
 //!	 - dlmalloc: default to `estimate_size`
+//! - arch x86/macos:
+//!	 - no features: use default alloc, requires using `estimate_size`
+//!	 - jemalloc: use jemallocator crate
+//!	 - weealloc: default to `estimate_size`
+//!	 - dlmalloc: default to `estimate_size`
 //! - arch wasm32:
 //!	 - no features: default to `estimate_size`
 //!	 - weealloc: default to `estimate_size`
