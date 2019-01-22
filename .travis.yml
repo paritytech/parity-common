@@ -25,3 +25,4 @@ script:
   - cd hashdb/ && cargo test --no-default-features && cd ..
   - cd plain_hasher/ && cargo test --no-default-features && cd ..
   - cd parity-util-mem/ && cargo test --features=estimate-heapsize && cd ..
+  - cd parity-util-mem/ && cargo test --features=jemalloc-global && cd ..
