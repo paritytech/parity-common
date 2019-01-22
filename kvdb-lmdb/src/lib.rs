@@ -220,7 +220,6 @@ impl<'env> Drop for Iter<'env> {
 }
 
 struct DatabaseIterator<'env> {
-	// TODO: does autoderived Drop work properly?
 	inner: OwningHandle<Box<RoTransaction<'env>>, Box<Iter<'env>>>,
 }
 
