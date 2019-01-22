@@ -84,14 +84,14 @@ impl EnvironmentWithDatabases {
 		self.env.begin_rw_txn().map_err(other_io_err)
 	}
 
-	fn col_to_db(&self, col: Option<u32>) -> Database {
+	fn column_to_db(&self, col: Option<u32>) -> Database {
 		let col = col.map_or(0, |c| (c as usize + 1));
 		self.dbs[col]
 	}
 
 	pub fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let ro_txn = self.ro_txn()?;
-		let db = self.col_to_db(col);
+		let db = self.column_to_db(col);
 
 		let result = ro_txn.get(db, &key)
 			.map(DBValue::from_slice);
@@ -118,11 +118,11 @@ impl EnvironmentWithDatabases {
 			match op {
 				DBOp::Insert { col, key, value } => {
 					debug_assert!(key.len() < 512, "lmdb: MDB_MAXKEYSIZE is 511");
-					let db = self.col_to_db(col);
+					let db = self.column_to_db(col);
 					rw_txn.put(db, &key, &value, WriteFlags::empty()).map_err(other_io_err)?;
 				},
 				DBOp::Delete { col, key } => {
-					let db = self.col_to_db(col);
+					let db = self.column_to_db(col);
 					rw_txn.del(db, &key, None).map_err(other_io_err)?;
 				}
 			}
@@ -139,7 +139,7 @@ impl EnvironmentWithDatabases {
 	pub fn iter<'env>(&'env self, col: Option<u32>) -> Option<impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'env> {
 		// TODO: how to handle errors properly?
 		let ro_txn = self.ro_txn().ok()?;
-		let db = self.col_to_db(col);
+		let db = self.column_to_db(col);
 
 		// TODO: is there a better way to implement an iterator?
 		// The brrwchk complains (because of ro_txn lifetime, rightly so)
@@ -172,7 +172,7 @@ impl EnvironmentWithDatabases {
 
 	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<DatabaseIterator> {
 		let ro_txn = self.ro_txn().ok()?;
-		let db = self.col_to_db(col);
+		let db = self.column_to_db(col);
 
 		Some(DatabaseIterator {
 			inner: OwningHandle::new_with_fn(
