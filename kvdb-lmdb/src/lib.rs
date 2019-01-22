@@ -50,7 +50,6 @@ fn open_or_create_db(env: &Environment, col: u32) -> io::Result<Database> {
 	env.create_db(Some(&db_name[..]), DatabaseFlags::default()).map_err(other_io_err)
 }
 
-// TODO: memory management
 impl EnvironmentWithDatabases {
 	/// Opens an environment path. Creates if it does not exist.
 	/// `columns` is a number of non-default columns.
@@ -61,6 +60,11 @@ impl EnvironmentWithDatabases {
 
 		let mut env_builder = Environment::new();
 		env_builder.set_max_dbs(columns);
+		// TODO: this would fail on 32-bit systems
+		// double when full? cf. https://github.com/BVLC/caffe/pull/3731
+		// TODO: memory budget
+		let terabyte: usize = 1 << 40;
+		env_builder.set_map_size(terabyte);
 
 		let env = env_builder.open(&path).map_err(other_io_err)?;
 
@@ -133,7 +137,8 @@ impl EnvironmentWithDatabases {
 
 	pub fn flush(&self) -> io::Result<()> {
 		// TODO: this only make sense for `NO_SYNC`.
-		self.env.sync(true).map_err(other_io_err)
+		// self.env.sync(true).map_err(other_io_err)
+		self.env.sync(false).map_err(other_io_err)
 	}
 
 	pub fn iter<'env>(&'env self, col: Option<u32>) -> Option<impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'env> {
