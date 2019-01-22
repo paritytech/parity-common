@@ -141,12 +141,13 @@ impl<T: AsMut<[u8]>> DerefMut for Memzero<T> {
 	}
 }
 
-#[cfg(std)]
 #[cfg(test)]
 mod test {
+  #[cfg(std)]
 	use std::sync::Arc;
 	use super::MallocSizeOfExt;
-
+  
+  #[cfg(std)]
 	#[test]
 	fn test_arc() {
 		let val = Arc::new("test".to_string());
@@ -154,4 +155,10 @@ mod test {
 		assert!(s > 0);
 	}
 
+  #[test]
+	fn test_call() {
+		let val: Vec<u8> = vec![0;1];
+		let s = val.malloc_size_of();
+		assert!(s > 0);
+	}
 }
