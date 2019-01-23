@@ -225,7 +225,7 @@ impl<T> MallocShallowSizeOf for Vec<T> {
 
 // currently this seems only fine with jemalloc
 #[cfg(feature = "std")]
-#[cfg(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global"))]
+#[cfg(any(target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global"))]
 impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
     fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         unsafe { ops.malloc_size_of(arc_ptr(self)) }
@@ -233,7 +233,7 @@ impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
 }
 
 #[cfg(feature = "std")]
-#[cfg(not(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global")))]
+#[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global")))]
 impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
     fn unconditional_shallow_size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
 		    size_of::<T>()
