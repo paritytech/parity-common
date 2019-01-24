@@ -19,7 +19,7 @@
 
 use std::path::Path;
 use std::{io, fs, mem};
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
 
 use kvdb::{KeyValueDB, DBTransaction, DBValue, DBOp};
 use lmdb::{
@@ -70,9 +70,8 @@ impl Database {
 	}
 
 	pub fn write_buffered(&self, txn: DBTransaction) {
-		match *self.env.read() {
-			Some(ref env) => env.write_buffered(txn),
-			_ => (),
+		if let Some(ref env) = *self.env.read() {
+			env.write_buffered(txn);
 		}
 	}
 
@@ -99,7 +98,7 @@ impl Database {
 				Box::new(self.env.read()),
 				move |rwlock| {
 					let rwlock = unsafe { rwlock.as_ref().expect("can't be null; qed") };
-					Box::new(rwlock.as_ref().and_then(|env| env.iter(col)))
+					DerefWrapper(rwlock.as_ref().and_then(|env| env.iter(col)))
 				}
 			),
 		}
@@ -122,7 +121,7 @@ impl Database {
 				Box::new(self.env.read()),
 				move |rwlock| {
 					let rwlock = unsafe { rwlock.as_ref().expect("can't be null; qed") };
-					Box::new(rwlock.as_ref().and_then(|env| env.iter_from_prefix(col, prefix)))
+					DerefWrapper(rwlock.as_ref().and_then(|env| env.iter_from_prefix(col, prefix)))
 				}
 			),
 		}
@@ -271,7 +270,7 @@ impl EnvironmentWithDatabases {
 		self.env.sync(false).map_err(other_io_err)
 	}
 
-	fn iter<'env>(&'env self, col: Option<u32>) -> Option<IterWithTxn> {
+	fn iter(&self, col: Option<u32>) -> Option<IterWithTxn> {
 		// TODO: how to handle errors properly?
 		let ro_txn = self.ro_txn().ok()?;
 		let db = self.column_to_db(col);
@@ -283,9 +282,9 @@ impl EnvironmentWithDatabases {
 					let txn = unsafe { txn.as_ref().expect("can't be null; qed") };
 					let mut cursor = txn.open_ro_cursor(db).expect("lmdb: failed to open a cursor");
 					let iter = cursor.iter();
-					Box::new(Iter {
+					DerefWrapper(Iter {
 						iter,
-						cursor,
+						_cursor: cursor,
 					})
 				}
 			),
@@ -303,9 +302,9 @@ impl EnvironmentWithDatabases {
 					let txn = unsafe { txn.as_ref().expect("can't be null; qed") };
 					let mut cursor = txn.open_ro_cursor(db).expect("lmdb: failed to open a cursor");
 					let iter = cursor.iter_from(prefix);
-					Box::new(Iter {
+					DerefWrapper(Iter {
 						iter,
-						cursor,
+						_cursor: cursor,
 					})
 				}
 			),
@@ -323,7 +322,8 @@ impl Drop for EnvironmentWithDatabases {
 
 struct Iter<'env> {
     iter: LmdbIter<'env>,
-    cursor: RoCursor<'env>,
+	// we need to drop it after LmdbIter
+    _cursor: RoCursor<'env>,
 }
 
 impl<'env> Iterator for Iter<'env> {
@@ -334,25 +334,35 @@ impl<'env> Iterator for Iter<'env> {
     }
 }
 
-impl<'env> Drop for Iter<'env> {
-	fn drop(&mut self) {
-		drop(&mut self.cursor);
+struct DerefWrapper<T>(T);
+
+impl<T> Deref for DerefWrapper<T> {
+	type Target = T;
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl<T> DerefMut for DerefWrapper<T> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.0
 	}
 }
 
 // TODO: is there a better way to implement an iterator?
 // If we return just Iter, the brrwchk complains (because of ro_txn lifetime, rightly so).
 // I'm open to any suggestions.
-// TODO: avoid Boxes via a wrapper, which implements Deref and StableDeref.
 struct IterWithTxn<'env> {
-	inner: OwningHandle<Box<RoTransaction<'env>>, Box<Iter<'env>>>,
+	inner: OwningHandle<
+		Box<RoTransaction<'env>>, 
+		DerefWrapper<Iter<'env>>,
+	>,
 }
 
-// oh boy
 struct IterWithTxnAndRwlock<'env> {
 	inner: OwningHandle<
 		Box<RwLockReadGuard<'env, Option<EnvironmentWithDatabases>>>,
-		Box<Option<IterWithTxn<'env>>>,
+		DerefWrapper<Option<IterWithTxn<'env>>>,
 	>,
 }
 
@@ -384,6 +394,8 @@ impl<'env> Iterator for IterWithTxnAndRwlock<'env> {
 	}
 }
 
+type KeyValuePair = (Box<[u8]>, Box<[u8]>);
+
 impl KeyValueDB for Database {
 	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
 		Database::get(self, col, key)
@@ -405,13 +417,13 @@ impl KeyValueDB for Database {
 		Database::flush(self)
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=KeyValuePair> + 'a> {
 		let unboxed = Database::iter(self, col);
 		Box::new(unboxed)
 	}
 
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-		-> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
+		-> Box<Iterator<Item=KeyValuePair> + 'a>
 	{
 		let unboxed = Database::iter_from_prefix(self, col, prefix);
 		Box::new(unboxed)
