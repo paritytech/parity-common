@@ -40,6 +40,8 @@ fn other_io_err<E>(e: E) -> io::Error where E: ToString {
 	io::Error::new(io::ErrorKind::Other, e.to_string())
 }
 
+type KeyValuePair = (Box<[u8]>, Box<[u8]>);
+
 /// LMDB-backed database.
 #[derive(Debug)]
 pub struct Database {
@@ -89,10 +91,7 @@ impl Database {
 		}
 	}
 
-	pub fn iter<'env>(
-		&'env self,
-		col: Option<u32>,
-	) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'env {
+	pub fn iter<'env>(&'env self, col: Option<u32>) -> impl Iterator<Item=KeyValuePair> + 'env {
 		IterWithTxnAndRwlock {
 			inner: OwningHandle::new_with_fn(
 				Box::new(self.env.read()),
@@ -115,7 +114,7 @@ impl Database {
 		&'env self,
 		col: Option<u32>,
 		prefix: &[u8],
-	) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'env {
+	) -> impl Iterator<Item=KeyValuePair> + 'env {
 		IterWithTxnAndRwlock {
 			inner: OwningHandle::new_with_fn(
 				Box::new(self.env.read()),
@@ -367,7 +366,7 @@ struct IterWithTxnAndRwlock<'env> {
 }
 
 impl<'env> Iterator for IterWithTxn<'env> {
-	type Item = (Box<[u8]>, Box<[u8]>);
+	type Item = KeyValuePair;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		// TODO: panic instead of silencing errors?
@@ -384,7 +383,7 @@ impl<'env> Iterator for IterWithTxn<'env> {
 }
 
 impl<'env> Iterator for IterWithTxnAndRwlock<'env> {
-	type Item = (Box<[u8]>, Box<[u8]>);
+	type Item = KeyValuePair;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		self.inner
@@ -393,8 +392,6 @@ impl<'env> Iterator for IterWithTxnAndRwlock<'env> {
 			.and_then(|iter| iter.next())
 	}
 }
-
-type KeyValuePair = (Box<[u8]>, Box<[u8]>);
 
 impl KeyValueDB for Database {
 	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
