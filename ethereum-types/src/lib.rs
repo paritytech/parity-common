@@ -3,8 +3,6 @@
 #[cfg(feature = "std")]
 extern crate core;
 #[macro_use]
-extern crate crunchy;
-#[macro_use]
 extern crate uint as uint_crate;
 #[macro_use]
 extern crate fixed_hash;

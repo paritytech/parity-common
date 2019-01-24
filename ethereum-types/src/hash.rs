@@ -57,7 +57,7 @@ impl_uint_conversions!(H512, U512);
 
 #[cfg(test)]
 mod tests {
-	use super::{H160, H256};
+	use super::{H160, H256, BigEndianHash};
 	use serde_json as ser;
 
 	#[test]
