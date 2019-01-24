@@ -421,3 +421,105 @@ impl KeyValueDB for Database {
 		Database::restore(self, new_db)
 	}
 }
+
+#[cfg(test)]
+mod test {
+	use super::*;
+	use tempdir::TempDir;
+
+	const KEY_1: &[u8; 4] = b"key1";
+	const KEY_2: &[u8; 4] = b"key2";
+	const KEY_3: &[u8; 4] = b"key3";
+
+	fn setup_db(name: &str) -> Database {
+		let tempdir = TempDir::new(name).unwrap();
+		let columns = 1;
+		let db = Database::open(tempdir.path().to_str().unwrap(), columns).unwrap();
+
+		let mut batch = db.transaction();
+		batch.put(None, KEY_1, b"cat");
+		batch.put(None, KEY_2, b"dog");
+		db.write(batch).unwrap();
+		db
+	}
+
+	#[test]
+	fn test_get() {
+		let db = setup_db("test_get");
+		assert_eq!(&*db.get(None, KEY_1).unwrap().unwrap(), b"cat");
+		assert_eq!(&*db.get(None, KEY_2).unwrap().unwrap(), b"dog");
+		assert!(db.get(None, KEY_3).unwrap().is_none());
+	}
+
+	#[test]
+	fn test_iter() {
+		let db = setup_db("test_iter");
+		let contents: Vec<_> = db.iter(None).collect();
+		assert_eq!(contents.len(), 2);
+		assert_eq!(&*contents[0].0, &*KEY_1);
+		assert_eq!(&*contents[0].1, b"cat");
+		assert_eq!(&*contents[1].0, &*KEY_2);
+		assert_eq!(&*contents[1].1, b"dog");
+	}
+
+	#[test]
+	fn test_delete() {
+		let db = setup_db("test_delete");
+		let mut batch = db.transaction();
+		batch.delete(None, KEY_1);
+		db.write(batch).unwrap();
+
+		assert!(db.get(None, KEY_1).unwrap().is_none());
+
+		let mut batch = db.transaction();
+		batch.put(None, KEY_1, b"cat");
+		db.write(batch).unwrap();
+
+		assert_eq!(&*db.get(None, KEY_1).unwrap().unwrap(), b"cat");
+
+		let mut transaction = db.transaction();
+		transaction.put(None, KEY_3, b"elephant");
+		transaction.delete(None, KEY_1);
+		db.write(transaction).unwrap();
+
+		assert!(db.get(None, KEY_1).unwrap().is_none());
+		assert_eq!(&*db.get(None, KEY_3).unwrap().unwrap(), b"elephant");
+	}
+
+	#[test]
+	fn test_prefixed() {
+		let db = setup_db("test_prefixed");
+		let mut transaction = db.transaction();
+		transaction.put(None, KEY_3, b"elephant");
+		transaction.delete(None, KEY_1);
+		db.write(transaction).unwrap();
+
+		assert_eq!(&*db.get_by_prefix(None, KEY_3).unwrap(), b"elephant");
+		assert_eq!(&*db.get_by_prefix(None, KEY_2).unwrap(), b"dog");
+
+		const KEY_4: &[u8; 12] = b"prefixed_key";
+		const KEY_5: &[u8; 20] = b"prefixed_another_key";
+
+		let mut batch = db.transaction();
+		batch.put(Some(0), KEY_4, b"monkey");
+		batch.put(Some(0), KEY_5, b"koala");
+		db.write(batch).unwrap();
+
+		assert_eq!(&*db.get_by_prefix(Some(0), b"prefixed").unwrap(), b"koala");
+		assert_eq!(&*db.get_by_prefix(Some(0), b"prefixed_k").unwrap(), b"monkey");
+
+		let contents: Vec<_> = db.iter_from_prefix(None, b"key").collect();
+		assert_eq!(contents.len(), 2);
+		assert_eq!(&*contents[0].0, &*KEY_2);
+		assert_eq!(&*contents[0].1, b"dog");
+		assert_eq!(&*contents[1].0, &*KEY_3);
+		assert_eq!(&*contents[1].1, b"elephant");
+	}
+
+	#[test]
+	#[should_panic(expected = "index out of bounds: the len is 2 but the index is 2")]
+	fn test_column_out_of_range() {
+		let db = setup_db("test_column_out_of_range");
+		let _ = db.get(Some(1), KEY_1).unwrap();
+	}
+}
