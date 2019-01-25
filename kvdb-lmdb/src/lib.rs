@@ -133,7 +133,7 @@ impl Database {
 	// TODO: reuse code with rocksdb
 	pub fn restore(&self, new_db: &str) -> io::Result<()> {
 		self.close();
-
+		debug!(target: "lmdb", "DB is closed for restoration");
 		// swap is guaranteed to be atomic
 		match swap(new_db, &self.path) {
 			Ok(_) => {
@@ -141,14 +141,14 @@ impl Database {
 				let _ = fs::remove_dir_all(new_db);
 			}
 			Err(err) => {
-				debug!("DB atomic swap failed: {}", err);
+				debug!(target: "lmdb", "DB atomic swap failed: {}", err);
 				match swap_nonatomic(new_db, &self.path) {
 					Ok(_) => {
 						// ignore errors
 						let _ = fs::remove_dir_all(new_db);
 					}
 					Err(err) => {
-						warn!("Failed to swap DB directories: {:?}", err);
+						warn!(target: "lmdb", "Failed to swap DB directories: {:?}", err);
 						return Err(io::Error::new(io::ErrorKind::Other, "DB restoration failed: could not swap DB directories"));
 					}
 				}
