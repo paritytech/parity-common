@@ -56,6 +56,10 @@ pub struct Database {
 impl Database {
 	/// Opens the database path. Creates if it does not exist.
 	/// `columns` is a number of non-default columns.
+	/// **Note**, that it is unsafe to call this method from multiple threads
+	/// of the same process for the same path.
+	// TODO: switch to mozilla/rkv once
+	// https://github.com/mozilla/rkv/issues/109 is resolved.
 	pub fn open(path: &str, columns: u32) -> io::Result<Self> {
 		Ok(Self {
 			columns,
@@ -353,7 +357,7 @@ impl<T> DerefMut for DerefWrapper<T> {
 // I'm open to any suggestions.
 struct IterWithTxn<'env> {
 	inner: OwningHandle<
-		Box<RoTransaction<'env>>, 
+		Box<RoTransaction<'env>>,
 		DerefWrapper<Iter<'env>>,
 	>,
 }
