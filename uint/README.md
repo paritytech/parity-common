@@ -3,7 +3,7 @@
 ## Description
 
 Provides facilities to construct big unsigned integer types.
-Also provides commonly used `U256` and `U512` out of the box.
+Also provides commonly used `U128, U256` and `U512` out of the box.
 
 The focus on the provided big unsigned integer types is performance and cross-platform availability.
 Support a very similar API as the built-in primitive integer types.
@@ -13,7 +13,7 @@ Support a very similar API as the built-in primitive integer types.
 In your `Cargo.toml` paste
 
 ```
-uint = "0.5.0-beta"
+uint = "0.6"
 ```
 
 Construct your own big unsigned integer type as follows.
@@ -48,7 +48,7 @@ cargo bench
 - `std`: Use Rust's standard library.
 	- Enables `byteorder/std`, `rustc-hex/std`
 	- Enabled by default.
-- `common`: Provide commonly used `U256` and `U512` big unsigned integer types.
+- `common`: Provide commonly used `U128`, `U256` and `U512` big unsigned integer types.
 	- Enabled by default.
 - `quickcheck`: Enable quickcheck-style property testing
 	- Use with `cargo test --release --features=quickcheck`.
