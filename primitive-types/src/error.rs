@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+// TODO: Remove TryFrom and TryInto when Rust trait is stablized
+// https://github.com/paritytech/parity-common/issues/103
 //! Error, `TryFrom` and `TryInto` trait, should be removed when standard library stablize those.
 
 /// Error type for conversion.
