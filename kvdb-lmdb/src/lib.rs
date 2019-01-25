@@ -17,11 +17,11 @@
 // TODO: docs
 // #![deny(missing_docs)]
 
-use std::path::Path;
-use std::{io, fs, mem};
 use std::ops::{Deref, DerefMut};
+use std::path::Path;
+use std::{fs, io, mem};
 
-use kvdb::{KeyValueDB, DBTransaction, DBValue, DBOp};
+use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
 use lmdb::{
 	Environment, Database as LmdbDatabase, DatabaseFlags,
 	Transaction, RoTransaction, RwTransaction,
@@ -29,10 +29,10 @@ use lmdb::{
 	Error, WriteFlags,
 };
 
-use log::{warn, debug};
+use log::{debug, warn};
 
-use owning_ref::OwningHandle;
 use fs_swap::{swap, swap_nonatomic};
+use owning_ref::OwningHandle;
 use parking_lot::{RwLock, RwLockReadGuard};
 
 
@@ -95,15 +95,12 @@ impl Database {
 		}
 	}
 
-	pub fn iter<'env>(&'env self, col: Option<u32>) -> impl Iterator<Item=KeyValuePair> + 'env {
+	pub fn iter<'env>(&'env self, col: Option<u32>) -> impl Iterator<Item = KeyValuePair> + 'env {
 		IterWithTxnAndRwlock {
-			inner: OwningHandle::new_with_fn(
-				Box::new(self.env.read()),
-				move |rwlock| {
-					let rwlock = unsafe { rwlock.as_ref().expect("can't be null; qed") };
-					DerefWrapper(rwlock.as_ref().and_then(|env| env.iter(col)))
-				}
-			),
+			inner: OwningHandle::new_with_fn(Box::new(self.env.read()), move |rwlock| {
+				let rwlock = unsafe { rwlock.as_ref().expect("can't be null; qed") };
+				DerefWrapper(rwlock.as_ref().and_then(|env| env.iter(col)))
+			}),
 		}
 	}
 
@@ -118,15 +115,12 @@ impl Database {
 		&'env self,
 		col: Option<u32>,
 		prefix: &[u8],
-	) -> impl Iterator<Item=KeyValuePair> + 'env {
+	) -> impl Iterator<Item = KeyValuePair> + 'env {
 		IterWithTxnAndRwlock {
-			inner: OwningHandle::new_with_fn(
-				Box::new(self.env.read()),
-				move |rwlock| {
-					let rwlock = unsafe { rwlock.as_ref().expect("can't be null; qed") };
-					DerefWrapper(rwlock.as_ref().and_then(|env| env.iter_from_prefix(col, prefix)))
-				}
-			),
+			inner: OwningHandle::new_with_fn(Box::new(self.env.read()), move |rwlock| {
+				let rwlock = unsafe { rwlock.as_ref().expect("can't be null; qed") };
+				DerefWrapper(rwlock.as_ref().and_then(|env| env.iter_from_prefix(col, prefix)))
+			}),
 		}
 	}
 
@@ -145,14 +139,14 @@ impl Database {
 			Ok(_) => {
 				// ignore errors
 				let _ = fs::remove_dir_all(new_db);
-			},
+			}
 			Err(err) => {
 				debug!("DB atomic swap failed: {}", err);
 				match swap_nonatomic(new_db, &self.path) {
 					Ok(_) => {
 						// ignore errors
 						let _ = fs::remove_dir_all(new_db);
-					},
+					}
 					Err(err) => {
 						warn!("Failed to swap DB directories: {:?}", err);
 						return Err(io::Error::new(io::ErrorKind::Other, "DB restoration failed: could not swap DB directories"));
@@ -206,10 +200,7 @@ impl EnvironmentWithDatabases {
 			dbs.push(db);
 		}
 
-		Ok(Self {
-			env,
-			dbs,
-		})
+		Ok(Self { env, dbs })
 	}
 
 	fn ro_txn(&self) -> io::Result<RoTransaction> {
@@ -229,8 +220,7 @@ impl EnvironmentWithDatabases {
 		let ro_txn = self.ro_txn()?;
 		let db = self.column_to_db(col);
 
-		let result = ro_txn.get(db, &key)
-			.map(DBValue::from_slice);
+		let result = ro_txn.get(db, &key).map(DBValue::from_slice);
 
 		match result {
 			Ok(value) => Ok(Some(value)),
@@ -256,7 +246,7 @@ impl EnvironmentWithDatabases {
 					debug_assert!(key.len() < 512, "lmdb: MDB_MAXKEYSIZE is 511");
 					let db = self.column_to_db(col);
 					rw_txn.put(db, &key, &value, WriteFlags::empty()).map_err(other_io_err)?;
-				},
+				}
 				DBOp::Delete { col, key } => {
 					let db = self.column_to_db(col);
 					rw_txn.del(db, &key, None).map_err(other_io_err)?;
@@ -279,18 +269,12 @@ impl EnvironmentWithDatabases {
 		let db = self.column_to_db(col);
 
 		Some(IterWithTxn {
-			inner: OwningHandle::new_with_fn(
-				Box::new(ro_txn),
-				move |txn| {
-					let txn = unsafe { txn.as_ref().expect("can't be null; qed") };
-					let mut cursor = txn.open_ro_cursor(db).expect("lmdb: failed to open a cursor");
-					let iter = cursor.iter();
-					DerefWrapper(Iter {
-						iter,
-						_cursor: cursor,
-					})
-				}
-			),
+			inner: OwningHandle::new_with_fn(Box::new(ro_txn), move |txn| {
+				let txn = unsafe { txn.as_ref().expect("can't be null; qed") };
+				let mut cursor = txn.open_ro_cursor(db).expect("lmdb: failed to open a cursor");
+				let iter = cursor.iter();
+				DerefWrapper(Iter { iter, _cursor: cursor })
+			}),
 		})
 	}
 
@@ -299,18 +283,12 @@ impl EnvironmentWithDatabases {
 		let db = self.column_to_db(col);
 
 		Some(IterWithTxn {
-			inner: OwningHandle::new_with_fn(
-				Box::new(ro_txn),
-				move |txn| {
-					let txn = unsafe { txn.as_ref().expect("can't be null; qed") };
-					let mut cursor = txn.open_ro_cursor(db).expect("lmdb: failed to open a cursor");
-					let iter = cursor.iter_from(prefix);
-					DerefWrapper(Iter {
-						iter,
-						_cursor: cursor,
-					})
-				}
-			),
+			inner: OwningHandle::new_with_fn(Box::new(ro_txn), move |txn| {
+				let txn = unsafe { txn.as_ref().expect("can't be null; qed") };
+				let mut cursor = txn.open_ro_cursor(db).expect("lmdb: failed to open a cursor");
+				let iter = cursor.iter_from(prefix);
+				DerefWrapper(Iter { iter, _cursor: cursor })
+			}),
 		})
 	}
 }
@@ -324,17 +302,17 @@ impl Drop for EnvironmentWithDatabases {
 }
 
 struct Iter<'env> {
-    iter: LmdbIter<'env>,
+	iter: LmdbIter<'env>,
 	// we need to drop it after LmdbIter
-    _cursor: RoCursor<'env>,
+	_cursor: RoCursor<'env>,
 }
 
 impl<'env> Iterator for Iter<'env> {
-    type Item = Result<(&'env [u8], &'env [u8]), Error>;
+	type Item = Result<(&'env [u8], &'env [u8]), Error>;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
-    }
+	fn next(&mut self) -> Option<Self::Item> {
+		self.iter.next()
+	}
 }
 
 struct DerefWrapper<T>(T);
@@ -390,10 +368,7 @@ impl<'env> Iterator for IterWithTxnAndRwlock<'env> {
 	type Item = KeyValuePair;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		self.inner
-			.deref_mut()
-			.as_mut()
-			.and_then(|iter| iter.next())
+		self.inner.deref_mut().as_mut().and_then(|iter| iter.next())
 	}
 }
 
@@ -418,14 +393,16 @@ impl KeyValueDB for Database {
 		Database::flush(self)
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=KeyValuePair> + 'a> {
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item = KeyValuePair> + 'a> {
 		let unboxed = Database::iter(self, col);
 		Box::new(unboxed)
 	}
 
-	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-		-> Box<Iterator<Item=KeyValuePair> + 'a>
-	{
+	fn iter_from_prefix<'a>(
+		&'a self,
+		col: Option<u32>,
+		prefix: &'a [u8],
+	) -> Box<Iterator<Item = KeyValuePair> + 'a> {
 		let unboxed = Database::iter_from_prefix(self, col, prefix);
 		Box::new(unboxed)
 	}
