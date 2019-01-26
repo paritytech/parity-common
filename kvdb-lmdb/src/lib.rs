@@ -33,8 +33,10 @@
 
 #![deny(missing_docs)]
 
+use std::collections::{HashMap, hash_map::Entry};
 use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::{fs, io, mem};
 
 use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
@@ -48,8 +50,10 @@ use lmdb::{
 use log::{debug, warn};
 
 use fs_swap::{swap, swap_nonatomic};
+use lazy_static::lazy_static;
 use owning_ref::OwningHandle;
-use parking_lot::{RwLock, RwLockReadGuard};
+use parking_lot::{Mutex, RwLock, RwLockReadGuard};
+
 #[cfg(target_os = "windows")]
 use url::Url;
 
@@ -61,25 +65,23 @@ fn other_io_err<E>(e: E) -> io::Error where E: ToString {
 type KeyValuePair = (Box<[u8]>, Box<[u8]>);
 
 /// LMDB-backed database.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Database {
 	columns: u32,
 	path: String,
 	// write lock only on db.restore
-	env: RwLock<Option<EnvironmentWithDatabases>>,
+	env: Arc<RwLock<Option<EnvironmentWithDatabases>>>,
 }
 
 // Taken from https://github.com/mozilla/rkv/blob/master/src/manager.rs
-// TODO: switch to mozilla/rkv once
-// https://github.com/mozilla/rkv/issues/109 is resolved.
 //
 // Workaround the UNC path on Windows, see https://github.com/rust-lang/rust/issues/42869.
 // Otherwise, `Rkv::from_env()` will panic with error_no(123).
 fn canonicalize_path<'p, P>(path: P) -> io::Result<PathBuf>
 where
-    P: Into<&'p Path>,
+	P: Into<&'p Path>,
 {
-    let canonical = path.into().canonicalize()?;
+	let canonical = path.into().canonicalize()?;
 	unc_path_windows_workaround(canonical)
 }
 
@@ -94,21 +96,55 @@ fn unc_path_windows_workaround(canonical: PathBuf) -> io::Result<PathBuf> {
 	Ok(canonical)
 }
 
+// This manager exists to enforce constraint of one lmdb environment per process per path.
+lazy_static! {
+	static ref MANAGER: Mutex<Manager> = Mutex::new(Manager::new());
+}
+
+struct Manager {
+	environments: HashMap<PathBuf, Database>,
+}
+
+impl Manager {
+	fn new() -> Self {
+		Self {
+			environments: Default::default(),
+		}
+	}
+
+	pub fn get_or_create(path: &str, columns: u32) -> io::Result<Database> {
+		let canonical = canonicalize_path(Path::new(path))?;
+		Ok(match MANAGER.lock().environments.entry(canonical) {
+			Entry::Occupied(e) => {
+				let db = e.get().clone();
+				assert_eq!(
+					db.columns,
+					columns,
+					"lmdb was opened before with a different number of columns",
+				);
+				db
+			},
+			Entry::Vacant(e) => {
+				let env = EnvironmentWithDatabases::open(e.key().as_path(), columns)?;
+				let env = Arc::new(RwLock::new(Some(env)));
+				let v = Database {
+					columns,
+					env,
+					path: path.to_owned(),
+				};
+				e.insert(v).clone()
+			},
+		})
+	}
+}
 
 // Duplicate declaration of methods here to avoid trait import in certain existing cases
 // at time of addition.
 impl Database {
 	/// Opens the database path. Creates if it does not exist.
 	/// `columns` is a number of non-default columns.
-	///
-	/// **Note**, that it is unsafe to call this method from multiple threads
-	/// of the same process for the same path.
 	pub fn open(path: &str, columns: u32) -> io::Result<Self> {
-		Ok(Self {
-			columns,
-			path: path.to_owned(),
-			env: RwLock::new(Some(EnvironmentWithDatabases::open(path, columns)?)),
-		})
+		Ok(Manager::get_or_create(path, columns)?)
 	}
 
 	/// Helper to create new transaction for this database.
@@ -234,11 +270,9 @@ fn open_or_create_db(env: &Environment, col: u32) -> io::Result<LmdbDatabase> {
 }
 
 impl EnvironmentWithDatabases {
-	fn open(path: &str, columns: u32) -> io::Result<Self> {
+	fn open(path: &Path, columns: u32) -> io::Result<Self> {
 		// account for the default column
 		let columns = columns + 1;
-		let path = canonicalize_path(Path::new(path))?;
-
 		let mut env_builder = Environment::new();
 		env_builder.set_max_dbs(columns);
 		// TODO: this would fail on 32-bit systems
@@ -246,7 +280,7 @@ impl EnvironmentWithDatabases {
 		let terabyte: usize = 1 << 40;
 		env_builder.set_map_size(terabyte);
 
-		let env = env_builder.open(path.as_path()).map_err(other_io_err)?;
+		let env = env_builder.open(path).map_err(other_io_err)?;
 
 		let mut dbs = Vec::with_capacity(columns as usize);
 		for col in 0..columns {
