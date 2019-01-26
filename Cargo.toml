@@ -20,4 +20,6 @@ members = [
 	"uint",
 	"parity-util-mem",
 	"primitive-types",
+	"ethereum-types",
+	"ethbloom",
 ]
