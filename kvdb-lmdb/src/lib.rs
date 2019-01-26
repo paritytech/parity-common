@@ -14,11 +14,27 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-// TODO: docs
-// #![deny(missing_docs)]
+//! KeyValueDB implementation backed by [LMDB](http://www.lmdb.tech/doc/).
+//!
+//! ## Memory usage
+//!
+//! RSS measurement may report a process as having an entire database resident,
+//! but don't be alarmed. LMDB uses pages in file-backed memory maps (OS page cache),
+//! which can be reclaimed by the OS at any moment
+//! as long as the pages in the map are clean.
+//!
+//! ## Limitations
+//!
+//! - Max key size is 511 bytes (compile time constant `MDB_MAXKEYSIZE`).
+//! - Max threads performing read-only transactions default to 126.
+//! - There is only one active writer allowed at any point of time,
+//! other writers will be blocked until that active writer aborts/commits.
+
+
+#![deny(missing_docs)]
 
 use std::ops::{Deref, DerefMut};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{fs, io, mem};
 
 use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
@@ -34,6 +50,8 @@ use log::{debug, warn};
 use fs_swap::{swap, swap_nonatomic};
 use owning_ref::OwningHandle;
 use parking_lot::{RwLock, RwLockReadGuard};
+#[cfg(target_os = "windows")]
+use url::Url;
 
 
 fn other_io_err<E>(e: E) -> io::Error where E: ToString {
@@ -51,15 +69,40 @@ pub struct Database {
 	env: RwLock<Option<EnvironmentWithDatabases>>,
 }
 
+// Taken from https://github.com/mozilla/rkv/blob/master/src/manager.rs
+// TODO: switch to mozilla/rkv once
+// https://github.com/mozilla/rkv/issues/109 is resolved.
+//
+// Workaround the UNC path on Windows, see https://github.com/rust-lang/rust/issues/42869.
+// Otherwise, `Rkv::from_env()` will panic with error_no(123).
+fn canonicalize_path<'p, P>(path: P) -> io::Result<PathBuf>
+where
+    P: Into<&'p Path>,
+{
+    let canonical = path.into().canonicalize()?;
+	unc_path_windows_workaround(canonical)
+}
+
+#[cfg(target_os = "windows")]
+fn unc_path_windows_workaround(canonical: PathBuf) -> io::Result<PathBuf> {
+	let url = Url::from_file_path(&canonical).map_err(|_e| other_io_err("URL passing error"))?;
+	url.to_file_path().map_err(|_e| other_io_err("path canonicalization error"))
+}
+
+#[cfg(not(target_os = "windows"))]
+fn unc_path_windows_workaround(canonical: PathBuf) -> io::Result<PathBuf> {
+	Ok(canonical)
+}
+
+
 // Duplicate declaration of methods here to avoid trait import in certain existing cases
 // at time of addition.
 impl Database {
 	/// Opens the database path. Creates if it does not exist.
 	/// `columns` is a number of non-default columns.
+	///
 	/// **Note**, that it is unsafe to call this method from multiple threads
 	/// of the same process for the same path.
-	// TODO: switch to mozilla/rkv once
-	// https://github.com/mozilla/rkv/issues/109 is resolved.
 	pub fn open(path: &str, columns: u32) -> io::Result<Self> {
 		Ok(Self {
 			columns,
@@ -68,6 +111,12 @@ impl Database {
 		})
 	}
 
+	/// Helper to create new transaction for this database.
+	pub fn transaction(&self) -> DBTransaction {
+		DBTransaction::new()
+	}
+
+	/// Get value by key.
 	pub fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
 		match *self.env.read() {
 			Some(ref env) => env.get(col, key),
@@ -75,12 +124,14 @@ impl Database {
 		}
 	}
 
+	/// Commit transaction to database.
 	pub fn write_buffered(&self, txn: DBTransaction) {
 		if let Some(ref env) = *self.env.read() {
 			env.write_buffered(txn);
 		}
 	}
 
+	/// Commit transaction to database.
 	pub fn write(&self, transaction: DBTransaction) -> io::Result<()> {
 		match *self.env.read() {
 			Some(ref env) => env.write(transaction),
@@ -88,6 +139,7 @@ impl Database {
 		}
 	}
 
+	/// Commit buffered changes to database.
 	pub fn flush(&self) -> io::Result<()> {
 		match *self.env.read() {
 			Some(ref env) => env.flush(),
@@ -95,6 +147,7 @@ impl Database {
 		}
 	}
 
+	/// Get database iterator for data.
 	pub fn iter<'env>(&'env self, col: Option<u32>) -> impl Iterator<Item = KeyValuePair> + 'env {
 		IterWithTxnAndRwlock {
 			inner: OwningHandle::new_with_fn(Box::new(self.env.read()), move |rwlock| {
@@ -104,6 +157,7 @@ impl Database {
 		}
 	}
 
+	/// Get value by partial key. Prefix size should match configured prefix size.
 	pub fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
 		match self.iter_from_prefix(col, prefix).next() {
 			Some((k, v)) => if k.starts_with(prefix) { Some(v) } else { None },
@@ -111,7 +165,7 @@ impl Database {
 		}
 	}
 
-	pub fn iter_from_prefix<'env>(
+	fn iter_from_prefix<'env>(
 		&'env self,
 		col: Option<u32>,
 		prefix: &[u8],
@@ -149,7 +203,7 @@ impl Database {
 					}
 					Err(err) => {
 						warn!(target: "lmdb", "Failed to swap DB directories: {:?}", err);
-						return Err(io::Error::new(io::ErrorKind::Other, "DB restoration failed: could not swap DB directories"));
+						return Err(other_io_err("DB restoration failed: could not swap DB directories"));
 					}
 				}
 			}
@@ -158,6 +212,7 @@ impl Database {
 		// reopen the database and steal handles into self
 		let db = Self::open(&self.path, self.columns)?;
 		*self.env.write() = mem::replace(&mut *db.env.write(), None);
+		debug!(target: "lmdb", "DB restoration is completed");
 		Ok(())
 	}
 }
@@ -182,17 +237,16 @@ impl EnvironmentWithDatabases {
 	fn open(path: &str, columns: u32) -> io::Result<Self> {
 		// account for the default column
 		let columns = columns + 1;
-		let path = Path::new(path);
+		let path = canonicalize_path(Path::new(path))?;
 
 		let mut env_builder = Environment::new();
 		env_builder.set_max_dbs(columns);
 		// TODO: this would fail on 32-bit systems
 		// double when full? cf. https://github.com/BVLC/caffe/pull/3731
-		// TODO: is memory budgeting possible?
 		let terabyte: usize = 1 << 40;
 		env_builder.set_map_size(terabyte);
 
-		let env = env_builder.open(&path).map_err(other_io_err)?;
+		let env = env_builder.open(path.as_path()).map_err(other_io_err)?;
 
 		let mut dbs = Vec::with_capacity(columns as usize);
 		for col in 0..columns {
