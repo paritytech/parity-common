@@ -74,9 +74,6 @@ pub struct Database {
 }
 
 // Taken from https://github.com/mozilla/rkv/blob/master/src/manager.rs
-//
-// Workaround the UNC path on Windows, see https://github.com/rust-lang/rust/issues/42869.
-// Otherwise, `Rkv::from_env()` will panic with error_no(123).
 fn canonicalize_path<'p, P>(path: P) -> io::Result<PathBuf>
 where
 	P: Into<&'p Path>,
@@ -85,6 +82,8 @@ where
 	unc_path_windows_workaround(canonical)
 }
 
+// Workaround the UNC path on Windows, see https://github.com/rust-lang/rust/issues/42869.
+// Otherwise, `Rkv::from_env()` will panic with error_no(123).
 #[cfg(target_os = "windows")]
 fn unc_path_windows_workaround(canonical: PathBuf) -> io::Result<PathBuf> {
 	let url = Url::from_file_path(&canonical).map_err(|_e| other_io_err("URL passing error"))?;
