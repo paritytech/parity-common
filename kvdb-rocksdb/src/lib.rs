@@ -529,7 +529,7 @@ impl Database {
 	}
 
 	/// Get database iterator for flushed data.
-	pub fn iter<'a>(&'a self, col: Option<u32>) -> Option<impl Iterator<Item=(DBKey, DBValue)> + 'a> {
+	pub fn iter<'a>(&'a self, col: Option<u32>) -> Option<impl Iterator<Item = (DBKey, DBValue)> + 'a> {
 		match *self.db.read() {
 			Some(DBAndColumns { ref db, ref cfs }) => {
 				let overlay = &self.overlay.read()[Self::to_overlay_column(col)];
