@@ -101,7 +101,7 @@ impl KeyValueDB<DBKey, DBValue> for InMemory {
 	}
 
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-		-> Box<Iterator<Item=(DBKey, DBValue)> + 'a>
+		-> Box<Iterator<Item = (DBKey, DBValue)> + 'a>
 	{
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
