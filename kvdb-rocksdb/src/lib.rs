@@ -556,7 +556,7 @@ impl Database {
 		&'a self,
 		col: Option<u32>,
 		prefix: &[u8]
-	) -> Option<impl Iterator<Item=(DBKey, DBValue)> + 'a> {
+	) -> Option<impl Iterator<Item = (DBKey, DBValue)> + 'a> {
 		match *self.db.read() {
 			Some(DBAndColumns { ref db, ref cfs }) => {
 				let iter = col.map_or_else(
