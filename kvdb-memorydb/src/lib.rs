@@ -91,7 +91,7 @@ impl KeyValueDB<DBKey, DBValue> for InMemory {
 		Ok(())
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=(DBKey, DBValue)> + 'a> {
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item = (DBKey, DBValue)> + 'a> {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new( // TODO: worth optimizing at all?
 				map.clone().into_iter()
