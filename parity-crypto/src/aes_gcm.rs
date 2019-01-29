@@ -73,7 +73,9 @@ impl<'a> Encryptor<'a> {
 			Mode::Aes256Gcm => ring::aead::AES_256_GCM.tag_len(),
 		};
 		data.extend(::std::iter::repeat(0).take(tag_len));
-		let len = ring::aead::seal_in_place(&self.key, nonce, self.ad, &mut data[self.offset ..], tag_len)?;
+		let nonce = ring::aead::Nonce::assume_unique_for_key(*nonce);
+		let aad = ring::aead::Aad::from(self.ad);
+		let len = ring::aead::seal_in_place(&self.key, nonce, aad, &mut data[self.offset ..], tag_len)?;
 		data.truncate(self.offset + len);
 		Ok(data)
 	}
@@ -121,7 +123,9 @@ impl<'a> Decryptor<'a> {
 		if self.offset > data.len() {
 			return Err(SymmError::offset_error(self.offset))
 		}
-		let len = ring::aead::open_in_place(&self.key, nonce, self.ad, 0, &mut data[self.offset ..])?.len();
+		let nonce = ring::aead::Nonce::assume_unique_for_key(*nonce);
+		let aad = ring::aead::Aad::from(self.ad);
+		let len = ring::aead::open_in_place(&self.key, nonce, aad, 0, &mut data[self.offset ..])?.len();
 		data.truncate(self.offset + len);
 		Ok(data)
 	}
