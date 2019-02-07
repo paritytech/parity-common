@@ -81,7 +81,7 @@ pub fn deserialize_check_len<'de, D>(deserializer: D, len: ExpectedLen) -> Resul
 		}
 
 		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
-			if v.len() < 2 || &v[0..2] != "0x" {
+			if v.len() < 2 || !v.starts_with("0x") {
 				return Err(E::custom("prefix is missing"))
 			}
 
