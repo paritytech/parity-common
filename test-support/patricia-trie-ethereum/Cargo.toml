@@ -1,14 +1,14 @@
 [package]
 name = "patricia-trie-ethereum"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "Merkle-Patricia Trie (Ethereum Style)"
 license = "GPL-3.0"
 
 [dependencies]
-patricia-trie = { version = "0.3.0", path = "../../patricia_trie" }
-keccak-hasher = { version = "0.1", path = "../keccak-hasher" }
-hashdb = { version = "0.3.0", path = "../../hashdb" }
+trie-db = { version = "0.11.0" }
+keccak-hasher = { version = "0.11.0" }
+hash-db = { version = "0.11.0" }
 rlp = { version = "0.3.0", path = "../../rlp" }
 parity-bytes = { version = "0.1", path = "../../parity-bytes" }
 

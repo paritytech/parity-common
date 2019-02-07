@@ -2,7 +2,7 @@
 name = "patricia-trie"
 version = "0.3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
-description = "Merkle-Patricia Trie generic over key hasher and node encoding"
+description = "Merkle-Patricia Trie generic over key hasher and node encoding, deprecated please use trie-db crate"
 repository = "https://github.com/paritytech/parity-common"
 license = "GPL-3.0"
 

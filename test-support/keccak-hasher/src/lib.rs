@@ -15,6 +15,8 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Hasher implementation for the Keccak-256 hash
+//!
+//! This is deprecated in favor of trie crate.
 extern crate hashdb;
 extern crate ethereum_types;
 extern crate tiny_keccak;
