@@ -1,1 +1,0 @@
-MemoryDB is a reference counted memory-based [`HashDB`](https://github.com/paritytech/parity-common/tree/master/hashdb) implementation backed by a `HashMap`.
