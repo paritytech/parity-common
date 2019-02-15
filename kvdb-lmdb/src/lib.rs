@@ -54,6 +54,9 @@ use lazy_static::lazy_static;
 use owning_ref::OwningHandle;
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 
+use metered::{metered, ResponseTime};
+use serde_json;
+
 #[cfg(target_os = "windows")]
 use url::Url;
 
@@ -200,6 +203,11 @@ impl Database {
 		}
 	}
 
+	/// Various perf metrics in json format.
+	pub fn metrics(&self) -> Option<String> {
+		self.env.read().as_ref().and_then(|env| serde_json::to_string_pretty(&env.metrics).ok())
+	}
+
 	fn iter_from_prefix<'env>(
 		&'env self,
 		col: Option<u32>,
@@ -261,6 +269,8 @@ struct EnvironmentWithDatabases {
 	// We use one DB per column.
 	// `LmdbDatabase` is essentially a `c_int` (a `Copy` type).
 	dbs: Vec<LmdbDatabase>,
+	// Various perf metrics.
+	metrics: LmdbMetrics,
 }
 
 fn open_or_create_db(env: &Environment, col: u32) -> io::Result<LmdbDatabase> {
@@ -268,6 +278,9 @@ fn open_or_create_db(env: &Environment, col: u32) -> io::Result<LmdbDatabase> {
 	env.create_db(Some(&db_name[..]), DatabaseFlags::default()).map_err(other_io_err)
 }
 
+
+#[metered(registry = LmdbMetrics)]
+#[measure(ResponseTime)]
 impl EnvironmentWithDatabases {
 	fn open(path: &Path, columns: u32) -> io::Result<Self> {
 		// account for the default column
@@ -287,7 +300,7 @@ impl EnvironmentWithDatabases {
 			dbs.push(db);
 		}
 
-		Ok(Self { env, dbs })
+		Ok(Self { env, dbs, metrics: LmdbMetrics::default() })
 	}
 
 	fn ro_txn(&self) -> io::Result<RoTransaction> {
@@ -303,6 +316,7 @@ impl EnvironmentWithDatabases {
 		self.dbs[col]
 	}
 
+	#[measure]
 	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let ro_txn = self.ro_txn()?;
 		let db = self.column_to_db(col);
@@ -316,6 +330,7 @@ impl EnvironmentWithDatabases {
 		}
 	}
 
+	#[measure]
 	fn write_buffered(&self, txn: DBTransaction) {
 		// TODO: this method actually flushes the data to disk.
 		//       Shall we use `NO_SYNC` (doesn't flush, but a system crash can corrupt the database)?
@@ -324,6 +339,7 @@ impl EnvironmentWithDatabases {
 		}
 	}
 
+	#[measure]
 	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
 		let mut rw_txn = self.rw_txn()?;
 
@@ -350,6 +366,7 @@ impl EnvironmentWithDatabases {
 		self.env.sync(false).map_err(other_io_err)
 	}
 
+	#[measure]
 	fn iter(&self, col: Option<u32>) -> Option<IterWithTxn> {
 		// TODO: how to handle errors properly?
 		let ro_txn = self.ro_txn().ok()?;
@@ -526,6 +543,7 @@ mod test {
 		assert_eq!(&*db.get(None, KEY_1).unwrap().unwrap(), b"cat");
 		assert_eq!(&*db.get(None, KEY_2).unwrap().unwrap(), b"dog");
 		assert!(db.get(None, KEY_3).unwrap().is_none());
+		println!("{}", db.metrics().unwrap());
 	}
 
 	#[test]
