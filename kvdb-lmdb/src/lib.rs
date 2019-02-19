@@ -287,6 +287,9 @@ impl EnvironmentWithDatabases {
 		let columns = columns + 1;
 		let mut env_builder = Environment::new();
 		env_builder.set_max_dbs(columns);
+		// TODO: if the filesystem does not preserve write order,
+		// ACI (atomicity, consistency, isolation) is not guaranteed
+		env_builder.set_flags(lmdb::EnvironmentFlags::NO_SYNC);
 		// TODO: this would fail on 32-bit systems
 		// double when full? cf. https://github.com/BVLC/caffe/pull/3731
 		let terabyte: usize = 1 << 40;
@@ -330,17 +333,14 @@ impl EnvironmentWithDatabases {
 		}
 	}
 
-	#[measure]
 	fn write_buffered(&self, txn: DBTransaction) {
-		// TODO: this method actually flushes the data to disk.
-		//       Shall we use `NO_SYNC` (doesn't flush, but a system crash can corrupt the database)?
-		if let Err(e) = self.write(txn) {
+		if let Err(e) = self.write_raw(txn) {
 			warn!(target: "lmdb", "error while writing a transaction {:?}", e);
 		}
 	}
 
 	#[measure]
-	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
+	fn write_raw(&self, transaction: DBTransaction) -> io::Result<()> {
 		let mut rw_txn = self.rw_txn()?;
 
 		for op in transaction.ops {
@@ -360,10 +360,13 @@ impl EnvironmentWithDatabases {
 		rw_txn.commit().map_err(other_io_err)
 	}
 
+	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
+		let _ = self.write_raw(transaction)?;
+		self.flush()
+	}
+
 	fn flush(&self) -> io::Result<()> {
-		// TODO: this only make sense for `NO_SYNC`.
-		// self.env.sync(true).map_err(other_io_err)
-		self.env.sync(false).map_err(other_io_err)
+		self.env.sync(true).map_err(other_io_err)
 	}
 
 	#[measure]
