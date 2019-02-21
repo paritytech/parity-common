@@ -17,13 +17,11 @@
 //! Key-value datastore with a modified Merkle tree.
 
 extern crate parity_bytes as bytes;
-extern crate ethereum_types;
 extern crate keccak_hash;
 extern crate rlp;
 
 use bytes::Bytes;
-use ethereum_types::H256;
-use keccak_hash::keccak;
+use keccak_hash::{keccak, H256};
 use rlp::encode;
 
 /// Alphabet to use when creating words for insertion into tries.
@@ -77,7 +75,7 @@ impl StandardMap {
 		*seed = keccak(&seed);
 		match seed[0] % 2 {
 			1 => vec![seed[31];1],
-			_ => seed.to_vec(),
+			_ => seed.as_bytes().to_vec(),
 		}
 	}
 
@@ -96,7 +94,7 @@ impl StandardMap {
 
 	/// Create the standard map (set of keys and values) for the object's fields.
 	pub fn make(&self) -> Vec<(Bytes, Bytes)> {
-		self.make_with(&mut H256::new())
+		self.make_with(&mut H256::zero())
 	}
 
 	/// Create the standard map (set of keys and values) for the object's fields, using the given seed.
