@@ -1,16 +1,13 @@
 [workspace]
 members = [
 	"fixed-hash",
-	"hashdb",
 	"keccak-hash",
 	"kvdb",
 	"kvdb-memorydb",
 	"kvdb-rocksdb",
-	"memorydb",
 	"parity-bytes",
 	"parity-crypto",
 	"parity-path",
-	"patricia_trie",
 	"plain_hasher",
 	"rlp",
 	"transaction-pool",
@@ -20,4 +17,6 @@ members = [
 	"uint",
 	"parity-util-mem",
 	"primitive-types",
+	"ethereum-types",
+	"ethbloom",
 ]
