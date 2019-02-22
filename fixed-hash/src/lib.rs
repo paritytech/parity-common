@@ -8,19 +8,28 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+// Re-export libcore using an alias so that the macros can work without
+// requiring `extern crate core` downstream.
+#[doc(hidden)]
+pub extern crate core as core_;
+
 #[cfg(all(feature = "libc", not(target_os = "unknown")))]
 #[doc(hidden)]
 pub extern crate libc;
 
-#[macro_use]
+#[macro_use(const_assert)]
+#[allow(unused)] // This disables a warning for unused #[macro_use(..)]
+                 // which is incorrect since the compiler does not check
+                 // for all available configurations.
 #[doc(hidden)]
 pub extern crate static_assertions;
 
-#[cfg(feature = "std")]
+// Export `const_assert` macro so that users of this crate do not
+// have to import the `static_assertions` crate themselves.
 #[doc(hidden)]
-pub extern crate core;
+pub use static_assertions::const_assert;
 
-#[cfg(feature = "byteorder-support")]
+#[cfg(feature = "byteorder")]
 #[doc(hidden)]
 pub extern crate byteorder;
 
@@ -28,19 +37,19 @@ pub extern crate byteorder;
 #[doc(hidden)]
 pub mod libc {}
 
-#[cfg(feature = "heapsize-support")]
+#[cfg(feature = "heapsize")]
 #[doc(hidden)]
 pub extern crate heapsize;
 
-#[cfg(feature = "rustc-hex-support")]
+#[cfg(feature = "rustc-hex")]
 #[doc(hidden)]
 pub extern crate rustc_hex;
 
-#[cfg(feature = "rand-support")]
+#[cfg(feature = "rand")]
 #[doc(hidden)]
 pub extern crate rand;
 
-#[cfg(feature = "quickcheck-support")]
+#[cfg(feature = "quickcheck")]
 #[doc(hidden)]
 pub extern crate quickcheck;
 

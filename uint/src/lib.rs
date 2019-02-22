@@ -8,28 +8,30 @@
 
 //! Efficient large, fixed-size big integers and hashes.
 
-#![cfg_attr(not(feature="std"), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 #[doc(hidden)]
 pub extern crate byteorder;
 
-#[cfg(feature="heapsizeof")]
+#[cfg(feature="heapsize")]
 #[doc(hidden)]
 pub extern crate heapsize;
 
-#[cfg(feature="std")]
+// Re-export libcore using an alias so that the macros can work without
+// requiring `extern crate core` downstream.
 #[doc(hidden)]
-pub extern crate core;
+pub extern crate core as core_;
 
 #[doc(hidden)]
 pub extern crate rustc_hex;
 
-#[cfg(feature="impl_quickcheck_arbitrary")]
+#[cfg(feature="quickcheck")]
 #[doc(hidden)]
 pub extern crate quickcheck;
 
-#[macro_use]
 extern crate crunchy;
+pub use crunchy::unroll;
 
+#[macro_use]
 mod uint;
 pub use uint::*;

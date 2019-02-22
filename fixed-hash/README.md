@@ -59,13 +59,13 @@ fixed-hash = { version = "0.3", default-features = false }
     - Enabled by default.
 - `libc`: Use `libc` for implementations of `PartialEq` and `Ord`.
     - Enabled by default.
-- `rand-support`: Provide API based on the `rand` crate.
+- `rand`: Provide API based on the `rand` crate.
     - Enabled by default.
-- `byteorder-support`: Provide API based on the `byteorder` crate.
+- `byteorder`: Provide API based on the `byteorder` crate.
     - Enabled by default.
-- `heapsize-support`: Provide `HeapsizeOf` implementation for hash types.
+- `heapsize`: Provide `HeapsizeOf` implementation for hash types.
     - Disabled by default.
-- `quickcheck-support`: Provide `quickcheck` implementation for hash types.
+- `quickcheck`: Provide `quickcheck` implementation for hash types.
     - Disabled by default.
 - `api-dummy`: Generate a dummy hash type for API documentation.
     - Enabled by default at `docs.rs`

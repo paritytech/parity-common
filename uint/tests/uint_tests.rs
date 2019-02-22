@@ -2,15 +2,35 @@ extern crate core;
 
 #[macro_use]
 extern crate uint;
-#[macro_use]
-extern crate crunchy;
-#[cfg(feature = "impl_quickcheck_arbitrary")]
+
+#[cfg(feature = "quickcheck")]
 #[macro_use]
 extern crate quickcheck;
 
+#[cfg_attr(all(test, feature = "quickcheck"), macro_use(unroll))]
+extern crate crunchy;
+
 use core::u64::MAX;
 use core::str::FromStr;
-use uint::{U256, U512, FromDecStrErr};
+use uint::{FromDecStrErr};
+
+construct_uint! {
+	pub struct U256(4);
+}
+
+construct_uint! {
+	pub struct U512(8);
+}
+
+#[test]
+fn u128_conversions() {
+	let mut a = U256::from(u128::max_value());
+	assert_eq!(a.low_u128(), u128::max_value());
+	a += 2u128.into();
+	assert_eq!(a.low_u128(), 1u128);
+	a -= 3u128.into();
+	assert_eq!(a.low_u128(), u128::max_value() - 1);
+}
 
 #[test]
 fn uint256_checked_ops() {
@@ -312,16 +332,6 @@ fn uint256_mul32() {
 	assert_eq!(U256::from(10u64) * 2u32, U256::from(20u64));
 	assert_eq!(U256::from(10u64) * 5u32, U256::from(50u64));
 	assert_eq!(U256::from(1000u64) * 50u32, U256::from(50000u64));
-}
-
-#[test]
-#[allow(deprecated)]
-fn uint256_mul32_old() {
-	assert_eq!(U256::from(0u64).mul_u32(2), U256::from(0u64));
-	assert_eq!(U256::from(1u64).mul_u32(2), U256::from(2u64));
-	assert_eq!(U256::from(10u64).mul_u32(2), U256::from(20u64));
-	assert_eq!(U256::from(10u64).mul_u32(5), U256::from(50u64));
-	assert_eq!(U256::from(1000u64).mul_u32(50), U256::from(50000u64));
 }
 
 #[test]
@@ -1029,7 +1039,7 @@ fn trailing_zeros() {
 	assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 256);
 }
 
-#[cfg(feature="impl_quickcheck_arbitrary")]
+#[cfg(feature="quickcheck")]
 pub mod laws {
 	macro_rules! uint_laws {
 		($mod_name:ident, $uint_ty:ident) => {
@@ -1196,10 +1206,18 @@ pub mod laws {
 		}
 	}
 
-	construct_uint!(U64, 1);
-	construct_uint!(U256, 4);
-	construct_uint!(U512, 8);
-	construct_uint!(U1024, 16);
+	construct_uint! {
+		pub struct U64(1);
+	}
+	construct_uint! {
+		pub struct U256(4);
+	}
+	construct_uint! {
+		pub struct U512(8);
+	}
+	construct_uint! {
+		pub struct U1024(16);
+	}
 
 	uint_laws!(u64, U64);
 	uint_laws!(u256, U256);

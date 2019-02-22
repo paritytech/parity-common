@@ -1,8 +1,56 @@
-# Big unsigned integer types
+# Uint
 
-Macros to implement large-but-fixed sized unsigned integer types.
-The functions here are designed to be fast.
+## Description
 
-The crate builds and exports two commonly used types: `U256` and `U512`. Other sizes can be constructed with `construct_uint!(NAME, SIZE_IN_WORDS)`, e.g. `construct_uint!(U128, 2);`.
+Provides facilities to construct big unsigned integer types.
+Also provides commonly used `U128, U256` and `U512` out of the box.
 
-Run tests with `cargo test --features=std,impl_quickcheck_arbitrary --release`.
+The focus on the provided big unsigned integer types is performance and cross-platform availability.
+Support a very similar API as the built-in primitive integer types.
+
+## Usage
+
+In your `Cargo.toml` paste
+
+```
+uint = "0.6"
+```
+
+Construct your own big unsigned integer type as follows.
+
+```
+// U1024 with 1024 bits consisting of 16 x 64-bit words
+construct_uint!(U1024; 16);
+```
+
+## Tests
+
+### Basic tests
+
+```
+cargo test --release
+```
+
+### Basic tests + property tests
+
+```
+cargo test --release --features=quickcheck
+```
+
+### Benchmark tests
+
+```
+cargo bench
+```
+
+## Crate Features
+
+- `std`: Use Rust's standard library.
+	- Enables `byteorder/std`, `rustc-hex/std`
+	- Enabled by default.
+- `common`: Provide commonly used `U128`, `U256` and `U512` big unsigned integer types.
+	- Enabled by default.
+- `quickcheck`: Enable quickcheck-style property testing
+	- Use with `cargo test --release --features=quickcheck`.
+- `heapsize`: Implement base trait of the `heapsizeof` crate
+	- Use with `cargo build --feature=heapsize`.

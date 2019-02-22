@@ -147,7 +147,7 @@ mod is_zero {
 	}
 }
 
-#[cfg(feature = "byteorder-support")]
+#[cfg(feature = "byteorder")]
 mod to_low_u64 {
 	use super::*;
 
@@ -199,7 +199,7 @@ mod to_low_u64 {
 	}
 }
 
-#[cfg(feature = "byteorder-support")]
+#[cfg(feature = "byteorder")]
 mod from_low_u64 {
 	use super::*;
 
@@ -247,7 +247,7 @@ mod from_low_u64 {
 	}
 }
 
-#[cfg(feature = "rand-support")]
+#[cfg(feature = "rand")]
 mod rand {
 	use super::*;
 	use rand::{SeedableRng, XorShiftRng};
@@ -277,13 +277,13 @@ mod rand {
 	}
 }
 
-#[cfg(feature = "rustc-hex-support")]
+#[cfg(feature = "rustc-hex")]
 mod from_str {
 	use super::*;
 
 	#[test]
 	fn valid() {
-		use core::str::FromStr;
+		use core_::str::FromStr;
 
 		assert_eq!(
 			H64::from_str("0123456789ABCDEF").unwrap(),
@@ -293,25 +293,25 @@ mod from_str {
 
 	#[test]
 	fn empty_str() {
-		use core::str::FromStr;
+		use core_::str::FromStr;
 		assert!(H64::from_str("").is_err())
 	}
 
 	#[test]
 	fn invalid_digits() {
-		use core::str::FromStr;
+		use core_::str::FromStr;
 		assert!(H64::from_str("Hello, World!").is_err())
 	}
 
 	#[test]
 	fn too_many_digits() {
-		use core::str::FromStr;
+		use core_::str::FromStr;
 		assert!(H64::from_str("0123456789ABCDEF0").is_err())
 	}
 }
 
 #[cfg(all(
-	feature = "heapsize-support",
+	feature = "heapsize",
 	not(target_os = "unknown")
 ))]
 #[test]
@@ -368,7 +368,7 @@ fn from_h256_to_h160_lossy() {
 	assert_eq!(h160, expected);
 }
 
-#[cfg(all(feature = "std", feature = "byteorder-support"))]
+#[cfg(all(feature = "std", feature = "byteorder"))]
 #[test]
 fn display_and_debug() {
 	fn test_for(x: u64, hex: &'static str, display: &'static str) {
