@@ -14,6 +14,7 @@ heapsize = { version = "0.4.2", optional = true }
 rustc-hex = { version = "2.0", default-features = false }
 quickcheck = { version = "0.6", optional = true }
 crunchy = { version = "0.2", default-features = true }
+serde = { version = "1.0.88", default-features = false, features = ["derive"]}
 
 [features]
 default = ["std"]

@@ -13,6 +13,10 @@
 #[doc(hidden)]
 pub extern crate byteorder;
 
+#[doc(hidden)]
+pub extern crate serde;
+pub use serde::{Serialize, Deserialize};
+
 #[cfg(feature="heapsize")]
 #[doc(hidden)]
 pub extern crate heapsize;

@@ -401,7 +401,7 @@ macro_rules! construct_uint {
 		/// Little-endian large integer type
 		#[repr(C)]
 		$(#[$attr])*
-		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+		#[derive(Copy, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 		$visibility struct $name (pub [u64; $n_words]);
 
 		impl AsRef<$name> for $name {
