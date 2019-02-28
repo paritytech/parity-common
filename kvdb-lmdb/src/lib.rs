@@ -151,6 +151,14 @@ impl Database {
 		DBTransaction::new()
 	}
 
+	/// Remove all data from the specified column.
+	pub fn clear(&self, col: Option<u32>) -> io::Result<()> {
+		match *self.env.read() {
+			Some(ref env) => Ok(env.clear(col)?),
+			None => Ok(()),
+		}
+	}
+
 	/// Get value by key.
 	pub fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
 		match *self.env.read() {
@@ -304,6 +312,13 @@ impl EnvironmentWithDatabases {
 	fn column_to_db(&self, col: Option<u32>) -> LmdbDatabase {
 		let col = col.map_or(0, |c| (c as usize + 1));
 		self.dbs[col]
+	}
+
+	fn clear(&self, col: Option<u32>) -> io::Result<()> {
+		let db = self.column_to_db(col);
+		let mut rw_txn = self.rw_txn()?;
+		let _ = rw_txn.clear_db(db).map_err(other_io_err)?;
+		rw_txn.commit().map_err(other_io_err)
 	}
 
 	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
@@ -565,6 +580,9 @@ mod test {
 
 		assert!(db.get(None, KEY_1).unwrap().is_none());
 		assert_eq!(&*db.get(None, KEY_3).unwrap().unwrap(), b"elephant");
+
+		assert!(db.clear(None).is_ok());
+		assert_eq!(db.iter(None).collect::<Vec<_>>().len(), 0);
 	}
 
 	#[test]
