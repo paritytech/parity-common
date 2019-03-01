@@ -24,7 +24,7 @@ pub enum Error<Hash: fmt::Debug + fmt::LowerHex> {
 	/// Transaction is too cheap to enter the queue
 	TooCheapToEnter(Hash, String),
 	/// Transaction is too cheap to replace existing transaction that occupies the same slot.
-	TooCheapToReplace (Hash, Hash),
+	TooCheapToReplace(Hash, Hash),
 }
 
 /// Transaction Pool Result
