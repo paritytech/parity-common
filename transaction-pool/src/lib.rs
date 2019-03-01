@@ -72,8 +72,6 @@ extern crate smallvec;
 extern crate trace_time;
 
 #[macro_use]
-extern crate error_chain;
-#[macro_use]
 extern crate log;
 
 #[cfg(test)]
@@ -93,7 +91,7 @@ mod verifier;
 
 pub mod scoring;
 
-pub use self::error::{Error, ErrorKind};
+pub use self::error::Error;
 pub use self::listener::{Listener, NoopListener};
 pub use self::options::Options;
 pub use self::pool::{Pool, PendingIterator, UnorderedIterator, Transaction};

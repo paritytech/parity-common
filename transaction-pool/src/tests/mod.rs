@@ -135,7 +135,7 @@ fn should_reject_if_above_count() {
 	let tx2 = b.tx().nonce(1).new();
 	let hash = format!("{:?}", tx2.hash());
 	txq.import(tx1).unwrap();
-	assert_eq!(txq.import(tx2).unwrap_err().kind(), &error::ErrorKind::TooCheapToEnter(hash, "0x0".into()));
+	assert_eq!(txq.import(tx2).unwrap_err(), error::Error::TooCheapToEnter(hash, "0x0".into()));
 	assert_eq!(txq.light_status().transaction_count, 1);
 
 	txq.clear();
@@ -161,7 +161,7 @@ fn should_reject_if_above_mem_usage() {
 	let tx2 = b.tx().nonce(2).mem_usage(2).new();
 	let hash = format!("{:?}", tx2.hash());
 	txq.import(tx1).unwrap();
-	assert_eq!(txq.import(tx2).unwrap_err().kind(), &error::ErrorKind::TooCheapToEnter(hash, "0x0".into()));
+	assert_eq!(txq.import(tx2).unwrap_err(), error::Error::TooCheapToEnter(hash, "0x0".into()));
 	assert_eq!(txq.light_status().transaction_count, 1);
 
 	txq.clear();
@@ -187,7 +187,7 @@ fn should_reject_if_above_sender_count() {
 	let tx2 = b.tx().nonce(2).new();
 	let hash = format!("{:x}", tx2.hash());
 	txq.import(tx1).unwrap();
-	assert_eq!(txq.import(tx2).unwrap_err().kind(), &error::ErrorKind::TooCheapToEnter(hash, "0x0".into()));
+	assert_eq!(txq.import(tx2).unwrap_err(), error::Error::TooCheapToEnter(hash, "0x0".into()));
 	assert_eq!(txq.light_status().transaction_count, 1);
 
 	txq.clear();
@@ -198,7 +198,7 @@ fn should_reject_if_above_sender_count() {
 	let hash = format!("{:x}", tx2.hash());
 	txq.import(tx1).unwrap();
 	// This results in error because we also compare nonces
-	assert_eq!(txq.import(tx2).unwrap_err().kind(), &error::ErrorKind::TooCheapToEnter(hash, "0x0".into()));
+	assert_eq!(txq.import(tx2).unwrap_err(), error::Error::TooCheapToEnter(hash, "0x0".into()));
 	assert_eq!(txq.light_status().transaction_count, 1);
 }
 
@@ -587,8 +587,7 @@ fn should_not_import_even_if_limit_is_reached_and_should_replace_returns_false()
 	let err = txq.import(b.tx().nonce(1).gas_price(5).new()).unwrap_err();
 
 	// then
-	assert_eq!(err.kind(),
-	&error::ErrorKind::TooCheapToEnter("0x00000000000000000000000000000000000000000000000000000000000001f5".into(), "0x5".into()));
+	assert_eq!(err, error::Error::TooCheapToEnter("0x00000000000000000000000000000000000000000000000000000000000001f5".into(), "0x5".into()));
 	assert_eq!(txq.light_status(), LightStatus {
 		transaction_count: 1,
 		senders: 1,
@@ -637,7 +636,7 @@ mod listener {
 			self.0.borrow_mut().push(if old.is_some() { "replaced" } else { "added" });
 		}
 
-		fn rejected(&mut self, _tx: &SharedTransaction, _reason: &error::ErrorKind) {
+		fn rejected(&mut self, _tx: &SharedTransaction, _reason: &error::Error) {
 			self.0.borrow_mut().push("rejected".into());
 		}
 

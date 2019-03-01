@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::sync::Arc;
-use error::ErrorKind;
+use error::Error;
 
 /// Transaction pool listener.
 ///
@@ -29,7 +29,7 @@ pub trait Listener<T> {
 
 	/// The transaction was rejected from the pool.
 	/// It means that it was too cheap to replace any transaction already in the pool.
-	fn rejected(&mut self, _tx: &Arc<T>, _reason: &ErrorKind) {}
+	fn rejected(&mut self, _tx: &Arc<T>, _reason: &Error) {}
 
 	/// The transaction was pushed out from the pool because of the limit.
 	fn dropped(&mut self, _tx: &Arc<T>, _by: Option<&T>) {}
@@ -58,7 +58,7 @@ impl<T, A, B> Listener<T> for (A, B) where
 		self.1.added(tx, old);
 	}
 
-	fn rejected(&mut self, tx: &Arc<T>, reason: &ErrorKind) {
+	fn rejected(&mut self, tx: &Arc<T>, reason: &Error) {
 		self.0.rejected(tx, reason);
 		self.1.rejected(tx, reason);
 	}

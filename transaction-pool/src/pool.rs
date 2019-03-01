@@ -136,7 +136,9 @@ impl<T, S, L> Pool<T, S, L> where
 	pub fn import(&mut self, transaction: T) -> error::Result<Arc<T>> {
 		let mem_usage = transaction.mem_usage();
 
-		ensure!(!self.by_hash.contains_key(transaction.hash()), error::ErrorKind::AlreadyImported(format!("{:?}", transaction.hash())));
+		if self.by_hash.contains_key(transaction.hash()) {
+			return Err(error::Error::AlreadyImported(format!("{:?}", transaction.hash())))
+		}
 
 		self.insertion_id += 1;
 		let transaction = Transaction {
@@ -150,7 +152,7 @@ impl<T, S, L> Pool<T, S, L> where
 			let remove_worst = |s: &mut Self, transaction| {
 				match s.remove_worst(transaction) {
 					Err(err) => {
-						s.listener.rejected(transaction, err.kind());
+						s.listener.rejected(transaction, &err);
 						Err(err)
 					},
 					Ok(None) => Ok(false),
@@ -202,14 +204,14 @@ impl<T, S, L> Pool<T, S, L> where
 				Ok(new.transaction)
 			},
 			AddResult::TooCheap { new, old } => {
-				let error = error::ErrorKind::TooCheapToReplace(format!("{:x}", old.hash()), format!("{:x}", new.hash()));
+				let error = error::Error::TooCheapToReplace(format!("{:x}", old.hash()), format!("{:x}", new.hash()));
 				self.listener.rejected(&new, &error);
-				bail!(error)
+				return Err(error)
 			},
 			AddResult::TooCheapToEnter(new, score) => {
-				let error = error::ErrorKind::TooCheapToEnter(format!("{:x}", new.hash()), format!("{:#x}", score));
+				let error = error::Error::TooCheapToEnter(format!("{:x}", new.hash()), format!("{:#x}", score));
 				self.listener.rejected(&new, &error);
-				bail!(error)
+				return Err(error)
 			}
 		}
 	}
@@ -286,7 +288,7 @@ impl<T, S, L> Pool<T, S, L> where
 			// No elements to remove? and the pool is still full?
 			None => {
 				warn!("The pool is full but there are no transactions to remove.");
-				return Err(error::ErrorKind::TooCheapToEnter(format!("{:?}", transaction.hash()), "unknown".into()).into());
+				return Err(error::Error::TooCheapToEnter(format!("{:?}", transaction.hash()), "unknown".into()).into());
 			},
 			Some(old) => match self.scoring.should_replace(&old.transaction, transaction) {
 				// We can't decide which of them should be removed, so accept both.
@@ -295,7 +297,7 @@ impl<T, S, L> Pool<T, S, L> where
 				scoring::Choice::ReplaceOld => Some(old.clone()),
 				// otherwise fail
 				scoring::Choice::RejectNew => {
-					return Err(error::ErrorKind::TooCheapToEnter(format!("{:?}", transaction.hash()), format!("{:#x}", old.score)).into())
+					return Err(error::Error::TooCheapToEnter(format!("{:?}", transaction.hash()), format!("{:#x}", old.score)).into())
 				},
 			},
 		};
