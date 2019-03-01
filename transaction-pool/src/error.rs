@@ -14,15 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-/// TODO: Consider making Hash generic for Error - legacy of error-chain
-/// So the hashes are converted to debug strings for easy display.
-type Hash = String;
-
 use std::{error, fmt, result};
 
 /// Transaction Pool Error
 #[derive(Debug)]
-pub enum Error {
+pub enum Error<Hash: fmt::Debug + fmt::LowerHex> {
 	/// Transaction is already imported
 	AlreadyImported(Hash),
 	/// Transaction is too cheap to enter the queue
@@ -32,25 +28,25 @@ pub enum Error {
 }
 
 /// Transaction Pool Result
-pub type Result<T> = result::Result<T, Error>;
+pub type Result<T, H> = result::Result<T, Error<H>>;
 
-impl fmt::Display for Error {
+impl<H: fmt::Debug + fmt::LowerHex> fmt::Display for Error<H> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Error::AlreadyImported(h) =>
-				write!(f, "[{}] already imported", h),
+				write!(f, "[{:?}] already imported", h),
 			Error::TooCheapToEnter(hash, min_score) =>
-				write!(f, "[{}] too cheap to enter the pool. Min score: {}", hash, min_score),
+				write!(f, "[{:x}] too cheap to enter the pool. Min score: {}", hash, min_score),
 			Error::TooCheapToReplace(old_hash, hash) =>
-				write!(f, "[{}] too cheap to replace: {}", hash, old_hash),
+				write!(f, "[{:x}] too cheap to replace: {:x}", hash, old_hash),
 		}
     }
 }
 
-impl error::Error for Error {}
+impl<H: fmt::Debug + fmt::LowerHex> error::Error for Error<H> {}
 
 #[cfg(test)]
-impl PartialEq for Error {
+impl<H: fmt::Debug + fmt::LowerHex> PartialEq for Error<H> where H: PartialEq {
 	fn eq(&self, other: &Self) -> bool {
 		use self::Error::*;
 
