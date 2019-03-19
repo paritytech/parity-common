@@ -16,14 +16,30 @@
 
 //! Key-Value store abstraction with `RocksDB` backend.
 
+#[macro_use]
+extern crate log;
+
 extern crate elastic_array;
 extern crate parity_bytes as bytes;
+extern crate fs_swap;
+extern crate hashbrown;
+extern crate parking_lot;
+extern crate interleaved_ordered;
+extern crate owning_ref;
 
-use std::io;
+use std::{io, mem, fs};
 use std::path::Path;
 use std::sync::Arc;
 use elastic_array::{ElasticArray128, ElasticArray32};
 use bytes::Bytes;
+use hashbrown::HashMap;
+use parking_lot::{Mutex, MutexGuard, RwLock};
+use fs_swap::{swap, swap_nonatomic};
+use interleaved_ordered::interleave_ordered;
+
+mod iter;
+
+use iter::*;
 
 /// Required length of prefixes.
 pub const PREFIX_LEN: usize = 12;
@@ -167,9 +183,314 @@ pub trait KeyValueDB: Sync + Send {
 	fn restore(&self, new_db: &str) -> io::Result<()>;
 }
 
+
+fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<std::error::Error + Send + Sync>> {
+	io::Error::new(io::ErrorKind::Other, e)
+}
+
 /// Generic key-value database handler. This trait contains one function `open`. When called, it opens database with a
 /// predefined config.
 pub trait KeyValueDBHandler: Send + Sync {
 	/// Open the predefined key-value database.
 	fn open(&self, path: &Path) -> io::Result<Arc<KeyValueDB>>;
+}
+
+/// An abstraction over a concrete database write transaction implementation.
+pub trait WriteTransaction<D: TransactionHandler> {
+	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
+	fn put(&mut self, db: &D, col: u32, key: &[u8], value: &[u8]);
+	/// Delete value by key.
+	fn delete(&mut self, db: &D, col: u32, key: &[u8]);
+	/// Commit the transaction.
+	fn commit(self, db: &D) -> io::Result<()>;
+}
+
+/// An abstraction over a concrete database read-only transaction implementation.
+pub trait ReadTransaction<D: TransactionHandler> {
+	fn get(self, db: &D, col: u32, key: &[u8]) -> io::Result<Option<DBValue>>;
+}
+
+pub trait TransactionHandler {
+	// TODO: how to avoid boxing?
+	fn write_transaction(&self) -> Box<WriteTransaction<Self>>;
+	fn read_transaction(&self) -> Box<ReadTransaction<Self>>;
+}
+
+
+enum KeyState {
+	Insert(DBValue),
+	Delete,
+}
+
+pub trait OpenHandler: Send + Sync {
+	type Config: NumColumns + Clone + Send + Sync;
+	fn open(config: &Self::Config, path: &str) -> io::Result<Box<RawKeyValueDB<Config=Self::Config>>>;
+}
+
+pub trait RawKeyValueDB: OpenHandler + TransactionHandler + IterationHandler {}
+
+pub trait NumColumns {
+	fn num_columns(&self) -> usize;
+}
+
+pub struct DatabaseWithCache<DB: OpenHandler + TransactionHandler + IterationHandler> {
+	db: RwLock<Option<Box<DB>>>,
+	config: <DB as OpenHandler>::Config,
+	path: String,
+	// Dirty values added with `write_buffered`. Cleaned on `flush`.
+	overlay: RwLock<Vec<HashMap<ElasticArray32<u8>, KeyState>>>,
+	// Values currently being flushed. Cleared when `flush` completes.
+	flushing: RwLock<Vec<HashMap<ElasticArray32<u8>, KeyState>>>,
+	// Prevents concurrent flushes.
+	// Value indicates if a flush is in progress.
+	flushing_lock: Mutex<bool>,
+}
+
+impl<DB: OpenHandler + TransactionHandler + IterationHandler> KeyValueDB for DatabaseWithCache<DB> {
+	/// Commit transaction to database.
+	fn write_buffered(&self, tr: DBTransaction) {
+		let mut overlay = self.overlay.write();
+		let ops = tr.ops;
+		for op in ops {
+			match op {
+				DBOp::Insert { col, key, value } => {
+					let c = Self::to_overlay_column(col);
+					overlay[c].insert(key, KeyState::Insert(value));
+				},
+				DBOp::Delete { col, key } => {
+					let c = Self::to_overlay_column(col);
+					overlay[c].insert(key, KeyState::Delete);
+				},
+			}
+		};
+	}
+
+	/// Commit buffered changes to database.
+	fn flush(&self) -> io::Result<()> {
+		let mut lock = self.flushing_lock.lock();
+		// If RocksDB batch allocation fails the thread gets terminated and the lock is released.
+		// The value inside the lock is used to detect that.
+		if *lock {
+			// This can only happen if another flushing thread is terminated unexpectedly.
+			return Err(other_io_err("Database write failure. Running low on memory perhaps?"))
+		}
+		*lock = true;
+		let result = self.write_flushing_with_lock(&mut lock);
+		*lock = false;
+		result
+	}
+
+	/// Commit transaction to database.
+	fn write(&self, tr: DBTransaction) -> io::Result<()> {
+		match *self.db.read() {
+			Some(db) => {
+				let batch = db.write_transaction();
+				let ops = tr.ops;
+				for op in ops {
+					let c = Self::to_overlay_column(op.col());
+					// remove any buffered operation for this key
+					self.overlay.write()[c].remove(op.key());
+
+					match op {
+						DBOp::Insert { key, value, .. } => batch.put(&db, c as u32, &key, &value),
+						DBOp::Delete { key, .. } => batch.delete(&db, c as u32, &key),
+					}
+				}
+
+				batch.commit(&db)
+			},
+			None => Err(other_io_err("Database is closed")),
+		}
+	}
+
+	/// Get value by key.
+	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
+		match *self.db.read() {
+			Some(db) => {
+				let c = Self::to_overlay_column(col);
+				let overlay = &self.overlay.read()[c];
+				match overlay.get(key) {
+					Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
+					Some(&KeyState::Delete) => Ok(None),
+					None => {
+						let flushing = &self.flushing.read()[c];
+						match flushing.get(key) {
+							Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
+							Some(&KeyState::Delete) => Ok(None),
+							None => {
+								db.read_transaction().get(&db, c as u32, &key)
+								// col.map_or_else(
+								// 	|| db.get_opt(key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))),
+								// 	|c| db.get_cf_opt(cfs[c as usize], key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))))
+								// 	.map_err(other_io_err)
+							},
+						}
+					},
+				}
+			},
+			None => Ok(None),
+		}
+	}
+
+	/// Get value by partial key. Prefix size should match configured prefix size. Only searches flushed values.
+	// TODO: support prefix seek for unflushed data
+	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
+		self.iter_from_prefix(col, prefix).and_then(|mut iter| {
+			match iter.next() {
+				// TODO: use prefix_same_as_start read option (not availabele in C API currently)
+				Some((k, v)) => if k[0..prefix.len()] == prefix[..] { Some(v) } else { None },
+				_ => None
+			}
+		})
+	}
+
+	/// Restore the database from a copy at given path.
+	fn restore(&self, new_db: &str) -> io::Result<()> {
+		self.close();
+
+		// swap is guaranteed to be atomic
+		match swap(new_db, &self.path) {
+			Ok(_) => {
+				// ignore errors
+				let _ = fs::remove_dir_all(new_db);
+			},
+			Err(err) => {
+				debug!("DB atomic swap failed: {}", err);
+				match swap_nonatomic(new_db, &self.path) {
+					Ok(_) => {
+						// ignore errors
+						let _ = fs::remove_dir_all(new_db);
+					},
+					Err(err) => {
+						warn!("Failed to swap DB directories: {:?}", err);
+						return Err(io::Error::new(io::ErrorKind::Other, "DB restoration failed: could not swap DB directories"));
+					}
+				}
+			}
+		}
+
+		// reopen the database and steal handles into self
+		let db = self.open(&self.path)?;
+		*self.db.write() = mem::replace(&mut *db.db.write(), None);
+		*self.overlay.write() = mem::replace(&mut *db.overlay.write(), Vec::new());
+		*self.flushing.write() = mem::replace(&mut *db.flushing.write(), Vec::new());
+		Ok(())
+	}
+
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
+		let unboxed = DatabaseWithCache::iter(self, col);
+		Box::new(unboxed.into_iter().flat_map(|inner| inner))
+	}
+
+	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
+							-> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
+	{
+		let unboxed = DatabaseWithCache::iter_from_prefix(self, col, prefix);
+		Box::new(unboxed.into_iter().flat_map(|inner| inner))
+	}
+}
+
+
+
+impl<DB: OpenHandler + TransactionHandler + IterationHandler> DatabaseWithCache<DB> {
+	fn open(&self, path: &str) -> io::Result<Self> {
+		let db = DB::open(&self.config, path)?;
+		let num_cols = self.config.num_columns();
+		Ok(Self {
+			db,
+			config: self.config.clone(),
+			path: path.to_owned(),
+			overlay: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
+			flushing: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
+			flushing_lock: Mutex::new(false),
+		})
+	}
+	/// Get database iterator for flushed data.
+	pub fn iter<'a>(&'a self, col: Option<u32>) -> Option<impl Iterator<Item=KeyValuePair> + 'a> {
+		let read_lock = self.db.read();
+		match *read_lock {
+			Some(db) => {
+				let overlay = &self.overlay.read()[Self::to_overlay_column(col)];
+				let mut overlay_data = overlay.iter()
+					.filter_map(|(k, v)| match *v {
+						KeyState::Insert(ref value) =>
+							Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_vec().into_boxed_slice())),
+						KeyState::Delete => None,
+					}).collect::<Vec<_>>();
+				overlay_data.sort();
+
+				let guarded = ReadGuardedIterator::new(read_lock, col);
+				Some(interleave_ordered(overlay_data, guarded))
+			},
+			None => None,
+		}
+	}
+
+	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &[u8]) -> Option<impl Iterator<Item=KeyValuePair> + 'a> {
+		let read_lock = self.db.read();
+		match *read_lock {
+			Some(db) => {
+				let guarded = ReadGuardedIterator::new_from_prefix(read_lock, col, prefix);
+				Some(interleave_ordered(Vec::new(), guarded))
+			},
+			None => None,
+		}
+	}
+
+	fn to_overlay_column(col: Option<u32>) -> usize {
+		col.map_or(0, |c| (c + 1) as usize)
+	}
+
+	/// Close the database
+	fn close(&self) {
+		*self.db.write() = None;
+		self.overlay.write().clear();
+		self.flushing.write().clear();
+	}
+
+	/// Commit buffered changes to database. Must be called under `flush_lock`
+	fn write_flushing_with_lock(&self, _lock: &mut MutexGuard<bool>) -> io::Result<()> {
+		match *self.db.read() {
+			Some(db) => {
+				let batch = db.write_transaction();
+				mem::swap(&mut *self.overlay.write(), &mut *self.flushing.write());
+				{
+					for (c, column) in self.flushing.read().iter().enumerate() {
+						for (key, state) in column.iter() {
+							match *state {
+								KeyState::Delete => {
+									batch.delete(&db, c as u32, &key);
+									// if c > 0 {
+									// 	batch.delete_cf(cfs[c - 1], key).map_err(other_io_err)?;
+									// } else {
+									// 	batch.delete(key).map_err(other_io_err)?;
+									// }
+								},
+								KeyState::Insert(ref value) => {
+									batch.put(&db, c as u32, &key, &value);
+									// if c > 0 {
+									// 	batch.put_cf(cfs[c - 1], key, value).map_err(other_io_err)?;
+									// } else {
+									// 	batch.put(key, value).map_err(other_io_err)?;
+									// }
+								},
+							}
+						}
+					}
+				}
+
+				batch.commit(&db);
+				// check_for_corruption(
+				// 	&self.path,
+				// 	db.write_opt(batch, &self.write_opts))?;
+
+				for column in self.flushing.write().iter_mut() {
+					column.clear();
+					column.shrink_to_fit();
+				}
+				Ok(())
+			},
+			None => Err(other_io_err("Database is closed"))
+		}
+	}
 }

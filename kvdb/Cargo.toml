@@ -9,3 +9,9 @@ license = "GPL-3.0"
 [dependencies]
 elastic-array = "0.10"
 parity-bytes = { version = "0.1", path = "../parity-bytes" }
+hashbrown = "0.1.8"
+parking_lot = "0.7.1"
+fs-swap = "0.2.4"
+interleaved-ordered = "0.1.1"
+log = "0.4.6"
+owning_ref = "0.4.0"

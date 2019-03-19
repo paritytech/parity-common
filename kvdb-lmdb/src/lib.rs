@@ -33,7 +33,7 @@
 
 #![deny(missing_docs)]
 
-use std::collections::{HashMap, hash_map::Entry};
+use hashbrown::{HashMap, hash_map::Entry};
 use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
