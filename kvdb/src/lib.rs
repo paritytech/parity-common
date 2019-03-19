@@ -370,7 +370,7 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> KeyValueDB for DatabaseWithCache<DB> {
 		}
 
 		// reopen the database and steal handles into self
-		let db = self.open(&self.path)?;
+		let db = Self::open(self.config.clone(), &self.path)?;
 		*self.db.write() = mem::replace(&mut *db.db.write(), None);
 		*self.overlay.write() = mem::replace(&mut *db.overlay.write(), Vec::new());
 		*self.flushing.write() = mem::replace(&mut *db.flushing.write(), Vec::new());
@@ -393,12 +393,12 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> KeyValueDB for DatabaseWithCache<DB> {
 
 
 impl<DB: OpenHandler<DB> + RawKeyValueDB> DatabaseWithCache<DB> {
-	fn open(&self, path: &str) -> io::Result<Self> {
-		let db = DB::open(&self.config, path)?;
-		let num_cols = self.config.num_columns();
+	pub fn open(config: <DB as OpenHandler<DB>>::Config, path: &str) -> io::Result<Self> {
+		let db = DB::open(&config, path)?;
+		let num_cols = config.num_columns();
 		Ok(Self {
 			db: RwLock::new(Some(db)),
-			config: self.config.clone(),
+			config,
 			path: path.to_owned(),
 			overlay: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
 			flushing: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
