@@ -1,11 +1,11 @@
 [package]
 name = "kvdb-memorydb"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "A key-value in-memory database that implements the  `KeyValueDB` trait"
 license = "GPL-3.0"
 
 [dependencies]
-parking_lot = "0.6"
-kvdb = { version = "0.1", path = "../kvdb" }
+parking_lot = "0.7"
+kvdb = { version = "0.2", path = "../kvdb" }

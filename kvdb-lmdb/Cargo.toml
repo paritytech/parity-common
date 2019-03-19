@@ -9,7 +9,7 @@ edition = "2018"
 
 [dependencies]
 lmdb = { version = "0.11", package = "lmdb-rkv" }
-kvdb = { version = "0.1", path = "../kvdb" }
+kvdb = { version = "0.2", path = "../kvdb" }
 log = "0.4"
 owning_ref = "0.4.0"
 fs-swap = "0.2.4"

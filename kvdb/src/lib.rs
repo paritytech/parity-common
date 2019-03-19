@@ -28,8 +28,6 @@ extern crate interleaved_ordered;
 extern crate owning_ref;
 
 use std::{io, mem, fs};
-use std::path::Path;
-use std::sync::Arc;
 use elastic_array::{ElasticArray128, ElasticArray32};
 use bytes::Bytes;
 use hashbrown::HashMap;
@@ -188,13 +186,6 @@ fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<std::error::Error + Send
 	io::Error::new(io::ErrorKind::Other, e)
 }
 
-/// Generic key-value database handler. This trait contains one function `open`. When called, it opens database with a
-/// predefined config.
-pub trait KeyValueDBHandler: Send + Sync {
-	/// Open the predefined key-value database.
-	fn open(&self, path: &Path) -> io::Result<Arc<KeyValueDB>>;
-}
-
 /// An abstraction over a concrete database write transaction implementation.
 pub trait WriteTransaction {
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
@@ -202,11 +193,14 @@ pub trait WriteTransaction {
 	/// Delete value by key.
 	fn delete(&mut self, db: &TransactionHandler, col: u32, key: &[u8]);
 	/// Commit the transaction.
+	// TODO: should take self by move
 	fn commit(&mut self, db: &TransactionHandler) -> io::Result<()>;
 }
 
 /// An abstraction over a concrete database read-only transaction implementation.
 pub trait ReadTransaction {
+	/// Get value by key.
+	// TODO: should take self by move
 	fn get(&self, db: &TransactionHandler, col: u32, key: &[u8]) -> io::Result<Option<DBValue>>;
 }
 
