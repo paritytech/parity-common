@@ -196,24 +196,24 @@ pub trait KeyValueDBHandler: Send + Sync {
 }
 
 /// An abstraction over a concrete database write transaction implementation.
-pub trait WriteTransaction<D: TransactionHandler> {
+pub trait WriteTransaction {
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
-	fn put(&mut self, db: &D, col: u32, key: &[u8], value: &[u8]);
+	fn put(&mut self, db: &TransactionHandler, col: u32, key: &[u8], value: &[u8]);
 	/// Delete value by key.
-	fn delete(&mut self, db: &D, col: u32, key: &[u8]);
+	fn delete(&mut self, db: &TransactionHandler, col: u32, key: &[u8]);
 	/// Commit the transaction.
-	fn commit(self, db: &D) -> io::Result<()>;
+	fn commit(&mut self, db: &TransactionHandler) -> io::Result<()>;
 }
 
 /// An abstraction over a concrete database read-only transaction implementation.
-pub trait ReadTransaction<D: TransactionHandler> {
-	fn get(self, db: &D, col: u32, key: &[u8]) -> io::Result<Option<DBValue>>;
+pub trait ReadTransaction {
+	fn get(&self, db: &TransactionHandler, col: u32, key: &[u8]) -> io::Result<Option<DBValue>>;
 }
 
 pub trait TransactionHandler {
 	// TODO: how to avoid boxing?
-	fn write_transaction(&self) -> Box<WriteTransaction<Self>>;
-	fn read_transaction(&self) -> Box<ReadTransaction<Self>>;
+	fn write_transaction(&self) -> Box<WriteTransaction>;
+	fn read_transaction(&self) -> Box<ReadTransaction>;
 }
 
 
@@ -222,20 +222,20 @@ enum KeyState {
 	Delete,
 }
 
-pub trait OpenHandler: Send + Sync {
+pub trait OpenHandler<DB: RawKeyValueDB>: Send + Sync {
 	type Config: NumColumns + Clone + Send + Sync;
-	fn open(config: &Self::Config, path: &str) -> io::Result<Box<RawKeyValueDB<Config=Self::Config>>>;
+	fn open(config: &Self::Config, path: &str) -> io::Result<DB>;
 }
 
-pub trait RawKeyValueDB: OpenHandler + TransactionHandler + IterationHandler {}
+pub trait RawKeyValueDB: TransactionHandler + IterationHandler {}
 
 pub trait NumColumns {
 	fn num_columns(&self) -> usize;
 }
 
-pub struct DatabaseWithCache<DB: OpenHandler + TransactionHandler + IterationHandler> {
-	db: RwLock<Option<Box<DB>>>,
-	config: <DB as OpenHandler>::Config,
+pub struct DatabaseWithCache<DB: OpenHandler<DB> + RawKeyValueDB> {
+	db: RwLock<Option<DB>>,
+	config: <DB as OpenHandler<DB>>::Config,
 	path: String,
 	// Dirty values added with `write_buffered`. Cleaned on `flush`.
 	overlay: RwLock<Vec<HashMap<ElasticArray32<u8>, KeyState>>>,
@@ -246,7 +246,7 @@ pub struct DatabaseWithCache<DB: OpenHandler + TransactionHandler + IterationHan
 	flushing_lock: Mutex<bool>,
 }
 
-impl<DB: OpenHandler + TransactionHandler + IterationHandler> KeyValueDB for DatabaseWithCache<DB> {
+impl<DB: OpenHandler<DB> + RawKeyValueDB> KeyValueDB for DatabaseWithCache<DB> {
 	/// Commit transaction to database.
 	fn write_buffered(&self, tr: DBTransaction) {
 		let mut overlay = self.overlay.write();
@@ -283,8 +283,8 @@ impl<DB: OpenHandler + TransactionHandler + IterationHandler> KeyValueDB for Dat
 	/// Commit transaction to database.
 	fn write(&self, tr: DBTransaction) -> io::Result<()> {
 		match *self.db.read() {
-			Some(db) => {
-				let batch = db.write_transaction();
+			Some(ref db) => {
+				let mut batch = db.write_transaction();
 				let ops = tr.ops;
 				for op in ops {
 					let c = Self::to_overlay_column(op.col());
@@ -292,12 +292,12 @@ impl<DB: OpenHandler + TransactionHandler + IterationHandler> KeyValueDB for Dat
 					self.overlay.write()[c].remove(op.key());
 
 					match op {
-						DBOp::Insert { key, value, .. } => batch.put(&db, c as u32, &key, &value),
-						DBOp::Delete { key, .. } => batch.delete(&db, c as u32, &key),
+						DBOp::Insert { key, value, .. } => batch.put(db as &TransactionHandler, c as u32, &key, &value),
+						DBOp::Delete { key, .. } => batch.delete(db as &TransactionHandler, c as u32, &key),
 					}
 				}
 
-				batch.commit(&db)
+				batch.commit(db as &TransactionHandler)
 			},
 			None => Err(other_io_err("Database is closed")),
 		}
@@ -306,7 +306,7 @@ impl<DB: OpenHandler + TransactionHandler + IterationHandler> KeyValueDB for Dat
 	/// Get value by key.
 	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
 		match *self.db.read() {
-			Some(db) => {
+			Some(ref db) => {
 				let c = Self::to_overlay_column(col);
 				let overlay = &self.overlay.read()[c];
 				match overlay.get(key) {
@@ -318,7 +318,7 @@ impl<DB: OpenHandler + TransactionHandler + IterationHandler> KeyValueDB for Dat
 							Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
 							Some(&KeyState::Delete) => Ok(None),
 							None => {
-								db.read_transaction().get(&db, c as u32, &key)
+								db.read_transaction().get(db as &TransactionHandler, c as u32, &key)
 								// col.map_or_else(
 								// 	|| db.get_opt(key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))),
 								// 	|c| db.get_cf_opt(cfs[c as usize], key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))))
@@ -392,12 +392,12 @@ impl<DB: OpenHandler + TransactionHandler + IterationHandler> KeyValueDB for Dat
 
 
 
-impl<DB: OpenHandler + TransactionHandler + IterationHandler> DatabaseWithCache<DB> {
+impl<DB: OpenHandler<DB> + RawKeyValueDB> DatabaseWithCache<DB> {
 	fn open(&self, path: &str) -> io::Result<Self> {
 		let db = DB::open(&self.config, path)?;
 		let num_cols = self.config.num_columns();
 		Ok(Self {
-			db,
+			db: RwLock::new(Some(db)),
 			config: self.config.clone(),
 			path: path.to_owned(),
 			overlay: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
@@ -408,32 +408,30 @@ impl<DB: OpenHandler + TransactionHandler + IterationHandler> DatabaseWithCache<
 	/// Get database iterator for flushed data.
 	pub fn iter<'a>(&'a self, col: Option<u32>) -> Option<impl Iterator<Item=KeyValuePair> + 'a> {
 		let read_lock = self.db.read();
-		match *read_lock {
-			Some(db) => {
-				let overlay = &self.overlay.read()[Self::to_overlay_column(col)];
-				let mut overlay_data = overlay.iter()
-					.filter_map(|(k, v)| match *v {
-						KeyState::Insert(ref value) =>
-							Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_vec().into_boxed_slice())),
-						KeyState::Delete => None,
-					}).collect::<Vec<_>>();
-				overlay_data.sort();
+		if read_lock.is_some() {
+			let overlay = &self.overlay.read()[Self::to_overlay_column(col)];
+			let mut overlay_data = overlay.iter()
+				.filter_map(|(k, v)| match *v {
+					KeyState::Insert(ref value) =>
+						Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_vec().into_boxed_slice())),
+					KeyState::Delete => None,
+				}).collect::<Vec<_>>();
+			overlay_data.sort();
 
-				let guarded = ReadGuardedIterator::new(read_lock, col);
-				Some(interleave_ordered(overlay_data, guarded))
-			},
-			None => None,
+			let guarded = ReadGuardedIterator::new(read_lock, col);
+			Some(interleave_ordered(overlay_data, guarded))
+		} else {
+			None
 		}
 	}
 
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &[u8]) -> Option<impl Iterator<Item=KeyValuePair> + 'a> {
 		let read_lock = self.db.read();
-		match *read_lock {
-			Some(db) => {
-				let guarded = ReadGuardedIterator::new_from_prefix(read_lock, col, prefix);
-				Some(interleave_ordered(Vec::new(), guarded))
-			},
-			None => None,
+		if read_lock.is_some() {
+			let guarded = ReadGuardedIterator::new_from_prefix(read_lock, col, prefix);
+			Some(interleave_ordered(Vec::new(), guarded))
+		} else {
+			None
 		}
 	}
 
@@ -451,15 +449,15 @@ impl<DB: OpenHandler + TransactionHandler + IterationHandler> DatabaseWithCache<
 	/// Commit buffered changes to database. Must be called under `flush_lock`
 	fn write_flushing_with_lock(&self, _lock: &mut MutexGuard<bool>) -> io::Result<()> {
 		match *self.db.read() {
-			Some(db) => {
-				let batch = db.write_transaction();
+			Some(ref db) => {
+				let mut batch = db.write_transaction();
 				mem::swap(&mut *self.overlay.write(), &mut *self.flushing.write());
 				{
 					for (c, column) in self.flushing.read().iter().enumerate() {
 						for (key, state) in column.iter() {
 							match *state {
 								KeyState::Delete => {
-									batch.delete(&db, c as u32, &key);
+									batch.delete(db as &TransactionHandler, c as u32, &key);
 									// if c > 0 {
 									// 	batch.delete_cf(cfs[c - 1], key).map_err(other_io_err)?;
 									// } else {
@@ -467,7 +465,7 @@ impl<DB: OpenHandler + TransactionHandler + IterationHandler> DatabaseWithCache<
 									// }
 								},
 								KeyState::Insert(ref value) => {
-									batch.put(&db, c as u32, &key, &value);
+									batch.put(db as &TransactionHandler, c as u32, &key, &value);
 									// if c > 0 {
 									// 	batch.put_cf(cfs[c - 1], key, value).map_err(other_io_err)?;
 									// } else {
@@ -479,7 +477,7 @@ impl<DB: OpenHandler + TransactionHandler + IterationHandler> DatabaseWithCache<
 					}
 				}
 
-				batch.commit(&db);
+				batch.commit(db as &TransactionHandler)?;
 				// check_for_corruption(
 				// 	&self.path,
 				// 	db.write_opt(batch, &self.write_opts))?;
