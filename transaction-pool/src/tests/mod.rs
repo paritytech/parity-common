@@ -59,7 +59,7 @@ impl TestPool {
 
 fn import<S: Scoring<Transaction>, L: Listener<Transaction>>(txq: &mut Pool<Transaction, S, L>, tx: Transaction)
 	-> Result<Arc<Transaction>, Error<<Transaction as VerifiedTransaction>::Hash>> {
-	txq.import(tx, &DummyScoring::default())
+	txq.import(tx, &mut DummyScoring::default())
 }
 
 #[test]

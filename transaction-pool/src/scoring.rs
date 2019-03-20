@@ -109,7 +109,7 @@ pub trait ShouldReplace<T> {
 	/// Decides if `new` should push out `old` transaction from the pool.
 	///
 	/// NOTE returning `InsertNew` here can lead to some transactions being accepted above pool limits.
-	fn should_replace(&self, old: &T, new: &T) -> Choice;
+	fn should_replace(&mut self, old: &T, new: &T, old_sender_txs: Option<&[Transaction<T>]>) -> Choice;
 }
 
 /// A score with a reference to the transaction.
