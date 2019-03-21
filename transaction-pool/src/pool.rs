@@ -131,7 +131,9 @@ impl<T, S, L> Pool<T, S, L> where
 	/// NOTE: The transaction may push out some other transactions from the pool
 	/// either because of limits (see `Options`) or because `Scoring` decides that the transaction
 	/// replaces an existing transaction from that sender.
-	/// If any limit is reached the transaction with the lowest `Score` is evicted to make room.
+	///
+	/// If any limit is reached the transaction with the lowest `Score` will be compared with the
+	/// new transaction via the supplied `ShouldReplace` implementation and may be evicted.
 	///
 	/// The `Listener` will be informed on any drops or rejections.
 	pub fn import(&mut self, transaction: T, replace: &mut ShouldReplace<T>) -> error::Result<Arc<T>, T::Hash> {

@@ -18,9 +18,8 @@ use std::cmp;
 use std::collections::HashMap;
 
 use ethereum_types::{H160 as Sender, U256};
-use {pool, scoring, Scoring, ShouldReplace, Ready, Readiness};
+use {pool, scoring, Scoring, ShouldReplace, ReplaceTransaction, Ready, Readiness};
 use super::Transaction;
-use scoring::ReplaceTransaction;
 
 #[derive(Debug, Default)]
 pub struct DummyScoring {
@@ -75,10 +74,10 @@ impl Scoring<Transaction> for DummyScoring {
 }
 
 impl ShouldReplace<Transaction> for DummyScoring {
-	fn should_replace(&mut self, old: ReplaceTransaction<Transaction>, new: ReplaceTransaction<Transaction>) -> scoring::Choice {
+	fn should_replace(&mut self, old: &ReplaceTransaction<Transaction>, new: &ReplaceTransaction<Transaction>) -> scoring::Choice {
 		if self.always_insert {
 			scoring::Choice::InsertNew
-		} else if new.transaction().gas_price > old.transaction().gas_price {
+		} else if new.gas_price > old.gas_price {
 			scoring::Choice::ReplaceOld
 		} else {
 			scoring::Choice::RejectNew
