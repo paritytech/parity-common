@@ -105,11 +105,34 @@ pub trait Scoring<T>: fmt::Debug {
 	fn should_ignore_sender_limit(&self, _new: &T) -> bool { false }
 }
 
+pub struct ReplaceTransaction<'a, T> {
+    pub transaction: Transaction<T>,
+    pub pooled_by_sender: Option<&'a [Transaction<T>]>,
+}
+
+impl<'a, T> ReplaceTransaction<'a, T> {
+    pub fn new(transaction: Transaction<T>, pooled_by_sender: Option<&'a [Transaction<T>]>) -> Self {
+        ReplaceTransaction {
+            transaction,
+            pooled_by_sender,
+        }
+    }
+}
+
+impl<'a, T> ::std::ops::Deref for ReplaceTransaction<'a, T> {
+	type Target = Transaction<T>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.transaction
+	}
+}
+
+
 pub trait ShouldReplace<T> {
 	/// Decides if `new` should push out `old` transaction from the pool.
 	///
 	/// NOTE returning `InsertNew` here can lead to some transactions being accepted above pool limits.
-	fn should_replace(&mut self, old: &T, new: &T, old_sender_txs: Option<&[Transaction<T>]>) -> Choice;
+	fn should_replace(&mut self, old: &ReplaceTransaction<T>, new: &ReplaceTransaction<T>) -> Choice;
 }
 
 /// A score with a reference to the transaction.
