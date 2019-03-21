@@ -22,7 +22,8 @@ use error;
 use listener::{Listener, NoopListener};
 use options::Options;
 use ready::{Ready, Readiness};
-use scoring::{self, Scoring, ScoreWithRef, ShouldReplace, ReplaceTransaction};
+use replace::{ShouldReplace, ReplaceTransaction};
+use scoring::{self, Scoring, ScoreWithRef};
 use status::{LightStatus, Status};
 use transactions::{AddResult, Transactions};
 

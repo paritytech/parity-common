@@ -72,14 +72,12 @@ pub enum Change<T = ()> {
 /// - Returned `Score`s should match ordering of `compare` method.
 /// - `compare` will be called only within a context of transactions from the same sender.
 /// - `choose` may be called even if `compare` returns `Ordering::Equal`
-/// - `should_replace` is used to decide if new transaction should push out an old transaction already in the queue.
 /// - `Score`s and `compare` should align with `Ready` implementation.
 ///
 /// Example: Natural ordering of Ethereum transactions.
 /// - `compare`: compares transaction `nonce` ()
 /// - `choose`: compares transactions `gasPrice` (decides if old transaction should be replaced)
 /// - `update_scores`: score defined as `gasPrice` if `n==0` and `max(scores[n-1], gasPrice)` if `n>0`
-/// - `should_replace`: compares `gasPrice` (decides if transaction from a different sender is more valuable)
 ///
 pub trait Scoring<T>: fmt::Debug {
 	/// A score of a transaction.
@@ -103,36 +101,6 @@ pub trait Scoring<T>: fmt::Debug {
 	/// If you return `true` for given transaction it's going to be accepted even though
 	/// the per-sender limit is exceeded.
 	fn should_ignore_sender_limit(&self, _new: &T) -> bool { false }
-}
-
-pub struct ReplaceTransaction<'a, T> {
-    pub transaction: Transaction<T>,
-    pub pooled_by_sender: Option<&'a [Transaction<T>]>,
-}
-
-impl<'a, T> ReplaceTransaction<'a, T> {
-    pub fn new(transaction: Transaction<T>, pooled_by_sender: Option<&'a [Transaction<T>]>) -> Self {
-        ReplaceTransaction {
-            transaction,
-            pooled_by_sender,
-        }
-    }
-}
-
-impl<'a, T> ::std::ops::Deref for ReplaceTransaction<'a, T> {
-	type Target = Transaction<T>;
-
-	fn deref(&self) -> &Self::Target {
-		&self.transaction
-	}
-}
-
-
-pub trait ShouldReplace<T> {
-	/// Decides if `new` should push out `old` transaction from the pool.
-	///
-	/// NOTE returning `InsertNew` here can lead to some transactions being accepted above pool limits.
-	fn should_replace(&mut self, old: &ReplaceTransaction<T>, new: &ReplaceTransaction<T>) -> Choice;
 }
 
 /// A score with a reference to the transaction.

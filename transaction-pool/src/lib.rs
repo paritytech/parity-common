@@ -85,6 +85,7 @@ mod listener;
 mod options;
 mod pool;
 mod ready;
+mod replace;
 mod status;
 mod transactions;
 mod verifier;
@@ -96,7 +97,8 @@ pub use self::listener::{Listener, NoopListener};
 pub use self::options::Options;
 pub use self::pool::{Pool, PendingIterator, UnorderedIterator, Transaction};
 pub use self::ready::{Ready, Readiness};
-pub use self::scoring::{Scoring, ShouldReplace, ReplaceTransaction};
+pub use self::replace::{ShouldReplace, ReplaceTransaction};
+pub use self::scoring::Scoring;
 pub use self::status::{LightStatus, Status};
 pub use self::verifier::Verifier;
 
