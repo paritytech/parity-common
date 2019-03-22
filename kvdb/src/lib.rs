@@ -37,7 +37,7 @@ use interleaved_ordered::interleave_ordered;
 
 mod iter;
 
-use iter::*;
+pub use iter::IterationHandler;
 
 /// Required length of prefixes.
 pub const PREFIX_LEN: usize = 12;
@@ -402,7 +402,7 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> DatabaseWithCache<DB> {
 	}
 
 	/// Get database iterator for flushed data.
-	pub fn iter<'a>(&'a self, col: Option<u32>) -> Option<impl Iterator<Item=KeyValuePair> + 'a> {
+	pub fn iter<'a>(&'a self, col: Option<u32>) -> Option<impl Iterator<Item=iter::KeyValuePair> + 'a> {
 		let read_lock = self.db.read();
 		if read_lock.is_some() {
 			let c = Self::to_overlay_column(col);
@@ -415,18 +415,22 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> DatabaseWithCache<DB> {
 				}).collect::<Vec<_>>();
 			overlay_data.sort();
 
-			let guarded = ReadGuardedIterator::new(read_lock, c as u32);
+			let guarded = iter::ReadGuardedIterator::new(read_lock, c as u32);
 			Some(interleave_ordered(overlay_data, guarded))
 		} else {
 			None
 		}
 	}
 
-	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &[u8]) -> Option<impl Iterator<Item=KeyValuePair> + 'a> {
+	fn iter_from_prefix<'a>(
+		&'a self,
+		col: Option<u32>,
+		prefix: &[u8],
+	) -> Option<impl Iterator<Item=iter::KeyValuePair> + 'a> {
 		let read_lock = self.db.read();
 		let c = Self::to_overlay_column(col);
 		if read_lock.is_some() {
-			let guarded = ReadGuardedIterator::new_from_prefix(read_lock, c as u32, prefix);
+			let guarded = iter::ReadGuardedIterator::new_from_prefix(read_lock, c as u32, prefix);
 			Some(interleave_ordered(Vec::new(), guarded))
 		} else {
 			None
