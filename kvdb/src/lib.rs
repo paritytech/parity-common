@@ -218,18 +218,17 @@ enum KeyState {
 	Delete,
 }
 
-pub trait OpenHandler<DB: RawKeyValueDB>: Send + Sync {
+pub trait OpenHandler<DB>: Send + Sync {
 	type Config: NumColumns + Clone + Send + Sync;
+
 	fn open(config: &Self::Config, path: &str) -> io::Result<DB>;
 }
-
-pub trait RawKeyValueDB: TransactionHandler + IterationHandler {}
 
 pub trait NumColumns {
 	fn num_columns(&self) -> usize;
 }
 
-pub struct DatabaseWithCache<DB: OpenHandler<DB> + RawKeyValueDB> {
+pub struct DatabaseWithCache<DB: OpenHandler<DB>> {
 	db: RwLock<Option<DB>>,
 	config: <DB as OpenHandler<DB>>::Config,
 	path: String,
@@ -242,7 +241,12 @@ pub struct DatabaseWithCache<DB: OpenHandler<DB> + RawKeyValueDB> {
 	flushing_lock: Mutex<bool>,
 }
 
-impl<DB: OpenHandler<DB> + RawKeyValueDB> KeyValueDB for DatabaseWithCache<DB> {
+impl<DB> KeyValueDB for DatabaseWithCache<DB>
+where
+	DB: OpenHandler<DB>,
+	for<'a> &'a DB: IterationHandler,
+	for<'a> &'a DB: TransactionHandler,
+{
 	/// Commit transaction to database.
 	fn write_buffered(&self, tr: DBTransaction) {
 		let mut overlay = self.overlay.write();
@@ -387,7 +391,12 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> KeyValueDB for DatabaseWithCache<DB> {
 
 
 
-impl<DB: OpenHandler<DB> + RawKeyValueDB> DatabaseWithCache<DB> {
+impl<DB> DatabaseWithCache<DB>
+where
+	DB: OpenHandler<DB>,
+	for<'a> &'a DB: IterationHandler,
+	for<'a> &'a DB: TransactionHandler,
+{
 	pub fn open(config: <DB as OpenHandler<DB>>::Config, path: &str) -> io::Result<Self> {
 		let db = DB::open(&config, path)?;
 		let num_cols = config.num_columns();

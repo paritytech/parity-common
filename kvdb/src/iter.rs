@@ -60,7 +60,10 @@ pub trait IterationHandler {
 	fn iter_from_prefix(&self, col: u32, prefix: & [u8]) -> Self::Iterator;
 }
 
-impl<'a, T: IterationHandler> ReadGuardedIterator<'a, T::Iterator, T> {
+impl<'a, T> ReadGuardedIterator<'a, <&'a T as IterationHandler>::Iterator, T>
+where
+	&'a T: IterationHandler,
+{
 	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: u32) -> Self {
 		Self {
 			inner: OwningHandle::new_with_fn(UnsafeStableAddress(read_lock), move |rlock| {
