@@ -63,7 +63,7 @@ impl<'a, T: IterationHandler> ReadGuardedIterator<'a, Box<Iterator<Item=KeyValue
 	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: Option<u32>) -> Self {
 		Self {
 			inner: OwningHandle::new_with_fn(UnsafeStableAddress(read_lock), move |rlock| {
-				let rlock = unsafe { rlock.as_ref().expect("can't be null; qed") };
+				let rlock = unsafe { rlock.as_ref().expect("initialized as non-null; qed") };
 				DerefWrapper(rlock.as_ref().map(|db| db.iter(col)))
 			})
 		}
@@ -72,7 +72,7 @@ impl<'a, T: IterationHandler> ReadGuardedIterator<'a, Box<Iterator<Item=KeyValue
 	pub fn new_from_prefix(read_lock: RwLockReadGuard<'a, Option<T>>, col: Option<u32>, prefix: &[u8]) -> Self {
 		Self {
 			inner: OwningHandle::new_with_fn(UnsafeStableAddress(read_lock), move |rlock| {
-				let rlock = unsafe { rlock.as_ref().expect("can't be null; qed") };
+				let rlock = unsafe { rlock.as_ref().expect("initialized as non-null; qed") };
 				DerefWrapper(rlock.as_ref().map(|db| db.iter_from_prefix(col, prefix)))
 			})
 		}

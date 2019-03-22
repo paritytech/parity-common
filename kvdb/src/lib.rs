@@ -182,32 +182,34 @@ pub trait KeyValueDB: Sync + Send {
 }
 
 
-fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<std::error::Error + Send + Sync>> {
+/// Converts an error to an `io::Error`.
+pub fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<std::error::Error + Send + Sync>> {
 	io::Error::new(io::ErrorKind::Other, e)
 }
 
 /// An abstraction over a concrete database write transaction implementation.
 pub trait WriteTransaction {
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
-	fn put(&mut self, db: &TransactionHandler, col: u32, key: &[u8], value: &[u8]);
+	fn put(&mut self, col: u32, key: &[u8], value: &[u8]) -> io::Result<()>;
 	/// Delete value by key.
-	fn delete(&mut self, db: &TransactionHandler, col: u32, key: &[u8]);
+	fn delete(&mut self, col: u32, key: &[u8]) -> io::Result<()>;
 	/// Commit the transaction.
-	// TODO: should take self by move
-	fn commit(&mut self, db: &TransactionHandler) -> io::Result<()>;
+	fn commit(self) -> io::Result<()>;
 }
 
 /// An abstraction over a concrete database read-only transaction implementation.
 pub trait ReadTransaction {
 	/// Get value by key.
-	// TODO: should take self by move
-	fn get(&self, db: &TransactionHandler, col: u32, key: &[u8]) -> io::Result<Option<DBValue>>;
+	fn get(self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>>;
 }
 
 pub trait TransactionHandler {
-	// TODO: how to avoid boxing?
-	fn write_transaction(&self) -> Box<WriteTransaction>;
-	fn read_transaction(&self) -> Box<ReadTransaction>;
+	type WriteTransaction: WriteTransaction;
+	type ReadTransaction: ReadTransaction;
+
+	fn write_transaction(&self) -> Self::WriteTransaction;
+
+	fn read_transaction(&self) -> Self::ReadTransaction;
 }
 
 
@@ -262,7 +264,7 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> KeyValueDB for DatabaseWithCache<DB> {
 	/// Commit buffered changes to database.
 	fn flush(&self) -> io::Result<()> {
 		let mut lock = self.flushing_lock.lock();
-		// If RocksDB batch allocation fails the thread gets terminated and the lock is released.
+		// If batch allocation fails the thread gets terminated and the lock is released.
 		// The value inside the lock is used to detect that.
 		if *lock {
 			// This can only happen if another flushing thread is terminated unexpectedly.
@@ -278,7 +280,7 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> KeyValueDB for DatabaseWithCache<DB> {
 	fn write(&self, tr: DBTransaction) -> io::Result<()> {
 		match *self.db.read() {
 			Some(ref db) => {
-				let mut batch = db.write_transaction();
+				let mut txn = db.write_transaction();
 				let ops = tr.ops;
 				for op in ops {
 					let c = Self::to_overlay_column(op.col());
@@ -286,12 +288,12 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> KeyValueDB for DatabaseWithCache<DB> {
 					self.overlay.write()[c].remove(op.key());
 
 					match op {
-						DBOp::Insert { key, value, .. } => batch.put(db as &TransactionHandler, c as u32, &key, &value),
-						DBOp::Delete { key, .. } => batch.delete(db as &TransactionHandler, c as u32, &key),
-					}
+						DBOp::Insert { key, value, .. } => txn.put(c as u32, &key, &value)?,
+						DBOp::Delete { key, .. } => txn.delete(c as u32, &key)?,
+					};
 				}
 
-				batch.commit(db as &TransactionHandler)
+				txn.commit()
 			},
 			None => Err(other_io_err("Database is closed")),
 		}
@@ -312,11 +314,8 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> KeyValueDB for DatabaseWithCache<DB> {
 							Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
 							Some(&KeyState::Delete) => Ok(None),
 							None => {
-								db.read_transaction().get(db as &TransactionHandler, c as u32, &key)
-								// col.map_or_else(
-								// 	|| db.get_opt(key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))),
-								// 	|c| db.get_cf_opt(cfs[c as usize], key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))))
-								// 	.map_err(other_io_err)
+								let txn = db.read_transaction();
+								txn.get(c as u32, &key)
 							},
 						}
 					},
@@ -332,7 +331,7 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> KeyValueDB for DatabaseWithCache<DB> {
 		self.iter_from_prefix(col, prefix).and_then(|mut iter| {
 			match iter.next() {
 				// TODO: use prefix_same_as_start read option (not availabele in C API currently)
-				Some((k, v)) => if k[0..prefix.len()] == prefix[..] { Some(v) } else { None },
+				Some((k, v)) => if k.starts_with(prefix) { Some(v) } else { None },
 				_ => None
 			}
 		})
@@ -365,9 +364,11 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> KeyValueDB for DatabaseWithCache<DB> {
 
 		// reopen the database and steal handles into self
 		let db = Self::open(self.config.clone(), &self.path)?;
+
 		*self.db.write() = mem::replace(&mut *db.db.write(), None);
 		*self.overlay.write() = mem::replace(&mut *db.overlay.write(), Vec::new());
 		*self.flushing.write() = mem::replace(&mut *db.flushing.write(), Vec::new());
+
 		Ok(())
 	}
 
@@ -399,6 +400,7 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> DatabaseWithCache<DB> {
 			flushing_lock: Mutex::new(false),
 		})
 	}
+
 	/// Get database iterator for flushed data.
 	pub fn iter<'a>(&'a self, col: Option<u32>) -> Option<impl Iterator<Item=KeyValuePair> + 'a> {
 		let read_lock = self.db.read();
@@ -444,42 +446,30 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> DatabaseWithCache<DB> {
 	fn write_flushing_with_lock(&self, _lock: &mut MutexGuard<bool>) -> io::Result<()> {
 		match *self.db.read() {
 			Some(ref db) => {
-				let mut batch = db.write_transaction();
+				let mut txn = db.write_transaction();
 				mem::swap(&mut *self.overlay.write(), &mut *self.flushing.write());
 				{
 					for (c, column) in self.flushing.read().iter().enumerate() {
 						for (key, state) in column.iter() {
 							match *state {
 								KeyState::Delete => {
-									batch.delete(db as &TransactionHandler, c as u32, &key);
-									// if c > 0 {
-									// 	batch.delete_cf(cfs[c - 1], key).map_err(other_io_err)?;
-									// } else {
-									// 	batch.delete(key).map_err(other_io_err)?;
-									// }
+									txn.delete(c as u32, &key)?;
 								},
 								KeyState::Insert(ref value) => {
-									batch.put(db as &TransactionHandler, c as u32, &key, &value);
-									// if c > 0 {
-									// 	batch.put_cf(cfs[c - 1], key, value).map_err(other_io_err)?;
-									// } else {
-									// 	batch.put(key, value).map_err(other_io_err)?;
-									// }
+									txn.put(c as u32, &key, &value)?;
 								},
 							}
 						}
 					}
 				}
 
-				batch.commit(db as &TransactionHandler)?;
-				// check_for_corruption(
-				// 	&self.path,
-				// 	db.write_opt(batch, &self.write_opts))?;
+				txn.commit()?;
 
 				for column in self.flushing.write().iter_mut() {
 					column.clear();
 					column.shrink_to_fit();
 				}
+
 				Ok(())
 			},
 			None => Err(other_io_err("Database is closed"))
