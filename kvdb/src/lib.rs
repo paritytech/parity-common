@@ -372,13 +372,13 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> KeyValueDB for DatabaseWithCache<DB> {
 		Ok(())
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=iter::KeyValuePair> + 'a> {
 		let unboxed = DatabaseWithCache::iter(self, col);
 		Box::new(unboxed.into_iter().flat_map(|inner| inner))
 	}
 
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-							-> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
+							-> Box<Iterator<Item=iter::KeyValuePair> + 'a>
 	{
 		let unboxed = DatabaseWithCache::iter_from_prefix(self, col, prefix);
 		Box::new(unboxed.into_iter().flat_map(|inner| inner))
@@ -405,7 +405,8 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> DatabaseWithCache<DB> {
 	pub fn iter<'a>(&'a self, col: Option<u32>) -> Option<impl Iterator<Item=KeyValuePair> + 'a> {
 		let read_lock = self.db.read();
 		if read_lock.is_some() {
-			let overlay = &self.overlay.read()[Self::to_overlay_column(col)];
+			let c = Self::to_overlay_column(col);
+			let overlay = &self.overlay.read()[c];
 			let mut overlay_data = overlay.iter()
 				.filter_map(|(k, v)| match *v {
 					KeyState::Insert(ref value) =>
@@ -414,7 +415,7 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> DatabaseWithCache<DB> {
 				}).collect::<Vec<_>>();
 			overlay_data.sort();
 
-			let guarded = ReadGuardedIterator::new(read_lock, col);
+			let guarded = ReadGuardedIterator::new(read_lock, c as u32);
 			Some(interleave_ordered(overlay_data, guarded))
 		} else {
 			None
@@ -423,8 +424,9 @@ impl<DB: OpenHandler<DB> + RawKeyValueDB> DatabaseWithCache<DB> {
 
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &[u8]) -> Option<impl Iterator<Item=KeyValuePair> + 'a> {
 		let read_lock = self.db.read();
+		let c = Self::to_overlay_column(col);
 		if read_lock.is_some() {
-			let guarded = ReadGuardedIterator::new_from_prefix(read_lock, col, prefix);
+			let guarded = ReadGuardedIterator::new_from_prefix(read_lock, c as u32, prefix);
 			Some(interleave_ordered(Vec::new(), guarded))
 		} else {
 			None

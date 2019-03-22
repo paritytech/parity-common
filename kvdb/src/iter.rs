@@ -54,13 +54,14 @@ impl<'a, I: Iterator, T> Iterator for ReadGuardedIterator<'a, I, T> {
 }
 
 pub trait IterationHandler {
-	// TODO: how to avoid boxing?
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=KeyValuePair> + 'a>;
-	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: & [u8]) -> Box<Iterator<Item=KeyValuePair> + 'a>;
+	type Iterator: Iterator<Item=KeyValuePair>;
+
+	fn iter(&self, col: u32) -> Self::Iterator;
+	fn iter_from_prefix(&self, col: u32, prefix: & [u8]) -> Self::Iterator;
 }
 
-impl<'a, T: IterationHandler> ReadGuardedIterator<'a, Box<Iterator<Item=KeyValuePair> + 'a>, T> {
-	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: Option<u32>) -> Self {
+impl<'a, T: IterationHandler> ReadGuardedIterator<'a, T::Iterator, T> {
+	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: u32) -> Self {
 		Self {
 			inner: OwningHandle::new_with_fn(UnsafeStableAddress(read_lock), move |rlock| {
 				let rlock = unsafe { rlock.as_ref().expect("initialized as non-null; qed") };
@@ -69,7 +70,7 @@ impl<'a, T: IterationHandler> ReadGuardedIterator<'a, Box<Iterator<Item=KeyValue
 		}
 	}
 
-	pub fn new_from_prefix(read_lock: RwLockReadGuard<'a, Option<T>>, col: Option<u32>, prefix: &[u8]) -> Self {
+	pub fn new_from_prefix(read_lock: RwLockReadGuard<'a, Option<T>>, col: u32, prefix: &[u8]) -> Self {
 		Self {
 			inner: OwningHandle::new_with_fn(UnsafeStableAddress(read_lock), move |rlock| {
 				let rlock = unsafe { rlock.as_ref().expect("initialized as non-null; qed") };
