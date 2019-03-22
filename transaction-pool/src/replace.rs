@@ -22,14 +22,14 @@ use scoring::Choice;
 /// Encapsulates a transaction to be compared, along with pooled transactions from the same sender
 pub struct ReplaceTransaction<'a, T> {
     /// The transaction to be compared for replacement
-    pub transaction: Transaction<T>,
+    pub transaction: &'a Transaction<T>,
     /// Other transactions currently in the pool for the same sender
     pub pooled_by_sender: Option<&'a [Transaction<T>]>,
 }
 
 impl<'a, T> ReplaceTransaction<'a, T> {
     /// Creates a new `ReplaceTransaction`
-    pub fn new(transaction: Transaction<T>, pooled_by_sender: Option<&'a [Transaction<T>]>) -> Self {
+    pub fn new(transaction: &'a Transaction<T>, pooled_by_sender: Option<&'a [Transaction<T>]>) -> Self {
         ReplaceTransaction {
             transaction,
             pooled_by_sender,

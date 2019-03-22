@@ -295,9 +295,9 @@ impl<T, S, L> Pool<T, S, L> where
 			},
 			Some(old) => {
                 let txs = &self.transactions;
-                let get_replace_tx = |tx: &Transaction<T>| {
+                let get_replace_tx = |tx| {
                     let sender_txs = txs.get(transaction.sender()).map(|txs| txs.iter().as_slice());
-                    ReplaceTransaction::new(tx.clone(), sender_txs)
+                    ReplaceTransaction::new(tx, sender_txs)
                 };
                 let old_replace = get_replace_tx(&old.transaction);
                 let new_replace = get_replace_tx(transaction);
