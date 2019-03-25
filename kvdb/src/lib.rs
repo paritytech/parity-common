@@ -190,26 +190,23 @@ pub fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<std::error::Error + 
 /// An abstraction over a concrete database write transaction implementation.
 pub trait WriteTransaction {
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
-	fn put(&mut self, col: u32, key: &[u8], value: &[u8]) -> io::Result<()>;
+	fn put(&mut self, col: usize, key: &[u8], value: &[u8]) -> io::Result<()>;
 	/// Delete value by key.
-	fn delete(&mut self, col: u32, key: &[u8]) -> io::Result<()>;
+	fn delete(&mut self, col: usize, key: &[u8]) -> io::Result<()>;
 	/// Commit the transaction.
-	fn commit(self) -> io::Result<()>;
+	fn commit(self: Box<Self>) -> io::Result<()>;
 }
 
 /// An abstraction over a concrete database read-only transaction implementation.
 pub trait ReadTransaction {
 	/// Get value by key.
-	fn get(self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>>;
+	fn get(self: Box<Self>, col: usize, key: &[u8]) -> io::Result<Option<DBValue>>;
 }
 
 pub trait TransactionHandler {
-	type WriteTransaction: WriteTransaction;
-	type ReadTransaction: ReadTransaction;
-
-	fn write_transaction(&self) -> Self::WriteTransaction;
-
-	fn read_transaction(&self) -> Self::ReadTransaction;
+	// TODO: how to avoid boxing?
+	fn write_transaction<'a> (&'a self) -> Box<WriteTransaction + 'a>;
+	fn read_transaction<'a>(&'a self) -> Box<ReadTransaction + 'a>;
 }
 
 
@@ -219,16 +216,27 @@ enum KeyState {
 }
 
 pub trait OpenHandler<DB>: Send + Sync {
-	type Config: NumColumns + Clone + Send + Sync;
+	type Config: NumColumns + Default + Clone + Send + Sync;
 
 	fn open(config: &Self::Config, path: &str) -> io::Result<DB>;
 }
 
 pub trait NumColumns {
+	/// Number of non-default columns.
 	fn num_columns(&self) -> usize;
 }
 
-pub struct DatabaseWithCache<DB: OpenHandler<DB>> {
+pub trait MigrationHandler: NumColumns {
+	/// Appends a new column to the database.
+	fn add_column(&mut self) -> io::Result<()>;
+	/// Drops the last column from the database.
+	fn drop_column(&mut self) -> io::Result<()>;
+}
+
+pub struct DatabaseWithCache<DB>
+where
+	DB: OpenHandler<DB> + TransactionHandler,
+{
 	db: RwLock<Option<DB>>,
 	config: <DB as OpenHandler<DB>>::Config,
 	path: String,
@@ -243,9 +251,8 @@ pub struct DatabaseWithCache<DB: OpenHandler<DB>> {
 
 impl<DB> KeyValueDB for DatabaseWithCache<DB>
 where
-	DB: OpenHandler<DB>,
+	DB: OpenHandler<DB> + TransactionHandler,
 	for<'a> &'a DB: IterationHandler,
-	for<'a> &'a DB: TransactionHandler,
 {
 	/// Commit transaction to database.
 	fn write_buffered(&self, tr: DBTransaction) {
@@ -267,17 +274,7 @@ where
 
 	/// Commit buffered changes to database.
 	fn flush(&self) -> io::Result<()> {
-		let mut lock = self.flushing_lock.lock();
-		// If batch allocation fails the thread gets terminated and the lock is released.
-		// The value inside the lock is used to detect that.
-		if *lock {
-			// This can only happen if another flushing thread is terminated unexpectedly.
-			return Err(other_io_err("Database write failure. Running low on memory perhaps?"))
-		}
-		*lock = true;
-		let result = self.write_flushing_with_lock(&mut lock);
-		*lock = false;
-		result
+		self.flush()
 	}
 
 	/// Commit transaction to database.
@@ -292,8 +289,8 @@ where
 					self.overlay.write()[c].remove(op.key());
 
 					match op {
-						DBOp::Insert { key, value, .. } => txn.put(c as u32, &key, &value)?,
-						DBOp::Delete { key, .. } => txn.delete(c as u32, &key)?,
+						DBOp::Insert { key, value, .. } => txn.put(c, &key, &value)?,
+						DBOp::Delete { key, .. } => txn.delete(c, &key)?,
 					};
 				}
 
@@ -319,7 +316,7 @@ where
 							Some(&KeyState::Delete) => Ok(None),
 							None => {
 								let txn = db.read_transaction();
-								txn.get(c as u32, &key)
+								txn.get(c, &key)
 							},
 						}
 					},
@@ -330,11 +327,9 @@ where
 	}
 
 	/// Get value by partial key. Prefix size should match configured prefix size. Only searches flushed values.
-	// TODO: support prefix seek for unflushed data
 	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
 		self.iter_from_prefix(col, prefix).and_then(|mut iter| {
 			match iter.next() {
-				// TODO: use prefix_same_as_start read option (not availabele in C API currently)
 				Some((k, v)) => if k.starts_with(prefix) { Some(v) } else { None },
 				_ => None
 			}
@@ -393,9 +388,7 @@ where
 
 impl<DB> DatabaseWithCache<DB>
 where
-	DB: OpenHandler<DB>,
-	for<'a> &'a DB: IterationHandler,
-	for<'a> &'a DB: TransactionHandler,
+	DB: OpenHandler<DB> + TransactionHandler,
 {
 	pub fn open(config: <DB as OpenHandler<DB>>::Config, path: &str) -> io::Result<Self> {
 		let db = DB::open(&config, path)?;
@@ -410,6 +403,63 @@ where
 		})
 	}
 
+	pub fn open_default(path: &str) -> io::Result<Self> {
+		Self::open(<DB as OpenHandler<DB>>::Config::default(), path)
+	}
+
+	fn to_overlay_column(col: Option<u32>) -> usize {
+		col.map_or(0, |c| (c + 1) as usize)
+	}
+
+	/// Close the database
+	fn close(&self) {
+		*self.db.write() = None;
+		self.overlay.write().clear();
+		self.flushing.write().clear();
+	}
+}
+
+impl<DB> NumColumns for DatabaseWithCache<DB>
+where
+	DB: OpenHandler<DB> + TransactionHandler + NumColumns,
+{
+	fn num_columns(&self) -> usize {
+		self.db
+			.read()
+			.as_ref()
+    		.map(|db| db.num_columns())
+			.unwrap_or(0)
+	}
+}
+
+impl<DB> MigrationHandler for DatabaseWithCache<DB>
+where
+	DB: OpenHandler<DB> + TransactionHandler + MigrationHandler,
+{
+	fn add_column(&self) -> io::Result<()> {
+		match *self.db.write() {
+			Some(ref mut db) => {
+				db.add_column()
+			},
+			None => Ok(()),
+		}
+	}
+
+	fn drop_column(&self) -> io::Result<()> {
+		match *self.db.write() {
+			Some(ref mut db) => {
+				db.drop_column()
+			},
+			None => Ok(()),
+		}
+	}
+}
+
+impl<DB> DatabaseWithCache<DB>
+where
+	DB: OpenHandler<DB> + TransactionHandler,
+	for<'a> &'a DB: IterationHandler,
+{
 	/// Get database iterator for flushed data.
 	pub fn iter<'a>(&'a self, col: Option<u32>) -> Option<impl Iterator<Item=iter::KeyValuePair> + 'a> {
 		let read_lock = self.db.read();
@@ -424,7 +474,7 @@ where
 				}).collect::<Vec<_>>();
 			overlay_data.sort();
 
-			let guarded = iter::ReadGuardedIterator::new(read_lock, c as u32);
+			let guarded = iter::ReadGuardedIterator::new(read_lock, c);
 			Some(interleave_ordered(overlay_data, guarded))
 		} else {
 			None
@@ -439,24 +489,18 @@ where
 		let read_lock = self.db.read();
 		let c = Self::to_overlay_column(col);
 		if read_lock.is_some() {
-			let guarded = iter::ReadGuardedIterator::new_from_prefix(read_lock, c as u32, prefix);
+			let guarded = iter::ReadGuardedIterator::new_from_prefix(read_lock, c, prefix);
 			Some(interleave_ordered(Vec::new(), guarded))
 		} else {
 			None
 		}
 	}
+}
 
-	fn to_overlay_column(col: Option<u32>) -> usize {
-		col.map_or(0, |c| (c + 1) as usize)
-	}
-
-	/// Close the database
-	fn close(&self) {
-		*self.db.write() = None;
-		self.overlay.write().clear();
-		self.flushing.write().clear();
-	}
-
+impl<DB> DatabaseWithCache<DB>
+where
+	DB: OpenHandler<DB> + TransactionHandler,
+{
 	/// Commit buffered changes to database. Must be called under `flush_lock`
 	fn write_flushing_with_lock(&self, _lock: &mut MutexGuard<bool>) -> io::Result<()> {
 		match *self.db.read() {
@@ -468,10 +512,10 @@ where
 						for (key, state) in column.iter() {
 							match *state {
 								KeyState::Delete => {
-									txn.delete(c as u32, &key)?;
+									txn.delete(c, &key)?;
 								},
 								KeyState::Insert(ref value) => {
-									txn.put(c as u32, &key, &value)?;
+									txn.put(c, &key, &value)?;
 								},
 							}
 						}
@@ -488,6 +532,32 @@ where
 				Ok(())
 			},
 			None => Err(other_io_err("Database is closed"))
+		}
+	}
+
+	/// Commit buffered changes to database.
+	fn flush(&self) -> io::Result<()> {
+		let mut lock = self.flushing_lock.lock();
+		// If batch allocation fails the thread gets terminated and the lock is released.
+		// The value inside the lock is used to detect that.
+		if *lock {
+			// This can only happen if another flushing thread is terminated unexpectedly.
+			return Err(other_io_err("Database write failure. Running low on memory perhaps?"))
+		}
+		*lock = true;
+		let result = self.write_flushing_with_lock(&mut lock);
+		*lock = false;
+		result
+	}
+}
+
+impl<DB> Drop for DatabaseWithCache<DB>
+where
+	DB: OpenHandler<DB> + TransactionHandler,
+{
+	fn drop(&mut self) {
+		if let Err(error) = self.flush() {
+			warn!("database flush failed while closing: {}", error);
 		}
 	}
 }

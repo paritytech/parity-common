@@ -56,15 +56,15 @@ impl<'a, I: Iterator, T> Iterator for ReadGuardedIterator<'a, I, T> {
 pub trait IterationHandler {
 	type Iterator: Iterator<Item=KeyValuePair>;
 
-	fn iter(&self, col: u32) -> Self::Iterator;
-	fn iter_from_prefix(&self, col: u32, prefix: & [u8]) -> Self::Iterator;
+	fn iter(&self, col: usize) -> Self::Iterator;
+	fn iter_from_prefix(&self, col: usize, prefix: & [u8]) -> Self::Iterator;
 }
 
 impl<'a, T> ReadGuardedIterator<'a, <&'a T as IterationHandler>::Iterator, T>
 where
 	&'a T: IterationHandler,
 {
-	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: u32) -> Self {
+	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: usize) -> Self {
 		Self {
 			inner: OwningHandle::new_with_fn(UnsafeStableAddress(read_lock), move |rlock| {
 				let rlock = unsafe { rlock.as_ref().expect("initialized as non-null; qed") };
@@ -73,7 +73,7 @@ where
 		}
 	}
 
-	pub fn new_from_prefix(read_lock: RwLockReadGuard<'a, Option<T>>, col: u32, prefix: &[u8]) -> Self {
+	pub fn new_from_prefix(read_lock: RwLockReadGuard<'a, Option<T>>, col: usize, prefix: &[u8]) -> Self {
 		Self {
 			inner: OwningHandle::new_with_fn(UnsafeStableAddress(read_lock), move |rlock| {
 				let rlock = unsafe { rlock.as_ref().expect("initialized as non-null; qed") };
