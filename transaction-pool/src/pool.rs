@@ -136,7 +136,7 @@ impl<T, S, L> Pool<T, S, L> where
 	/// new transaction via the supplied `ShouldReplace` implementation and may be evicted.
 	///
 	/// The `Listener` will be informed on any drops or rejections.
-	pub fn import(&mut self, transaction: T, replace: &mut ShouldReplace<T>) -> error::Result<Arc<T>, T::Hash> {
+	pub fn import(&mut self, transaction: T, replace: &ShouldReplace<T>) -> error::Result<Arc<T>, T::Hash> {
 		let mem_usage = transaction.mem_usage();
 
 		if self.by_hash.contains_key(transaction.hash()) {
@@ -152,7 +152,7 @@ impl<T, S, L> Pool<T, S, L> where
 		// TODO [ToDr] Most likely move this after the transaction is inserted.
 		// Avoid using should_replace, but rather use scoring for that.
 		{
-			let mut remove_worst = |s: &mut Self, transaction| {
+			let remove_worst = |s: &mut Self, transaction| {
 				match s.remove_worst(transaction, replace) {
 					Err(err) => {
 						s.listener.rejected(transaction, &err);
@@ -286,7 +286,7 @@ impl<T, S, L> Pool<T, S, L> where
 	///
 	/// Returns `None` in case we couldn't decide if the transaction should replace the worst transaction or not.
 	/// In such case we will accept the transaction even though it is going to exceed the limit.
-	fn remove_worst(&mut self, transaction: &Transaction<T>, replace: &mut ShouldReplace<T>) -> error::Result<Option<Transaction<T>>, T::Hash> {
+	fn remove_worst(&mut self, transaction: &Transaction<T>, replace: &ShouldReplace<T>) -> error::Result<Option<Transaction<T>>, T::Hash> {
 		let to_remove = match self.worst_transactions.iter().next_back() {
 			// No elements to remove? and the pool is still full?
 			None => {
