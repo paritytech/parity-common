@@ -226,9 +226,10 @@ pub trait NumColumns {
 	fn num_columns(&self) -> usize;
 }
 
-pub trait MigrationHandler: NumColumns {
+/// Allows dropping and appending columns to the DB.
+pub trait MigrationHandler<DB: OpenHandler<DB>>: NumColumns {
 	/// Appends a new column to the database.
-	fn add_column(&mut self) -> io::Result<()>;
+	fn add_column(&mut self, config: &<DB as OpenHandler<DB>>::Config) -> io::Result<()>;
 	/// Drops the last column from the database.
 	fn drop_column(&mut self) -> io::Result<()>;
 }
@@ -432,23 +433,33 @@ where
 	}
 }
 
-impl<DB> MigrationHandler for DatabaseWithCache<DB>
+impl<DB> DatabaseWithCache<DB>
 where
-	DB: OpenHandler<DB> + TransactionHandler + MigrationHandler,
+	DB: OpenHandler<DB> + TransactionHandler + MigrationHandler<DB>,
 {
-	fn add_column(&self) -> io::Result<()> {
+	/// Appends a new column to the database.
+	pub fn add_column(&self) -> io::Result<()> {
 		match *self.db.write() {
 			Some(ref mut db) => {
-				db.add_column()
+				db.add_column(&self.config)?;
+				// TODO: this was not present in the previous implementation
+				self.overlay.write().push(Default::default());
+				self.flushing.write().push(Default::default());
+				Ok(())
 			},
 			None => Ok(()),
 		}
 	}
 
-	fn drop_column(&self) -> io::Result<()> {
+	/// Drops the last column from the database.
+	pub fn drop_column(&self) -> io::Result<()> {
 		match *self.db.write() {
 			Some(ref mut db) => {
-				db.drop_column()
+				db.drop_column()?;
+				// TODO: this was not present in the previous implementation
+				self.overlay.write().pop();
+				self.flushing.write().pop();
+				Ok(())
 			},
 			None => Ok(()),
 		}
