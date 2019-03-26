@@ -57,7 +57,7 @@ pub trait IterationHandler {
 	type Iterator: Iterator<Item=KeyValuePair>;
 
 	fn iter(&self, col: usize) -> Self::Iterator;
-	fn iter_from_prefix(&self, col: usize, prefix: & [u8]) -> Self::Iterator;
+	fn iter_from_prefix(&self, col: usize, prefix: &[u8]) -> Self::Iterator;
 }
 
 impl<'a, T> ReadGuardedIterator<'a, <&'a T as IterationHandler>::Iterator, T>

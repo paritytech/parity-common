@@ -216,8 +216,10 @@ enum KeyState {
 }
 
 pub trait OpenHandler<DB>: Send + Sync {
+	/// Database configuration type.
 	type Config: NumColumns + Default + Clone + Send + Sync;
 
+	/// Opens the database path. Creates if it does not exist.
 	fn open(config: &Self::Config, path: &str) -> io::Result<DB>;
 }
 
