@@ -17,11 +17,8 @@
 #[macro_use]
 extern crate log;
 
-extern crate elastic_array;
 extern crate fs_swap;
-extern crate interleaved_ordered;
 extern crate num_cpus;
-extern crate parking_lot;
 extern crate regex;
 extern crate parity_rocksdb;
 
@@ -30,24 +27,20 @@ extern crate ethereum_types;
 
 extern crate kvdb;
 
-use std::collections::HashMap;
-use std::marker::PhantomData;
-use std::{cmp, fs, io, mem, result, error};
+use std::{cmp, fs, io, result, error};
 use std::path::Path;
 
-use parking_lot::{Mutex, MutexGuard, RwLock};
 use parity_rocksdb::{
 	DB, Writable, WriteBatch, WriteOptions, IteratorMode, DBIterator,
 	Options, BlockBasedOptions, Direction, Cache, Column, ReadOptions
 };
-use interleaved_ordered::{interleave_ordered, InterleaveOrdered};
 
-use elastic_array::ElasticArray32;
 use kvdb::{
-	KeyValueDB, DBTransaction, DBValue, DBOp, NumColumns,
-	DatabaseWithCache, OpenHandler, TransactionHandler,
-	IterationHandler, MigrationHandler, WriteTransaction, ReadTransaction,
+	DBValue, NumColumns, OpenHandler, TransactionHandler, IterationHandler,
+	MigrationHandler, WriteTransaction, ReadTransaction,
 };
+
+pub use kvdb::DatabaseWithCache;
 
 #[cfg(target_os = "linux")]
 use regex::Regex;
@@ -65,11 +58,6 @@ fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<error::Error + Send + Sy
 const DB_DEFAULT_MEMORY_BUDGET_MB: usize = 128;
 const CORRUPTION_FILE_NAME: &'static str = "CORRUPTED";
 
-
-enum KeyState {
-	Insert(DBValue),
-	Delete,
-}
 
 /// Compaction profile for the database settings
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -205,10 +193,10 @@ impl Default for DatabaseConfig {
 	}
 }
 
-struct DBAndColumns {
+pub struct DBAndColumns {
 	db: DB,
-	path: String,
 	cfs: Vec<Column>,
+	path: String,
 	write_opts: WriteOptions,
 	read_opts: ReadOptions,
 	block_opts: BlockBasedOptions,
