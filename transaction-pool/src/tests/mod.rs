@@ -133,9 +133,9 @@ fn should_reject_if_above_count() {
 	// Reject second
 	let tx1 = b.tx().nonce(0).new();
 	let tx2 = b.tx().nonce(1).new();
-	let hash = format!("{:?}", tx2.hash());
+	let hash = tx2.hash.clone();
 	txq.import(tx1).unwrap();
-	assert_eq!(txq.import(tx2).unwrap_err().kind(), &error::ErrorKind::TooCheapToEnter(hash, "0x0".into()));
+	assert_eq!(txq.import(tx2).unwrap_err(), error::Error::TooCheapToEnter(hash, "0x0".into()));
 	assert_eq!(txq.light_status().transaction_count, 1);
 
 	txq.clear();
@@ -159,9 +159,9 @@ fn should_reject_if_above_mem_usage() {
 	// Reject second
 	let tx1 = b.tx().nonce(1).mem_usage(1).new();
 	let tx2 = b.tx().nonce(2).mem_usage(2).new();
-	let hash = format!("{:?}", tx2.hash());
+	let hash = tx2.hash.clone();
 	txq.import(tx1).unwrap();
-	assert_eq!(txq.import(tx2).unwrap_err().kind(), &error::ErrorKind::TooCheapToEnter(hash, "0x0".into()));
+	assert_eq!(txq.import(tx2).unwrap_err(), error::Error::TooCheapToEnter(hash, "0x0".into()));
 	assert_eq!(txq.light_status().transaction_count, 1);
 
 	txq.clear();
@@ -185,9 +185,9 @@ fn should_reject_if_above_sender_count() {
 	// Reject second
 	let tx1 = b.tx().nonce(1).new();
 	let tx2 = b.tx().nonce(2).new();
-	let hash = format!("{:x}", tx2.hash());
+	let hash = tx2.hash.clone();
 	txq.import(tx1).unwrap();
-	assert_eq!(txq.import(tx2).unwrap_err().kind(), &error::ErrorKind::TooCheapToEnter(hash, "0x0".into()));
+	assert_eq!(txq.import(tx2).unwrap_err(), error::Error::TooCheapToEnter(hash, "0x0".into()));
 	assert_eq!(txq.light_status().transaction_count, 1);
 
 	txq.clear();
@@ -195,10 +195,10 @@ fn should_reject_if_above_sender_count() {
 	// Replace first
 	let tx1 = b.tx().nonce(1).new();
 	let tx2 = b.tx().nonce(2).gas_price(2).new();
-	let hash = format!("{:x}", tx2.hash());
+	let hash = tx2.hash.clone();
 	txq.import(tx1).unwrap();
 	// This results in error because we also compare nonces
-	assert_eq!(txq.import(tx2).unwrap_err().kind(), &error::ErrorKind::TooCheapToEnter(hash, "0x0".into()));
+	assert_eq!(txq.import(tx2).unwrap_err(), error::Error::TooCheapToEnter(hash, "0x0".into()));
 	assert_eq!(txq.light_status().transaction_count, 1);
 }
 
@@ -587,8 +587,7 @@ fn should_not_import_even_if_limit_is_reached_and_should_replace_returns_false()
 	let err = txq.import(b.tx().nonce(1).gas_price(5).new()).unwrap_err();
 
 	// then
-	assert_eq!(err.kind(),
-	&error::ErrorKind::TooCheapToEnter("0x00000000000000000000000000000000000000000000000000000000000001f5".into(), "0x5".into()));
+	assert_eq!(err, error::Error::TooCheapToEnter("0x00000000000000000000000000000000000000000000000000000000000001f5".into(), "0x5".into()));
 	assert_eq!(txq.light_status(), LightStatus {
 		transaction_count: 1,
 		senders: 1,
@@ -626,6 +625,7 @@ fn should_import_even_if_sender_limit_is_reached() {
 mod listener {
 	use std::cell::RefCell;
 	use std::rc::Rc;
+	use std::fmt;
 
 	use super::*;
 
@@ -637,7 +637,7 @@ mod listener {
 			self.0.borrow_mut().push(if old.is_some() { "replaced" } else { "added" });
 		}
 
-		fn rejected(&mut self, _tx: &SharedTransaction, _reason: &error::ErrorKind) {
+		fn rejected<H: fmt::Debug + fmt::LowerHex>(&mut self, _tx: &SharedTransaction, _reason: &error::Error<H>) {
 			self.0.borrow_mut().push("rejected".into());
 		}
 
