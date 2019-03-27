@@ -1,0 +1,24 @@
+[package]
+name = "kvdb-lmdb"
+version = "0.1.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+repository = "https://github.com/paritytech/parity-common"
+description = "kvdb implementation backed by LMDB"
+license = "GPL-3.0"
+edition = "2018"
+
+[dependencies]
+lmdb = { version = "0.11", package = "lmdb-rkv" }
+kvdb = { version = "0.2", path = "../kvdb" }
+log = "0.4"
+owning_ref = "0.4.0"
+fs-swap = "0.2.4"
+parking_lot = "0.7.1"
+lazy_static = "1.2.0"
+hashbrown = "0.1.8"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+url = "1.7.2"
+
+[dev-dependencies]
+tempdir = "0.3.7"
