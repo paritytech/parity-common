@@ -629,24 +629,4 @@ mod tests {
 
 		assert_eq!(db.get(None, b"foo").unwrap().unwrap().as_ref(), b"baz");
 	}
-
-	#[test]
-	fn iter_after_close_does_not_panic() {
-		let tempdir = TempDir::new("").unwrap();
-		let config = DatabaseConfig::default();
-		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
-
-		let mut batch = db.transaction();
-		batch.put(None, b"key1", b"val1");
-		batch.put(None, b"key2", b"val2");
-		batch.put(None, b"key3", b"val3");
-		db.write_buffered(batch);
-
-		let mut iter = db.iter(None).into_iter().flat_map(|inner| inner);
-		assert_eq!(&*iter.next().unwrap().1, b"val1");
-
-		db.close();
-		assert!(iter.next().is_none());
-
-	}
 }
