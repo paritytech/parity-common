@@ -92,9 +92,9 @@ mod codec {
 mod rlp {
 	use super::*;
 
-	impl_uint_rlp!(U128, 2);
-	impl_uint_rlp!(U256, 4);
-	impl_uint_rlp!(U512, 8);
+	impl_uint_rlp!(U128, 16);
+	impl_uint_rlp!(U256, 32);
+	impl_uint_rlp!(U512, 64);
 
 	impl_fixed_hash_rlp!(H160, 20);
 	impl_fixed_hash_rlp!(H256, 32);
