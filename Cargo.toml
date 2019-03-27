@@ -3,6 +3,7 @@ members = [
 	"fixed-hash",
 	"keccak-hash",
 	"kvdb",
+	"kvdb-lmdb",
 	"kvdb-memorydb",
 	"kvdb-rocksdb",
 	"parity-bytes",
