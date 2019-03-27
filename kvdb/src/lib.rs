@@ -27,7 +27,7 @@ extern crate parking_lot;
 extern crate interleaved_ordered;
 extern crate owning_ref;
 
-use std::{io, mem, fs};
+use std::{io, mem, fs, convert::identity};
 use elastic_array::{ElasticArray128, ElasticArray32};
 use bytes::Bytes;
 use hashbrown::HashMap;
@@ -283,14 +283,14 @@ where
 
 	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=iter::KeyValuePair> + 'a> {
 		let unboxed = DatabaseWithCache::iter(self, col);
-		Box::new(unboxed.into_iter().flat_map(|inner| inner))
+		Box::new(unboxed)
 	}
 
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
 		-> Box<Iterator<Item=iter::KeyValuePair> + 'a>
 	{
 		let unboxed = DatabaseWithCache::iter_from_prefix(self, col, prefix);
-		Box::new(unboxed.into_iter().flat_map(|inner| inner))
+		Box::new(unboxed)
 	}
 }
 
@@ -370,12 +370,10 @@ where
 
 	/// Get value by partial key. Prefix size should match configured prefix size. Only searches flushed values.
 	pub fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
-		self.iter_from_prefix(col, prefix).and_then(|mut iter| {
-			match iter.next() {
-				Some((k, v)) => if k.starts_with(prefix) { Some(v) } else { None },
-				_ => None
-			}
-		})
+		match self.iter_from_prefix(col, prefix).next() {
+			Some((k, v)) => if k.starts_with(prefix) { Some(v) } else { None },
+			_ => None
+		}
 	}
 
 	/// Restore the database from a copy at given path.
@@ -502,9 +500,9 @@ where
 	for<'a> &'a DB: IterationHandler,
 {
 	/// Get database iterator for flushed data.
-	pub fn iter<'a>(&'a self, col: Option<u32>) -> Option<impl Iterator<Item=iter::KeyValuePair> + 'a> {
+	pub fn iter<'a>(&'a self, col: Option<u32>) -> impl Iterator<Item=iter::KeyValuePair> + 'a {
 		let read_lock = self.db.read();
-		if read_lock.is_some() {
+		let optional = if read_lock.is_some() {
 			let c = Self::to_overlay_column(col);
 			let overlay = &self.overlay.read()[c];
 			let mut overlay_data = overlay.iter()
@@ -519,7 +517,8 @@ where
 			Some(interleave_ordered(overlay_data, guarded))
 		} else {
 			None
-		}
+		};
+		optional.into_iter().flat_map(identity)
 	}
 
 	/// Get database iterator from prefix for flushed data.
@@ -527,15 +526,16 @@ where
 		&'a self,
 		col: Option<u32>,
 		prefix: &[u8],
-	) -> Option<impl Iterator<Item=iter::KeyValuePair> + 'a> {
+	) -> impl Iterator<Item=iter::KeyValuePair> + 'a {
 		let read_lock = self.db.read();
 		let c = Self::to_overlay_column(col);
-		if read_lock.is_some() {
+		let optional = if read_lock.is_some() {
 			let guarded = iter::ReadGuardedIterator::new_from_prefix(read_lock, c, prefix);
 			Some(interleave_ordered(Vec::new(), guarded))
 		} else {
 			None
-		}
+		};
+		optional.into_iter().flat_map(identity)
 	}
 }
 
