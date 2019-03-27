@@ -257,8 +257,52 @@ where
 	DB: OpenHandler<DB> + TransactionHandler,
 	for<'a> &'a DB: IterationHandler,
 {
+	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
+		DatabaseWithCache::get(self, col, key)
+	}
+
+	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
+		DatabaseWithCache::get_by_prefix(self, col, prefix)
+	}
+
+	fn write_buffered(&self, transaction: DBTransaction) {
+		DatabaseWithCache::write_buffered(self, transaction)
+	}
+
+	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
+		DatabaseWithCache::write(self, transaction)
+	}
+
+	fn flush(&self) -> io::Result<()> {
+		DatabaseWithCache::flush(self)
+	}
+
+	fn restore(&self, new_db: &str) -> io::Result<()> {
+		DatabaseWithCache::restore(self, new_db)
+	}
+
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=iter::KeyValuePair> + 'a> {
+		let unboxed = DatabaseWithCache::iter(self, col);
+		Box::new(unboxed.into_iter().flat_map(|inner| inner))
+	}
+
+	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
+		-> Box<Iterator<Item=iter::KeyValuePair> + 'a>
+	{
+		let unboxed = DatabaseWithCache::iter_from_prefix(self, col, prefix);
+		Box::new(unboxed.into_iter().flat_map(|inner| inner))
+	}
+}
+
+impl<DB> DatabaseWithCache<DB>
+where
+	DB: OpenHandler<DB> + TransactionHandler,
+	for<'a> &'a DB: IterationHandler,
+{
+	/// Helper to create a new transaction.
+	pub fn transaction(&self) -> DBTransaction { DBTransaction::new() }
 	/// Commit transaction to database.
-	fn write_buffered(&self, tr: DBTransaction) {
+	pub fn write_buffered(&self, tr: DBTransaction) {
 		let mut overlay = self.overlay.write();
 		let ops = tr.ops;
 		for op in ops {
@@ -275,13 +319,8 @@ where
 		};
 	}
 
-	/// Commit buffered changes to database.
-	fn flush(&self) -> io::Result<()> {
-		self.flush()
-	}
-
 	/// Commit transaction to database.
-	fn write(&self, tr: DBTransaction) -> io::Result<()> {
+	pub fn write(&self, tr: DBTransaction) -> io::Result<()> {
 		match *self.db.read() {
 			Some(ref db) => {
 				let mut txn = db.write_transaction();
@@ -304,7 +343,7 @@ where
 	}
 
 	/// Get value by key.
-	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
+	pub fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
 		match *self.db.read() {
 			Some(ref db) => {
 				let c = Self::to_overlay_column(col);
@@ -330,7 +369,7 @@ where
 	}
 
 	/// Get value by partial key. Prefix size should match configured prefix size. Only searches flushed values.
-	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
+	pub fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
 		self.iter_from_prefix(col, prefix).and_then(|mut iter| {
 			match iter.next() {
 				Some((k, v)) => if k.starts_with(prefix) { Some(v) } else { None },
@@ -340,7 +379,7 @@ where
 	}
 
 	/// Restore the database from a copy at given path.
-	fn restore(&self, new_db: &str) -> io::Result<()> {
+	pub fn restore(&self, new_db: &str) -> io::Result<()> {
 		self.close();
 
 		// swap is guaranteed to be atomic
@@ -365,25 +404,13 @@ where
 		}
 
 		// reopen the database and steal handles into self
-		let db = Self::open(self.config.clone(), &self.path)?;
+		let db = Self::open(&self.config, &self.path)?;
 
 		*self.db.write() = mem::replace(&mut *db.db.write(), None);
 		*self.overlay.write() = mem::replace(&mut *db.overlay.write(), Vec::new());
 		*self.flushing.write() = mem::replace(&mut *db.flushing.write(), Vec::new());
 
 		Ok(())
-	}
-
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=iter::KeyValuePair> + 'a> {
-		let unboxed = DatabaseWithCache::iter(self, col);
-		Box::new(unboxed.into_iter().flat_map(|inner| inner))
-	}
-
-	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-							-> Box<Iterator<Item=iter::KeyValuePair> + 'a>
-	{
-		let unboxed = DatabaseWithCache::iter_from_prefix(self, col, prefix);
-		Box::new(unboxed.into_iter().flat_map(|inner| inner))
 	}
 }
 
@@ -393,12 +420,13 @@ impl<DB> DatabaseWithCache<DB>
 where
 	DB: OpenHandler<DB> + TransactionHandler,
 {
-	pub fn open(config: <DB as OpenHandler<DB>>::Config, path: &str) -> io::Result<Self> {
-		let db = DB::open(&config, path)?;
+	/// Opens or creates the database from the specified config and path.
+	pub fn open(config: &<DB as OpenHandler<DB>>::Config, path: &str) -> io::Result<Self> {
+		let db = DB::open(config, path)?;
 		let num_cols = config.num_columns();
 		Ok(Self {
 			db: RwLock::new(Some(db)),
-			config,
+			config: config.clone(),
 			path: path.to_owned(),
 			overlay: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
 			flushing: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
@@ -407,7 +435,7 @@ where
 	}
 
 	pub fn open_default(path: &str) -> io::Result<Self> {
-		Self::open(<DB as OpenHandler<DB>>::Config::default(), path)
+		Self::open(&<DB as OpenHandler<DB>>::Config::default(), path)
 	}
 
 	fn to_overlay_column(col: Option<u32>) -> usize {
@@ -494,7 +522,8 @@ where
 		}
 	}
 
-	fn iter_from_prefix<'a>(
+	/// Get database iterator from prefix for flushed data.
+	pub fn iter_from_prefix<'a>(
 		&'a self,
 		col: Option<u32>,
 		prefix: &[u8],
@@ -549,7 +578,7 @@ where
 	}
 
 	/// Commit buffered changes to database.
-	fn flush(&self) -> io::Result<()> {
+	pub fn flush(&self) -> io::Result<()> {
 		let mut lock = self.flushing_lock.lock();
 		// If batch allocation fails the thread gets terminated and the lock is released.
 		// The value inside the lock is used to detect that.
