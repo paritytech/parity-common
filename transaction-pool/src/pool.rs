@@ -294,13 +294,13 @@ impl<T, S, L> Pool<T, S, L> where
 				return Err(error::Error::TooCheapToEnter(transaction.hash().clone(), "unknown".into()))
 			},
 			Some(old) => {
-			let txs = &self.transactions;
-			let get_replace_tx = |tx| {
-				let sender_txs = txs.get(transaction.sender()).map(|txs| txs.iter().as_slice());
-				ReplaceTransaction::new(tx, sender_txs)
-			};
-			let old_replace = get_replace_tx(&old.transaction);
-			let new_replace = get_replace_tx(transaction);
+				let txs = &self.transactions;
+				let get_replace_tx = |tx| {
+					let sender_txs = txs.get(transaction.sender()).map(|txs| txs.iter().as_slice());
+					ReplaceTransaction::new(tx, sender_txs)
+				};
+				let old_replace = get_replace_tx(&old.transaction);
+				let new_replace = get_replace_tx(transaction);
 
 				match replace.should_replace(&old_replace, &new_replace) {
 					// We can't decide which of them should be removed, so accept both.
