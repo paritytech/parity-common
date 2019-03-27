@@ -507,7 +507,7 @@ mod tests {
 
 		assert_eq!(&*db.get(None, &key1).unwrap().unwrap(), b"cat");
 
-		let contents: Vec<_> = db.iter(None).into_iter().flat_map(|inner| inner).collect();
+		let contents: Vec<_> = db.iter(None).collect();
 		assert_eq!(contents.len(), 2);
 		assert_eq!(&*contents[0].0, &*key1);
 		assert_eq!(&*contents[0].1, b"cat");
