@@ -14,14 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate ethereum_types;
+extern crate primitive_types;
 extern crate tiny_keccak;
 
 use std::io;
 use std::slice;
+
 use tiny_keccak::Keccak;
 
-pub use ethereum_types::H256;
+pub use primitive_types::H256;
 
 /// Get the KECCAK (i.e. Keccak) hash of the empty bytes string.
 pub const KECCAK_EMPTY: H256 = H256( [0xc5, 0xd2, 0x46, 0x01, 0x86, 0xf7, 0x23, 0x3c, 0x92, 0x7e, 0x7d, 0xb2, 0xdc, 0xc7, 0x03, 0xc0, 0xe5, 0x00, 0xb6, 0x53, 0xca, 0x82, 0x27, 0x3b, 0x7b, 0xfa, 0xd8, 0x04, 0x5d, 0x85, 0xa4, 0x70] );
@@ -91,6 +92,8 @@ mod tests {
 
 	use std::fs;
 	use std::io::{Write, BufReader};
+	use std::str::FromStr;
+
 	use self::tempdir::TempDir;
 	use super::{keccak, write_keccak, keccak_buffer, KECCAK_EMPTY};
 
@@ -101,7 +104,7 @@ mod tests {
 
 	#[test]
 	fn keccak_as() {
-		assert_eq!(keccak([0x41u8; 32]), From::from("59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"));
+		assert_eq!(keccak([0x41u8; 32]), FromStr::from_str("59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8").unwrap());
 	}
 
 	#[test]
