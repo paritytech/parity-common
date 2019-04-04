@@ -456,7 +456,7 @@ where
 		self.db
 			.read()
 			.as_ref()
-    		.map(|db| db.num_columns())
+			.map(|db| db.num_columns())
 			.unwrap_or(0)
 	}
 }
