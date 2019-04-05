@@ -279,10 +279,20 @@ impl<'env> Iterator for IterWithTxn<'env> {
 mod test {
 	use super::*;
 	use tempdir::TempDir;
+	use kvdb::KeyValueDB;
 
 	const KEY_1: &[u8; 4] = b"key1";
 	const KEY_2: &[u8; 4] = b"key2";
 	const KEY_3: &[u8; 4] = b"key3";
+
+	fn test_implements_kvdb<T: KeyValueDB>(_t: T) {}
+
+	#[test]
+	fn test_lmdb_implements_kvdb() {
+		let db = setup_db("lmdb");
+		test_implements_kvdb(db);
+	}
+
 
 	fn setup_db(name: &str) -> Database {
 		let tempdir = TempDir::new(name).unwrap();
