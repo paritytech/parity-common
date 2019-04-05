@@ -368,7 +368,7 @@ where
 		}
 	}
 
-	/// Get value by partial key. Prefix size should match configured prefix size. Only searches flushed values.
+	/// Get value by partial key. Prefix size should match configured prefix size. Only searches flushed values. Returns the first value with a matching key or `None`.
 	pub fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
 		match self.iter_from_prefix(col, prefix).next() {
 			Some((k, v)) => if k.starts_with(prefix) { Some(v) } else { None },
