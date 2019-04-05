@@ -154,7 +154,11 @@ impl<'a> WriteTransaction for LmdbWriteTransaction<'a> {
 
 	fn delete(&mut self, c: usize, key: &[u8]) -> io::Result<()> {
 		let db = self.dbs[c];
-		self.inner.del(db, &key, None).map_err(other_io_err)
+		match self.inner.del(db, &key, None) {
+			Ok(()) => Ok(()),
+			Err(Error::NotFound) => Ok(()),
+			Err(e) => Err(other_io_err(e)),
+		}
 	}
 
 	fn commit(self: Box<Self>) -> io::Result<()> {
@@ -355,6 +359,11 @@ mod test {
 
 		let mut transaction = db.transaction();
 		transaction.put(None, KEY_3, b"elephant");
+		transaction.delete(None, KEY_1);
+		db.write(transaction).unwrap();
+
+		// make sure delete doesn't panic
+		let mut transaction = db.transaction();
 		transaction.delete(None, KEY_1);
 		db.write(transaction).unwrap();
 
