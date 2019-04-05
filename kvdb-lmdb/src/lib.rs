@@ -62,7 +62,17 @@ type KeyValuePair = (Box<[u8]>, Box<[u8]>);
 /// Lmdb config.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct DatabaseConfig {
+	/// Number of columns in the database.
 	num_columns: u32,
+}
+
+impl DatabaseConfig {
+	/// Create a new database config.
+	pub fn new(num_columns: u32) -> Self {
+		Self {
+			num_columns,
+		}
+	}
 }
 
 impl NumColumns for DatabaseConfig {
