@@ -59,6 +59,8 @@ fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<error::Error + Send + Sy
 	io::Error::new(io::ErrorKind::Other, e)
 }
 
+const KB: usize = 1024;
+const MB: usize = 1024 * KB;
 const DB_DEFAULT_MEMORY_BUDGET_MB: usize = 128;
 
 enum KeyState {
@@ -142,8 +144,8 @@ impl CompactionProfile {
 	/// Default profile suitable for SSD storage
 	pub fn ssd() -> CompactionProfile {
 		CompactionProfile {
-			initial_file_size: 64 * 1024 * 1024,
-			block_size: 16 * 1024,
+			initial_file_size: 64 * MB as u64,
+			block_size: 16 * KB,
 			write_rate_limit: None,
 		}
 	}
@@ -151,9 +153,9 @@ impl CompactionProfile {
 	/// Slow HDD compaction profile
 	pub fn hdd() -> CompactionProfile {
 		CompactionProfile {
-			initial_file_size: 256 * 1024 * 1024,
-			block_size: 64 * 1024,
-			write_rate_limit: Some(16 * 1024 * 1024),
+			initial_file_size: 256 * MB as u64,
+			block_size: 64 * KB,
+			write_rate_limit: Some(16 * MB as u64),
 		}
 	}
 }
@@ -181,7 +183,7 @@ impl DatabaseConfig {
 	}
 
 	pub fn memory_budget(&self) -> usize {
-		self.memory_budget.unwrap_or(DB_DEFAULT_MEMORY_BUDGET_MB) * 1024 * 1024
+		self.memory_budget.unwrap_or(DB_DEFAULT_MEMORY_BUDGET_MB) * MB
 	}
 
 	pub fn memory_budget_per_col(&self) -> usize {
