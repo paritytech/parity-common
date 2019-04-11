@@ -305,7 +305,9 @@ impl Database {
 
 		{
 			block_opts.set_block_size(config.compaction.block_size);
-			let cache_size = cmp::max(8 * MB, config.memory_budget() / 3);
+			// Set cache size as recommended by
+			// https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
+			let cache_size = config.memory_budget() / 3;
 			let cache = Cache::new(cache_size);
 			block_opts.set_cache(cache);
 		}
