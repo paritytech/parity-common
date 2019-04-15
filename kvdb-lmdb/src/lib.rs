@@ -462,10 +462,8 @@ mod test {
 
 	#[test]
 	fn test_create_path_if_missing() {
-		let tempdir = TempDir::new("test_crate_path_if_missing").unwrap();
-		let config = DatabaseConfig {
-			num_columns: 1,
-		};
+		let tempdir = TempDir::new("test_create_path_if_missing").unwrap();
+		let config = DatabaseConfig::new(1);
 		let mut tempdir = tempdir.into_path();
 		tempdir.push("non_existent_yet");
 		tempdir.push("subdir");
