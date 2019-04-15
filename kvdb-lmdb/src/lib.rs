@@ -40,7 +40,7 @@ use std::io;
 use kvdb::{
 	DBValue, NumColumns,
 	TransactionHandler, IterationHandler, OpenHandler,
-	ReadTransaction, WriteTransaction,
+	ReadTransaction, WriteTransaction, MigrationHandler,
 };
 use lmdb::{
 	Environment, Database as LmdbDatabase, DatabaseFlags,
@@ -196,6 +196,8 @@ pub struct EnvironmentWithDatabases {
 	// We use one DB per column.
 	// `LmdbDatabase` is essentially a `c_int` (a `Copy` type).
 	dbs: Vec<LmdbDatabase>,
+	// Maximum number of columns.
+	max_dbs: u32,
 }
 
 fn open_or_create_db(env: &Environment, col: u32) -> io::Result<LmdbDatabase> {
@@ -205,10 +207,12 @@ fn open_or_create_db(env: &Environment, col: u32) -> io::Result<LmdbDatabase> {
 
 impl EnvironmentWithDatabases {
 	fn open(path: &Path, columns: u32) -> io::Result<Self> {
+		const MAX_DBS: u32 = 16;
 		// account for the default column
 		let columns = columns + 1;
+		assert!(columns <= MAX_DBS, "maximum number of columns is set to {}", MAX_DBS);
 		let mut env_builder = Environment::new();
-		env_builder.set_max_dbs(columns);
+		env_builder.set_max_dbs(MAX_DBS);
 		// TODO: this would fail on 32-bit systems
 		// use autoresizing https://github.com/mozilla/rkv/pull/132
 		let terabyte: usize = 1 << 40;
@@ -222,7 +226,7 @@ impl EnvironmentWithDatabases {
 			dbs.push(db);
 		}
 
-		Ok(Self { env, dbs })
+		Ok(Self { env, dbs, max_dbs: MAX_DBS })
 	}
 
 	fn ro_txn(&self) -> io::Result<RoTransaction> {
@@ -289,11 +293,46 @@ impl<'env> Iterator for IterWithTxn<'env> {
 	}
 }
 
+impl NumColumns for EnvironmentWithDatabases {
+	fn num_columns(&self) -> usize {
+		// Account for the default column.
+		self.dbs.len() - 1
+	}
+}
+
+impl MigrationHandler<EnvironmentWithDatabases> for EnvironmentWithDatabases {
+	fn drop_column(&mut self) -> io::Result<()> {
+		if self.dbs.len() <= 1 {
+			// Don't drop the default column.
+			return Err(other_io_err("lmdb: no more columns to drop"));
+		}
+		if let Some(col) = self.dbs.pop() {
+			// # Safety
+			//
+			// Databases should only be closed by a single thread, and
+			// only if no other threads are going to reference the database
+			// handle or one of its cursors any further.
+			//
+			// We acquire a write lock in DatabaseWithCache; qed
+			unsafe {
+				self.env.close_db(col);
+			}
+		}
+		Ok(())
+	}
+
+	fn add_column(&mut self, _config: &<EnvironmentWithDatabases as OpenHandler<EnvironmentWithDatabases>>::Config) -> io::Result<()> {
+		let col = self.dbs.len() as u32;
+		self.dbs.push(open_or_create_db(&self.env, col)?);
+		Ok(())
+	}
+}
+
 #[cfg(test)]
 mod test {
 	use super::*;
 	use tempdir::TempDir;
-	use kvdb::KeyValueDB;
+	use kvdb::{KeyValueDB, NumColumns, ChangeColumns};
 
 	const KEY_1: &[u8; 4] = b"key1";
 	const KEY_2: &[u8; 4] = b"key2";
@@ -401,6 +440,20 @@ mod test {
 		assert_eq!(&*contents[0].1, b"dog");
 		assert_eq!(&*contents[1].0, &*KEY_3);
 		assert_eq!(&*contents[1].1, b"elephant");
+	}
+
+	#[test]
+	fn test_change_columns() {
+		let db = setup_db("test_change_columns");
+		assert_eq!(db.num_columns(), 1);
+		assert!(db.add_column().is_ok());
+		assert_eq!(db.num_columns(), 2);
+		assert!(db.drop_column().is_ok());
+		assert!(db.drop_column().is_ok());
+		assert_eq!(db.num_columns(), 0);
+		// Don't drop the default column
+		assert!(db.drop_column().is_err());
+		assert_eq!(db.num_columns(), 0);
 	}
 
 	#[test]
