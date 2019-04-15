@@ -35,7 +35,7 @@
 
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
-use std::io;
+use std::{fs, io};
 
 use kvdb::{
 	DBValue, NumColumns,
@@ -211,6 +211,10 @@ impl EnvironmentWithDatabases {
 		// account for the default column
 		let columns = columns + 1;
 		assert!(columns <= MAX_DBS, "maximum number of columns is set to {}", MAX_DBS);
+
+		// Create path if missing
+		let _ = fs::create_dir_all(path)?;
+
 		let mut env_builder = Environment::new();
 		env_builder.set_max_dbs(MAX_DBS);
 		// TODO: this would fail on 32-bit systems
@@ -454,6 +458,18 @@ mod test {
 		// Don't drop the default column
 		assert!(db.drop_column().is_err());
 		assert_eq!(db.num_columns(), 0);
+	}
+
+	#[test]
+	fn test_create_path_if_missing() {
+		let tempdir = TempDir::new("test_crate_path_if_missing").unwrap();
+		let config = DatabaseConfig {
+			num_columns: 1,
+		};
+		let mut tempdir = tempdir.into_path();
+		tempdir.push("non_existent_yet");
+		tempdir.push("subdir");
+		let _ = Database::open(&config, tempdir.to_str().unwrap()).unwrap();
 	}
 
 	#[test]
