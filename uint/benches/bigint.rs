@@ -45,6 +45,7 @@ criterion_group!(
 	u256_mul_full,
 	u256_div,
 	u256_rem,
+	u256_rem_small,
 	u256_bit_and,
 	u256_bit_or,
 	u256_bit_xor,
@@ -157,6 +158,22 @@ fn bench_u256_rem(b: &mut Bencher) {
 	let two = U256([2096410819092764509, 8483673822214032535, 36306297304129857, 3453]);
 	b.iter(|| {
 		black_box(one % two);
+	});
+}
+
+fn u256_rem_small(b: &mut Criterion) {
+	b.bench_function("u256_rem_small", |b| bench_u256_rem_small(b));
+}
+
+fn bench_u256_rem_small(b: &mut Bencher) {
+	let x =
+		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let y =
+		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let z = U256::from(1u64);
+	b.iter(|| {
+		let w = black_box(x.overflowing_mul(y)).0;
+		black_box(w % z);
 	});
 }
 
