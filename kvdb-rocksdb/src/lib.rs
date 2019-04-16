@@ -492,6 +492,7 @@ mod tests {
 	use self::tempdir::TempDir;
 	use ethereum_types::H256;
 	use super::*;
+	use super::kvdb::ChangeColumns;
 
 	fn test_db(config: &DatabaseConfig) {
 		let tempdir = TempDir::new("").unwrap();
