@@ -25,3 +25,10 @@ name = "modular"
 [[test]]
 name = "uint_tests"
 required-features = ["std"]
+
+[dev-dependencies]
+criterion = "0.2.11"
+
+[[bench]]
+name = "bigint"
+harness = false
