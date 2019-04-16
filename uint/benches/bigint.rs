@@ -62,6 +62,7 @@ criterion_group!(
 	u512_div,
 	u512_rem,
 	u512_rem_small,
+	u512_rem_large,
 	u512_bit_and,
 	u512_bit_or,
 	u512_bit_xor,
@@ -306,6 +307,23 @@ fn bench_u512_rem_small(b: &mut Bencher) {
 		black_box(w % z);
 	});
 }
+
+fn u512_rem_large(b: &mut Criterion) {
+	b.bench_function("u512_rem_large", |b| bench_u512_rem_large(b));
+}
+
+fn bench_u512_rem_large(b: &mut Bencher) {
+	let x =
+		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0").unwrap();
+	let y =
+		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0").unwrap();
+	let z =
+		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF1").unwrap();
+	b.iter(|| {
+		black_box((x * y) / z);
+	});
+}
+
 
 // NOTE: uses native `u128` and does not measure this crates performance,
 // but might be interesting as a comparison.
