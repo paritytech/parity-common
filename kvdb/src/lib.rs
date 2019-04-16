@@ -128,6 +128,14 @@ impl DBTransaction {
 			key: ekey,
 		});
 	}
+
+	pub fn len(&self) -> usize {
+		self.ops.len()
+	}
+
+	pub fn ops(&self) -> impl Iterator<Item = &DBOp> {
+		self.ops.iter()
+	}
 }
 
 /// Generic key-value database.
