@@ -18,6 +18,7 @@ extern crate core;
 #[macro_use]
 extern crate uint;
 extern crate num_bigint;
+extern crate rug;
 
 construct_uint! {
 	pub struct U256(4);
@@ -36,6 +37,7 @@ impl U256 {
 
 use criterion::{black_box, Bencher, Criterion, ParameterizedBenchmark};
 use num_bigint::BigUint;
+use rug::{Integer, integer::Order};
 use std::str::FromStr;
 
 criterion_group!(
@@ -63,7 +65,8 @@ criterion_group!(
 	u512_mul_small,
 	u512_div,
 	u512_rem,
-	mulmod_u512_vs_biguint_vs_andre,
+	mulmod_u512_vs_biguint_vs_gmp,
+	conversions,
 	u512_bit_and,
 	u512_bit_or,
 	u512_bit_xor,
@@ -85,6 +88,17 @@ fn to_biguint(x: U256) -> BigUint {
 fn from_biguint(x: BigUint) -> U512 {
 	let bytes = x.to_bytes_le();
 	U512::from_little_endian(&bytes)
+}
+
+fn to_gmp(x: U256) -> Integer {
+	let mut bytes = [0u8; 32];
+	x.to_big_endian(&mut bytes);
+	Integer::from_digits(&bytes, Order::MsfBe)
+}
+
+fn from_gmp(x: Integer) -> U512 {
+	let digits = x.to_digits(Order::MsfBe);
+	U512::from_big_endian(&digits)
 }
 
 fn u256_add(c: &mut Criterion) {
@@ -302,13 +316,39 @@ fn bench_u512_rem(b: &mut Bencher) {
 	});
 }
 
-fn mulmod_u512_vs_biguint_vs_andre(b: &mut Criterion) {
+fn conversions(b: &mut Criterion) {
+	b.bench(
+		"conversions biguint vs gmp",
+		ParameterizedBenchmark::new("BigUint", |b, i| bench_convert_to_biguit(b, *i), vec![0, 42, u64::max_value()])
+			.with_function("gmp", |b, i| bench_convert_to_gmp(b, *i))
+	);
+}
+
+fn bench_convert_to_biguit(b: &mut Bencher, i: u64) {
+	let z = U256::from(i);
+	let z512 = U512::from(i);
+	b.iter(|| {
+		let zb = to_biguint(z);
+		assert_eq!(from_biguint(zb), z512);
+	});
+}
+
+fn bench_convert_to_gmp(b: &mut Bencher, i: u64) {
+	let z = U256::from(i);
+	let z512 = U512::from(i);
+	b.iter(|| {
+		let zb = to_gmp(z);
+		assert_eq!(from_gmp(zb), z512);
+	});
+}
+
+fn mulmod_u512_vs_biguint_vs_gmp(b: &mut Criterion) {
 	let mods = vec![1u64, 42, 10_000_001, u64::max_value()];
 	b.bench(
-		"mulmod u512 vs biguint",
+		"mulmod u512 vs biguint vs gmp",
 		ParameterizedBenchmark::new("u512", |b, i| bench_u512_mulmod(b, *i), mods)
 			.with_function("BigUint", |b, i| bench_biguint_mulmod(b, *i))
-			.with_function("andre", |b, i| bench_andre_mulmod(b, *i)),
+			.with_function("gmp", |b, i| bench_gmp_mulmod(b, *i)),
 	);
 }
 
@@ -324,66 +364,15 @@ fn bench_biguint_mulmod(b: &mut Bencher, i: u64) {
 	});
 }
 
-#[inline]
-pub fn msb(x: &U256) -> bool {
-	let U256(ref arr) = x;
-	arr[3] & 0x8000_0000_0000_0000 != 0
-}
-
-fn bench_andre_mulmod(b: &mut Bencher, i: u64) {
-	let mut x =
+fn bench_gmp_mulmod(b: &mut Bencher, i: u64) {
+	let x =
 		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
-	let mut y =
+	let y =
 		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
-	let m = U256::from(i);
+	let z = U256::from(i);
 	b.iter(|| {
-		if m.is_zero() {
-			return U256::zero();
-		}
-
-		let mut d = U256::zero();
-		let mp2 = m >> 1;
-
-		x %= m;
-		y %= m;
-
-		let res = if !msb(&m) {
-			for _ in 0..256 {
-				d = if d > mp2 { (d << 1) - m } else { d << 1 };
-				if msb(&x) {
-					d += y;
-				}
-				if d >= m {
-					d -= m;
-				}
-				x <<= 1;
-			}
-			d
-		} else {
-			for _ in 0..256 {
-				d = if d > mp2 {
-					// we want the wrapped value in case of overflow
-					(d << 1).overflowing_sub(m).0
-				} else {
-					d << 1
-				};
-				if msb(&x) {
-					let (mut d1, overflow) = d.overflowing_add(y);
-					if overflow {
-						// we want the wrapped value in case of overflow
-						d1 = d1.overflowing_sub(m).0;
-					}
-					d = if d1 >= m { d1 - m } else { d1 };
-				}
-				x <<= 1;
-			}
-			if d >= m {
-				d - m
-			} else {
-				d
-			}
-		};
-		black_box(res)
+		let w = to_gmp(x) * to_gmp(y);
+		from_gmp(w % to_gmp(z));
 	});
 }
 
