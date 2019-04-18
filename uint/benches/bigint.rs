@@ -17,6 +17,7 @@ extern crate criterion;
 extern crate core;
 #[macro_use]
 extern crate uint;
+extern crate num_bigint;
 
 construct_uint! {
 	pub struct U256(4);
@@ -33,7 +34,8 @@ impl U256 {
 	}
 }
 
-use criterion::{black_box, Bencher, Criterion};
+use criterion::{black_box, Bencher, Criterion, ParameterizedBenchmark};
+use num_bigint::BigUint;
 use std::str::FromStr;
 
 criterion_group!(
@@ -61,8 +63,7 @@ criterion_group!(
 	u512_mul_small,
 	u512_div,
 	u512_rem,
-	u512_rem_small,
-	u512_rem_large,
+	mulmod_u512_vs_biguint_vs_andre,
 	u512_bit_and,
 	u512_bit_or,
 	u512_bit_xor,
@@ -75,15 +76,24 @@ criterion_group!(
 );
 criterion_main!(bigint);
 
-fn u256_add(b: &mut Criterion) {
-	b.bench_function("u256_add", |b| bench_u256_add(b));
+fn to_biguint(x: U256) -> BigUint {
+	let mut bytes = [0u8; 32];
+	x.to_little_endian(&mut bytes);
+	BigUint::from_bytes_le(&bytes)
 }
 
-fn bench_u256_add(b: &mut Bencher) {
-	b.iter(|| {
-		let n = black_box(10000);
-		let zero = black_box(U256::zero());
-		(0..n).fold(zero, |old, new| old.overflowing_add(U256::from(black_box(new))).0)
+fn from_biguint(x: BigUint) -> U512 {
+	let bytes = x.to_bytes_le();
+	U512::from_little_endian(&bytes)
+}
+
+fn u256_add(c: &mut Criterion) {
+	c.bench_function("u256_add", |b| {
+		b.iter(|| {
+			let n = 10000;
+			let zero = U256::zero();
+			(0..n).fold(zero, |old, new| old.overflowing_add(U256::from(new)).0)
+		})
 	});
 }
 
@@ -292,38 +302,102 @@ fn bench_u512_rem(b: &mut Bencher) {
 	});
 }
 
-fn u512_rem_small(b: &mut Criterion) {
-	b.bench_function("u512_rem_small", |b| bench_u512_rem_small(b));
+fn mulmod_u512_vs_biguint_vs_andre(b: &mut Criterion) {
+	let mods = vec![1u64, 42, 10_000_001, u64::max_value()];
+	b.bench(
+		"mulmod u512 vs biguint",
+		ParameterizedBenchmark::new("u512", |b, i| bench_u512_mulmod(b, *i), mods)
+			.with_function("BigUint", |b, i| bench_biguint_mulmod(b, *i))
+			.with_function("andre", |b, i| bench_andre_mulmod(b, *i)),
+	);
 }
 
-fn bench_u512_rem_small(b: &mut Bencher) {
+fn bench_biguint_mulmod(b: &mut Bencher, i: u64) {
+	let x =
+		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let y =
+		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let z = U256::from(i);
+	b.iter(|| {
+		let w = to_biguint(x) * to_biguint(y);
+		from_biguint(w % to_biguint(z));
+	});
+}
+
+#[inline]
+pub fn msb(x: &U256) -> bool {
+	let U256(ref arr) = x;
+	arr[3] & 0x8000_0000_0000_0000 != 0
+}
+
+fn bench_andre_mulmod(b: &mut Bencher, i: u64) {
+	let mut x =
+		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let mut y =
+		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let m = U256::from(i);
+	b.iter(|| {
+		if m.is_zero() {
+			return U256::zero();
+		}
+
+		let mut d = U256::zero();
+		let mp2 = m >> 1;
+
+		x %= m;
+		y %= m;
+
+		let res = if !msb(&m) {
+			for _ in 0..256 {
+				d = if d > mp2 { (d << 1) - m } else { d << 1 };
+				if msb(&x) {
+					d += y;
+				}
+				if d >= m {
+					d -= m;
+				}
+				x <<= 1;
+			}
+			d
+		} else {
+			for _ in 0..256 {
+				d = if d > mp2 {
+					// we want the wrapped value in case of overflow
+					(d << 1).overflowing_sub(m).0
+				} else {
+					d << 1
+				};
+				if msb(&x) {
+					let (mut d1, overflow) = d.overflowing_add(y);
+					if overflow {
+						// we want the wrapped value in case of overflow
+						d1 = d1.overflowing_sub(m).0;
+					}
+					d = if d1 >= m { d1 - m } else { d1 };
+				}
+				x <<= 1;
+			}
+			if d >= m {
+				d - m
+			} else {
+				d
+			}
+		};
+		black_box(res)
+	});
+}
+
+fn bench_u512_mulmod(b: &mut Bencher, i: u64) {
 	let x =
 		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	let y =
 		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
-	let z = U512::from(1u64);
+	let z = U512::from(i);
 	b.iter(|| {
-		let w = black_box(x.overflowing_mul(y)).0;
-		black_box(w % z);
+		let w = x.overflowing_mul(y).0;
+		black_box(w % z)
 	});
 }
-
-fn u512_rem_large(b: &mut Criterion) {
-	b.bench_function("u512_rem_large", |b| bench_u512_rem_large(b));
-}
-
-fn bench_u512_rem_large(b: &mut Bencher) {
-	let x =
-		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0").unwrap();
-	let y =
-		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0").unwrap();
-	let z =
-		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF1").unwrap();
-	b.iter(|| {
-		black_box((x * y) / z);
-	});
-}
-
 
 // NOTE: uses native `u128` and does not measure this crates performance,
 // but might be interesting as a comparison.

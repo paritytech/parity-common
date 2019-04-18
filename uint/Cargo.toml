@@ -28,6 +28,7 @@ required-features = ["std"]
 
 [dev-dependencies]
 criterion = "0.2.11"
+num-bigint = "0.2"
 
 [[bench]]
 name = "bigint"
