@@ -29,6 +29,8 @@ required-features = ["std"]
 [dev-dependencies]
 criterion = "0.2.11"
 num-bigint = "0.2"
+
+[target.'cfg(unix)'.dev-dependencies]
 rug = { version = "1.3.0", default-features = false, features = ["integer"] }
 
 [[bench]]
