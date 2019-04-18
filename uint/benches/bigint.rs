@@ -88,14 +88,13 @@ fn from_biguint(x: BigUint) -> U512 {
 }
 
 fn to_gmp(x: U256) -> Integer {
-	let mut bytes = [0u8; 32];
-	x.to_big_endian(&mut bytes);
-	Integer::from_digits(&bytes, Order::MsfBe)
+	let U256(ref arr) = x;
+	Integer::from_digits(&arr[..], Order::Lsf)
 }
 
 fn from_gmp(x: Integer) -> U512 {
-	let digits = x.to_digits(Order::MsfBe);
-	U512::from_big_endian(&digits)
+	let digits = x.to_digits(Order::Lsf);
+	U512::from_little_endian(&digits)
 }
 
 fn u256_add(c: &mut Criterion) {
