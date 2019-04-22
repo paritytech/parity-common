@@ -62,6 +62,7 @@ criterion_group!(
 	u512_mul,
 	u512_div,
 	u512_rem,
+	u512_mul_u32_vs_u64,
 	mulmod_u512_vs_biguint_vs_gmp,
 	conversions,
 	u512_bit_and,
@@ -141,7 +142,14 @@ fn u256_mul(c: &mut Criterion) {
 					black_box(x.overflowing_mul(y).0)
 				})
 			},
-			vec![(U256::max_value(), 1u64), (U256::from(3), u64::max_value())],
+			vec![
+				(U256::max_value(), 1u64),
+				(U256::from(3), u64::max_value()),
+				(
+					U256::from_dec_str("21674844646682989462120101885968193938394323990565507610662749").unwrap(),
+					173,
+				),
+			],
 		),
 	);
 }
@@ -327,6 +335,31 @@ fn bench_convert_to_gmp(b: &mut Bencher, i: u64) {
 	b.iter(|| {
 		let zb = to_gmp(z);
 		assert_eq!(from_gmp(zb), z512);
+	});
+}
+
+fn u512_mul_u32_vs_u64(c: &mut Criterion) {
+	let mods = vec![1u32, 42, 10_000_001, u32::max_value()];
+	c.bench(
+		"multiply u512 by u32 vs u64",
+		ParameterizedBenchmark::new("u32", |b, i| bench_u512_mul_u32(b, *i), mods)
+			.with_function("u64", |b, i| bench_u512_mul_u64(b, u64::from(*i))),
+	);
+}
+
+fn bench_u512_mul_u32(b: &mut Bencher, i: u32) {
+	let x =
+		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	b.iter(|| {
+		black_box(x * i)
+	});
+}
+
+fn bench_u512_mul_u64(b: &mut Bencher, i: u64) {
+	let x =
+		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	b.iter(|| {
+		black_box(x * i)
 	});
 }
 
