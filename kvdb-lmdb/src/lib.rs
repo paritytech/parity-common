@@ -38,9 +38,9 @@ use std::path::Path;
 use std::{fs, io};
 
 use kvdb::{
-	DBValue, NumColumns,
-	TransactionHandler, IterationHandler, OpenHandler,
-	ReadTransaction, WriteTransaction, MigrationHandler,
+	DBValue, NumColumns, TransactionHandler,
+	IterationHandler, OpenHandler, ReadTransaction,
+	WriteTransaction, MigrationHandler, NumEntries
 };
 use lmdb::{
 	Environment, Database as LmdbDatabase, DatabaseFlags,
@@ -304,6 +304,17 @@ impl NumColumns for EnvironmentWithDatabases {
 	}
 }
 
+impl NumEntries for EnvironmentWithDatabases {
+	fn num_entries(&self, col: usize) -> io::Result<usize> {
+		if self.dbs.len() <= col {
+			return Err(other_io_err(format!("lmdb: no such column {}", col)));
+		}
+		let trx = self.env.begin_ro_txn().map_err(other_io_err)?;
+		let stat = trx.stat(self.dbs[col]).map_err(other_io_err)?;
+		Ok(stat.entries())
+	}
+}
+
 impl MigrationHandler<EnvironmentWithDatabases> for EnvironmentWithDatabases {
 	fn drop_column(&mut self) -> io::Result<()> {
 		if self.dbs.len() <= 1 {
@@ -336,7 +347,7 @@ impl MigrationHandler<EnvironmentWithDatabases> for EnvironmentWithDatabases {
 mod test {
 	use super::*;
 	use tempdir::TempDir;
-	use kvdb::{KeyValueDB, NumColumns, ChangeColumns};
+	use kvdb::{KeyValueDB, NumColumns, ChangeColumns, DBTransaction, DBOp};
 
 	const KEY_1: &[u8; 4] = b"key1";
 	const KEY_2: &[u8; 4] = b"key2";
@@ -476,4 +487,48 @@ mod test {
 		let db = setup_db("test_column_out_of_range");
 		let _ = db.get(Some(1), KEY_1).unwrap();
 	}
+
+	#[test]
+	fn test_number_of_entries() {
+		let db = setup_db("test_count_entries");
+		assert_eq!(db.num_entries(0).unwrap(), 2);
+
+		let mut tr = DBTransaction::new();
+		tr.put(None, b"mykey", b"111");
+		db.write(tr).unwrap();
+		assert_eq!(db.num_entries(0).unwrap(), 3);
+
+		let mut tr = DBTransaction::new();
+		tr.delete(None, b"mykey");
+		db.write(tr).unwrap();
+		assert_eq!(db.num_entries(0).unwrap(), 2);
+	}
+
+	#[test]
+	fn test_number_of_entries_for_wrong_db() {
+		let db = setup_db("some_db");
+		assert!(db.num_entries(123).is_err());
+	}
+
+	#[test]
+	fn test_trx_length() {
+		let mut trx = DBTransaction::new();
+		assert_eq!(trx.len(), 0);
+		trx.put(None, b"aaa", b"123");
+		assert_eq!(trx.len(), 1);
+	}
+
+	#[test]
+	fn test_trx_iterator() {
+		let mut trx = DBTransaction::new();
+		let ops: Vec<&DBOp> = trx.ops().collect();
+		assert_eq!(ops.len(), 0);
+
+		trx.delete(None, b"anything");
+		trx.put(None, b"something", b"1234");
+		trx.put(None, b"this key", b"010");
+		let ops: Vec<&DBOp> = trx.ops().collect();
+		assert_eq!(ops.len(), 3);
+	}
+
 }

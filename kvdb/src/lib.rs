@@ -129,10 +129,12 @@ impl DBTransaction {
 		});
 	}
 
+	/// Number of database ops in the transaction.
 	pub fn len(&self) -> usize {
 		self.ops.len()
 	}
 
+	/// Iterator over the database ops in the transaction.
 	pub fn ops(&self) -> impl Iterator<Item = &DBOp> {
 		self.ops.iter()
 	}
@@ -234,6 +236,11 @@ pub trait OpenHandler<DB>: Send + Sync {
 pub trait NumColumns {
 	/// Number of non-default columns.
 	fn num_columns(&self) -> usize;
+}
+
+pub trait NumEntries {
+	/// Total number of data entries in the DB.
+	fn num_entries(&self, col: usize) -> io::Result<usize>;
 }
 
 /// Allows dropping and appending columns to the DB.
@@ -466,6 +473,19 @@ where
 			.as_ref()
 			.map(|db| db.num_columns())
 			.unwrap_or(0)
+	}
+}
+
+impl<DB> NumEntries for DatabaseWithCache<DB>
+where
+	DB: OpenHandler<DB> + TransactionHandler + NumEntries,
+{
+	fn num_entries(&self, col: usize) -> io::Result<usize> {
+		self.db
+			.read()
+			.as_ref()
+			.map(|db| db.num_entries(col))
+			.unwrap_or_else(|| Err(io::Error::new(io::ErrorKind::Other, "Couldn't get a reference to the DB")) )
 	}
 }
 
