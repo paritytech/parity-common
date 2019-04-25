@@ -173,7 +173,7 @@ macro_rules! uint_full_mul_reg {
 						if $check(me[j], carry) {
 							let a = me[j];
 
-							let (hi, low) = $crate::split_u128(a as u128 * b as u128);
+							let (hi, low) = Self::split_u128(a as u128 * b as u128);
 
 							let overflow = {
 								let existing_low = &mut ret[i + j];
@@ -364,25 +364,6 @@ macro_rules! impl_mul_for_primitive {
 			}
 		}
 	}
-}
-
-#[inline(always)]
-#[doc(hidden)]
-pub fn mul_u64(a: u64, b: u64, carry: u64) -> (u64, u64) {
-	let (hi, lo) = split_u128(u128::from(a) * u128::from(b) + u128::from(carry));
-	(lo, hi)
-}
-
-#[inline(always)]
-#[doc(hidden)]
-pub fn split(a: u64) -> (u64, u64) {
-	(a >> 32, a & 0xFFFF_FFFF)
-}
-
-#[inline(always)]
-#[doc(hidden)]
-pub fn split_u128(a: u128) -> (u64, u64) {
-	((a >> 64) as _, (a & 0xFFFFFFFFFFFFFFFF) as _)
 }
 
 #[macro_export]
@@ -843,13 +824,30 @@ macro_rules! construct_uint {
 				}
 			}
 
+			#[inline(always)]
+			fn mul_u64(a: u64, b: u64, carry: u64) -> (u64, u64) {
+				let (hi, lo) = Self::split_u128(u128::from(a) * u128::from(b) + u128::from(carry));
+				(lo, hi)
+			}
+
+			#[inline(always)]
+			fn split(a: u64) -> (u64, u64) {
+				(a >> 32, a & 0xFFFF_FFFF)
+			}
+
+			#[inline(always)]
+			fn split_u128(a: u128) -> (u64, u64) {
+				((a >> 64) as _, (a & 0xFFFFFFFFFFFFFFFF) as _)
+			}
+
+
 			/// Overflowing multiplication by u64.
 			/// Returns the result and carry.
 			fn overflowing_mul_u64(mut self, other: u64) -> (Self, u64) {
 				let mut carry = 0u64;
 
 				for d in self.0.iter_mut() {
-					let (res, c) = $crate::mul_u64(*d, other, carry);
+					let (res, c) = Self::mul_u64(*d, other, carry);
 					*d = res;
 					carry = c;
 				}
