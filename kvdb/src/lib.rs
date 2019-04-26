@@ -228,6 +228,11 @@ pub trait NumColumns {
 	fn num_columns(&self) -> usize;
 }
 
+pub trait NumEntries {
+	/// Total number of data entries in the DB.
+	fn num_entries(&self, col: usize) -> io::Result<usize>;
+}
+
 /// Allows dropping and appending columns to the DB.
 pub trait MigrationHandler<DB: OpenHandler<DB>>: NumColumns {
 	/// Appends a new column to the database.
@@ -458,6 +463,19 @@ where
 			.as_ref()
     		.map(|db| db.num_columns())
 			.unwrap_or(0)
+	}
+}
+
+impl<DB> NumEntries for DatabaseWithCache<DB>
+where
+	DB: OpenHandler<DB> + TransactionHandler + NumEntries,
+{
+	fn num_entries(&self, col: usize) -> io::Result<usize> {
+		self.db
+			.read()
+			.as_ref()
+			.map(|db| db.num_entries(col))
+			.unwrap_or_else(|| Err(io::Error::new(io::ErrorKind::Other, "Couldn't get a reference to the DB")) )
 	}
 }
 

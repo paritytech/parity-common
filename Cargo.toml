@@ -20,3 +20,7 @@ members = [
 	"ethereum-types",
 	"ethbloom",
 ]
+
+# TODO: remove after https://github.com/paritytech/rust-rocksdb/pull/31 merges and changes are published
+[patch.crates-io]
+parity-rocksdb = { git = "https://github.com/paritytech/rust-rocksdb/", branch = "dp/add-property-getters" }
