@@ -46,7 +46,7 @@ use lmdb::{
 	Environment, Database as LmdbDatabase, DatabaseFlags,
 	Transaction, RoTransaction, RwTransaction,
 	Iter as LmdbIter, Cursor, RoCursor,
-	Error, WriteFlags,
+	Error, WriteFlags, EnvironmentFlags,
 };
 
 use owning_ref::OwningHandle;
@@ -64,6 +64,12 @@ type KeyValuePair = (Box<[u8]>, Box<[u8]>);
 pub struct DatabaseConfig {
 	/// Number of columns in the database.
 	num_columns: u32,
+	/// [Environment flags](https://docs.rs/lmdb-rkv/0.11.4/lmdb/struct.EnvironmentFlags.html), defaults to `None`.
+	env_flags: Option<EnvironmentFlags>,
+	/// [Database flags](https://docs.rs/lmdb-rkv/0.11.4/lmdb/struct.DatabaseFlags.html), defaults to `None`.
+	db_flags: Option<DatabaseFlags>,
+	/// [Write flags](https://docs.rs/lmdb-rkv/0.11.4/lmdb/struct.WriteFlags.html), defaults to `None`.
+	write_flags: Option<WriteFlags>,
 }
 
 impl DatabaseConfig {
@@ -71,7 +77,27 @@ impl DatabaseConfig {
 	pub fn new(num_columns: u32) -> Self {
 		Self {
 			num_columns,
+			env_flags: None,
+			db_flags: None,
+			write_flags: None,
 		}
+	}
+	/// Set the environment flags for this DB.
+	pub fn with_env_flags(mut self, flags: EnvironmentFlags) -> Self {
+		self.env_flags = Some(flags);
+		self
+	}
+
+	/// Set the database flags for this DB.
+	pub fn with_db_flags(mut self, flags: DatabaseFlags) -> Self {
+		self.db_flags = Some(flags);
+		self
+	}
+
+	/// Set the write flags passed to all transactions created with this database instance.
+	pub fn with_write_flags(mut self, flags: WriteFlags) -> Self {
+		self.write_flags = Some(flags);
+		self
 	}
 }
 
@@ -85,7 +111,7 @@ impl OpenHandler<EnvironmentWithDatabases> for EnvironmentWithDatabases {
 	type Config = DatabaseConfig;
 
 	fn open(config: &Self::Config, path: &str) -> io::Result<Self> {
-		Self::open(&Path::new(path), config.num_columns)
+		Self::open(&Path::new(path), config.num_columns, config)
 	}
 }
 
@@ -125,16 +151,17 @@ impl<'a> IterationHandler for &'a EnvironmentWithDatabases {
 
 impl TransactionHandler for EnvironmentWithDatabases {
 	// TODO: how to handle errors here (expect)?
-	fn read_transaction<'a>(&'a self) -> Box<ReadTransaction + 'a> {
-		Box::new(LmdbReadTransaction {
-			inner: self.ro_txn().expect("lmdb: ro transaction creation failed"),
-			dbs: &self.dbs[..],
-		})
-	}
-
 	fn write_transaction<'a>(&'a self) -> Box<WriteTransaction + 'a> {
 		Box::new(LmdbWriteTransaction {
 			inner: self.rw_txn().expect("lmdb: rw transaction creation failed"),
+			dbs: &self.dbs[..],
+			write_flags: self.write_flags,
+		})
+	}
+
+	fn read_transaction<'a>(&'a self) -> Box<ReadTransaction + 'a> {
+		Box::new(LmdbReadTransaction {
+			inner: self.ro_txn().expect("lmdb: ro transaction creation failed"),
 			dbs: &self.dbs[..],
 		})
 	}
@@ -143,13 +170,15 @@ impl TransactionHandler for EnvironmentWithDatabases {
 struct LmdbWriteTransaction<'a> {
 	inner: RwTransaction<'a>,
 	dbs: &'a [LmdbDatabase],
+	write_flags: Option<WriteFlags>,
 }
 
 impl<'a> WriteTransaction for LmdbWriteTransaction<'a> {
 	fn put(&mut self, c: usize, key: &[u8], value: &[u8]) -> io::Result<()> {
 		debug_assert!(key.len() < 512, "lmdb: MDB_MAXKEYSIZE is 511");
 		let db = self.dbs[c];
-		self.inner.put(db, &key, &value, WriteFlags::empty()).map_err(other_io_err)
+		let flags = self.write_flags.unwrap_or_default();
+		self.inner.put(db, &key, &value, flags).map_err(other_io_err)
 	}
 
 	fn delete(&mut self, c: usize, key: &[u8]) -> io::Result<()> {
@@ -198,15 +227,18 @@ pub struct EnvironmentWithDatabases {
 	dbs: Vec<LmdbDatabase>,
 	// Maximum number of columns.
 	max_dbs: u32,
+	write_flags: Option<WriteFlags>,
 }
 
-fn open_or_create_db(env: &Environment, col: u32) -> io::Result<LmdbDatabase> {
+fn open_or_create_db(env: &Environment, col: u32, flags: Option<DatabaseFlags>) -> io::Result<LmdbDatabase> {
 	let db_name = format!("col{}", col);
-	env.create_db(Some(&db_name[..]), DatabaseFlags::default()).map_err(other_io_err)
+	let flags = flags.unwrap_or_default();
+	env.create_db(Some(&db_name[..]), flags).map_err(other_io_err)
+//	env.create_db(Some(&db_name[..]), DatabaseFlags::default()).map_err(other_io_err)
 }
 
 impl EnvironmentWithDatabases {
-	fn open(path: &Path, columns: u32) -> io::Result<Self> {
+	fn open(path: &Path, columns: u32, config: &DatabaseConfig) -> io::Result<Self> {
 		const MAX_DBS: u32 = 16;
 		// account for the default column
 		let columns = columns + 1;
@@ -222,15 +254,19 @@ impl EnvironmentWithDatabases {
 		let terabyte: usize = 1 << 40;
 		env_builder.set_map_size(terabyte);
 
+		if let Some(env_flags) = config.env_flags {
+			env_builder.set_flags(env_flags);
+		}
+
 		let env = env_builder.open(path).map_err(other_io_err)?;
 
 		let mut dbs = Vec::with_capacity(columns as usize);
 		for col in 0..columns {
-			let db = open_or_create_db(&env, col)?;
+			let db = open_or_create_db(&env, col, config.db_flags)?;
 			dbs.push(db);
 		}
 
-		Ok(Self { env, dbs, max_dbs: MAX_DBS })
+		Ok(Self { env, dbs, max_dbs: MAX_DBS, write_flags: config.write_flags })
 	}
 
 	fn ro_txn(&self) -> io::Result<RoTransaction> {
@@ -336,9 +372,9 @@ impl MigrationHandler<EnvironmentWithDatabases> for EnvironmentWithDatabases {
 		Ok(())
 	}
 
-	fn add_column(&mut self, _config: &<EnvironmentWithDatabases as OpenHandler<EnvironmentWithDatabases>>::Config) -> io::Result<()> {
+	fn add_column(&mut self, config: &<EnvironmentWithDatabases as OpenHandler<EnvironmentWithDatabases>>::Config) -> io::Result<()> {
 		let col = self.dbs.len() as u32;
-		self.dbs.push(open_or_create_db(&self.env, col)?);
+		self.dbs.push(open_or_create_db(&self.env, col, config.db_flags)?);
 		Ok(())
 	}
 }
@@ -364,10 +400,7 @@ mod test {
 
 	fn setup_db(name: &str) -> Database {
 		let tempdir = TempDir::new(name).unwrap();
-		let num_columns = 1;
-		let config = DatabaseConfig {
-			num_columns,
-		};
+		let config = DatabaseConfig::new(1u32);
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
 
 		let mut batch = db.transaction();

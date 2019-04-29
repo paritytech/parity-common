@@ -21,4 +21,11 @@ hashbrown = "0.1.8"
 url = "1.7.2"
 
 [dev-dependencies]
-tempdir = "0.3.7"
+tempdir = "0.3"
+criterion = "0.2"
+rand = "0.6"
+elapsed = "0.1"
+
+[[bench]]
+name = "kvdb-lmdb"
+harness = false

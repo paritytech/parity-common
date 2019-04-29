@@ -36,8 +36,8 @@ use parity_rocksdb::{
 };
 
 use kvdb::{
-	DBValue, NumColumns, OpenHandler, TransactionHandler, IterationHandler,
-	MigrationHandler, WriteTransaction, ReadTransaction,
+	DBValue, NumColumns, NumEntries, OpenHandler, TransactionHandler,
+	IterationHandler, MigrationHandler, WriteTransaction, ReadTransaction,
 };
 
 pub use kvdb::DatabaseWithCache;
@@ -460,8 +460,23 @@ fn is_corrupted(s: &str) -> bool {
 }
 
 impl NumColumns for DBAndColumns {
-	fn num_columns(&self) -> usize {
-		if self.cfs.is_empty() { 0 } else { self.cfs.len() }
+	fn num_columns(&self) -> usize { self.cfs.len() }
+}
+
+impl NumEntries for DBAndColumns {
+	fn num_entries(&self, col_idx: usize) -> io::Result<usize> {
+		const ESTIMATE_NUM_KEYS: &str = "rocksdb.estimate-num-keys";
+
+		if self.cfs.len() < col_idx {
+			return Err(other_io_err(format!("rocksdb: no such column {}", col_idx)));
+		}
+
+		let estimate = if col_idx > 0 {
+			self.db.get_int_property_cf(self.cfs[col_idx - 1], ESTIMATE_NUM_KEYS)
+		} else {
+			self.db.get_int_property(ESTIMATE_NUM_KEYS)
+		};
+		Ok(estimate as usize)
 	}
 }
 
@@ -545,6 +560,47 @@ mod tests {
 		db.flush().unwrap();
 		assert!(db.get(None, &key3).unwrap().is_none());
 		assert_eq!(&*db.get(None, &key1).unwrap().unwrap(), b"horse");
+	}
+
+	#[test]
+	fn num_entries() {
+		let cfg = DatabaseConfig::default();
+		let tempdir = TempDir::new("num_entries").unwrap();
+		let db = Database::open(&cfg, tempdir.path().to_str().unwrap()).unwrap();
+		assert_eq!(db.num_entries(0).unwrap(), 0);
+
+		let mut tr= db.transaction();
+		tr.put(None, b"001", b"cat");
+		tr.put(None, b"002", b"dog");
+		db.write(tr).unwrap();
+
+		assert_eq!(db.num_entries(0).unwrap(), 2);
+	}
+
+	#[test]
+	fn num_entries_cf() {
+		let cfg = DatabaseConfig::default();
+		let tempdir = TempDir::new("num_entries").unwrap();
+		let db = Database::open(&cfg, tempdir.path().to_str().unwrap()).unwrap();
+		db.add_column().unwrap();
+		assert_eq!(db.num_columns(), 1);
+
+		let mut tr = db.transaction();
+		// Note: the underlying column 0 is "hidden", so to use one of the user-created columns, use
+		// `Some(0)` and use `None` to write to the real column 0.
+		tr.put(Some(0), b"col1_key1", b"val");
+		tr.put(Some(0), b"col1_key2", b"val");
+		db.write(tr).unwrap();
+
+		assert_eq!(db.num_entries(1).unwrap(), 2);
+
+		let mut tr = db.transaction();
+		tr.put(None, b"key1", b"val1");
+		db.write(tr).unwrap();
+
+		assert_eq!(db.num_entries(0).unwrap(), 1);
+
+		assert!(db.num_entries(100).is_err());
 	}
 
 	#[test]
