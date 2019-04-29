@@ -38,7 +38,7 @@ impl AesEcb256 {
 	/// Encrypt data in place without padding. The data length must be a multiple
 	/// of the block size.
 	pub fn encrypt(self, content: &mut [u8]) -> Result<(), SymmError> {
-    let len = content.len();
+        let len = content.len();
 		self.0.encrypt(content, len)?;
 		Ok(())
 	}
