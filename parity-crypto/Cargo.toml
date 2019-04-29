@@ -21,8 +21,8 @@ sha2 = "0.8.0"
 digest = "0.8"
 aes = "0.3.2"
 aes-ctr = "0.3.0"
-block-modes = "0.2.0"
-ring = "0.14.3"
+block-modes = "0.3.3"
+ring = "0.14.6"
 
 [dev-dependencies]
 criterion = "0.2"

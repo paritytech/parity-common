@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use block_modes::{ BlockMode, BlockModeIv };
+use block_modes::{BlockMode};
 use block_modes::block_padding::Pkcs7;
 use block_modes::block_padding::ZeroPadding;
 use block_modes::{ Cbc, Ecb };
@@ -25,27 +25,28 @@ use error::SymmError;
 use raes::block_cipher_trait::generic_array::GenericArray;
 
 
-/// Reusable encoder/decoder for Ecb mode Aes256 with zero padding
+/// One time encoder/decoder for Ecb mode Aes256 with zero padding
 pub struct AesEcb256(Ecb<Aes256, ZeroPadding>);
 
 impl AesEcb256 {
 
 	/// New encoder/decoder, no iv for ecb
 	pub fn new(key: &[u8]) -> Result<Self, SymmError> {
-		Ok(AesEcb256(Ecb::new_varkey(key)?))
+		Ok(AesEcb256(Ecb::new_var(key, &[])?))
 	}
 
 	/// Encrypt data in place without padding. The data length must be a multiple
 	/// of the block size.
-	pub fn encrypt(&mut self, content: &mut [u8]) -> Result<(), SymmError> {
-		self.0.encrypt_nopad(content)?;
+	pub fn encrypt(self, content: &mut [u8]) -> Result<(), SymmError> {
+    let len = content.len();
+		self.0.encrypt(content, len)?;
 		Ok(())
 	}
 
 	/// Decrypt data in place without padding. The data length must be a multiple
 	/// of the block size.
-	pub fn decrypt(&mut self, content: &mut [u8]) -> Result<(), SymmError> {
-		self.0.decrypt_nopad(content)?;
+	pub fn decrypt(self, content: &mut [u8]) -> Result<(), SymmError> {
+		self.0.decrypt(content)?;
 		Ok(())
 	}
 }
@@ -144,10 +145,10 @@ pub fn inplace_decrypt_128_ctr(k: &[u8], iv: &[u8], data: &mut [u8]) -> Result<(
 /// Key (`k`) length and initialisation vector (`iv`) length have to be 16 bytes each.
 /// An error is returned if the input lengths are invalid.
 pub fn decrypt_128_cbc(k: &[u8], iv: &[u8], encrypted: &[u8], dest: &mut [u8]) -> Result<usize, SymmError> {
-	let encryptor = Cbc::<Aes128, Pkcs7>::new_varkey(k, GenericArray::from_slice(iv))?;
+	let encryptor = Cbc::<Aes128, Pkcs7>::new_var(k, iv)?;
 	&mut dest[..encrypted.len()].copy_from_slice(encrypted);
 	let unpad_length = {
-		encryptor.decrypt_pad(&mut dest[..encrypted.len()])?.len()
+		encryptor.decrypt(&mut dest[..encrypted.len()])?.len()
 	};
 	Ok(unpad_length)
 }
@@ -160,9 +161,9 @@ mod tests {
 
 	// only use for test could be expose in the future
 	fn encrypt_128_cbc(k: &[u8], iv: &[u8], plain: &[u8], dest: &mut [u8]) -> Result<(), SymmError> {
-		let encryptor = Cbc::<Aes128, Pkcs7>::new_varkey(k, GenericArray::from_slice(iv))?;
+		let encryptor = Cbc::<Aes128, Pkcs7>::new_var(k, iv)?;
 		&mut dest[..plain.len()].copy_from_slice(plain);
-		encryptor.encrypt_pad(dest, plain.len())?;
+		encryptor.encrypt(dest, plain.len())?;
 		Ok(())
 	}
 

@@ -17,7 +17,6 @@
 use ring;
 use rscrypt;
 use block_modes;
-use raes;
 use aes_ctr;
 use std::error::Error as StdError;
 
@@ -87,7 +86,7 @@ quick_error! {
 			display("ctr key stream ended")
 			from()
 		}
-		InvalidKeyLength(e: raes::block_cipher_trait::InvalidKeyLength) {
+		InvalidKeyLength(e: block_modes::InvalidKeyIvLength) {
 			display("Error with RustCrypto key length : {}", e)
 			from()
 		}
@@ -117,8 +116,8 @@ impl From<block_modes::BlockModeError> for SymmError {
 	}
 }
 
-impl From<raes::block_cipher_trait::InvalidKeyLength> for SymmError {
-	fn from(e: raes::block_cipher_trait::InvalidKeyLength) -> SymmError {
+impl From<block_modes::InvalidKeyIvLength> for SymmError {
+	fn from(e: block_modes::InvalidKeyIvLength) -> SymmError {
 		SymmError(PrivSymmErr::InvalidKeyLength(e))
 	}
 }
