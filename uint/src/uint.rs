@@ -1344,7 +1344,7 @@ macro_rules! impl_std_for_uint {
 				use $crate::rustc_hex::FromHex;
 				let bytes: Vec<u8> = match value.len() % 2 == 0 {
 					true => value.from_hex()?,
-					false => ("0".to_owned() + value).from_hex()?
+					false => ("0".to_owned() + value).from_hex()?,
 				};
 
 				let bytes_ref: &[u8] = &bytes;
@@ -1367,7 +1367,7 @@ macro_rules! impl_std_for_uint {
 	($name: ident, $n_words: tt) => {}
 }
 
-#[cfg(feature="heapsize")]
+#[cfg(feature = "heapsize")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_uint {
@@ -1380,14 +1380,14 @@ macro_rules! impl_heapsize_for_uint {
 	}
 }
 
-#[cfg(not(feature="heapsize"))]
+#[cfg(not(feature = "heapsize"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_heapsize_for_uint {
 	($name: ident) => {}
 }
 
-#[cfg(feature="quickcheck")]
+#[cfg(feature = "quickcheck")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_uint {
@@ -1420,7 +1420,7 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 	}
 }
 
-#[cfg(not(feature="quickcheck"))]
+#[cfg(not(feature = "quickcheck"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_uint {
