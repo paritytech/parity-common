@@ -485,7 +485,7 @@ macro_rules! construct_uint {
 			#[inline]
 			pub fn as_u32(&self) -> u32 {
 				let &$name(ref arr) = self;
-				if (arr[0] & (0xffffffffu64 << 32)) != 0 {
+				if !self.fits_word() ||  arr[0] > u32::max_value() as u64 {
 					panic!("Integer overflow when casting to u32")
 				}
 				self.as_u64() as u32
@@ -499,10 +499,8 @@ macro_rules! construct_uint {
 			#[inline]
 			pub fn as_u64(&self) -> u64 {
 				let &$name(ref arr) = self;
-				for i in 1..$n_words {
-					if arr[i] != 0 {
-						panic!("Integer overflow when casting to u64")
-					}
+				if !self.fits_word() {
+					panic!("Integer overflow when casting to u64")
 				}
 				arr[0]
 			}
@@ -515,12 +513,7 @@ macro_rules! construct_uint {
 			#[inline]
 			pub fn as_usize(&self) -> usize {
 				let &$name(ref arr) = self;
-				for i in 1..$n_words {
-					if arr[i] != 0 {
-						panic!("Integer overflow when casting to usize")
-					}
-				}
-				if arr[0] > usize::max_value() as u64 {
+				if !self.fits_word() || arr[0] > usize::max_value() as u64 {
 					panic!("Integer overflow when casting to usize")
 				}
 				arr[0] as usize
