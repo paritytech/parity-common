@@ -93,7 +93,7 @@ fn to_gmp(x: U256) -> Integer {
 }
 
 fn from_gmp(x: Integer) -> U512 {
-	let digits = x.to_digits(Order::Lsf);
+	let digits = x.to_digits(Order::LsfLe);
 	U512::from_little_endian(&digits)
 }
 
