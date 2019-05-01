@@ -765,11 +765,6 @@ macro_rules! construct_uint {
 			/// Multiply with overflow, returning a flag if it does.
 			#[inline(always)]
 			pub fn overflowing_mul(self, other: $name) -> ($name, bool) {
-				// Fast path if other fits u64
-				if other.fits_word() {
-					let (res, carry) = self.overflowing_mul_u64(other.low_u64());
-					return (res, carry > 0);
-				}
 				uint_overflowing_mul!($name, $n_words, self, other)
 			}
 
