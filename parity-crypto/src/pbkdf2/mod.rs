@@ -28,3 +28,7 @@ pub fn sha256(iter: NonZeroU32, salt: Salt, sec: Secret, out: &mut [u8; 32]) {
 pub fn sha512(iter: NonZeroU32, salt: Salt, sec: Secret, out: &mut [u8; 64]) {
 	ring::pbkdf2::derive(&ring::digest::SHA512, iter, salt.0, sec.0, &mut out[..])
 }
+
+
+#[cfg(test)]
+mod test;
