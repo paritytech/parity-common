@@ -16,11 +16,17 @@
 
 //! Crypto utils used by ethstore and network.
 
-extern crate crypto as rcrypto;
 #[macro_use]
 extern crate quick_error;
 extern crate ring;
 extern crate tiny_keccak;
+extern crate scrypt as rscrypt;
+extern crate ripemd160 as rripemd160;
+extern crate sha2 as rsha2;
+extern crate digest as rdigest;
+extern crate aes as raes;
+extern crate aes_ctr;
+extern crate block_modes;
 
 pub mod aes;
 pub mod aes_gcm;
