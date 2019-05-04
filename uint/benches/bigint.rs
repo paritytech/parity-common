@@ -74,6 +74,7 @@ criterion_group!(
 	u512_shl,
 	u512_shr,
 	u128_mul,
+	u128_div,
 	from_fixed_array,
 );
 criterion_main!(bigint);
@@ -97,6 +98,22 @@ fn to_gmp(x: U256) -> Integer {
 fn from_gmp(x: Integer) -> U512 {
 	let digits = x.to_digits(Order::LsfLe);
 	U512::from_little_endian(&digits)
+}
+
+fn u128_div(c: &mut Criterion) {
+	c.bench(
+		"u128_div",
+		ParameterizedBenchmark::new(
+			"",
+			|b, (x, y, z)| {
+				b.iter(|| {
+					let x = black_box(u128::from(*x) << 64 + u128::from(*y));
+					black_box(x / u128::from(*z))
+				})
+			},
+			vec![(0u64, u64::max_value(), 100u64), (u64::max_value(), u64::max_value(),  99), (42, 42, 100500)],
+		),
+	);
 }
 
 fn u256_add(c: &mut Criterion) {
