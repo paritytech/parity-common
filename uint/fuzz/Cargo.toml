@@ -12,6 +12,7 @@ cargo-fuzz = true
 [dependencies]
 uint = { path = ".." }
 libfuzzer-sys = { git = "https://github.com/rust-fuzz/libfuzzer-sys.git" }
+rug = { version = "1.4", default-features = false, features = ["integer"] }
 
 [workspace]
 members = ["."]

@@ -434,7 +434,6 @@ fn mulmod_u512_vs_biguint_vs_gmp(c: &mut Criterion) {
 	c.bench(
 		"mulmod u512 vs biguint vs gmp",
 		ParameterizedBenchmark::new("u512", |b, i| bench_u512_mulmod(b, *i), mods)
-			.with_function("u512 divmod", |b, i| bench_u512_mulmod_divmod(b, *i))
 			.with_function("BigUint", |b, i| bench_biguint_mulmod(b, *i))
 			.with_function("gmp", |b, i| bench_gmp_mulmod(b, *i)),
 	);
@@ -471,18 +470,6 @@ fn bench_u512_mulmod(b: &mut Bencher, z: U256) {
 	b.iter(|| {
 		let w = x.overflowing_mul(y).0;
 		black_box(w % z)
-	});
-}
-
-fn bench_u512_mulmod_divmod(b: &mut Bencher, z: U256) {
-	let x =
-		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0").unwrap();
-	let y =
-		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0").unwrap();
-	let z = U512([z.0[0], z.0[1], z.0[2], z.0[3], 0, 0, 0, 0]);
-	b.iter(|| {
-		let w = x.overflowing_mul(y).0;
-		black_box(w.div_mod(z).1)
 	});
 }
 
