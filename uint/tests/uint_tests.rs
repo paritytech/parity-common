@@ -1202,18 +1202,6 @@ pub mod laws {
 				}
 
 				quickcheck! {
-					fn div_mod_by_knuth_matches_long_div(x: $uint_ty, y: $uint_ty) -> TestResult {
-						if y.is_zero() {
-							return TestResult::discard();
-						}
-
-						TestResult::from_bool(
-							(x / y, x % y) == x.div_mod(y)
-						)
-					}
-				}
-
-				quickcheck! {
 					fn rem_decreases_divisor(x: $uint_ty, y: $uint_ty) -> TestResult {
 						if y.is_zero() {
 							return TestResult::discard();
