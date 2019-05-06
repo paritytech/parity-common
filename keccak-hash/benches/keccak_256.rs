@@ -17,10 +17,9 @@
 #![feature(test)]
 
 extern crate test;
-extern crate ethereum_types;
 extern crate keccak_hash;
 
-use keccak_hash::{keccak, write_keccak};
+use keccak_hash::keccak;
 use test::Bencher;
 
 #[bench]

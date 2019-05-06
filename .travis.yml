@@ -12,8 +12,6 @@ matrix:
       rust: nightly
     - os: osx
       rust: stable
-    - os: windows
-      rust: stable
   allow_failures:
     - rust: nightly
 script:
