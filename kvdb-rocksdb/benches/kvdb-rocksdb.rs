@@ -50,10 +50,8 @@ fn create_benchmark_db() -> String {
                 println!("Batch: {}/{} – inserting indices {} –> {}", b, batches, b*batch_size, (b+1)*batch_size);
                 let mut tr = DBTransaction::with_capacity(batch_size);
                 for i in b*batch_size..(b+1)*batch_size {
-                    let key = b*batch_size + i;
-                    let slice = &unsafe { std::mem::transmute::<usize, [u8; 8]>(key) };
                     let v = randbytes(200); // TODO: need the distribution of payload sizes; match that to a distribution from `rand` and generate rand bytes accordingly?
-                    tr.put(None, &key.to_ne_bytes(), &v);
+                    tr.put(None, &i.to_ne_bytes(), &v);
                 }
                 db.write(tr).unwrap();
             }
