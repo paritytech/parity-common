@@ -53,7 +53,7 @@ fn create_benchmark_db() -> String {
                     let key = b*batch_size + i;
                     let slice = &unsafe { std::mem::transmute::<usize, [u8; 8]>(key) };
                     let v = randbytes(200); // TODO: need the distribution of payload sizes; match that to a distribution from `rand` and generate rand bytes accordingly?
-                    tr.put(None, slice.as_ref(), &v);
+                    tr.put(None, &key.to_ne_bytes(), &v);
                 }
                 db.write(tr).unwrap();
             }
