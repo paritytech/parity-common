@@ -173,7 +173,7 @@ macro_rules! uint_full_mul_reg {
 						if $check(me[j], carry) {
 							let a = me[j];
 
-							let (hi, low) = $crate::split_u128(a as u128 * b as u128);
+							let (hi, low) = Self::split_u128(a as u128 * b as u128);
 
 							let overflow = {
 								let existing_low = &mut ret[i + j];
@@ -303,13 +303,7 @@ macro_rules! impl_mul_from {
 				result
 			}
 		}
-	}
-}
 
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_mulassign_from {
-	($name: ident, $other: ident) => {
 		impl $crate::core_::ops::MulAssign<$other> for $name {
 			fn mul_assign(&mut self, other: $other) {
 				let result = *self * other;
@@ -319,29 +313,57 @@ macro_rules! impl_mulassign_from {
 	}
 }
 
-#[inline(always)]
+#[macro_export]
 #[doc(hidden)]
-pub fn mul_u32(a: (u64, u64), b: u64, carry: u64) -> (u64, u64) {
-	let upper = b * a.0;
-	let lower = b * a.1;
+macro_rules! impl_mul_for_primitive {
+	($name: ty, $other: ident) => {
+		impl $crate::core_::ops::Mul<$other> for $name {
+			type Output = $name;
 
-	let (res1, overflow1) = lower.overflowing_add(upper << 32);
-	let (res2, overflow2) = res1.overflowing_add(carry);
+			fn mul(self, other: $other) -> $name {
+				let (result, carry) = self.overflowing_mul_u64(other as u64);
+				panic_on_overflow!(carry > 0);
+				result
+			}
+		}
 
-	let carry = (upper >> 32) + overflow1 as u64 + overflow2 as u64;
-	(res2, carry)
-}
+		impl<'a> $crate::core_::ops::Mul<&'a $other> for $name {
+			type Output = $name;
 
-#[inline(always)]
-#[doc(hidden)]
-pub fn split(a: u64) -> (u64, u64) {
-	(a >> 32, a & 0xFFFF_FFFF)
-}
+			fn mul(self, other: &'a $other) -> $name {
+				let (result, carry) = self.overflowing_mul_u64(*other as u64);
+				panic_on_overflow!(carry > 0);
+				result
+			}
+		}
 
-#[inline(always)]
-#[doc(hidden)]
-pub fn split_u128(a: u128) -> (u64, u64) {
-	((a >> 64) as _, (a & 0xFFFFFFFFFFFFFFFF) as _)
+		impl<'a> $crate::core_::ops::Mul<&'a $other> for &'a $name {
+			type Output = $name;
+
+			fn mul(self, other: &'a $other) -> $name {
+				let (result, carry) = self.overflowing_mul_u64(*other as u64);
+				panic_on_overflow!(carry > 0);
+				result
+			}
+		}
+
+		impl<'a> $crate::core_::ops::Mul<$other> for &'a $name {
+			type Output = $name;
+
+			fn mul(self, other: $other) -> $name {
+				let (result, carry) = self.overflowing_mul_u64(other as u64);
+				panic_on_overflow!(carry > 0);
+				result
+			}
+		}
+
+		impl $crate::core_::ops::MulAssign<$other> for $name {
+			fn mul_assign(&mut self, other: $other) {
+				let result = *self * (other as u64);
+				*self = result
+			}
+		}
+	}
 }
 
 #[macro_export]
@@ -428,8 +450,8 @@ macro_rules! construct_uint {
 
 				let mut res = Self::default();
 				for b in value.bytes().map(|b| b - 48) {
-					let (r, overflow) = res.overflowing_mul_u32(10);
-					if overflow {
+					let (r, overflow) = res.overflowing_mul_u64(10);
+					if overflow > 0 {
 						return Err($crate::FromDecStrErr::InvalidLength);
 					}
 					let (r, overflow) = r.overflowing_add(b.into());
@@ -511,6 +533,15 @@ macro_rules! construct_uint {
 				for i in 0..$n_words { if arr[i] != 0 { return false; } }
 				return true;
 			}
+
+			// Whether this fits u64.
+			#[inline]
+			fn fits_word(&self) -> bool {
+				let &$name(ref arr) = self;
+				for i in 1..$n_words { if arr[i] != 0 { return false; } }
+				return true;
+			}
+
 
 			/// Return the least number of bits needed to represent the number
 			#[inline]
@@ -788,20 +819,35 @@ macro_rules! construct_uint {
 				}
 			}
 
-			/// Overflowing multiplication by u32.
-			fn overflowing_mul_u32(self, other: u32) -> (Self, bool) {
-				let $name(ref arr) = self;
-				let mut ret = [0u64; $n_words];
-				let mut carry = 0;
-				let o = other as u64;
+			#[inline(always)]
+			fn mul_u64(a: u64, b: u64, carry: u64) -> (u64, u64) {
+				let (hi, lo) = Self::split_u128(u128::from(a) * u128::from(b) + u128::from(carry));
+				(lo, hi)
+			}
 
-				for i in 0..$n_words {
-					let (res, carry2) = $crate::mul_u32($crate::split(arr[i]), o, carry);
-					ret[i] = res;
-					carry = carry2;
+			#[inline(always)]
+			fn split(a: u64) -> (u64, u64) {
+				(a >> 32, a & 0xFFFF_FFFF)
+			}
+
+			#[inline(always)]
+			fn split_u128(a: u128) -> (u64, u64) {
+				((a >> 64) as _, (a & 0xFFFFFFFFFFFFFFFF) as _)
+			}
+
+
+			/// Overflowing multiplication by u64.
+			/// Returns the result and carry.
+			fn overflowing_mul_u64(mut self, other: u64) -> (Self, u64) {
+				let mut carry = 0u64;
+
+				for d in self.0.iter_mut() {
+					let (res, c) = Self::mul_u64(*d, other, carry);
+					*d = res;
+					carry = c;
 				}
 
-				($name(ret), carry > 0)
+				(self, carry)
 			}
 
 			/// Converts from big endian representation bytes in memory.
@@ -950,56 +996,18 @@ macro_rules! construct_uint {
 			}
 		}
 
-		// specialization for u32
-		impl $crate::core_::ops::Mul<u32> for $name {
-			type Output = $name;
-
-			fn mul(self, other: u32) -> $name {
-				let (ret, overflow) = self.overflowing_mul_u32(other);
-				panic_on_overflow!(overflow);
-				ret
-			}
-		}
-
-		impl<'a> $crate::core_::ops::Mul<u32> for &'a $name {
-			type Output = $name;
-
-			fn mul(self, other: u32) -> $name {
-				*self * other
-			}
-		}
-
-		impl $crate::core_::ops::MulAssign<u32> for $name {
-			fn mul_assign(&mut self, other: u32) {
-				let result = *self * other;
-				*self = result
-			}
-		}
-
 		// all other impls
-		impl_mul_from!($name, u8);
-		impl_mul_from!($name, u16);
-		impl_mul_from!($name, u64);
-		impl_mul_from!($name, usize);
-
-		impl_mul_from!($name, i8);
-		impl_mul_from!($name, i16);
-		impl_mul_from!($name, i64);
-		impl_mul_from!($name, isize);
-
 		impl_mul_from!($name, $name);
-
-		impl_mulassign_from!($name, u8);
-		impl_mulassign_from!($name, u16);
-		impl_mulassign_from!($name, u64);
-		impl_mulassign_from!($name, usize);
-
-		impl_mulassign_from!($name, i8);
-		impl_mulassign_from!($name, i16);
-		impl_mulassign_from!($name, i64);
-		impl_mulassign_from!($name, isize);
-
-		impl_mulassign_from!($name, $name);
+		impl_mul_for_primitive!($name, u8);
+		impl_mul_for_primitive!($name, u16);
+		impl_mul_for_primitive!($name, u32);
+		impl_mul_for_primitive!($name, u64);
+		impl_mul_for_primitive!($name, usize);
+		impl_mul_for_primitive!($name, i8);
+		impl_mul_for_primitive!($name, i16);
+		impl_mul_for_primitive!($name, i32);
+		impl_mul_for_primitive!($name, i64);
+		impl_mul_for_primitive!($name, isize);
 
 		impl<T> $crate::core_::ops::Div<T> for $name where T: Into<$name> {
 			type Output = $name;
