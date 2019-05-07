@@ -86,3 +86,6 @@ impl VerifyKey<digest::Sha512> {
 pub fn verify<T>(k: &VerifyKey<T>, data: &[u8], sig: &[u8]) -> bool {
 	hmac::verify(&k.0, data, sig).is_ok()
 }
+
+#[cfg(test)]
+mod test;
