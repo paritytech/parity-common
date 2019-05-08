@@ -1,6 +1,6 @@
 [package]
 name = "ethereum-types"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 homepage = "https://github.com/paritytech/parity-common"
@@ -9,7 +9,7 @@ description = "Ethereum types"
 [dependencies]
 ethbloom = { path = "../ethbloom", version = "0.6", default-features = false }
 fixed-hash = { path = "../fixed-hash", version = "0.3", default-features = false, features = ["byteorder", "rustc-hex"] }
-uint = { path = "../uint", version = "0.6", default-features = false }
+uint = { path = "../uint", version = "0.7", default-features = false }
 primitive-types = { path = "../primitive-types", version = "0.2", features = ["rlp", "byteorder", "rustc-hex"], default-features = false }
 impl-serde = { path = "../primitive-types/impls/serde", version = "0.1", default-features = false, optional = true }
 impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.1", default-features = false }
