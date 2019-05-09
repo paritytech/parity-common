@@ -24,6 +24,7 @@ extern crate scrypt as rscrypt;
 extern crate ripemd160 as rripemd160;
 extern crate sha2 as rsha2;
 extern crate digest as rdigest;
+extern crate hmac as rhmac;
 extern crate aes as raes;
 extern crate aes_ctr;
 extern crate block_modes;
