@@ -234,7 +234,6 @@ fn open_or_create_db(env: &Environment, col: u32, flags: Option<DatabaseFlags>) 
 	let db_name = format!("col{}", col);
 	let flags = flags.unwrap_or_default();
 	env.create_db(Some(&db_name[..]), flags).map_err(other_io_err)
-//	env.create_db(Some(&db_name[..]), DatabaseFlags::default()).map_err(other_io_err)
 }
 
 impl EnvironmentWithDatabases {
@@ -257,9 +256,7 @@ impl EnvironmentWithDatabases {
 		if let Some(env_flags) = config.env_flags {
 			env_builder.set_flags(env_flags);
 		}
-
 		let env = env_builder.open(path).map_err(other_io_err)?;
-
 		let mut dbs = Vec::with_capacity(columns as usize);
 		for col in 0..columns {
 			let db = open_or_create_db(&env, col, config.db_flags)?;
