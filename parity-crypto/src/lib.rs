@@ -29,6 +29,7 @@ extern crate aes as raes;
 extern crate aes_ctr;
 extern crate block_modes;
 extern crate pbkdf2 as rpbkdf2;
+extern crate constant_time_eq;
 
 pub mod aes;
 pub mod aes_gcm;
@@ -79,5 +80,5 @@ pub fn derive_mac(derived_left_bits: &[u8], cipher_text: &[u8]) -> Vec<u8> {
 }
 
 pub fn is_equal(a: &[u8], b: &[u8]) -> bool {
-	ring::constant_time::verify_slices_are_equal(a, b).is_ok()
+	constant_time_eq::constant_time_eq(a, b)
 }
