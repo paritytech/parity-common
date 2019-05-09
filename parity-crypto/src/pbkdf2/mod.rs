@@ -14,21 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
+use rhmac;
+use rpbkdf2;
 use std::num::NonZeroU32;
-
-use ring;
 
 pub struct Salt<'a>(pub &'a [u8]);
 pub struct Secret<'a>(pub &'a [u8]);
 
 pub fn sha256(iter: NonZeroU32, salt: Salt, sec: Secret, out: &mut [u8; 32]) {
-	ring::pbkdf2::derive(&ring::digest::SHA256, iter, salt.0, sec.0, &mut out[..])
+	rpbkdf2::pbkdf2::<rhmac::Hmac<sha2::Sha256>>(sec.0, salt.0, iter.get() as usize, out)
 }
 
 pub fn sha512(iter: NonZeroU32, salt: Salt, sec: Secret, out: &mut [u8; 64]) {
-	ring::pbkdf2::derive(&ring::digest::SHA512, iter, salt.0, sec.0, &mut out[..])
+	rpbkdf2::pbkdf2::<rhmac::Hmac<sha2::Sha512>>(sec.0, salt.0, iter.get() as usize, out)
 }
-
 
 #[cfg(test)]
 mod test;
