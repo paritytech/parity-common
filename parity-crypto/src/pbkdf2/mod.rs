@@ -16,17 +16,16 @@
 
 use rhmac;
 use rpbkdf2;
-use std::num::NonZeroU32;
 
 pub struct Salt<'a>(pub &'a [u8]);
 pub struct Secret<'a>(pub &'a [u8]);
 
-pub fn sha256(iter: NonZeroU32, salt: Salt, sec: Secret, out: &mut [u8; 32]) {
-	rpbkdf2::pbkdf2::<rhmac::Hmac<sha2::Sha256>>(sec.0, salt.0, iter.get() as usize, out)
+pub fn sha256(iter: u32, salt: Salt, sec: Secret, out: &mut [u8; 32]) {
+	rpbkdf2::pbkdf2::<rhmac::Hmac<sha2::Sha256>>(sec.0, salt.0, iter as usize, out)
 }
 
-pub fn sha512(iter: NonZeroU32, salt: Salt, sec: Secret, out: &mut [u8; 64]) {
-	rpbkdf2::pbkdf2::<rhmac::Hmac<sha2::Sha512>>(sec.0, salt.0, iter.get() as usize, out)
+pub fn sha512(iter: u32, salt: Salt, sec: Secret, out: &mut [u8; 64]) {
+	rpbkdf2::pbkdf2::<rhmac::Hmac<sha2::Sha512>>(sec.0, salt.0, iter as usize, out)
 }
 
 #[cfg(test)]
