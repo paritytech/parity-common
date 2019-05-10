@@ -28,6 +28,8 @@ extern crate hmac as rhmac;
 extern crate aes as raes;
 extern crate aes_ctr;
 extern crate block_modes;
+extern crate pbkdf2 as rpbkdf2;
+extern crate constant_time_eq;
 
 pub mod aes;
 pub mod aes_gcm;
@@ -62,7 +64,7 @@ impl<T> Keccak256<[u8; 32]> for T where T: AsRef<[u8]> {
 	}
 }
 
-pub fn derive_key_iterations(password: &[u8], salt: &[u8], c: std::num::NonZeroU32) -> (Vec<u8>, Vec<u8>) {
+pub fn derive_key_iterations(password: &[u8], salt: &[u8], c: u32) -> (Vec<u8>, Vec<u8>) {
 	let mut derived_key = [0u8; KEY_LENGTH];
 	pbkdf2::sha256(c, pbkdf2::Salt(salt), pbkdf2::Secret(password), &mut derived_key);
 	let derived_right_bits = &derived_key[0..KEY_LENGTH_AES];
@@ -78,5 +80,5 @@ pub fn derive_mac(derived_left_bits: &[u8], cipher_text: &[u8]) -> Vec<u8> {
 }
 
 pub fn is_equal(a: &[u8], b: &[u8]) -> bool {
-	ring::constant_time::verify_slices_are_equal(a, b).is_ok()
+	constant_time_eq::constant_time_eq(a, b)
 }
