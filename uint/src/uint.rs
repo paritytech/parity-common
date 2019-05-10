@@ -52,36 +52,6 @@ macro_rules! impl_map_from {
 
 #[macro_export]
 #[doc(hidden)]
-macro_rules! uint_overflowing_add {
-	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_add_reg!($name, $n_words, $self_expr, $other)
-	})
-}
-
-#[macro_export]
-#[doc(hidden)]
-macro_rules! uint_overflowing_add_reg {
-	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_binop!(
-			$name,
-			$n_words,
-			$self_expr,
-			$other,
-			u64::overflowing_add
-		)
-	})
-}
-
-#[macro_export]
-#[doc(hidden)]
-macro_rules! uint_overflowing_sub {
-	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_sub_reg!($name, $n_words, $self_expr, $other)
-	})
-}
-
-#[macro_export]
-#[doc(hidden)]
 macro_rules! uint_overflowing_binop {
 	($name:ident, $n_words: tt, $self_expr: expr, $other: expr, $fn:expr) => ({
 		let $name(ref me) = $self_expr;
@@ -122,28 +92,6 @@ macro_rules! uint_overflowing_binop {
 		}
 
 		($name(ret), carry > 0)
-	})
-}
-
-#[macro_export]
-#[doc(hidden)]
-macro_rules! uint_overflowing_sub_reg {
-	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_binop!(
-			$name,
-			$n_words,
-			$self_expr,
-			$other,
-			u64::overflowing_sub
-		)
-	})
-}
-
-#[macro_export]
-#[doc(hidden)]
-macro_rules! uint_overflowing_mul {
-	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_mul_reg!($name, $n_words, $self_expr, $other)
 	})
 }
 
@@ -203,7 +151,7 @@ macro_rules! uint_full_mul_reg {
 
 #[macro_export]
 #[doc(hidden)]
-macro_rules! uint_overflowing_mul_reg {
+macro_rules! uint_overflowing_mul {
 	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
 		let ret: [u64; $n_words * 2] = uint_full_mul_reg!($name, $n_words, $self_expr, $other);
 
@@ -878,7 +826,13 @@ macro_rules! construct_uint {
 			/// Add with overflow.
 			#[inline(always)]
 			pub fn overflowing_add(self, other: $name) -> ($name, bool) {
-				uint_overflowing_add!($name, $n_words, self, other)
+				uint_overflowing_binop!(
+					$name,
+					$n_words,
+					self,
+					other,
+					u64::overflowing_add
+				)
 			}
 
 			/// Addition which saturates at the maximum value (Self::max_value()).
@@ -900,7 +854,13 @@ macro_rules! construct_uint {
 			/// Subtraction which underflows and returns a flag if it does.
 			#[inline(always)]
 			pub fn overflowing_sub(self, other: $name) -> ($name, bool) {
-				uint_overflowing_sub!($name, $n_words, self, other)
+				uint_overflowing_binop!(
+					$name,
+					$n_words,
+					self,
+					other,
+					u64::overflowing_sub
+				)
 			}
 
 			/// Subtraction which saturates at zero.
