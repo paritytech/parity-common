@@ -89,22 +89,6 @@ quick_error! {
 			display("Error with RustCrypto key length : {}", e)
 			from()
 		}
-		SymmetricCrypto {
-			display("symmetric crypto error")
-			from()
-		}
-	}
-}
-
-impl SymmError {
-	#[cfg(feature = "aead")]
-	pub(crate) fn offset_error(x: usize) -> SymmError {
-		SymmError(PrivSymmErr::Offset(x))
-	}
-
-	#[cfg(feature = "aead")]
-	pub(crate) fn symmetric_crypto_error() -> SymmError {
-		SymmError(PrivSymmErr::SymmetricCrypto)
 	}
 }
 

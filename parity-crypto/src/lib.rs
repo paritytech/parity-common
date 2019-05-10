@@ -18,8 +18,6 @@
 
 #[macro_use]
 extern crate quick_error;
-#[cfg(feature = "aead")]
-extern crate ring;
 extern crate tiny_keccak;
 extern crate scrypt as rscrypt;
 extern crate ripemd160 as rripemd160;
@@ -33,7 +31,6 @@ extern crate pbkdf2 as rpbkdf2;
 extern crate constant_time_eq;
 
 pub mod aes;
-pub mod aes_gcm;
 pub mod error;
 pub mod scrypt;
 pub mod digest;
