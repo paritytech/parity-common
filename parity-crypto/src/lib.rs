@@ -24,9 +24,11 @@ extern crate scrypt as rscrypt;
 extern crate ripemd160 as rripemd160;
 extern crate sha2 as rsha2;
 extern crate digest as rdigest;
+extern crate hmac as rhmac;
 extern crate aes as raes;
 extern crate aes_ctr;
 extern crate block_modes;
+extern crate pbkdf2 as rpbkdf2;
 extern crate constant_time_eq;
 
 pub mod aes;
@@ -62,7 +64,7 @@ impl<T> Keccak256<[u8; 32]> for T where T: AsRef<[u8]> {
 	}
 }
 
-pub fn derive_key_iterations(password: &[u8], salt: &[u8], c: std::num::NonZeroU32) -> (Vec<u8>, Vec<u8>) {
+pub fn derive_key_iterations(password: &[u8], salt: &[u8], c: u32) -> (Vec<u8>, Vec<u8>) {
 	let mut derived_key = [0u8; KEY_LENGTH];
 	pbkdf2::sha256(c, pbkdf2::Salt(salt), pbkdf2::Secret(password), &mut derived_key);
 	let derived_right_bits = &derived_key[0..KEY_LENGTH_AES];
