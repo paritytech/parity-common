@@ -489,20 +489,12 @@ where
 	}
 }
 
-/// Allows dropping and appending columns to the DB.
-/// Used for database migration.
-pub trait ChangeColumns {
-	/// Appends a new column to the database.
-	fn add_column(&self) -> io::Result<()>;
-	/// Drops the last column from the database.
-	fn drop_column(&self) -> io::Result<()>;
-}
-
-impl<DB> ChangeColumns for DatabaseWithCache<DB>
+impl<DB> DatabaseWithCache<DB>
 where
 	DB: OpenHandler<DB> + TransactionHandler + MigrationHandler<DB>,
 {
-	fn add_column(&self) -> io::Result<()> {
+	/// Appends a new column to the database.
+	pub fn add_column(&self) -> io::Result<()> {
 		match *self.db.write() {
 			Some(ref mut db) => {
 				db.add_column(&self.config)?;
@@ -515,7 +507,8 @@ where
 		}
 	}
 
-	fn drop_column(&self) -> io::Result<()> {
+	/// Drops the last column from the database.
+	pub fn drop_column(&self) -> io::Result<()> {
 		match *self.db.write() {
 			Some(ref mut db) => {
 				db.drop_column()?;
