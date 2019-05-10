@@ -18,6 +18,7 @@
 
 #[macro_use]
 extern crate quick_error;
+#[cfg(features = "aead")]
 extern crate ring;
 extern crate tiny_keccak;
 extern crate scrypt as rscrypt;

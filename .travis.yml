@@ -22,3 +22,4 @@ script:
   - cd uint/ && cargo test --features=std,quickcheck --release && cd ..
   - cd plain_hasher/ && cargo test --no-default-features && cd ..
   - cd parity-util-mem/ && cargo test --features=estimate-heapsize && cd ..
+  - cd parity-crypto/ && cargo test --all-features && cd ..
