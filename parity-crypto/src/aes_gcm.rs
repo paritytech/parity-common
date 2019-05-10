@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-#![cfg(features = "aead")]
+#![cfg(feature = "aead")]
 
 use error::SymmError;
 use ring;
@@ -31,7 +31,8 @@ pub struct Encryptor<'a> {
 
 impl<'a> Encryptor<'a> {
 	pub fn aes_128_gcm(key: &[u8; 16]) -> Result<Encryptor<'a>, SymmError> {
-		let sk = ring::aead::SealingKey::new(&ring::aead::AES_128_GCM, key)?;
+		let sk = ring::aead::SealingKey::new(&ring::aead::AES_128_GCM, key)
+			.map_err(|_| SymmError::symmetric_crypto_error())?;
 		Ok(Encryptor {
 			mode: Mode::Aes128Gcm,
 			key: sk,
@@ -41,7 +42,8 @@ impl<'a> Encryptor<'a> {
 	}
 
 	pub fn aes_256_gcm(key: &[u8; 32]) -> Result<Encryptor<'a>, SymmError> {
-		let sk = ring::aead::SealingKey::new(&ring::aead::AES_256_GCM, key)?;
+		let sk = ring::aead::SealingKey::new(&ring::aead::AES_256_GCM, key)
+			.map_err(|_| SymmError::symmetric_crypto_error())?;
 		Ok(Encryptor {
 			mode: Mode::Aes256Gcm,
 			key: sk,
@@ -77,7 +79,8 @@ impl<'a> Encryptor<'a> {
 		data.extend(::std::iter::repeat(0).take(tag_len));
 		let nonce = ring::aead::Nonce::assume_unique_for_key(*nonce);
 		let aad = ring::aead::Aad::from(self.ad);
-		let len = ring::aead::seal_in_place(&self.key, nonce, aad, &mut data[self.offset ..], tag_len)?;
+		let len = ring::aead::seal_in_place(&self.key, nonce, aad, &mut data[self.offset ..], tag_len)
+			.map_err(|_| SymmError::symmetric_crypto_error())?;
 		data.truncate(self.offset + len);
 		Ok(data)
 	}
@@ -92,7 +95,8 @@ pub struct Decryptor<'a> {
 
 impl<'a> Decryptor<'a> {
 	pub fn aes_128_gcm(key: &[u8; 16]) -> Result<Decryptor<'a>, SymmError> {
-		let ok = ring::aead::OpeningKey::new(&ring::aead::AES_128_GCM, key)?;
+		let ok = ring::aead::OpeningKey::new(&ring::aead::AES_128_GCM, key)
+			.map_err(|_| SymmError::symmetric_crypto_error())?;
 		Ok(Decryptor {
 			key: ok,
 			ad: &[],
@@ -101,7 +105,8 @@ impl<'a> Decryptor<'a> {
 	}
 
 	pub fn aes_256_gcm(key: &[u8; 32]) -> Result<Decryptor<'a>, SymmError> {
-		let ok = ring::aead::OpeningKey::new(&ring::aead::AES_256_GCM, key)?;
+		let ok = ring::aead::OpeningKey::new(&ring::aead::AES_256_GCM, key)
+			.map_err(|_| SymmError::symmetric_crypto_error())?;
 		Ok(Decryptor {
 			key: ok,
 			ad: &[],
@@ -127,7 +132,8 @@ impl<'a> Decryptor<'a> {
 		}
 		let nonce = ring::aead::Nonce::assume_unique_for_key(*nonce);
 		let aad = ring::aead::Aad::from(self.ad);
-		let len = ring::aead::open_in_place(&self.key, nonce, aad, 0, &mut data[self.offset ..])?.len();
+		let len = ring::aead::open_in_place(&self.key, nonce, aad, 0, &mut data[self.offset ..])
+			.map_err(|_| SymmError::symmetric_crypto_error())?.len();
 		data.truncate(self.offset + len);
 		Ok(data)
 	}
