@@ -29,12 +29,12 @@ macro_rules! impl_uint_serde {
 
 		impl<'de> $crate::serde::Deserialize<'de> for $name {
 			fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: $crate::serde::Deserializer<'de> {
-                let mut bytes = [0u8; $len * 8];
+				let mut bytes = [0u8; $len * 8];
 				let wrote = $crate::serialize::deserialize_check_len(
 					deserializer,
 					$crate::serialize::ExpectedLen::Between(0, &mut bytes)
 				)?;
-                Ok(bytes[0..wrote].into())
+				Ok(bytes[0..wrote].into())
 			}
 		}
 	}
