@@ -124,8 +124,8 @@ pub fn deserialize_check_len<'a, 'de, D>(deserializer: D, len: ExpectedLen<'a>) 
 						buf >>= 4;
 						continue
 					}
-					_ => {
-						let ch = v.bytes().skip(idx).next().unwrap() as char;
+					b => {
+						let ch = char::from(b);
 						return Err(E::custom(&format!("invalid hex character: {}, at {}", ch, idx)))
 					}
 				}
