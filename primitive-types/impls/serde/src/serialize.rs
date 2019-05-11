@@ -70,7 +70,7 @@ impl<'a> fmt::Display for ExpectedLen<'a> {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
 			ExpectedLen::Exact(ref v) => write!(fmt, "length of {}", v.len() * 2),
-            ExpectedLen::Between(min, ref v) => write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
+			ExpectedLen::Between(min, ref v) => write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
 		}
 	}
 }
