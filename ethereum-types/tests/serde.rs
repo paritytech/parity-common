@@ -104,3 +104,10 @@ fn test_invalid() {
 	assert!(ser::from_str::<H256>("\"0\"").unwrap_err().is_data());
 	assert!(ser::from_str::<H256>("\"10\"").unwrap_err().is_data());
 }
+
+#[test]
+fn test_invalid_char() {
+	const INVALID_STR: &str = "\"0x000000000000000000000000000000000000000000000000000000000000000g\"";
+	const EXPECTED_MSG: &str = "invalid hex character: g, at 65 at line 1 column 68";
+	assert_eq!(ser::from_str::<H256>(INVALID_STR).unwrap_err().to_string(), EXPECTED_MSG);
+}
