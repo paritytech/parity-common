@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use ring;
 use rscrypt;
 use block_modes;
 use aes_ctr;
@@ -90,23 +89,6 @@ quick_error! {
 			display("Error with RustCrypto key length : {}", e)
 			from()
 		}
-		Ring(e: ring::error::Unspecified) {
-			display("symmetric crypto error")
-			cause(e)
-			from()
-		}
-	}
-}
-
-impl SymmError {
-	pub(crate) fn offset_error(x: usize) -> SymmError {
-		SymmError(PrivSymmErr::Offset(x))
-	}
-}
-
-impl From<ring::error::Unspecified> for SymmError {
-	fn from(e: ring::error::Unspecified) -> SymmError {
-		SymmError(PrivSymmErr::Ring(e))
 	}
 }
 

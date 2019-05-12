@@ -38,6 +38,7 @@ extern crate impl_rlp;
 use core::convert::TryFrom;
 
 /// Error type for conversion.
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
 	/// Overflow encountered.
 	Overflow,
