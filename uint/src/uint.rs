@@ -395,7 +395,7 @@ macro_rules! construct_uint {
 					let $name(arr) = u;
 					for i in 2..$n_words {
 						if arr[i] != 0 {
-							return Err("integer overflow when casting")
+							return Err("integer overflow when casting");
 						}
 					}
 					Ok(((arr[1] as u128) << 64) + arr[0] as u128)
