@@ -11,7 +11,6 @@ hash-db = { version = "0.11.0", default-features = false }
 rlp = { version = "0.3.0", path = "../rlp", default-features = false }
 
 [dev-dependencies]
-trie-standardmap = { version = "0.1", path = "../trie-standardmap" }
 keccak-hasher = { version = "0.11.0" }
 tiny-keccak = "1.4.2"
 ethereum-types = "0.4"
