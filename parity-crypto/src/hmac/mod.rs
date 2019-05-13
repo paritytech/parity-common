@@ -44,8 +44,8 @@ impl<T> Deref for Signature<T> {
 pub struct SigKey<T>(KeyInner, PhantomData<T>);
 
 enum KeyInner {
-	Sha256(GenericArray<u8, U64>),
-	Sha512(GenericArray<u8, U128>),
+	Sha256(GenericArray<u8, U32>),
+	Sha512(GenericArray<u8, U64>),
 }
 
 impl SigKey<Sha256> {
