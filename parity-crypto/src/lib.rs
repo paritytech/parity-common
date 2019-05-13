@@ -28,7 +28,7 @@ extern crate aes as raes;
 extern crate aes_ctr;
 extern crate block_modes;
 extern crate pbkdf2 as rpbkdf2;
-extern crate constant_time_eq;
+extern crate subtle;
 
 pub mod aes;
 pub mod error;
@@ -40,6 +40,7 @@ pub mod pbkdf2;
 pub use error::Error;
 
 use tiny_keccak::Keccak;
+use subtle::ConstantTimeEq;
 
 pub const KEY_LENGTH: usize = 32;
 pub const KEY_ITERATIONS: usize = 10240;
@@ -78,5 +79,19 @@ pub fn derive_mac(derived_left_bits: &[u8], cipher_text: &[u8]) -> Vec<u8> {
 }
 
 pub fn is_equal(a: &[u8], b: &[u8]) -> bool {
-	constant_time_eq::constant_time_eq(a, b)
+	a.ct_eq(b).into()
+}
+
+#[cfg(test)]
+mod test {
+	use super::*;
+
+	#[test]
+	fn can_test_for_equality() {
+		let a = b"abc";
+		let b = b"abc";
+		let c = b"efg";
+		assert!(is_equal(a, b));
+		assert!(!is_equal(a, c));
+	}
 }

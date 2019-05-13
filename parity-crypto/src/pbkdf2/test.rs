@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::*;
-use std::num::NonZeroU32;
 
 #[test]
 fn basic_test() {
