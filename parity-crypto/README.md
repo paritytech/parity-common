@@ -7,4 +7,4 @@ By default, this library is compiled with the `secp256k1` feature, which provide
 
 ## Changelog
 
-The 0.4 release removes the dependency on `ring` and replaces it with prue-rust alternatives. As a consequence of this, AES GCM support has been removed. `subtle` replaces the `constant_time_eq` crate for constant time equality testing.
+The 0.4 release removes the dependency on `ring` and replaces it with prue-rust alternatives. As a consequence of this, AES GCM support has been removed. `subtle` is used for constant time equality testing.
