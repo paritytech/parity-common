@@ -401,6 +401,20 @@ macro_rules! construct_uint {
 					Ok(((arr[1] as u128) << 64) + arr[0] as u128)
 				}
 			}
+
+			impl $crate::core_::convert::TryFrom<$name> for i128 {
+				type Error = &'static str;
+
+				#[inline]
+				fn try_from(u: $name) -> Result<i128, &'static str> {
+					let i = u128::try_from(u)?;
+					if i > i128::max_value() as u128 {
+						Err("integer overflow when casting")
+					} else {
+						Ok(i as i128)
+					}
+				}
+			}
 	};
 	( @construct $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_words:tt ); ) => {
 		/// Little-endian large integer type
@@ -1170,6 +1184,11 @@ macro_rules! construct_uint {
 		impl_try_from_for_primitive!($name, u32);
 		impl_try_from_for_primitive!($name, usize);
 		impl_try_from_for_primitive!($name, u64);
+		impl_try_from_for_primitive!($name, i8);
+		impl_try_from_for_primitive!($name, i16);
+		impl_try_from_for_primitive!($name, i32);
+		impl_try_from_for_primitive!($name, isize);
+		impl_try_from_for_primitive!($name, i64);
 
 		impl<T> $crate::core_::ops::Add<T> for $name where T: Into<$name> {
 			type Output = $name;
