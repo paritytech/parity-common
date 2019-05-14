@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use digest::{Sha256, Sha512};
+use digest::{self, Sha256, Sha512};
 use rdigest::generic_array::{GenericArray, typenum::U32, typenum::U64, typenum::U128};
 use rhmac::{Hmac, Mac as _};
 use rsha2;
@@ -40,23 +40,45 @@ impl<T> Deref for Signature<T> {
 	}
 }
 
-/// HMAC signing key.
-pub struct SigKey<T>(KeyInner, PhantomData<T>);
-
 enum KeyInner {
 	Sha256(GenericArray<u8, U64>),
 	Sha512(GenericArray<u8, U128>),
 }
 
+impl KeyInner {
+	fn sha256(key: &[u8]) -> KeyInner {
+		if key.len() > 64 {
+			return KeyInner::sha256(&digest::sha256(key))
+		}
+
+		let mut key_stretched = [0; 64];
+		key_stretched[..key.len()].copy_from_slice(key);
+		KeyInner::Sha256(*GenericArray::from_slice(&key_stretched))
+	}
+
+	fn sha512(key: &[u8]) -> KeyInner {
+		if key.len() > 128 {
+			return KeyInner::sha512(&digest::sha512(key))
+		}
+
+		let mut key_stretched = [0; 128];
+		key_stretched[..key.len()].copy_from_slice(key);
+		KeyInner::Sha512(*GenericArray::from_slice(&key_stretched))
+	}
+}
+
+/// HMAC signing key.
+pub struct SigKey<T>(KeyInner, PhantomData<T>);
+
 impl SigKey<Sha256> {
 	pub fn sha256(key: &[u8]) -> SigKey<Sha256> {
-		SigKey(KeyInner::Sha256(*GenericArray::from_slice(key)), PhantomData)
+		SigKey(KeyInner::sha256(key), PhantomData)
 	}
 }
 
 impl SigKey<Sha512> {
 	pub fn sha512(key: &[u8]) -> SigKey<Sha512> {
-		SigKey(KeyInner::Sha512(*GenericArray::from_slice(key)), PhantomData)
+		SigKey(KeyInner::sha512(key), PhantomData)
 	}
 }
 
@@ -103,13 +125,13 @@ pub struct VerifyKey<T>(KeyInner, PhantomData<T>);
 
 impl VerifyKey<Sha256> {
 	pub fn sha256(key: &[u8]) -> VerifyKey<Sha256> {
-		VerifyKey(KeyInner::Sha256(*GenericArray::from_slice(key)), PhantomData)
+		VerifyKey(KeyInner::sha256(key), PhantomData)
 	}
 }
 
 impl VerifyKey<Sha512> {
 	pub fn sha512(key: &[u8]) -> VerifyKey<Sha512> {
-		VerifyKey(KeyInner::Sha512(*GenericArray::from_slice(key)), PhantomData)
+		VerifyKey(KeyInner::sha512(key), PhantomData)
 	}
 }
 
