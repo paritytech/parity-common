@@ -219,7 +219,7 @@ fn uint256_try_into_primitives() {
 		($small: ty, $big: ty) => {
 			assert_eq!(
 				U256::from(<$small>::max_value() as $big + 1).try_into() as Result<$small, _>,
-				Err("integer overflow when casting")
+				Err(concat!("integer overflow when casting to ", stringify!($small)))
 			);
 		}
 	}
@@ -228,14 +228,14 @@ fn uint256_try_into_primitives() {
 	try_into_primitive_err!(u32, u64);
 	try_into_primitive_err!(usize, u128);
 	try_into_primitive_err!(u64, u128);
-	assert_eq!(U256([0, 0, 1, 0]).try_into() as Result<u128, _>, Err("integer overflow when casting"));
+	assert_eq!(U256([0, 0, 1, 0]).try_into() as Result<u128, _>, Err("integer overflow when casting to u128"));
 	try_into_primitive_err!(i8, i16);
 	try_into_primitive_err!(i16, i32);
 	try_into_primitive_err!(i32, i64);
 	try_into_primitive_err!(isize, i128);
 	try_into_primitive_err!(i64, i128);
 	try_into_primitive_err!(i128, u128);
-	assert_eq!(U256([0, 0, 1, 0]).try_into() as Result<i128, _>, Err("integer overflow when casting"));
+	assert_eq!(U256([0, 0, 1, 0]).try_into() as Result<i128, _>, Err("integer overflow when casting to i128"));
 }
 
 #[test]

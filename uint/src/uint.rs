@@ -61,7 +61,7 @@ macro_rules! impl_try_from_for_primitive {
 			fn try_from(u: $from) -> Result<$to, &'static str> {
 				let $from(arr) = u;
 				if !u.fits_word() || arr[0] > <$to>::max_value() as u64 {
-					Err("integer overflow when casting")
+					Err(concat!("integer overflow when casting to ", stringify!($to)))
 				} else {
 					Ok(arr[0] as $to)
 				}
@@ -395,7 +395,7 @@ macro_rules! construct_uint {
 					let $name(arr) = u;
 					for i in 2..$n_words {
 						if arr[i] != 0 {
-							return Err("integer overflow when casting");
+							return Err("integer overflow when casting to u128");
 						}
 					}
 					Ok(((arr[1] as u128) << 64) + arr[0] as u128)
@@ -407,9 +407,10 @@ macro_rules! construct_uint {
 
 				#[inline]
 				fn try_from(u: $name) -> Result<i128, &'static str> {
-					let i = u128::try_from(u)?;
+					let err_str = "integer overflow when casting to i128";
+					let i = u128::try_from(u).map_err(|_| err_str)?;
 					if i > i128::max_value() as u128 {
-						Err("integer overflow when casting")
+						Err(err_str)
 					} else {
 						Ok(i as i128)
 					}
