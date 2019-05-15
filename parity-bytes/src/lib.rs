@@ -23,9 +23,10 @@
 #![cfg_attr(not(feature = "std"), feature(alloc))]
 
 #[cfg(not(feature = "std"))]
+#[macro_use]
 extern crate alloc;
 
-// Re-export libcore using an alias so that possible macros can work without
+// Re-export libcore using an alias so that possible backward macros could work without
 // requiring `extern crate core` downstream.
 #[doc(hidden)]
 pub extern crate core as core_;
@@ -41,6 +42,9 @@ use alloc::vec::Vec;
 
 #[cfg(feature = "std")]
 use std::vec::Vec;
+
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
 
 /// Slice pretty print helper
 pub struct PrettySlice<'a> (&'a [u8]);
