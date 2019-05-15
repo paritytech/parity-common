@@ -44,20 +44,19 @@ impl<T> Deref for Signature<T> {
 pub struct SigKey<T>(KeyInner, PhantomData<T>);
 
 enum KeyInner {
-	Sha256(rhmac::Hmac<rsha2::Sha256>),
-	Sha512(rhmac::Hmac<rsha2::Sha512>),
+	Sha256(Vec<u8>),
+	Sha512(Vec<u8>),
 }
 
 impl SigKey<Sha256> {
 	pub fn sha256(key: &[u8]) -> SigKey<Sha256> {
-		SigKey(KeyInner::Sha256(Hmac::<rsha2::Sha256>::new_varkey(key).unwrap()), PhantomData)
+		SigKey(KeyInner::Sha256(key.to_vec()), PhantomData)
 	}
 }
 
 impl SigKey<Sha512> {
 	pub fn sha512(key: &[u8]) -> SigKey<Sha512> {
-		SigKey(KeyInner::Sha512(Hmac::<rsha2::Sha512>::new_varkey(key).unwrap()), PhantomData)
-
+		SigKey(KeyInner::Sha512(key.to_vec()), PhantomData)
 	}
 }
 
@@ -79,8 +78,8 @@ enum SignerInner {
 impl<T> Signer<T> {
 	pub fn with(key: &SigKey<T>) -> Signer<T> {
 		match &key.0 {
-			KeyInner::Sha256(k) => Signer(SignerInner::Sha256(k.clone()), PhantomData),
-			KeyInner::Sha512(k) => Signer(SignerInner::Sha512(k.clone()), PhantomData),
+			KeyInner::Sha256(key_bytes) => Signer(SignerInner::Sha256(Hmac::<rsha2::Sha256>::new_varkey(key_bytes).unwrap()), PhantomData),
+			KeyInner::Sha512(key_bytes) => Signer(SignerInner::Sha512(Hmac::<rsha2::Sha512>::new_varkey(key_bytes).unwrap()), PhantomData),
 		}
 	}
 
@@ -104,28 +103,28 @@ pub struct VerifyKey<T>(KeyInner, PhantomData<T>);
 
 impl VerifyKey<Sha256> {
 	pub fn sha256(key: &[u8]) -> VerifyKey<Sha256> {
-		VerifyKey(KeyInner::Sha256(Hmac::<rsha2::Sha256>::new_varkey(key).unwrap()), PhantomData)
+		VerifyKey(KeyInner::Sha256(key.to_vec()), PhantomData)
 	}
 }
 
 impl VerifyKey<Sha512> {
 	pub fn sha512(key: &[u8]) -> VerifyKey<Sha512> {
-		VerifyKey(KeyInner::Sha512(Hmac::<rsha2::Sha512>::new_varkey(key).unwrap()), PhantomData)
+		VerifyKey(KeyInner::Sha512(key.to_vec()), PhantomData)
 	}
 }
 
 /// Verify HMAC signature of `data`.
 pub fn verify<T>(key: &VerifyKey<T>, data: &[u8], sig: &[u8]) -> bool {
 	match &key.0 {
-		KeyInner::Sha256(ctx) => {
-			let mut ctx2 = ctx.clone();
-			ctx2.input(data);
-			ctx2.verify(sig).is_ok();
+		KeyInner::Sha256(key_bytes) => {
+			let mut ctx = Hmac::<rsha2::Sha256>::new_varkey(key_bytes).unwrap();
+			ctx.input(data);
+			ctx.verify(sig).is_ok()
 		},
-		KeyInner::Sha512(ctx) => {
-			let mut ctx2 = ctx.clone();
-			ctx2.input(data);
-			ctx2.verify(sig).is_ok();
+		KeyInner::Sha512(key_bytes) => {
+			let mut ctx = Hmac::<rsha2::Sha512>::new_varkey(key_bytes).unwrap();
+			ctx.input(data);
+			ctx.verify(sig).is_ok()
 		},
 	}
 }
