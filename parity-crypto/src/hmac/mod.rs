@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use digest::{Sha256, Sha512};
-use rdigest::generic_array::{GenericArray, typenum::U32, typenum::U64, typenum::U128};
+use rdigest::generic_array::{GenericArray, typenum::U32, typenum::U64};
 use rhmac::{Hmac, Mac as _};
 use rsha2;
 use std::marker::PhantomData;
