@@ -115,15 +115,17 @@ impl VerifyKey<Sha512> {
 }
 
 /// Verify HMAC signature of `data`.
-pub fn verify<T>(k: VerifyKey<T>, data: &[u8], sig: &[u8]) -> bool {
-	match k.0 {
-		KeyInner::Sha256(mut ctx) => {
-			ctx.input(data);
-			ctx.verify(sig).is_ok();
+pub fn verify<T>(key: &VerifyKey<T>, data: &[u8], sig: &[u8]) -> bool {
+	match &key.0 {
+		KeyInner::Sha256(ctx) => {
+			let mut ctx2 = ctx.clone();
+			ctx2.input(data);
+			ctx2.verify(sig).is_ok();
 		},
-		KeyInner::Sha512(mut ctx) => {
-			ctx.input(data);
-			ctx.verify(sig).is_ok();
+		KeyInner::Sha512(ctx) => {
+			let mut ctx2 = ctx.clone();
+			ctx2.input(data);
+			ctx2.verify(sig).is_ok();
 		},
 	}
 	true

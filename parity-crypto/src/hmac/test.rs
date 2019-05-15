@@ -43,6 +43,6 @@ fn simple_mac_and_verify() {
 	assert_eq!(&sig2[..], &sign(&sig_key2, &big_input[..])[..]);
 	let verif_key1 = VerifyKey::sha256(&key1[..]);
 	let verif_key2 = VerifyKey::sha512(&key2[..]);
-	assert!(verify(verif_key1, &input[..], &sig1[..]));
-	assert!(verify(verif_key2, &big_input[..], &sig2[..]));
+	assert!(verify(&verif_key1, &input[..], &sig1[..]));
+	assert!(verify(&verif_key2, &big_input[..], &sig2[..]));
 }
