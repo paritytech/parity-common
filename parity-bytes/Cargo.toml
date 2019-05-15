@@ -7,3 +7,9 @@ description = "byte utilities for Parity"
 license = "GPL-3.0"
 
 [dependencies]
+
+
+[features]
+default = ["std","nostd"]
+std = []
+nostd = []

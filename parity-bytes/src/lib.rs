@@ -19,9 +19,28 @@
 //! Includes a pretty-printer for bytes, in the form of `ToPretty` and `PrettySlice`
 //! as
 
-use std::fmt;
-use std::cmp::min;
-use std::ops::{Deref, DerefMut};
+#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(feature = "std"), feature(alloc))]
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+// Re-export libcore using an alias so that the macros can work without
+// requiring `extern crate core` downstream.
+#[doc(hidden)]
+pub extern crate core as core_;
+
+use core_::{
+	cmp::min,
+	fmt,
+	ops::{Deref, DerefMut},
+};
+
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
+#[cfg(feature = "std")]
+use std::vec::Vec;
 
 /// Slice pretty print helper
 pub struct PrettySlice<'a> (&'a [u8]);
