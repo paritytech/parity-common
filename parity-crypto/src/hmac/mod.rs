@@ -78,8 +78,23 @@ enum SignerInner {
 impl<T> Signer<T> {
 	pub fn with(key: &SigKey<T>) -> Signer<T> {
 		match &key.0 {
-			KeyInner::Sha256(key_bytes) => Signer(SignerInner::Sha256(Hmac::<rsha2::Sha256>::new_varkey(key_bytes).unwrap()), PhantomData),
-			KeyInner::Sha512(key_bytes) => Signer(SignerInner::Sha512(Hmac::<rsha2::Sha512>::new_varkey(key_bytes).unwrap()), PhantomData),
+			KeyInner::Sha256(key_bytes) => {
+				Signer(
+					SignerInner::Sha256(
+						Hmac::<rsha2::Sha256>::new_varkey(key_bytes)
+							.expect("always returns Ok; qed")
+					),
+					PhantomData
+				)
+			},
+			KeyInner::Sha512(key_bytes) => {
+				Signer(
+					SignerInner::Sha512(
+						Hmac::<rsha2::Sha512>::new_varkey(key_bytes)
+							.expect("always returns Ok; qed")
+					), PhantomData
+				)
+			},
 		}
 	}
 
