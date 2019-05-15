@@ -20,11 +20,12 @@
 //! as
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(feature = "std"), feature(alloc))]
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
-// Re-export libcore using an alias so that the macros can work without
+// Re-export libcore using an alias so that possible macros can work without
 // requiring `extern crate core` downstream.
 #[doc(hidden)]
 pub extern crate core as core_;
