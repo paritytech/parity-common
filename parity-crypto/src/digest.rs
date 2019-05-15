@@ -63,8 +63,11 @@ pub fn ripemd160(data: &[u8]) -> Digest<Ripemd160> {
 	hasher.finish()
 }
 
+#[derive(Debug)]
 pub enum Sha256 {}
+#[derive(Debug)]
 pub enum Sha512 {}
+#[derive(Debug)]
 pub enum Ripemd160 {}
 
 /// Stateful digest computation.
