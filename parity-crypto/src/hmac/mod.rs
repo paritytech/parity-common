@@ -132,12 +132,14 @@ impl VerifyKey<Sha512> {
 pub fn verify<T>(key: &VerifyKey<T>, data: &[u8], sig: &[u8]) -> bool {
 	match &key.0 {
 		KeyInner::Sha256(key_bytes) => {
-			let mut ctx = Hmac::<rsha2::Sha256>::new_varkey(key_bytes).unwrap();
+			let mut ctx = Hmac::<rsha2::Sha256>::new_varkey(key_bytes)
+				.expect("always returns Ok; qed");
 			ctx.input(data);
 			ctx.verify(sig).is_ok()
 		},
 		KeyInner::Sha512(key_bytes) => {
-			let mut ctx = Hmac::<rsha2::Sha512>::new_varkey(key_bytes).unwrap();
+			let mut ctx = Hmac::<rsha2::Sha512>::new_varkey(key_bytes)
+				.expect("always returns Ok; qed");
 			ctx.input(data);
 			ctx.verify(sig).is_ok()
 		},
