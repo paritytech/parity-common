@@ -12,6 +12,7 @@ extern crate crunchy;
 
 use core::u64::MAX;
 use core::str::FromStr;
+use core::convert::TryInto;
 use uint::{FromDecStrErr};
 
 construct_uint! {
@@ -186,6 +187,55 @@ fn uint256_from() {
 		U256([0x12f0, 1 , 0x0910203040506077, 0x8090a0b0c0d0e0f0]),
 		U256::from_str("8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0").unwrap()
 	);
+}
+
+#[test]
+fn uint256_try_into_primitives() {
+	macro_rules! try_into_uint_primitive_ok {
+		($primitive: ty) => {
+			assert_eq!(U256::from(10).try_into() as Result<$primitive, _>, Ok(<$primitive>::from(10u8)));
+		}
+	}
+	try_into_uint_primitive_ok!(u8);
+	try_into_uint_primitive_ok!(u16);
+	try_into_uint_primitive_ok!(u32);
+	try_into_uint_primitive_ok!(usize);
+	try_into_uint_primitive_ok!(u64);
+	try_into_uint_primitive_ok!(u128);
+
+	macro_rules! try_into_iint_primitive_ok {
+		($primitive: ty) => {
+			assert_eq!(U256::from(10).try_into() as Result<$primitive, _>, Ok(<$primitive>::from(10i8)));
+		}
+	}
+	try_into_iint_primitive_ok!(i8);
+	try_into_iint_primitive_ok!(i16);
+	try_into_iint_primitive_ok!(i32);
+	try_into_iint_primitive_ok!(isize);
+	try_into_iint_primitive_ok!(i64);
+	try_into_iint_primitive_ok!(i128);
+
+	macro_rules! try_into_primitive_err {
+		($small: ty, $big: ty) => {
+			assert_eq!(
+				U256::from(<$small>::max_value() as $big + 1).try_into() as Result<$small, _>,
+				Err(concat!("integer overflow when casting to ", stringify!($small)))
+			);
+		}
+	}
+	try_into_primitive_err!(u8, u16);
+	try_into_primitive_err!(u16, u32);
+	try_into_primitive_err!(u32, u64);
+	try_into_primitive_err!(usize, u128);
+	try_into_primitive_err!(u64, u128);
+	assert_eq!(U256([0, 0, 1, 0]).try_into() as Result<u128, _>, Err("integer overflow when casting to u128"));
+	try_into_primitive_err!(i8, i16);
+	try_into_primitive_err!(i16, i32);
+	try_into_primitive_err!(i32, i64);
+	try_into_primitive_err!(isize, i128);
+	try_into_primitive_err!(i64, i128);
+	try_into_primitive_err!(i128, u128);
+	assert_eq!(U256([0, 0, 1, 0]).try_into() as Result<i128, _>, Err("integer overflow when casting to i128"));
 }
 
 #[test]
