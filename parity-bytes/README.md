@@ -5,7 +5,7 @@ in a `no_std` context, add the following to your `Cargo.toml` (still requires al
 
 ```toml
 [dependencies]
-parity-bytes = { version = "0.1.0", default-features = false }
+parity-bytes = { version = "0.1.1", default-features = false }
 ```
 
 Until allocator api is stabilized, this type of use is limited to nightly Rust.
