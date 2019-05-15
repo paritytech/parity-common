@@ -10,6 +10,5 @@ license = "GPL-3.0"
 
 
 [features]
-default = ["std","nostd"]
+default = ["std"]
 std = []
-nostd = []
