@@ -26,9 +26,6 @@
 #[macro_use]
 extern crate alloc;
 
-#[doc(hidden)]
-extern crate core;
-
 use core::{
 	cmp::min,
 	fmt,
