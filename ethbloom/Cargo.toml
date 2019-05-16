@@ -13,6 +13,7 @@ tiny-keccak = "1.4"
 crunchy = { version = "0.2", default-features = false, features = ["limit_256"] }
 fixed-hash = { path = "../fixed-hash", version = "0.3", default-features = false }
 impl-serde = { path = "../primitive-types/impls/serde", version = "0.2", default-features = false, optional = true }
+impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.1", default-features = false }
 
 [dev-dependencies]
 rand = { version = "0.4" }
