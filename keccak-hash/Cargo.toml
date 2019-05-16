@@ -9,7 +9,7 @@ license = "GPL-3.0"
 
 [dependencies]
 tiny-keccak = "1.4"
-primitive-types = { path = "../primitive-types", version = "0.2" }
+primitive-types = "0.2"
 
 [dev-dependencies]
 tempdir = "0.3"
