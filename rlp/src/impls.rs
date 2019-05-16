@@ -185,7 +185,7 @@ mod ethereum_traits {
 		($name: ident) => {
 			impl Encodable for $name {
 				fn rlp_append(&self, s: &mut RlpStream) {
-					s.encoder().encode_value(self);
+					s.encoder().encode_value(self.as_ref());
 				}
 			}
 		}
