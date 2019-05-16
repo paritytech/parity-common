@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use digest::{Sha256, Sha512};
-use rdigest::generic_array::{GenericArray, typenum::U32, typenum::U64, typenum::U128};
+use rdigest::generic_array::{GenericArray, typenum::U32, typenum::U64};
 use rhmac::{Hmac, Mac as _};
 use rsha2;
 use std::marker::PhantomData;
@@ -44,19 +44,19 @@ impl<T> Deref for Signature<T> {
 pub struct SigKey<T>(KeyInner, PhantomData<T>);
 
 enum KeyInner {
-	Sha256(GenericArray<u8, U64>),
-	Sha512(GenericArray<u8, U128>),
+	Sha256(Vec<u8>),
+	Sha512(Vec<u8>),
 }
 
 impl SigKey<Sha256> {
 	pub fn sha256(key: &[u8]) -> SigKey<Sha256> {
-		SigKey(KeyInner::Sha256(*GenericArray::from_slice(key)), PhantomData)
+		SigKey(KeyInner::Sha256(key.to_vec()), PhantomData)
 	}
 }
 
 impl SigKey<Sha512> {
 	pub fn sha512(key: &[u8]) -> SigKey<Sha512> {
-		SigKey(KeyInner::Sha512(*GenericArray::from_slice(key)), PhantomData)
+		SigKey(KeyInner::Sha512(key.to_vec()), PhantomData)
 	}
 }
 
@@ -78,8 +78,23 @@ enum SignerInner {
 impl<T> Signer<T> {
 	pub fn with(key: &SigKey<T>) -> Signer<T> {
 		match &key.0 {
-			KeyInner::Sha256(k) => Signer(SignerInner::Sha256(Hmac::new(k)), PhantomData),
-			KeyInner::Sha512(k) => Signer(SignerInner::Sha512(Hmac::new(k)), PhantomData),
+			KeyInner::Sha256(key_bytes) => {
+				Signer(
+					SignerInner::Sha256(
+						Hmac::<rsha2::Sha256>::new_varkey(key_bytes)
+							.expect("always returns Ok; qed")
+					),
+					PhantomData
+				)
+			},
+			KeyInner::Sha512(key_bytes) => {
+				Signer(
+					SignerInner::Sha512(
+						Hmac::<rsha2::Sha512>::new_varkey(key_bytes)
+							.expect("always returns Ok; qed")
+					), PhantomData
+				)
+			},
 		}
 	}
 
@@ -103,29 +118,31 @@ pub struct VerifyKey<T>(KeyInner, PhantomData<T>);
 
 impl VerifyKey<Sha256> {
 	pub fn sha256(key: &[u8]) -> VerifyKey<Sha256> {
-		VerifyKey(KeyInner::Sha256(*GenericArray::from_slice(key)), PhantomData)
+		VerifyKey(KeyInner::Sha256(key.to_vec()), PhantomData)
 	}
 }
 
 impl VerifyKey<Sha512> {
 	pub fn sha512(key: &[u8]) -> VerifyKey<Sha512> {
-		VerifyKey(KeyInner::Sha512(*GenericArray::from_slice(key)), PhantomData)
+		VerifyKey(KeyInner::Sha512(key.to_vec()), PhantomData)
 	}
 }
 
 /// Verify HMAC signature of `data`.
-pub fn verify<T>(k: &VerifyKey<T>, data: &[u8], sig: &[u8]) -> bool {
-	match &k.0 {
-		KeyInner::Sha256(k) => {
-			let mut ctxt = Hmac::<rsha2::Sha256>::new(k);
-			ctxt.input(data);
-			ctxt.verify(sig).is_ok()
-		}
-		KeyInner::Sha512(k) => {
-			let mut ctxt = Hmac::<rsha2::Sha512>::new(k);
-			ctxt.input(data);
-			ctxt.verify(sig).is_ok()
-		}
+pub fn verify<T>(key: &VerifyKey<T>, data: &[u8], sig: &[u8]) -> bool {
+	match &key.0 {
+		KeyInner::Sha256(key_bytes) => {
+			let mut ctx = Hmac::<rsha2::Sha256>::new_varkey(key_bytes)
+				.expect("always returns Ok; qed");
+			ctx.input(data);
+			ctx.verify(sig).is_ok()
+		},
+		KeyInner::Sha512(key_bytes) => {
+			let mut ctx = Hmac::<rsha2::Sha512>::new_varkey(key_bytes)
+				.expect("always returns Ok; qed");
+			ctx.input(data);
+			ctx.verify(sig).is_ok()
+		},
 	}
 }
 
