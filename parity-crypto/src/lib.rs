@@ -31,7 +31,6 @@ extern crate pbkdf2 as rpbkdf2;
 extern crate constant_time_eq;
 
 #[cfg(test)]
-#[macro_use]
 extern crate hex_literal;
 
 

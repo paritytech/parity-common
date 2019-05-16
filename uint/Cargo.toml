@@ -4,7 +4,7 @@ homepage = "http://parity.io"
 repository = "https://github.com/paritytech/parity-common"
 license = "MIT/Apache-2.0"
 name = "uint"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 readme = "README.md"
 

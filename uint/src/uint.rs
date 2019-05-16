@@ -52,6 +52,26 @@ macro_rules! impl_map_from {
 
 #[macro_export]
 #[doc(hidden)]
+macro_rules! impl_try_from_for_primitive {
+	($from:ident, $to:ty) => {
+		impl $crate::core_::convert::TryFrom<$from> for $to {
+			type Error = &'static str;
+
+			#[inline]
+			fn try_from(u: $from) -> Result<$to, &'static str> {
+				let $from(arr) = u;
+				if !u.fits_word() || arr[0] > <$to>::max_value() as u64 {
+					Err(concat!("integer overflow when casting to ", stringify!($to)))
+				} else {
+					Ok(arr[0] as $to)
+				}
+			}
+		}
+	}
+}
+
+#[macro_export]
+#[doc(hidden)]
 macro_rules! uint_overflowing_binop {
 	($name:ident, $n_words: tt, $self_expr: expr, $other: expr, $fn:expr) => ({
 		let $name(ref me) = $self_expr;
@@ -364,6 +384,36 @@ macro_rules! construct_uint {
 
 					}
 					self.low_u128()
+				}
+			}
+
+			impl $crate::core_::convert::TryFrom<$name> for u128 {
+				type Error = &'static str;
+
+				#[inline]
+				fn try_from(u: $name) -> Result<u128, &'static str> {
+					let $name(arr) = u;
+					for i in 2..$n_words {
+						if arr[i] != 0 {
+							return Err("integer overflow when casting to u128");
+						}
+					}
+					Ok(((arr[1] as u128) << 64) + arr[0] as u128)
+				}
+			}
+
+			impl $crate::core_::convert::TryFrom<$name> for i128 {
+				type Error = &'static str;
+
+				#[inline]
+				fn try_from(u: $name) -> Result<i128, &'static str> {
+					let err_str = "integer overflow when casting to i128";
+					let i = u128::try_from(u).map_err(|_| err_str)?;
+					if i > i128::max_value() as u128 {
+						Err(err_str)
+					} else {
+						Ok(i as i128)
+					}
 				}
 			}
 	};
@@ -1129,6 +1179,17 @@ macro_rules! construct_uint {
 				Self::from_big_endian(bytes)
 			}
 		}
+
+		impl_try_from_for_primitive!($name, u8);
+		impl_try_from_for_primitive!($name, u16);
+		impl_try_from_for_primitive!($name, u32);
+		impl_try_from_for_primitive!($name, usize);
+		impl_try_from_for_primitive!($name, u64);
+		impl_try_from_for_primitive!($name, i8);
+		impl_try_from_for_primitive!($name, i16);
+		impl_try_from_for_primitive!($name, i32);
+		impl_try_from_for_primitive!($name, isize);
+		impl_try_from_for_primitive!($name, i64);
 
 		impl<T> $crate::core_::ops::Add<T> for $name where T: Into<$name> {
 			type Output = $name;
