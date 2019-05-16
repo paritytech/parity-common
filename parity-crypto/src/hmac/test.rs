@@ -198,3 +198,19 @@ fn ietf_test_vectors() {
 			134676fb6de0446065c97440fa8c6a58")
 	);
 }
+
+#[test]
+fn secrets_are_zeroed_on_drop() {
+	let ptr: *const KeyInner;
+	{
+		let secret = b"sikrit";
+		let signing_key = SigKey::sha256(secret);
+		ptr = &signing_key.0;
+		unsafe {
+			assert_eq!(*ptr, KeyInner::Sha256(DisposableBox::from_slice(b"sikrit")));
+		}
+	}
+	unsafe {
+		assert_eq!(*ptr, KeyInner::Sha256(DisposableBox::from_slice(&[0u8;6][..])));
+	}
+}

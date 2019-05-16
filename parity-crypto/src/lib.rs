@@ -29,6 +29,7 @@ extern crate aes_ctr;
 extern crate block_modes;
 extern crate pbkdf2 as rpbkdf2;
 extern crate constant_time_eq;
+extern crate memzero;
 
 #[cfg(test)]
 extern crate hex_literal;
