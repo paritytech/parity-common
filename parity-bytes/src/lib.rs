@@ -26,12 +26,10 @@
 #[macro_use]
 extern crate alloc;
 
-// Re-export libcore using an alias so that possible backward macros could work without
-// requiring `extern crate core` downstream.
 #[doc(hidden)]
-pub extern crate core as core_;
+extern crate core;
 
-use core_::{
+use core::{
 	cmp::min,
 	fmt,
 	ops::{Deref, DerefMut},
