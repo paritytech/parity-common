@@ -22,8 +22,10 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 
 /// HMAC signature.
+#[derive(Debug)]
 pub struct Signature<T>(HashInner, PhantomData<T>);
 
+#[derive(Debug)]
 enum HashInner {
 	Sha256(GenericArray<u8, U32>),
 	Sha512(GenericArray<u8, U64>),
