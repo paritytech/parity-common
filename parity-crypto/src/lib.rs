@@ -33,7 +33,6 @@ extern crate constant_time_eq;
 #[cfg(test)]
 extern crate hex_literal;
 
-
 pub mod aes;
 pub mod error;
 pub mod scrypt;
