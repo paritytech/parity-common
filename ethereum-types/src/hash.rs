@@ -88,6 +88,14 @@ impl From<u64> for H256 {
 	}
 }
 
+impl From<H256> for H160 {
+	fn from(value: H256) -> H160 {
+		let mut ret = H160::new();
+		ret.0.copy_from_slice(&value[12..32]);
+		ret
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::{H160, H256};
