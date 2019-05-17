@@ -8,7 +8,7 @@ license = "GPL-3.0"
 
 [dependencies]
 hash-db = { version = "0.11.0", default-features = false }
-rlp = { version = "0.4", path = "../rlp", default-features = false }
+rlp = { version = "0.4", path = "../rlp" }
 
 [dev-dependencies]
 keccak-hasher = { version = "0.11.0" }
