@@ -16,7 +16,7 @@
 
 //! secp256k1 for parity.
 
-extern crate libsecp256k1 as secp256k1;
+extern crate libsecp256k1_alt as secp256k1;
 
 use clear_on_drop::clear::Clear;
 use clear_on_drop::ClearOnDrop;
