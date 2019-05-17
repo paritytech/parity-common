@@ -14,11 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-#[cfg(not(target_arch = "wasm32"))]
-use ring;
 use rscrypt;
 use block_modes;
-use raes;
 use aes_ctr;
 use std::error::Error as StdError;
 
@@ -73,7 +70,6 @@ quick_error! {
 	}
 }
 
-#[cfg(target_arch = "wasm32")]
 quick_error! {
 	#[derive(Debug)]
 	pub enum SymmError wraps PrivSymmErr {
@@ -88,52 +84,10 @@ quick_error! {
 			display("ctr key stream ended")
 			from()
 		}
-		InvalidKeyLength(e: raes::block_cipher_trait::InvalidKeyLength) {
+		InvalidKeyLength(e: block_modes::InvalidKeyIvLength) {
 			display("Error with RustCrypto key length : {}", e)
 			from()
 		}
-	}
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-quick_error! {
-	#[derive(Debug)]
-	pub enum SymmError wraps PrivSymmErr {
-		Offset(x: usize) {
-			display("offset {} greater than slice length", x)
-		}
-		BlockMode(e: block_modes::BlockModeError) {
-			display("symmetric crypto error")
-			from()
-		}
-		KeyStream(e: aes_ctr::stream_cipher::LoopError) {
-			display("ctr key stream ended")
-			from()
-		}
-		InvalidKeyLength(e: raes::block_cipher_trait::InvalidKeyLength) {
-			display("Error with RustCrypto key length : {}", e)
-			from()
-		}
-		Ring(e: ring::error::Unspecified) {
-			display("symmetric crypto error")
-			cause(e)
-			from()
-		}
-	}
-}
-
-
-#[cfg(not(target_arch = "wasm32"))]
-impl SymmError {
-	pub(crate) fn offset_error(x: usize) -> SymmError {
-		SymmError(PrivSymmErr::Offset(x))
-	}
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-impl From<ring::error::Unspecified> for SymmError {
-	fn from(e: ring::error::Unspecified) -> SymmError {
-		SymmError(PrivSymmErr::Ring(e))
 	}
 }
 
@@ -143,8 +97,8 @@ impl From<block_modes::BlockModeError> for SymmError {
 	}
 }
 
-impl From<raes::block_cipher_trait::InvalidKeyLength> for SymmError {
-	fn from(e: raes::block_cipher_trait::InvalidKeyLength) -> SymmError {
+impl From<block_modes::InvalidKeyIvLength> for SymmError {
+	fn from(e: block_modes::InvalidKeyIvLength) -> SymmError {
 		SymmError(PrivSymmErr::InvalidKeyLength(e))
 	}
 }

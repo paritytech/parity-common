@@ -51,10 +51,10 @@ macro_rules! construct_fixed_hash {
 	( $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_bytes:expr ); ) => {
 		#[repr(C)]
 		$(#[$attr])*
-		$visibility struct $name ([u8; $n_bytes]);
+		$visibility struct $name (pub [u8; $n_bytes]);
 
 		impl From<[u8; $n_bytes]> for $name {
-			/// Constructs a hash type from the given bytes.
+			/// Constructs a hash type from the given bytes array of fixed length.
 			///
 			/// # Note
 			///
@@ -62,6 +62,32 @@ macro_rules! construct_fixed_hash {
 			#[inline]
 			fn from(bytes: [u8; $n_bytes]) -> Self {
 				$name(bytes)
+			}
+		}
+
+		impl<'a> From<&'a [u8; $n_bytes]> for $name {
+			/// Constructs a hash type from the given reference
+			/// to the bytes array of fixed length. 
+			///
+			/// # Note
+			///
+			/// The given bytes are interpreted in big endian order.
+			#[inline]
+			fn from(bytes: &'a [u8; $n_bytes]) -> Self {
+				$name(*bytes)
+			}
+		}
+
+		impl<'a> From<&'a mut [u8; $n_bytes]> for $name {
+			/// Constructs a hash type from the given reference
+			/// to the mutable bytes array of fixed length. 
+			///
+			/// # Note
+			///
+			/// The given bytes are interpreted in big endian order.
+			#[inline]
+			fn from(bytes: &'a mut [u8; $n_bytes]) -> Self {
+				$name(*bytes)
 			}
 		}
 
@@ -117,9 +143,21 @@ macro_rules! construct_fixed_hash {
 				&mut self.0
 			}
 
+			/// Extracts a reference to the byte array containing the entire fixed hash.
+			#[inline]
+			pub fn as_fixed_bytes(&self) -> &[u8; $n_bytes] {
+				&self.0
+			}
+
+			/// Extracts a reference to the byte array containing the entire fixed hash.
+			#[inline]
+			pub fn as_fixed_bytes_mut(&mut self) -> &mut [u8; $n_bytes] {
+				&mut self.0
+			}
+
 			/// Returns the inner bytes array.
 			#[inline]
-			pub fn to_bytes(self) -> [u8; $n_bytes] {
+			pub fn to_fixed_bytes(self) -> [u8; $n_bytes] {
 				self.0
 			}
 
@@ -145,7 +183,7 @@ macro_rules! construct_fixed_hash {
 			///
 			/// If the length of `src` and the number of bytes in `self` do not match.
 			pub fn assign_from_slice(&mut self, src: &[u8]) {
-				$crate::core::assert_eq!(src.len(), $n_bytes);
+				$crate::core_::assert_eq!(src.len(), $n_bytes);
 				self.as_bytes_mut().copy_from_slice(src);
 			}
 
@@ -159,7 +197,7 @@ macro_rules! construct_fixed_hash {
 			///
 			/// If the length of `src` and the number of bytes in `Self` do not match.
 			pub fn from_slice(src: &[u8]) -> Self {
-				$crate::core::assert_eq!(src.len(), $n_bytes);
+				$crate::core_::assert_eq!(src.len(), $n_bytes);
 				let mut ret = Self::zero();
 				ret.assign_from_slice(src);
 				ret
@@ -178,8 +216,145 @@ macro_rules! construct_fixed_hash {
 			}
 		}
 
+		impl $crate::core_::fmt::Debug for $name {
+			fn fmt(&self, f: &mut $crate::core_::fmt::Formatter) -> $crate::core_::fmt::Result {
+				$crate::core_::write!(f, "{:#x}", self)
+			}
+		}
+
+		impl $crate::core_::fmt::Display for $name {
+			fn fmt(&self, f: &mut $crate::core_::fmt::Formatter) -> $crate::core_::fmt::Result {
+				$crate::core_::write!(f, "0x")?;
+				for i in &self.0[0..2] {
+					$crate::core_::write!(f, "{:02x}", i)?;
+				}
+				$crate::core_::write!(f, "…")?;
+				for i in &self.0[$n_bytes - 2..$n_bytes] {
+					$crate::core_::write!(f, "{:02x}", i)?;
+				}
+				Ok(())
+			}
+		}
+
+		impl $crate::core_::fmt::LowerHex for $name {
+			fn fmt(&self, f: &mut $crate::core_::fmt::Formatter) -> $crate::core_::fmt::Result {
+				if f.alternate() {
+					$crate::core_::write!(f, "0x")?;
+				}
+				for i in &self.0[..] {
+					$crate::core_::write!(f, "{:02x}", i)?;
+				}
+				Ok(())
+			}
+		}
+
+		impl $crate::core_::fmt::UpperHex for $name {
+			fn fmt(&self, f: &mut $crate::core_::fmt::Formatter) -> $crate::core_::fmt::Result {
+				if f.alternate() {
+					$crate::core_::write!(f, "0X")?;
+				}
+				for i in &self.0[..] {
+					$crate::core_::write!(f, "{:02X}", i)?;
+				}
+				Ok(())
+			}
+		}
+
+		impl $crate::core_::marker::Copy for $name {}
+
+		#[cfg_attr(feature = "dev", allow(expl_impl_clone_on_copy))]
+		impl $crate::core_::clone::Clone for $name {
+			fn clone(&self) -> $name {
+				let mut ret = $name::zero();
+				ret.0.copy_from_slice(&self.0);
+				ret
+			}
+		}
+
+		impl $crate::core_::cmp::Eq for $name {}
+
+		impl $crate::core_::cmp::PartialOrd for $name {
+			fn partial_cmp(&self, other: &Self) -> Option<$crate::core_::cmp::Ordering> {
+				Some(self.cmp(other))
+			}
+		}
+
+		impl $crate::core_::hash::Hash for $name {
+			fn hash<H>(&self, state: &mut H) where H: $crate::core_::hash::Hasher {
+				state.write(&self.0);
+				state.finish();
+			}
+		}
+
+		impl<I> $crate::core_::ops::Index<I> for $name
+		where
+			I: $crate::core_::slice::SliceIndex<[u8]>
+		{
+			type Output = I::Output;
+
+			#[inline]
+			fn index(&self, index: I) -> &I::Output {
+				&self.as_bytes()[index]
+			}
+		}
+
+		impl<I> $crate::core_::ops::IndexMut<I> for $name
+		where
+			I: $crate::core_::slice::SliceIndex<[u8], Output = [u8]>
+		{
+			#[inline]
+			fn index_mut(&mut self, index: I) -> &mut I::Output {
+				&mut self.as_bytes_mut()[index]
+			}
+		}
+
+		impl $crate::core_::default::Default for $name {
+			#[inline]
+			fn default() -> Self {
+				Self::zero()
+			}
+		}
+
+		impl_ops_for_hash!($name, BitOr, bitor, BitOrAssign, bitor_assign, |, |=);
+		impl_ops_for_hash!($name, BitAnd, bitand, BitAndAssign, bitand_assign, &, &=);
+		impl_ops_for_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
+
+		impl_byteorder_for_fixed_hash!($name);
+		impl_rand_for_fixed_hash!($name);
+		impl_libc_for_fixed_hash!($name);
+		impl_rustc_hex_for_fixed_hash!($name);
+		impl_heapsize_for_fixed_hash!($name);
+		impl_quickcheck_for_fixed_hash!($name);
+	}
+}
+
+// Implementation for disabled byteorder crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `byteorder` crate feature in
+// a user crate.
+#[cfg(not(feature = "byteorder"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_byteorder_for_fixed_hash {
+	( $name:ident ) => {}
+}
+
+// Implementation for enabled byteorder crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `byteorder` crate feature in
+// a user crate.
+#[cfg(feature = "byteorder")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_byteorder_for_fixed_hash {
+	( $name:ident ) => {
 		/// Utilities using the `byteorder` crate.
-		#[cfg(feature = "byteorder-support")]
 		impl $name {
 			/// Returns the least significant `n` bytes as slice.
 			///
@@ -188,7 +363,7 @@ macro_rules! construct_fixed_hash {
 			/// If `n` is greater than the number of bytes in `self`.
 			#[inline]
 			fn least_significant_bytes(&self, n: usize) -> &[u8] {
-				$crate::core::assert_eq!(true, n <= Self::len_bytes());
+				$crate::core_::assert_eq!(true, n <= Self::len_bytes());
 				&self[(Self::len_bytes() - n)..]
 			}
 
@@ -197,7 +372,7 @@ macro_rules! construct_fixed_hash {
 				B: $crate::byteorder::ByteOrder
 			{
 				let mut buf = [0x0; 8];
-				let capped = $crate::core::cmp::min($n_bytes, 8);
+				let capped = $crate::core_::cmp::min(Self::len_bytes(), 8);
 				buf[(8 - capped)..].copy_from_slice(self.least_significant_bytes(capped));
 				B::read_u64(&buf)
 			}
@@ -241,9 +416,9 @@ macro_rules! construct_fixed_hash {
 			{
 				let mut buf = [0x0; 8];
 				B::write_u64(&mut buf, val);
-				let capped = $crate::core::cmp::min(Self::len_bytes(), 8);
-				let mut bytes = [0x0; $n_bytes];
-				bytes[($n_bytes - capped)..].copy_from_slice(&buf[..capped]);
+				let capped = $crate::core_::cmp::min(Self::len_bytes(), 8);
+				let mut bytes = [0x0; $crate::core_::mem::size_of::<Self>()];
+				bytes[(Self::len_bytes() - capped)..].copy_from_slice(&buf[..capped]);
 				Self::from_slice(&bytes)
 			}
 
@@ -283,159 +458,35 @@ macro_rules! construct_fixed_hash {
 				Self::from_low_u64_with_byteorder::<$crate::byteorder::NativeEndian>(val)
 			}
 		}
+	}
+}
 
-		impl $crate::core::fmt::Debug for $name {
-			fn fmt(&self, f: &mut $crate::core::fmt::Formatter) -> $crate::core::fmt::Result {
-				$crate::core::write!(f, "{:#x}", self)
-			}
-		}
+// Implementation for disabled rand crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `rand` crate feature in
+// a user crate.
+#[cfg(not(feature = "rand"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_rand_for_fixed_hash {
+	( $name:ident ) => {}
+}
 
-		impl $crate::core::fmt::Display for $name {
-			fn fmt(&self, f: &mut $crate::core::fmt::Formatter) -> $crate::core::fmt::Result {
-				$crate::core::write!(f, "0x")?;
-				for i in &self.0[0..2] {
-					$crate::core::write!(f, "{:02x}", i)?;
-				}
-				$crate::core::write!(f, "…")?;
-				for i in &self.0[$n_bytes - 2..$n_bytes] {
-					$crate::core::write!(f, "{:02x}", i)?;
-				}
-				Ok(())
-			}
-		}
-
-		impl $crate::core::fmt::LowerHex for $name {
-			fn fmt(&self, f: &mut $crate::core::fmt::Formatter) -> $crate::core::fmt::Result {
-				if f.alternate() {
-					$crate::core::write!(f, "0x")?;
-				}
-				for i in &self.0[..] {
-					$crate::core::write!(f, "{:02x}", i)?;
-				}
-				Ok(())
-			}
-		}
-
-		impl $crate::core::fmt::UpperHex for $name {
-			fn fmt(&self, f: &mut $crate::core::fmt::Formatter) -> $crate::core::fmt::Result {
-				if f.alternate() {
-					$crate::core::write!(f, "0X")?;
-				}
-				for i in &self.0[..] {
-					$crate::core::write!(f, "{:02X}", i)?;
-				}
-				Ok(())
-			}
-		}
-
-		impl $crate::core::marker::Copy for $name {}
-
-		#[cfg_attr(feature = "dev", allow(expl_impl_clone_on_copy))]
-		impl $crate::core::clone::Clone for $name {
-			fn clone(&self) -> $name {
-				let mut ret = $name::zero();
-				ret.0.copy_from_slice(&self.0);
-				ret
-			}
-		}
-
-		impl $crate::core::cmp::Eq for $name {}
-
-		impl $crate::core::cmp::PartialOrd for $name {
-			fn partial_cmp(&self, other: &Self) -> Option<$crate::core::cmp::Ordering> {
-				Some(self.cmp(other))
-			}
-		}
-
-		impl $crate::core::hash::Hash for $name {
-			fn hash<H>(&self, state: &mut H) where H: $crate::core::hash::Hasher {
-				state.write(&self.0);
-				state.finish();
-			}
-		}
-
-		impl<I> $crate::core::ops::Index<I> for $name
-		where
-			I: $crate::core::slice::SliceIndex<[u8]>
-		{
-			type Output = I::Output;
-
-			fn index(&self, index: I) -> &I::Output {
-				&self.as_bytes()[index]
-			}
-		}
-
-		impl<I> $crate::core::ops::IndexMut<I> for $name
-		where
-			I: $crate::core::slice::SliceIndex<[u8], Output = [u8]>
-		{
-			fn index_mut(&mut self, index: I) -> &mut I::Output {
-				&mut self.as_bytes_mut()[index]
-			}
-		}
-
-		impl $crate::core::default::Default for $name {
-			#[inline]
-			fn default() -> Self {
-				Self::zero()
-			}
-		}
-
-		impl_ops_for_hash!($name, BitOr, bitor, BitOrAssign, bitor_assign, |, |=);
-		impl_ops_for_hash!($name, BitAnd, bitand, BitAndAssign, bitand_assign, &, &=);
-		impl_ops_for_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
-
-		#[cfg(all(feature = "libc", not(target_os = "unknown")))]
-		impl $crate::core::cmp::PartialEq for $name {
-			#[inline]
-			fn eq(&self, other: &Self) -> bool {
-				unsafe {
-					$crate::libc::memcmp(
-						self.as_ptr() as *const $crate::libc::c_void,
-						other.as_ptr() as *const $crate::libc::c_void,
-						Self::len_bytes(),
-					) == 0
-				}
-			}
-		}
-
-		#[cfg(all(feature = "libc", not(target_os = "unknown")))]
-		impl $crate::core::cmp::Ord for $name {
-			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
-				let r = unsafe {
-					$crate::libc::memcmp(
-						self.as_ptr() as *const $crate::libc::c_void,
-						other.as_ptr() as *const $crate::libc::c_void,
-						Self::len_bytes(),
-					)
-				};
-				if r < 0 {
-					return $crate::core::cmp::Ordering::Less;
-				}
-				if r > 0 {
-					return $crate::core::cmp::Ordering::Greater;
-				}
-				$crate::core::cmp::Ordering::Equal
-			}
-		}
-
-		#[cfg(any(not(feature = "libc"), target_os = "unknown"))]
-		impl $crate::core::cmp::PartialEq for $name {
-			#[inline]
-			fn eq(&self, other: &Self) -> bool {
-				self.as_bytes() == other.as_bytes()
-			}
-		}
-
-		#[cfg(any(not(feature = "libc"), target_os = "unknown"))]
-		impl $crate::core::cmp::Ord for $name {
-			#[inline]
-			fn cmp(&self, other: &Self) -> $crate::core::cmp::Ordering {
-				self.as_bytes().cmp(other.as_bytes())
-			}
-		}
-
-		#[cfg(feature = "rand-support")]
+// Implementation for enabled rand crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `rand` crate feature in
+// a user crate.
+#[cfg(feature = "rand")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_rand_for_fixed_hash {
+	( $name:ident ) => {
 		impl $crate::rand::distributions::Distribution<$name>
 			for $crate::rand::distributions::Standard
 		{
@@ -449,7 +500,6 @@ macro_rules! construct_fixed_hash {
 		}
 
 		/// Utilities using the `rand` crate.
-		#[cfg(feature = "rand-support")]
 		impl $name {
 			/// Assign `self` to a cryptographically random value using the
 			/// given random number generator.
@@ -463,7 +513,7 @@ macro_rules! construct_fixed_hash {
 
 			/// Assign `self` to a cryptographically random value.
 			pub fn randomize(&mut self) {
-				let mut rng = $crate::rand::OsRng::new().unwrap();
+				let mut rng = $crate::rand::rngs::EntropyRng::new();
 				self.randomize_using(&mut rng);
 			}
 
@@ -485,9 +535,110 @@ macro_rules! construct_fixed_hash {
 				hash
 			}
 		}
+	}
+}
 
-		#[cfg(feature = "rustc-hex-support")]
-		impl $crate::core::str::FromStr for $name {
+// Implementation for disabled libc crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `libc` crate feature in
+// a user crate.
+#[cfg(not(all(feature = "libc", not(target_os = "unknown"))))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_libc_for_fixed_hash {
+	( $name:ident ) => {
+		impl $crate::core_::cmp::PartialEq for $name {
+			#[inline]
+			fn eq(&self, other: &Self) -> bool {
+				self.as_bytes() == other.as_bytes()
+			}
+		}
+
+		impl $crate::core_::cmp::Ord for $name {
+			#[inline]
+			fn cmp(&self, other: &Self) -> $crate::core_::cmp::Ordering {
+				self.as_bytes().cmp(other.as_bytes())
+			}
+		}
+	}
+}
+
+// Implementation for enabled libc crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `libc` crate feature in
+// a user crate.
+#[cfg(all(feature = "libc", not(target_os = "unknown")))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_libc_for_fixed_hash {
+	( $name:ident ) => {
+		impl $crate::core_::cmp::PartialEq for $name {
+			#[inline]
+			fn eq(&self, other: &Self) -> bool {
+				unsafe {
+					$crate::libc::memcmp(
+						self.as_ptr() as *const $crate::libc::c_void,
+						other.as_ptr() as *const $crate::libc::c_void,
+						Self::len_bytes(),
+					) == 0
+				}
+			}
+		}
+
+		impl $crate::core_::cmp::Ord for $name {
+			fn cmp(&self, other: &Self) -> $crate::core_::cmp::Ordering {
+				let r = unsafe {
+					$crate::libc::memcmp(
+						self.as_ptr() as *const $crate::libc::c_void,
+						other.as_ptr() as *const $crate::libc::c_void,
+						Self::len_bytes(),
+					)
+				};
+				if r < 0 {
+					return $crate::core_::cmp::Ordering::Less;
+				}
+				if r > 0 {
+					return $crate::core_::cmp::Ordering::Greater;
+				}
+				$crate::core_::cmp::Ordering::Equal
+			}
+		}
+	}
+}
+
+// Implementation for disabled rustc-hex crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `rustc-hex` crate feature in
+// a user crate.
+#[cfg(not(feature = "rustc-hex"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_rustc_hex_for_fixed_hash {
+	( $name:ident ) => {}
+}
+
+// Implementation for enabled rustc-hex crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `rustc-hex` crate feature in
+// a user crate.
+#[cfg(feature = "rustc-hex")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_rustc_hex_for_fixed_hash {
+	( $name:ident ) => {
+		impl $crate::core_::str::FromStr for $name {
 			type Err = $crate::rustc_hex::FromHexError;
 
 			/// Creates a hash type instance from the given string.
@@ -502,7 +653,7 @@ macro_rules! construct_fixed_hash {
 			/// - Upon empty string input or invalid input length in general
 			fn from_str(
 				input: &str,
-			) -> $crate::core::result::Result<$name, $crate::rustc_hex::FromHexError> {
+			) -> $crate::core_::result::Result<$name, $crate::rustc_hex::FromHexError> {
 				use $crate::rustc_hex::FromHex;
 				let bytes: Vec<u8> = input.from_hex()?;
 				if bytes.len() != Self::len_bytes() {
@@ -511,22 +662,77 @@ macro_rules! construct_fixed_hash {
 				Ok($name::from_slice(&bytes))
 			}
 		}
+	}
+}
 
-		#[cfg(all(
-			feature = "heapsize-support",
-			not(target_os = "unknown")
-		))]
+// Implementation for disabled heapsize crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `heapsize` crate feature in
+// a user crate.
+#[cfg(not(
+	all(feature = "heapsize", not(target_os = "unknown"))
+))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_heapsize_for_fixed_hash {
+	( $name:ident ) => {}
+}
+
+// Implementation for enabled heapsize crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `heapsize` crate feature in
+// a user crate.
+#[cfg(
+	all(feature = "heapsize", not(target_os = "unknown"))
+)]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_heapsize_for_fixed_hash {
+	( $name:ident ) => {
 		impl $crate::heapsize::HeapSizeOf for $name {
 			#[inline]
 			fn heap_size_of_children(&self) -> usize {
 				0
 			}
 		}
+	}
+}
 
-		#[cfg(feature = "quickcheck-support")]
+// Implementation for disabled quickcheck crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `quickcheck` crate feature in
+// a user crate.
+#[cfg(not(feature = "quickcheck"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_quickcheck_for_fixed_hash {
+	( $name:ident ) => {}
+}
+
+// Implementation for enabled quickcheck crate support.
+// 
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `quickcheck` crate feature in
+// a user crate.
+#[cfg(feature = "quickcheck")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_quickcheck_for_fixed_hash {
+	( $name:ident ) => {
 		impl $crate::quickcheck::Arbitrary for $name {
 			fn arbitrary<G: $crate::quickcheck::Gen>(g: &mut G) -> Self {
-				let mut res = [0u8; $n_bytes];
+				let mut res = [0u8; $crate::core_::mem::size_of::<Self>()];
 				g.fill_bytes(&mut res[..Self::len_bytes()]);
 				Self::from(res)
 			}
@@ -546,8 +752,7 @@ macro_rules! impl_ops_for_hash {
 		$ops_tok:tt,
 		$ops_assign_tok:tt
 	) => {
-
-		impl<'r> $crate::core::ops::$ops_assign_trait_name<&'r $impl_for> for $impl_for {
+		impl<'r> $crate::core_::ops::$ops_assign_trait_name<&'r $impl_for> for $impl_for {
 			fn $ops_assign_fn_name(&mut self, rhs: &'r $impl_for) {
 				for (lhs, rhs) in self.as_bytes_mut().iter_mut().zip(rhs.as_bytes()) {
 					*lhs $ops_assign_tok rhs;
@@ -555,13 +760,14 @@ macro_rules! impl_ops_for_hash {
 			}
 		}
 
-		impl $crate::core::ops::$ops_assign_trait_name<$impl_for> for $impl_for {
+		impl $crate::core_::ops::$ops_assign_trait_name<$impl_for> for $impl_for {
+			#[inline]
 			fn $ops_assign_fn_name(&mut self, rhs: $impl_for) {
 				*self $ops_assign_tok &rhs;
 			}
 		}
 
-		impl<'l, 'r> $crate::core::ops::$ops_trait_name<&'r $impl_for> for &'l $impl_for {
+		impl<'l, 'r> $crate::core_::ops::$ops_trait_name<&'r $impl_for> for &'l $impl_for {
 			type Output = $impl_for;
 
 			fn $ops_fn_name(self, rhs: &'r $impl_for) -> Self::Output {
@@ -571,14 +777,14 @@ macro_rules! impl_ops_for_hash {
 			}
 		}
 
-		impl $crate::core::ops::$ops_trait_name<$impl_for> for $impl_for {
+		impl $crate::core_::ops::$ops_trait_name<$impl_for> for $impl_for {
 			type Output = $impl_for;
 
+			#[inline]
 			fn $ops_fn_name(self, rhs: Self) -> Self::Output {
 				&self $ops_tok &rhs
 			}
 		}
-
 	};
 }
 
@@ -598,7 +804,6 @@ macro_rules! impl_ops_for_hash {
 ///
 /// ```
 /// #[macro_use] extern crate fixed_hash;
-/// #[macro_use] extern crate static_assertions;
 /// construct_fixed_hash!{ struct H160(20); }
 /// construct_fixed_hash!{ struct H256(32); }
 /// impl_fixed_hash_conversions!(H256, H160);
@@ -613,7 +818,7 @@ macro_rules! impl_fixed_hash_conversions {
 	($large_ty:ident, $small_ty:ident) => {
 		$crate::static_assertions::const_assert!(
 			VALID_SIZES;
-			$crate::core::mem::size_of::<$small_ty>() < $crate::core::mem::size_of::<$large_ty>()
+			$crate::core_::mem::size_of::<$small_ty>() < $crate::core_::mem::size_of::<$large_ty>()
 		);
 
 		impl From<$small_ty> for $large_ty {
@@ -621,7 +826,7 @@ macro_rules! impl_fixed_hash_conversions {
 				let large_ty_size = $large_ty::len_bytes();
 				let small_ty_size = $small_ty::len_bytes();
 
-				$crate::core::debug_assert!(
+				$crate::core_::debug_assert!(
 					large_ty_size > small_ty_size
 						&& large_ty_size % 2 == 0
 						&& small_ty_size % 2 == 0
@@ -639,7 +844,7 @@ macro_rules! impl_fixed_hash_conversions {
 				let large_ty_size = $large_ty::len_bytes();
 				let small_ty_size = $small_ty::len_bytes();
 
-				$crate::core::debug_assert!(
+				$crate::core_::debug_assert!(
 					large_ty_size > small_ty_size
 						&& large_ty_size % 2 == 0
 						&& small_ty_size % 2 == 0

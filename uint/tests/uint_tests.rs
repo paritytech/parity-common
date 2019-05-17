@@ -2,15 +2,36 @@ extern crate core;
 
 #[macro_use]
 extern crate uint;
-#[macro_use]
-extern crate crunchy;
-#[cfg(feature = "impl_quickcheck_arbitrary")]
+
+#[cfg(feature = "quickcheck")]
 #[macro_use]
 extern crate quickcheck;
 
+#[cfg_attr(all(test, feature = "quickcheck"), macro_use(unroll))]
+extern crate crunchy;
+
 use core::u64::MAX;
 use core::str::FromStr;
-use uint::{U256, U512, FromDecStrErr};
+use core::convert::TryInto;
+use uint::{FromDecStrErr};
+
+construct_uint! {
+	pub struct U256(4);
+}
+
+construct_uint! {
+	pub struct U512(8);
+}
+
+#[test]
+fn u128_conversions() {
+	let mut a = U256::from(u128::max_value());
+	assert_eq!(a.low_u128(), u128::max_value());
+	a += 2u128.into();
+	assert_eq!(a.low_u128(), 1u128);
+	a -= 3u128.into();
+	assert_eq!(a.low_u128(), u128::max_value() - 1);
+}
 
 #[test]
 fn uint256_checked_ops() {
@@ -169,6 +190,55 @@ fn uint256_from() {
 }
 
 #[test]
+fn uint256_try_into_primitives() {
+	macro_rules! try_into_uint_primitive_ok {
+		($primitive: ty) => {
+			assert_eq!(U256::from(10).try_into() as Result<$primitive, _>, Ok(<$primitive>::from(10u8)));
+		}
+	}
+	try_into_uint_primitive_ok!(u8);
+	try_into_uint_primitive_ok!(u16);
+	try_into_uint_primitive_ok!(u32);
+	try_into_uint_primitive_ok!(usize);
+	try_into_uint_primitive_ok!(u64);
+	try_into_uint_primitive_ok!(u128);
+
+	macro_rules! try_into_iint_primitive_ok {
+		($primitive: ty) => {
+			assert_eq!(U256::from(10).try_into() as Result<$primitive, _>, Ok(<$primitive>::from(10i8)));
+		}
+	}
+	try_into_iint_primitive_ok!(i8);
+	try_into_iint_primitive_ok!(i16);
+	try_into_iint_primitive_ok!(i32);
+	try_into_iint_primitive_ok!(isize);
+	try_into_iint_primitive_ok!(i64);
+	try_into_iint_primitive_ok!(i128);
+
+	macro_rules! try_into_primitive_err {
+		($small: ty, $big: ty) => {
+			assert_eq!(
+				U256::from(<$small>::max_value() as $big + 1).try_into() as Result<$small, _>,
+				Err(concat!("integer overflow when casting to ", stringify!($small)))
+			);
+		}
+	}
+	try_into_primitive_err!(u8, u16);
+	try_into_primitive_err!(u16, u32);
+	try_into_primitive_err!(u32, u64);
+	try_into_primitive_err!(usize, u128);
+	try_into_primitive_err!(u64, u128);
+	assert_eq!(U256([0, 0, 1, 0]).try_into() as Result<u128, _>, Err("integer overflow when casting to u128"));
+	try_into_primitive_err!(i8, i16);
+	try_into_primitive_err!(i16, i32);
+	try_into_primitive_err!(i32, i64);
+	try_into_primitive_err!(isize, i128);
+	try_into_primitive_err!(i64, i128);
+	try_into_primitive_err!(i128, u128);
+	assert_eq!(U256([0, 0, 1, 0]).try_into() as Result<i128, _>, Err("integer overflow when casting to i128"));
+}
+
+#[test]
 fn uint256_to() {
 	let hex = "8090a0b0c0d0e0f00910203040506077583a2cf8264910e1436bda32571012f0";
 	let uint = U256::from_str(hex).unwrap();
@@ -312,16 +382,6 @@ fn uint256_mul32() {
 	assert_eq!(U256::from(10u64) * 2u32, U256::from(20u64));
 	assert_eq!(U256::from(10u64) * 5u32, U256::from(50u64));
 	assert_eq!(U256::from(1000u64) * 50u32, U256::from(50000u64));
-}
-
-#[test]
-#[allow(deprecated)]
-fn uint256_mul32_old() {
-	assert_eq!(U256::from(0u64).mul_u32(2), U256::from(0u64));
-	assert_eq!(U256::from(1u64).mul_u32(2), U256::from(2u64));
-	assert_eq!(U256::from(10u64).mul_u32(2), U256::from(20u64));
-	assert_eq!(U256::from(10u64).mul_u32(5), U256::from(50u64));
-	assert_eq!(U256::from(1000u64).mul_u32(50), U256::from(50000u64));
 }
 
 #[test]
@@ -754,6 +814,16 @@ fn u256_multi_muls_overflow() {
 }
 
 #[test]
+fn u512_div() {
+	let fuzz_data = [0x38,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xff,0xff,0xff,0x7,0x0,0x0,0x0,0x0,0xc1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x8,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xfe,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0];
+	let a = U512::from_little_endian(&fuzz_data[..64]);
+	let b = U512::from_little_endian(&fuzz_data[64..]);
+	let (x, y) = (a / b, a % b);
+	let (q, r) = a.div_mod(b);
+	assert_eq!((x, y), (q, r));
+}
+
+#[test]
 fn big_endian() {
 	let source = U256([1, 0, 0, 0]);
 	let mut target = vec![0u8; 32];
@@ -1029,7 +1099,7 @@ fn trailing_zeros() {
 	assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 256);
 }
 
-#[cfg(feature="impl_quickcheck_arbitrary")]
+#[cfg(feature="quickcheck")]
 pub mod laws {
 	macro_rules! uint_laws {
 		($mod_name:ident, $uint_ty:ident) => {
@@ -1196,10 +1266,18 @@ pub mod laws {
 		}
 	}
 
-	construct_uint!(U64, 1);
-	construct_uint!(U256, 4);
-	construct_uint!(U512, 8);
-	construct_uint!(U1024, 16);
+	construct_uint! {
+		pub struct U64(1);
+	}
+	construct_uint! {
+		pub struct U256(4);
+	}
+	construct_uint! {
+		pub struct U512(8);
+	}
+	construct_uint! {
+		pub struct U1024(16);
+	}
 
 	uint_laws!(u64, U64);
 	uint_laws!(u256, U256);

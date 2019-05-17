@@ -20,8 +20,6 @@
 extern crate quick_error;
 #[macro_use]
 extern crate lazy_static;
-#[cfg(not(target_arch = "wasm32"))]
-extern crate ring;
 #[cfg(target_arch = "wasm32")]
 extern crate subtle;
 extern crate tiny_keccak;
@@ -29,33 +27,29 @@ extern crate scrypt as rscrypt;
 extern crate ripemd160 as rripemd160;
 extern crate sha2 as rsha2;
 extern crate digest as rdigest;
+extern crate hmac as rhmac;
 extern crate aes as raes;
 extern crate aes_ctr;
 extern crate block_modes;
 extern crate parity_util_mem as mem;
+extern crate pbkdf2 as rpbkdf2;
+#[cfg(not(target_arch = "wasm32"))]
+extern crate constant_time_eq;
 
 /// reexport clear_on_drop crate
 pub mod clear_on_drop {
 	pub use mem::clear_on_drop::*;
 }
 
+
 /// reexport `Memzero` from `mem`
 pub use mem::Memzero;
 
 pub mod traits;
 pub mod aes;
-#[cfg(not(target_arch = "wasm32"))]
-pub mod aes_gcm;
-// could create a less safe RustCrypto based aes_gcm here if needed for wasm
 pub mod error;
 pub mod scrypt;
 pub mod digest;
-#[cfg(not(target_arch = "wasm32"))]
-pub mod hmac;
-#[cfg(all(not(target_arch = "wasm32"), any(test, feature="alt")))]
-pub mod hmac_alt;
-#[path = "hmac_alt.rs"]
-#[cfg(target_arch = "wasm32")]
 pub mod hmac;
 
 
@@ -69,12 +63,6 @@ pub mod secp256k1_alt;
 #[cfg(target_arch = "wasm32")]
 pub mod secp256k1;
 
-#[cfg(all(not(target_arch = "wasm32"), any(test, feature="alt")))]
-pub mod pbkdf2_alt;
-#[cfg(not(target_arch = "wasm32"))]
-pub mod pbkdf2;
-#[path = "pbkdf2_alt.rs"]
-#[cfg(target_arch = "wasm32")]
 pub mod pbkdf2;
 
 pub use error::Error;
@@ -119,7 +107,7 @@ pub fn derive_mac(derived_left_bits: &[u8], cipher_text: &[u8]) -> Vec<u8> {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub fn is_equal(a: &[u8], b: &[u8]) -> bool {
-	ring::constant_time::verify_slices_are_equal(a, b).is_ok()
+	constant_time_eq::constant_time_eq(a, b)
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -127,5 +115,3 @@ pub fn is_equal(a: &[u8], b: &[u8]) -> bool {
 	use subtle::ConstantTimeEq;
 	a.ct_eq(b).unwrap_u8() == 1
 }
-
-
