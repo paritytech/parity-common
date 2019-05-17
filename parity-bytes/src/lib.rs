@@ -19,9 +19,30 @@
 //! Includes a pretty-printer for bytes, in the form of `ToPretty` and `PrettySlice`
 //! as
 
-use std::fmt;
-use std::cmp::min;
-use std::ops::{Deref, DerefMut};
+#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(feature = "std"), feature(alloc))]
+
+#[cfg(not(feature = "std"))]
+#[macro_use]
+extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate core;
+
+use core::{
+	cmp::min,
+	fmt,
+	ops::{Deref, DerefMut},
+};
+
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
+#[cfg(feature = "std")]
+use std::vec::Vec;
+
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
 
 /// Slice pretty print helper
 pub struct PrettySlice<'a> (&'a [u8]);

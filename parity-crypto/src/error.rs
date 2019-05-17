@@ -14,8 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use rcrypto;
-use ring;
+use rscrypt;
+use block_modes;
+use aes_ctr;
+use std::error::Error as StdError;
 
 quick_error! {
 	#[derive(Debug)]
@@ -28,6 +30,19 @@ quick_error! {
 			cause(e)
 			from()
 		}
+		AsymShort(det: &'static str) {
+			description(det)
+		}
+		AsymFull(e: Box<dyn StdError + Send>) {
+			cause(&**e)
+			description(e.description())
+		}
+	}
+}
+
+impl Into<std::io::Error> for Error {
+	fn into(self) -> std::io::Error {
+		std::io::Error::new(std::io::ErrorKind::Other, format!("Crypto error: {}",self))
 	}
 }
 
@@ -42,41 +57,55 @@ quick_error! {
 		InvalidP {
 			display("Invalid p argument of the scrypt encryption")
 		}
+		ScryptParam(e: rscrypt::errors::InvalidParams) {
+			display("invalid params for scrypt: {}", e)
+			cause(e)
+			from()
+		}
+		ScryptLength(e: rscrypt::errors::InvalidOutputLen) {
+			display("invalid scrypt output length: {}", e)
+			cause(e)
+			from()
+		}
 	}
 }
+
 
 quick_error! {
 	#[derive(Debug)]
 	pub enum SymmError wraps PrivSymmErr {
-		RustCrypto(e: rcrypto::symmetriccipher::SymmetricCipherError) {
-			display("symmetric crypto error")
-			from()
-		}
-		Ring(e: ring::error::Unspecified) {
-			display("symmetric crypto error")
-			cause(e)
-			from()
-		}
 		Offset(x: usize) {
 			display("offset {} greater than slice length", x)
 		}
+		BlockMode(e: block_modes::BlockModeError) {
+			display("symmetric crypto error")
+			from()
+		}
+		KeyStream(e: aes_ctr::stream_cipher::LoopError) {
+			display("ctr key stream ended")
+			from()
+		}
+		InvalidKeyLength(e: block_modes::InvalidKeyIvLength) {
+			display("Error with RustCrypto key length : {}", e)
+			from()
+		}
 	}
 }
 
-impl SymmError {
-	pub(crate) fn offset_error(x: usize) -> SymmError {
-		SymmError(PrivSymmErr::Offset(x))
+impl From<block_modes::BlockModeError> for SymmError {
+	fn from(e: block_modes::BlockModeError) -> SymmError {
+		SymmError(PrivSymmErr::BlockMode(e))
 	}
 }
 
-impl From<ring::error::Unspecified> for SymmError {
-	fn from(e: ring::error::Unspecified) -> SymmError {
-		SymmError(PrivSymmErr::Ring(e))
+impl From<block_modes::InvalidKeyIvLength> for SymmError {
+	fn from(e: block_modes::InvalidKeyIvLength) -> SymmError {
+		SymmError(PrivSymmErr::InvalidKeyLength(e))
 	}
 }
 
-impl From<rcrypto::symmetriccipher::SymmetricCipherError> for SymmError {
-	fn from(e: rcrypto::symmetriccipher::SymmetricCipherError) -> SymmError {
-		SymmError(PrivSymmErr::RustCrypto(e))
+impl From<aes_ctr::stream_cipher::LoopError> for SymmError {
+	fn from(e: aes_ctr::stream_cipher::LoopError) -> SymmError {
+		SymmError(PrivSymmErr::KeyStream(e))
 	}
 }

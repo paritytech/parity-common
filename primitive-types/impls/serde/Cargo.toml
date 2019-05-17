@@ -1,6 +1,6 @@
 [package]
 name = "impl-serde"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "Apache-2.0/MIT"
 homepage = "https://github.com/paritytech/parity-common"
@@ -8,4 +8,3 @@ description = "Serde serialization support for uint and fixed hash."
 
 [dependencies]
 serde = "1.0"
-rustc-hex = "2"

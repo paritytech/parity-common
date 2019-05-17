@@ -14,9 +14,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod error;
-
-pub use error::{Error, TryFrom, TryInto, Never};
+#[cfg(feature = "std")]
+extern crate core;
 
 #[macro_use]
 extern crate uint;
@@ -35,6 +34,15 @@ extern crate impl_codec;
 #[cfg(feature = "impl-rlp")]
 #[macro_use]
 extern crate impl_rlp;
+
+use core::convert::TryFrom;
+
+/// Error type for conversion.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Error {
+	/// Overflow encountered.
+	Overflow,
+}
 
 construct_uint! {
 	/// 128-bit unsigned integer.
