@@ -90,7 +90,7 @@ impl From<u64> for H256 {
 
 impl From<H256> for H160 {
 	fn from(value: H256) -> H160 {
-		let mut ret = H160::new();
+		let mut ret = H160::zero();
 		ret.0.copy_from_slice(&value[12..32]);
 		ret
 	}
