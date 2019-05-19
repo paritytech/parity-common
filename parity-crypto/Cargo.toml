@@ -13,7 +13,6 @@ harness = false
 
 
 [dependencies]
-quick-error = "1.2.2"
 tiny-keccak = "1.4"
 scrypt = { version = "0.2", default-features = false }
 ripemd160 = "0.8.0"

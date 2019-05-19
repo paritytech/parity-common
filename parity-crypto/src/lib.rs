@@ -16,8 +16,6 @@
 
 //! Crypto utils used by ethstore and network.
 
-#[macro_use]
-extern crate quick_error;
 extern crate tiny_keccak;
 extern crate scrypt as rscrypt;
 extern crate ripemd160 as rripemd160;
