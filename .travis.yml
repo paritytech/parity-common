@@ -18,6 +18,8 @@ script:
   - cargo check --all --tests
   - cargo build --all
   - cargo test --all --exclude uint --exclude fixed-hash
+  - if [ "$TRAVIS_RUST_VERSION" == "nightly" ]; then cd parity-bytes/ && cargo build --no-default-features && cd ..;
+    fi
   - cd fixed-hash/ && cargo test --all-features && cd ..
   - cd uint/ && cargo test --features=std,quickcheck --release && cd ..
   - cd plain_hasher/ && cargo test --no-default-features && cd ..

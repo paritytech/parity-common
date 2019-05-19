@@ -52,6 +52,26 @@ macro_rules! impl_map_from {
 
 #[macro_export]
 #[doc(hidden)]
+macro_rules! impl_try_from_for_primitive {
+	($from:ident, $to:ty) => {
+		impl $crate::core_::convert::TryFrom<$from> for $to {
+			type Error = &'static str;
+
+			#[inline]
+			fn try_from(u: $from) -> $crate::core_::result::Result<$to, &'static str> {
+				let $from(arr) = u;
+				if !u.fits_word() || arr[0] > <$to>::max_value() as u64 {
+					Err(concat!("integer overflow when casting to ", stringify!($to)))
+				} else {
+					Ok(arr[0] as $to)
+				}
+			}
+		}
+	}
+}
+
+#[macro_export]
+#[doc(hidden)]
 macro_rules! uint_overflowing_binop {
 	($name:ident, $n_words: tt, $self_expr: expr, $other: expr, $fn:expr) => ({
 		let $name(ref me) = $self_expr;
@@ -366,6 +386,36 @@ macro_rules! construct_uint {
 					self.low_u128()
 				}
 			}
+
+			impl $crate::core_::convert::TryFrom<$name> for u128 {
+				type Error = &'static str;
+
+				#[inline]
+				fn try_from(u: $name) -> $crate::core_::result::Result<u128, &'static str> {
+					let $name(arr) = u;
+					for i in 2..$n_words {
+						if arr[i] != 0 {
+							return Err("integer overflow when casting to u128");
+						}
+					}
+					Ok(((arr[1] as u128) << 64) + arr[0] as u128)
+				}
+			}
+
+			impl $crate::core_::convert::TryFrom<$name> for i128 {
+				type Error = &'static str;
+
+				#[inline]
+				fn try_from(u: $name) -> $crate::core_::result::Result<i128, &'static str> {
+					let err_str = "integer overflow when casting to i128";
+					let i = u128::try_from(u).map_err(|_| err_str)?;
+					if i > i128::max_value() as u128 {
+						Err(err_str)
+					} else {
+						Ok(i as i128)
+					}
+				}
+			}
 	};
 	( @construct $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_words:tt ); ) => {
 		/// Little-endian large integer type
@@ -392,7 +442,7 @@ macro_rules! construct_uint {
 			pub const MAX: $name = $name([u64::max_value(); $n_words]);
 
 			/// Convert from a decimal string.
-			pub fn from_dec_str(value: &str) -> Result<Self, $crate::FromDecStrErr> {
+			pub fn from_dec_str(value: &str) -> $crate::core_::result::Result<Self, $crate::FromDecStrErr> {
 				if !value.bytes().all(|b| b >= 48 && b <= 57) {
 					return Err($crate::FromDecStrErr::InvalidCharacter)
 				}
@@ -1130,6 +1180,17 @@ macro_rules! construct_uint {
 			}
 		}
 
+		impl_try_from_for_primitive!($name, u8);
+		impl_try_from_for_primitive!($name, u16);
+		impl_try_from_for_primitive!($name, u32);
+		impl_try_from_for_primitive!($name, usize);
+		impl_try_from_for_primitive!($name, u64);
+		impl_try_from_for_primitive!($name, i8);
+		impl_try_from_for_primitive!($name, i16);
+		impl_try_from_for_primitive!($name, i32);
+		impl_try_from_for_primitive!($name, isize);
+		impl_try_from_for_primitive!($name, i64);
+
 		impl<T> $crate::core_::ops::Add<T> for $name where T: Into<$name> {
 			type Output = $name;
 
@@ -1479,7 +1540,7 @@ macro_rules! impl_std_for_uint {
 		impl $crate::core_::str::FromStr for $name {
 			type Err = $crate::rustc_hex::FromHexError;
 
-			fn from_str(value: &str) -> Result<$name, Self::Err> {
+			fn from_str(value: &str) -> $crate::core_::result::Result<$name, Self::Err> {
 				use $crate::rustc_hex::FromHex;
 				let bytes: Vec<u8> = match value.len() % 2 == 0 {
 					true => value.from_hex()?,

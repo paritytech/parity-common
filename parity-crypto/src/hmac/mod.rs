@@ -15,15 +15,18 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use digest::{Sha256, Sha512};
-use rdigest::generic_array::{GenericArray, typenum::U32, typenum::U64, typenum::U128};
+use rdigest::generic_array::{GenericArray, typenum::U32, typenum::U64};
 use rhmac::{Hmac, Mac as _};
 use rsha2;
 use std::marker::PhantomData;
 use std::ops::Deref;
+use memzero::Memzero;
 
 /// HMAC signature.
+#[derive(Debug)]
 pub struct Signature<T>(HashInner, PhantomData<T>);
 
+#[derive(Debug)]
 enum HashInner {
 	Sha256(GenericArray<u8, U32>),
 	Sha512(GenericArray<u8, U64>),
@@ -43,20 +46,43 @@ impl<T> Deref for Signature<T> {
 /// HMAC signing key.
 pub struct SigKey<T>(KeyInner, PhantomData<T>);
 
+#[derive(PartialEq)]
+// Using `Box[u8]` guarantees no reallocation can happen
+struct DisposableBox(Memzero<Box<[u8]>>);
+
+impl std::fmt::Debug for DisposableBox {
+	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		write!(f, "{:?}", &self.0.as_ref())
+	}
+}
+
+impl DisposableBox {
+	fn from_slice(data: &[u8]) -> Self {
+		Self(Memzero::from(data.to_vec().into_boxed_slice()))
+	}
+}
+
+#[derive(Debug, PartialEq)]
 enum KeyInner {
-	Sha256(GenericArray<u8, U32>),
-	Sha512(GenericArray<u8, U64>),
+	Sha256(DisposableBox),
+	Sha512(DisposableBox),
 }
 
 impl SigKey<Sha256> {
 	pub fn sha256(key: &[u8]) -> SigKey<Sha256> {
-		SigKey(KeyInner::Sha256(*GenericArray::from_slice(key)), PhantomData)
+		SigKey(
+			KeyInner::Sha256(DisposableBox::from_slice(key)),
+			PhantomData
+		)
 	}
 }
 
 impl SigKey<Sha512> {
 	pub fn sha512(key: &[u8]) -> SigKey<Sha512> {
-		SigKey(KeyInner::Sha512(*GenericArray::from_slice(key)), PhantomData)
+		SigKey(
+			KeyInner::Sha512(DisposableBox::from_slice(key)),
+			PhantomData
+		)
 	}
 }
 
@@ -78,8 +104,23 @@ enum SignerInner {
 impl<T> Signer<T> {
 	pub fn with(key: &SigKey<T>) -> Signer<T> {
 		match &key.0 {
-			KeyInner::Sha256(k) => Signer(SignerInner::Sha256(Hmac::new(k)), PhantomData),
-			KeyInner::Sha512(k) => Signer(SignerInner::Sha512(Hmac::new(k)), PhantomData),
+			KeyInner::Sha256(key_bytes) => {
+				Signer(
+					SignerInner::Sha256(
+						Hmac::<rsha2::Sha256>::new_varkey(&key_bytes.0)
+							.expect("always returns Ok; qed")
+					),
+					PhantomData
+				)
+			},
+			KeyInner::Sha512(key_bytes) => {
+				Signer(
+					SignerInner::Sha512(
+						Hmac::<rsha2::Sha512>::new_varkey(&key_bytes.0)
+							.expect("always returns Ok; qed")
+					), PhantomData
+				)
+			},
 		}
 	}
 
@@ -103,29 +144,37 @@ pub struct VerifyKey<T>(KeyInner, PhantomData<T>);
 
 impl VerifyKey<Sha256> {
 	pub fn sha256(key: &[u8]) -> VerifyKey<Sha256> {
-		VerifyKey(KeyInner::Sha256(*GenericArray::from_slice(key)), PhantomData)
+		VerifyKey(
+			KeyInner::Sha256(DisposableBox::from_slice(key)),
+			PhantomData
+		)
 	}
 }
 
 impl VerifyKey<Sha512> {
 	pub fn sha512(key: &[u8]) -> VerifyKey<Sha512> {
-		VerifyKey(KeyInner::Sha512(*GenericArray::from_slice(key)), PhantomData)
+		VerifyKey(
+			KeyInner::Sha512(DisposableBox::from_slice(key)),
+			PhantomData
+		)
 	}
 }
 
 /// Verify HMAC signature of `data`.
-pub fn verify<T>(k: &VerifyKey<T>, data: &[u8], sig: &[u8]) -> bool {
-	match &k.0 {
-		KeyInner::Sha256(k) => {
-			let mut ctxt = Hmac::<rsha2::Sha256>::new(k);
-			ctxt.input(data);
-			ctxt.verify(sig).is_ok()
-		}
-		KeyInner::Sha512(k) => {
-			let mut ctxt = Hmac::<rsha2::Sha512>::new(k);
-			ctxt.input(data);
-			ctxt.verify(sig).is_ok()
-		}
+pub fn verify<T>(key: &VerifyKey<T>, data: &[u8], sig: &[u8]) -> bool {
+	match &key.0 {
+		KeyInner::Sha256(key_bytes) => {
+			let mut ctx = Hmac::<rsha2::Sha256>::new_varkey(&key_bytes.0)
+				.expect("always returns Ok; qed");
+			ctx.input(data);
+			ctx.verify(sig).is_ok()
+		},
+		KeyInner::Sha512(key_bytes) => {
+			let mut ctx = Hmac::<rsha2::Sha512>::new_varkey(&key_bytes.0)
+				.expect("always returns Ok; qed");
+			ctx.input(data);
+			ctx.verify(sig).is_ok()
+		},
 	}
 }
 
