@@ -24,10 +24,6 @@ use std::{fmt, result};
 pub enum Error {
 	Scrypt(ScryptError),
 	Symm(SymmError),
-	// TODO: used anywhere?
-	AsymShort(&'static str),
-	// TODO: used anywhere?
-	AsymFull(Box<dyn StdError + Send>)
 }
 
 #[derive(Debug)]
@@ -45,7 +41,6 @@ pub struct SymmError(PrivSymmErr);
 
 #[derive(Debug)]
 enum PrivSymmErr {
-	Offset(usize), // TODO: never constructed – can remove?
 	BlockMode(block_modes::BlockModeError),
 	KeyStream(aes_ctr::stream_cipher::LoopError),
 	InvalidKeyLength(block_modes::InvalidKeyIvLength),
@@ -56,8 +51,6 @@ impl StdError for Error {
 		match self {
 			Error::Scrypt(scrypt_err) => Some(scrypt_err),
 			Error::Symm(symm_err) => Some(symm_err),
-			Error::AsymShort(_)=> None,
-			Error::AsymFull(err)=> Some(&**err),
 		}
 	}
 }
@@ -76,10 +69,6 @@ impl StdError for SymmError {
 	fn source(&self) -> Option<&(StdError + 'static)> {
 		match &self.0 {
 			PrivSymmErr::BlockMode(err) => Some(err),
-			// TODO: the trait `std::error::Error` is not implemented for
-			// `aes_ctr::stream_cipher::LoopError` – but afaict it **is**:
-			// https://github.com/RustCrypto/traits/blob/master/stream-cipher/src/errors.rs#L16
-			// PrivSymmErr::KeyStream(err) => Some(err),
 			PrivSymmErr::InvalidKeyLength(err) => Some(err),
 			_ => None,
 		}
@@ -91,8 +80,6 @@ impl fmt::Display for Error {
 		match self {
 			Error::Scrypt(err)=> write!(f, "scrypt error: {}", err),
 			Error::Symm(err) => write!(f, "symm error: {}", err),
-			Error::AsymShort(err_str) => write!(f, "asymm error: {}", err_str),
-			Error::AsymFull(err) => write!(f, "asymm error: {}", err),
 		}
 	}
 }
@@ -111,7 +98,6 @@ impl fmt::Display for ScryptError {
 impl fmt::Display for SymmError {
 	fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
 		match self {
-			SymmError(PrivSymmErr::Offset(x)) => write!(f, "offset {} greater than slice length", x),
 			SymmError(PrivSymmErr::BlockMode(err)) => write!(f, "block cipher error: {}", err),
 			SymmError(PrivSymmErr::KeyStream(err)) => write!(f, "ctr key stream ended: {}", err),
 			SymmError(PrivSymmErr::InvalidKeyLength(err)) => write!(f, "block cipher key length: {}", err),
