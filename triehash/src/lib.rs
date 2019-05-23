@@ -20,7 +20,11 @@
 
 extern crate hash_db;
 extern crate rlp;
-#[cfg(test)] extern crate keccak_hasher;
+#[cfg(test)]
+extern crate keccak_hasher;
+#[cfg(test)]
+#[macro_use]
+extern crate hex_literal;
 
 use std::collections::BTreeMap;
 use std::cmp;
@@ -41,13 +45,14 @@ fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
 /// extern crate triehash;
 /// extern crate keccak_hasher;
 /// extern crate ethereum_types;
+/// #[macro_use] extern crate hex_literal;
 /// use ethereum_types::H256;
 /// use triehash::ordered_trie_root;
 /// use keccak_hasher::KeccakHasher;
 ///
 /// fn main() {
 /// 	let v = &["doe", "reindeer"];
-/// 	let root = H256::from("e766d5d51b89dc39d981b41bda63248d7abce4f0225eefd023792a540bcffee3");
+/// 	let root = H256::from(hex!("e766d5d51b89dc39d981b41bda63248d7abce4f0225eefd023792a540bcffee3"));
 /// 	assert_eq!(ordered_trie_root::<KeccakHasher, _>(v), root.as_ref());
 /// }
 /// ```
@@ -67,6 +72,7 @@ where
 /// extern crate triehash;
 /// extern crate ethereum_types;
 /// extern crate keccak_hasher;
+/// #[macro_use] extern crate hex_literal;
 /// use triehash::trie_root;
 /// use ethereum_types::H256;
 /// use keccak_hasher::KeccakHasher;
@@ -78,7 +84,7 @@ where
 /// 		("dogglesworth", "cat"),
 /// 	];
 ///
-/// 	let root = H256::from("8aad789dff2f538bca5d8ea56e8abe10f4c7ba3a5dea95fea4cd6e7c3a1168d3");
+/// 	let root = H256::from(hex!("8aad789dff2f538bca5d8ea56e8abe10f4c7ba3a5dea95fea4cd6e7c3a1168d3"));
 /// 	assert_eq!(trie_root::<KeccakHasher, _, _, _>(v), root.as_ref());
 /// }
 /// ```
@@ -123,6 +129,7 @@ where
 /// extern crate triehash;
 /// extern crate keccak_hasher;
 /// extern crate ethereum_types;
+/// #[macro_use] extern crate hex_literal;
 /// use ethereum_types::H256;
 /// use triehash::sec_trie_root;
 /// use keccak_hasher::KeccakHasher;
@@ -134,7 +141,7 @@ where
 /// 		("dogglesworth", "cat"),
 /// 	];
 ///
-/// 	let root = H256::from("d4cd937e4a4368d7931a9cf51686b7e10abb3dce38a39000fd7902a092b64585");
+/// 	let root = H256::from(hex!("d4cd937e4a4368d7931a9cf51686b7e10abb3dce38a39000fd7902a092b64585"));
 /// 	assert_eq!(sec_trie_root::<KeccakHasher, _, _, _>(v), root.as_ref());
 /// }
 /// ```
@@ -323,7 +330,7 @@ mod tests {
 	fn simple_test() {
 		assert_eq!(trie_root::<KeccakHasher, _, _, _>(vec![
 			(b"A", b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as &[u8])
-		]), H256::from("d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab").as_ref());
+		]), H256::from(hex!("d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab")).as_ref());
 	}
 
 	#[test]

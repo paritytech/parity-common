@@ -1,5 +1,6 @@
 [package]
 name = "ethereum-types"
+# TODO: needs to be `0.6` but diff PR
 version = "0.5.3-beta.2"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
@@ -10,9 +11,9 @@ description = "Ethereum types"
 ethbloom = { path = "../ethbloom", version = "0.6", default-features = false }
 fixed-hash = { path = "../fixed-hash", version = "0.3", default-features = false, features = ["byteorder", "rustc-hex"] }
 uint = { path = "../uint", version = "0.7", default-features = false }
-primitive-types = { path = "../primitive-types", version = "0.2", features = ["rlp", "byteorder", "rustc-hex"], default-features = false }
+primitive-types = { path = "../primitive-types", version = "0.3", features = ["rlp", "byteorder", "rustc-hex"], default-features = false }
 impl-serde = { path = "../primitive-types/impls/serde", version = "0.2", default-features = false, optional = true }
-impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.1", default-features = false }
+impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.2", default-features = false }
 
 [dev-dependencies]
 serde_json = "1.0"

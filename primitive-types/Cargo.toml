@@ -1,6 +1,6 @@
 [package]
 name = "primitive-types"
-version = "0.2.4"
+version = "0.3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "Apache-2.0/MIT"
 homepage = "https://github.com/paritytech/parity-common"
@@ -11,7 +11,7 @@ fixed-hash = { version = "0.3", path = "../fixed-hash", default-features = false
 uint = { version = "0.7", path = "../uint", default-features = false }
 impl-serde = { version = "0.2", path = "impls/serde", default-features = false, optional = true }
 impl-codec = { version = "0.2", path = "impls/codec", default-features = false, optional = true }
-impl-rlp = { version = "0.1", path = "impls/rlp", default-features = false, optional = true }
+impl-rlp = { version = "0.2", path = "impls/rlp", default-features = false, optional = true }
 
 [features]
 default = ["std"]
