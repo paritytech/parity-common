@@ -18,24 +18,89 @@ use rscrypt;
 use block_modes;
 use aes_ctr;
 use std::error::Error as StdError;
+use std::{fmt, result};
 
-quick_error! {
-	#[derive(Debug)]
-	pub enum Error {
-		Scrypt(e: ScryptError) {
-			cause(e)
-			from()
+#[derive(Debug)]
+pub enum Error {
+	Scrypt(ScryptError),
+	Symm(SymmError),
+}
+
+#[derive(Debug)]
+pub enum ScryptError {
+	// log(N) < r / 16
+	InvalidN,
+	// p <= (2^31-1 * 32)/(128 * r)
+	InvalidP,
+	ScryptParam(rscrypt::errors::InvalidParams),
+	ScryptLength(rscrypt::errors::InvalidOutputLen),
+}
+
+#[derive(Debug)]
+pub struct SymmError(PrivSymmErr);
+
+#[derive(Debug)]
+enum PrivSymmErr {
+	BlockMode(block_modes::BlockModeError),
+	KeyStream(aes_ctr::stream_cipher::LoopError),
+	InvalidKeyLength(block_modes::InvalidKeyIvLength),
+}
+
+impl StdError for Error {
+	fn source(&self) -> Option<&(StdError + 'static)> {
+		match self {
+			Error::Scrypt(scrypt_err) => Some(scrypt_err),
+			Error::Symm(symm_err) => Some(symm_err),
 		}
-		Symm(e: SymmError) {
-			cause(e)
-			from()
+	}
+}
+
+impl StdError for ScryptError {
+	fn source(&self) -> Option<&(StdError + 'static)> {
+		match self {
+			ScryptError::ScryptParam(err) => Some(err),
+			ScryptError::ScryptLength(err) => Some(err),
+			_ => None,
 		}
-		AsymShort(det: &'static str) {
-			description(det)
+	}
+}
+
+impl StdError for SymmError {
+	fn source(&self) -> Option<&(StdError + 'static)> {
+		match &self.0 {
+			PrivSymmErr::BlockMode(err) => Some(err),
+			PrivSymmErr::InvalidKeyLength(err) => Some(err),
+			_ => None,
 		}
-		AsymFull(e: Box<dyn StdError + Send>) {
-			cause(&**e)
-			description(e.description())
+	}
+}
+
+impl fmt::Display for Error {
+	fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
+		match self {
+			Error::Scrypt(err)=> write!(f, "scrypt error: {}", err),
+			Error::Symm(err) => write!(f, "symm error: {}", err),
+		}
+	}
+}
+
+impl fmt::Display for ScryptError {
+	fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
+		match self {
+			ScryptError::InvalidN => write!(f, "invalid n argument"),
+			ScryptError::InvalidP => write!(f, "invalid p argument"),
+			ScryptError::ScryptParam(err) => write!(f, "invalid params: {}", err),
+			ScryptError::ScryptLength(err) => write!(f, "invalid output length: {}", err),
+		}
+	}
+}
+
+impl fmt::Display for SymmError {
+	fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
+		match self {
+			SymmError(PrivSymmErr::BlockMode(err)) => write!(f, "block cipher error: {}", err),
+			SymmError(PrivSymmErr::KeyStream(err)) => write!(f, "ctr key stream ended: {}", err),
+			SymmError(PrivSymmErr::InvalidKeyLength(err)) => write!(f, "block cipher key length: {}", err),
 		}
 	}
 }
@@ -43,52 +108,6 @@ quick_error! {
 impl Into<std::io::Error> for Error {
 	fn into(self) -> std::io::Error {
 		std::io::Error::new(std::io::ErrorKind::Other, format!("Crypto error: {}",self))
-	}
-}
-
-quick_error! {
-	#[derive(Debug)]
-	pub enum ScryptError {
-		// log(N) < r / 16
-		InvalidN {
-			display("Invalid N argument of the scrypt encryption")
-		}
-		// p <= (2^31-1 * 32)/(128 * r)
-		InvalidP {
-			display("Invalid p argument of the scrypt encryption")
-		}
-		ScryptParam(e: rscrypt::errors::InvalidParams) {
-			display("invalid params for scrypt: {}", e)
-			cause(e)
-			from()
-		}
-		ScryptLength(e: rscrypt::errors::InvalidOutputLen) {
-			display("invalid scrypt output length: {}", e)
-			cause(e)
-			from()
-		}
-	}
-}
-
-
-quick_error! {
-	#[derive(Debug)]
-	pub enum SymmError wraps PrivSymmErr {
-		Offset(x: usize) {
-			display("offset {} greater than slice length", x)
-		}
-		BlockMode(e: block_modes::BlockModeError) {
-			display("symmetric crypto error")
-			from()
-		}
-		KeyStream(e: aes_ctr::stream_cipher::LoopError) {
-			display("ctr key stream ended")
-			from()
-		}
-		InvalidKeyLength(e: block_modes::InvalidKeyIvLength) {
-			display("Error with RustCrypto key length : {}", e)
-			from()
-		}
 	}
 }
 
@@ -109,3 +128,28 @@ impl From<aes_ctr::stream_cipher::LoopError> for SymmError {
 		SymmError(PrivSymmErr::KeyStream(e))
 	}
 }
+
+impl From<rscrypt::errors::InvalidParams> for ScryptError {
+	fn from(e: rscrypt::errors::InvalidParams) -> ScryptError {
+		ScryptError::ScryptParam(e)
+	}
+}
+
+impl From<rscrypt::errors::InvalidOutputLen> for ScryptError {
+	fn from(e: rscrypt::errors::InvalidOutputLen) -> ScryptError {
+		ScryptError::ScryptLength(e)
+	}
+}
+
+impl From<ScryptError> for Error {
+	fn from(e: ScryptError) -> Error {
+		Error::Scrypt(e)
+	}
+}
+
+impl From<SymmError> for Error {
+	fn from(e: SymmError) -> Error {
+		Error::Symm(e)
+	}
+}
+
