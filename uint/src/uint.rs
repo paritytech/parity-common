@@ -58,7 +58,7 @@ macro_rules! impl_try_from_for_primitive {
 			type Error = &'static str;
 
 			#[inline]
-			fn try_from(u: $from) -> Result<$to, &'static str> {
+			fn try_from(u: $from) -> $crate::core_::result::Result<$to, &'static str> {
 				let $from(arr) = u;
 				if !u.fits_word() || arr[0] > <$to>::max_value() as u64 {
 					Err(concat!("integer overflow when casting to ", stringify!($to)))
@@ -391,7 +391,7 @@ macro_rules! construct_uint {
 				type Error = &'static str;
 
 				#[inline]
-				fn try_from(u: $name) -> Result<u128, &'static str> {
+				fn try_from(u: $name) -> $crate::core_::result::Result<u128, &'static str> {
 					let $name(arr) = u;
 					for i in 2..$n_words {
 						if arr[i] != 0 {
@@ -406,7 +406,7 @@ macro_rules! construct_uint {
 				type Error = &'static str;
 
 				#[inline]
-				fn try_from(u: $name) -> Result<i128, &'static str> {
+				fn try_from(u: $name) -> $crate::core_::result::Result<i128, &'static str> {
 					let err_str = "integer overflow when casting to i128";
 					let i = u128::try_from(u).map_err(|_| err_str)?;
 					if i > i128::max_value() as u128 {
@@ -442,7 +442,7 @@ macro_rules! construct_uint {
 			pub const MAX: $name = $name([u64::max_value(); $n_words]);
 
 			/// Convert from a decimal string.
-			pub fn from_dec_str(value: &str) -> Result<Self, $crate::FromDecStrErr> {
+			pub fn from_dec_str(value: &str) -> $crate::core_::result::Result<Self, $crate::FromDecStrErr> {
 				if !value.bytes().all(|b| b >= 48 && b <= 57) {
 					return Err($crate::FromDecStrErr::InvalidCharacter)
 				}
@@ -1540,7 +1540,7 @@ macro_rules! impl_std_for_uint {
 		impl $crate::core_::str::FromStr for $name {
 			type Err = $crate::rustc_hex::FromHexError;
 
-			fn from_str(value: &str) -> Result<$name, Self::Err> {
+			fn from_str(value: &str) -> $crate::core_::result::Result<$name, Self::Err> {
 				use $crate::rustc_hex::FromHex;
 				let bytes: Vec<u8> = match value.len() % 2 == 0 {
 					true => value.from_hex()?,
