@@ -59,6 +59,9 @@ extern crate fixed_hash;
 #[macro_use]
 extern crate impl_serde;
 
+#[macro_use]
+extern crate impl_rlp;
+
 #[cfg(test)]
 #[macro_use]
 extern crate hex_literal;
@@ -77,6 +80,7 @@ construct_fixed_hash!{
 	/// Bloom hash type with 256 bytes (2048 bits) size.
 	pub struct Bloom(BLOOM_SIZE);
 }
+impl_fixed_hash_rlp!(Bloom, BLOOM_SIZE);
 
 /// Returns log2.
 fn log2(x: usize) -> u32 {
