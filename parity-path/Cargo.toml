@@ -7,3 +7,4 @@ description = "Path utilities"
 license = "GPL-3.0"
 
 [dependencies]
+dirs = "2.0.0"
