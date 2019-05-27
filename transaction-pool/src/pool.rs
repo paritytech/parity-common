@@ -17,17 +17,19 @@
 use std::sync::Arc;
 use std::slice;
 use std::collections::{hash_map, HashMap, BTreeSet};
+use log::{trace, warn};
 
-use error;
-use listener::{Listener, NoopListener};
-use options::Options;
-use ready::{Ready, Readiness};
-use replace::{ShouldReplace, ReplaceTransaction};
-use scoring::{self, Scoring, ScoreWithRef};
-use status::{LightStatus, Status};
-use transactions::{AddResult, Transactions};
-
-use {VerifiedTransaction};
+use crate::{
+	error,
+	listener::{Listener, NoopListener},
+	options::Options,
+	ready::{Ready, Readiness},
+	replace::{ShouldReplace, ReplaceTransaction},
+	scoring::{self, Scoring, ScoreWithRef},
+	status::{LightStatus, Status},
+	transactions::{AddResult, Transactions},
+	VerifiedTransaction,
+};
 
 /// Internal representation of transaction.
 ///

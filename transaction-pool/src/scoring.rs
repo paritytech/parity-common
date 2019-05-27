@@ -17,7 +17,7 @@
 //! A transactions ordering abstraction.
 
 use std::{cmp, fmt};
-use pool::Transaction;
+use crate::pool::Transaction;
 
 /// Represents a decision what to do with
 /// a new transaction that tries to enter the pool.

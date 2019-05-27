@@ -16,8 +16,10 @@
 
 //! When queue limits are reached, decide whether to replace an existing transaction from the pool
 
-use pool::Transaction;
-use scoring::Choice;
+use crate::{
+    pool::Transaction,
+    scoring::Choice,
+};
 
 /// Encapsulates a transaction to be compared, along with pooled transactions from the same sender
 pub struct ReplaceTransaction<'a, T> {

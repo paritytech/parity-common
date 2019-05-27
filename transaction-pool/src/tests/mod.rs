@@ -364,7 +364,7 @@ fn should_update_scoring_correctly() {
 		future: 2,
 	});
 
-	txq.update_scores(&0.into(), ());
+	txq.update_scores(&Address::zero(), ());
 
 	// when
 	let mut current_gas = U256::zero();
@@ -466,7 +466,7 @@ fn should_cull_stalled_transactions_from_a_sender() {
 	});
 
 	// when
-	let sender = 0.into();
+	let sender = Address::zero();
 	assert_eq!(txq.cull(Some(&[sender]), NonceReady::new(2)), 2);
 
 	// then
@@ -575,6 +575,8 @@ fn should_import_even_if_limit_is_reached_and_should_replace_returns_insert_new(
 
 #[test]
 fn should_not_import_even_if_limit_is_reached_and_should_replace_returns_false() {
+	use std::str::FromStr;
+
 	// given
 	let b = TransactionBuilder::default();
 	let mut txq = TestPool::with_scoring(DummyScoring::default(), Options {
@@ -592,7 +594,13 @@ fn should_not_import_even_if_limit_is_reached_and_should_replace_returns_false()
 	let err = import(&mut txq, b.tx().nonce(1).gas_price(5).new()).unwrap_err();
 
 	// then
-	assert_eq!(err, error::Error::TooCheapToEnter("0x00000000000000000000000000000000000000000000000000000000000001f5".into(), "0x5".into()));
+	assert_eq!(
+		err,
+		error::Error::TooCheapToEnter(
+			H256::from_str("00000000000000000000000000000000000000000000000000000000000001f5").unwrap(),
+			"0x5".into()
+		)
+	);
 	assert_eq!(txq.light_status(), LightStatus {
 		transaction_count: 1,
 		senders: 1,

@@ -68,15 +68,6 @@
 
 #![warn(missing_docs)]
 
-extern crate smallvec;
-extern crate trace_time;
-
-#[macro_use]
-extern crate log;
-
-#[cfg(test)]
-extern crate ethereum_types;
-
 #[cfg(test)]
 mod tests;
 
