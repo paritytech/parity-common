@@ -248,21 +248,6 @@ fn decode_untrusted_u64() {
 	run_decode_tests(tests);
 }
 
-//#[test]
-//fn decode_untrusted_u256() {
-//	let tests = vec![DTestPair(U256::from(0u64), vec![0x80u8]),
-//					 DTestPair(U256::from(0x1000000u64), vec![0x84, 0x01, 0x00, 0x00, 0x00]),
-//					 DTestPair(U256::from(0xffffffffu64),
-//							   vec![0x84, 0xff, 0xff, 0xff, 0xff]),
-//					 DTestPair(("8090a0b0c0d0e0f00910203040506077000000000000\
-//											   000100000000000012f0").into(),
-//							   vec![0xa0, 0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0,
-//									0x09, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x77, 0x00,
-//									0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
-//									0x00, 0x00, 0x00, 0x00, 0x12, 0xf0])];
-//	run_decode_tests(tests);
-//}
-
 #[test]
 fn decode_untrusted_str() {
 	let tests = vec![DTestPair("cat".to_owned(), vec![0x83, b'c', b'a', b't']),
@@ -281,17 +266,6 @@ fn decode_untrusted_str() {
 									b'e', b'l', b'i', b't'])];
 	run_decode_tests(tests);
 }
-
-//#[test]
-//fn decode_untrusted_address() {
-//	let tests = vec![
-//		DTestPair(H160::from(FromHex::from_hex("ef2d6d194084c2de36e0dabfce45d046b37d1106").unwrap()),
-//				  vec![0x94, 0xef, 0x2d, 0x6d, 0x19, 0x40, 0x84, 0xc2, 0xde,
-//							 0x36, 0xe0, 0xda, 0xbf, 0xce, 0x45, 0xd0, 0x46,
-//							 0xb3, 0x7d, 0x11, 0x06])
-//	];
-//	run_decode_tests(tests);
-//}
 
 #[test]
 fn decode_untrusted_vector_u64() {
