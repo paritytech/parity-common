@@ -6,14 +6,14 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate rlp;
-#[macro_use]
-extern crate hex_literal;
-extern crate primitive_types;
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+#[cfg(not(feature = "std"))]
+use alloc::{vec::Vec, string::String};
+use core::{fmt, cmp};
 
-use primitive_types::{H160, U256};
-use std::{fmt, cmp};
 use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
+use rustc_hex::FromHex;
 
 #[test]
 fn rlp_at() {
@@ -133,21 +133,6 @@ fn encode_u64() {
 }
 
 #[test]
-fn encode_u256() {
-	let tests = vec![ETestPair(U256::from(0u64), vec![0x80u8]),
-					 ETestPair(U256::from(0x1000000u64), vec![0x84, 0x01, 0x00, 0x00, 0x00]),
-					 ETestPair(U256::from(0xffffffffu64),
-							   vec![0x84, 0xff, 0xff, 0xff, 0xff]),
-					 ETestPair(("8090a0b0c0d0e0f00910203040506077000000000000\
-											   000100000000000012f0").into(),
-							   vec![0xa0, 0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0,
-									0x09, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x77, 0x00,
-									0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
-									0x00, 0x00, 0x00, 0x00, 0x12, 0xf0])];
-	run_encode_tests(tests);
-}
-
-#[test]
 fn encode_str() {
 	let tests = vec![ETestPair("cat", vec![0x83, b'c', b'a', b't']),
 					 ETestPair("dog", vec![0x83, b'd', b'o', b'g']),
@@ -161,17 +146,6 @@ fn encode_str() {
 									b't', b'e', b't', b'u', b'r', b' ', b'a', b'd', b'i',
 									b'p', b'i', b's', b'i', b'c', b'i', b'n', b'g', b' ',
 									b'e', b'l', b'i', b't'])];
-	run_encode_tests(tests);
-}
-
-#[test]
-fn encode_address() {
-	let tests = vec![
-		ETestPair(H160::from(hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106")),
-				  vec![0x94, 0xef, 0x2d, 0x6d, 0x19, 0x40, 0x84, 0xc2, 0xde,
-							 0x36, 0xe0, 0xda, 0xbf, 0xce, 0x45, 0xd0, 0x46,
-							 0xb3, 0x7d, 0x11, 0x06])
-	];
 	run_encode_tests(tests);
 }
 
@@ -274,20 +248,20 @@ fn decode_untrusted_u64() {
 	run_decode_tests(tests);
 }
 
-#[test]
-fn decode_untrusted_u256() {
-	let tests = vec![DTestPair(U256::from(0u64), vec![0x80u8]),
-					 DTestPair(U256::from(0x1000000u64), vec![0x84, 0x01, 0x00, 0x00, 0x00]),
-					 DTestPair(U256::from(0xffffffffu64),
-							   vec![0x84, 0xff, 0xff, 0xff, 0xff]),
-					 DTestPair(("8090a0b0c0d0e0f00910203040506077000000000000\
-											   000100000000000012f0").into(),
-							   vec![0xa0, 0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0,
-									0x09, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x77, 0x00,
-									0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
-									0x00, 0x00, 0x00, 0x00, 0x12, 0xf0])];
-	run_decode_tests(tests);
-}
+//#[test]
+//fn decode_untrusted_u256() {
+//	let tests = vec![DTestPair(U256::from(0u64), vec![0x80u8]),
+//					 DTestPair(U256::from(0x1000000u64), vec![0x84, 0x01, 0x00, 0x00, 0x00]),
+//					 DTestPair(U256::from(0xffffffffu64),
+//							   vec![0x84, 0xff, 0xff, 0xff, 0xff]),
+//					 DTestPair(("8090a0b0c0d0e0f00910203040506077000000000000\
+//											   000100000000000012f0").into(),
+//							   vec![0xa0, 0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0,
+//									0x09, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x77, 0x00,
+//									0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+//									0x00, 0x00, 0x00, 0x00, 0x12, 0xf0])];
+//	run_decode_tests(tests);
+//}
 
 #[test]
 fn decode_untrusted_str() {
@@ -308,16 +282,16 @@ fn decode_untrusted_str() {
 	run_decode_tests(tests);
 }
 
-#[test]
-fn decode_untrusted_address() {
-	let tests = vec![
-		DTestPair(H160::from(hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106")),
-				  vec![0x94, 0xef, 0x2d, 0x6d, 0x19, 0x40, 0x84, 0xc2, 0xde,
-							 0x36, 0xe0, 0xda, 0xbf, 0xce, 0x45, 0xd0, 0x46,
-							 0xb3, 0x7d, 0x11, 0x06])
-	];
-	run_decode_tests(tests);
-}
+//#[test]
+//fn decode_untrusted_address() {
+//	let tests = vec![
+//		DTestPair(H160::from(FromHex::from_hex("ef2d6d194084c2de36e0dabfce45d046b37d1106").unwrap()),
+//				  vec![0x94, 0xef, 0x2d, 0x6d, 0x19, 0x40, 0x84, 0xc2, 0xde,
+//							 0x36, 0xe0, 0xda, 0xbf, 0xce, 0x45, 0xd0, 0x46,
+//							 0xb3, 0x7d, 0x11, 0x06])
+//	];
+//	run_decode_tests(tests);
+//}
 
 #[test]
 fn decode_untrusted_vector_u64() {
@@ -484,7 +458,7 @@ fn test_inner_length_capping_for_short_lists() {
 // https://github.com/paritytech/parity-ethereum/pull/9663
 #[test]
 fn test_list_at() {
-	let raw = hex!("f83e82022bd79020010db83c4d001500000000abcdef12820cfa8215a8d79020010db885a308d313198a2e037073488208ae82823a8443b9a355c5010203040531b9019afde696e582a78fa8d95ea13ce3297d4afb8ba6433e4154caa5ac6431af1b80ba76023fa4090c408f6b4bc3701562c031041d4702971d102c9ab7fa5eed4cd6bab8f7af956f7d565ee1917084a95398b6a21eac920fe3dd1345ec0a7ef39367ee69ddf092cbfe5b93e5e568ebc491983c09c76d922dc3");
+	let raw: Vec<u8> = FromHex::from_hex("f83e82022bd79020010db83c4d001500000000abcdef12820cfa8215a8d79020010db885a308d313198a2e037073488208ae82823a8443b9a355c5010203040531b9019afde696e582a78fa8d95ea13ce3297d4afb8ba6433e4154caa5ac6431af1b80ba76023fa4090c408f6b4bc3701562c031041d4702971d102c9ab7fa5eed4cd6bab8f7af956f7d565ee1917084a95398b6a21eac920fe3dd1345ec0a7ef39367ee69ddf092cbfe5b93e5e568ebc491983c09c76d922dc3").unwrap();
 
 	let rlp = Rlp::new(&raw);
 	let _rlp1 = rlp.at(1).unwrap();

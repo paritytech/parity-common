@@ -32,11 +32,10 @@
 //! * You want to get view onto rlp-slice.
 //! * You don't want to decode whole rlp at once.
 
-extern crate byteorder;
-extern crate rustc_hex;
-#[cfg(test)]
-#[macro_use]
-extern crate hex_literal;
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
 
 mod traits;
 mod error;
@@ -44,12 +43,14 @@ mod rlpin;
 mod stream;
 mod impls;
 
-use std::borrow::Borrow;
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+use core::borrow::Borrow;
 
-pub use error::DecoderError;
-pub use traits::{Decodable, Encodable};
-pub use rlpin::{Rlp, RlpIterator, PayloadInfo, Prototype};
-pub use stream::RlpStream;
+pub use self::error::DecoderError;
+pub use self::rlpin::{Rlp, RlpIterator, PayloadInfo, Prototype};
+pub use self::stream::RlpStream;
+pub use self::traits::{Decodable, Encodable};
 
 /// The RLP encoded empty data (used to mean "null value").
 pub const NULL_RLP: [u8; 1] = [0x80; 1];

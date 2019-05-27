@@ -6,12 +6,17 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::{mem, str};
-use std::iter::{once, empty};
+#[cfg(not(feature = "std"))]
+use alloc::{borrow::ToOwned, vec::Vec, string::String};
+use core::{mem, str};
+use core::iter::{once, empty};
+
 use byteorder::{ByteOrder, BigEndian};
-use traits::{Encodable, Decodable};
-use stream::RlpStream;
-use {Rlp, DecoderError};
+
+use super::error::DecoderError;
+use super::rlpin::Rlp;
+use super::stream::RlpStream;
+use super::traits::{Encodable, Decodable};
 
 pub fn decode_usize(bytes: &[u8]) -> Result<usize, DecoderError> {
 	match bytes.len() {

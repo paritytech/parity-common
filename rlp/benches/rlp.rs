@@ -14,11 +14,8 @@
 
 #![feature(test)]
 
-extern crate ethereum_types;
-extern crate rlp;
 extern crate test;
 
-use ethereum_types::U256;
 use rlp::{RlpStream, Rlp};
 use test::Bencher;
 
@@ -39,29 +36,6 @@ fn bench_decode_u64_value(b: &mut Bencher) {
 		let data = vec![0x88, 0x10, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef];
 		let rlp = Rlp::new(&data);
 		let _: u64 = rlp.as_val().unwrap();
-	});
-}
-
-#[bench]
-fn bench_stream_u256_value(b: &mut Bencher) {
-	b.iter(|| {
-		// u256
-		let mut stream = RlpStream::new();
-		let uint: U256 = "8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0".into();
-		stream.append(&uint);
-		let _ = stream.out();
-	});
-}
-
-#[bench]
-fn bench_decode_u256_value(b: &mut Bencher) {
-	b.iter(|| {
-		// u256
-		let data = vec![0xa0, 0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0, 0x09, 0x10, 0x20,
-		                0x30, 0x40, 0x50, 0x60, 0x77, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		                0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0xf0];
-		let rlp = Rlp::new(&data);
-		let _ : U256 = rlp.as_val().unwrap();
 	});
 }
 
@@ -106,13 +80,13 @@ fn bench_stream_1000_empty_lists(b: &mut Bencher) {
 fn bench_decode_1000_values(b: &mut Bencher) {
 	let mut stream = RlpStream::new_list(1000);
 	for _ in 0..1000 {
-		stream.append(&U256::from(1));
+		stream.append(&1u64);
 	}
 	let data= stream.out();
 	b.iter(|| {
 		let rlp = Rlp::new(&data);
 		for i in 0..1000 {
-			let _: U256 = rlp.val_at(i).unwrap();
+			let _: u64 = rlp.val_at(i).unwrap();
 		}
 	});
 }
