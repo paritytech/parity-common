@@ -18,7 +18,7 @@
 use std::path::Path;
 use std::path::PathBuf;
 
-use dirs::home_dir;
+use home::home_dir;
 
 #[cfg(target_os = "macos")]
 /// Get the config path for application `name`.
