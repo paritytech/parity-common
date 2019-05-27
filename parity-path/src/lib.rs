@@ -15,7 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Path utilities
-extern crate dirs;
 use std::path::Path;
 use std::path::PathBuf;
 
