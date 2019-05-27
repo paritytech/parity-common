@@ -9,9 +9,9 @@
 use std::{mem, str};
 use std::iter::{once, empty};
 use byteorder::{ByteOrder, BigEndian};
-use traits::{Encodable, Decodable};
-use stream::RlpStream;
-use {Rlp, DecoderError};
+use crate::traits::{Encodable, Decodable};
+use crate::stream::RlpStream;
+use crate::{Rlp, DecoderError};
 
 pub fn decode_usize(bytes: &[u8]) -> Result<usize, DecoderError> {
 	match bytes.len() {
