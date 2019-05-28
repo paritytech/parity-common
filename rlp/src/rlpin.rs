@@ -13,9 +13,9 @@ use core::fmt;
 
 use rustc_hex::ToHex;
 
-use super::error::DecoderError;
-use super::impls::decode_usize;
-use super::traits::Decodable;
+use crate::error::DecoderError;
+use crate::impls::decode_usize;
+use crate::traits::Decodable;
 
 /// rlp offset
 #[derive(Copy, Clone, Debug)]
@@ -393,12 +393,16 @@ impl<'a> BasicDecoder<'a> {
 #[cfg(test)]
 mod tests {
 	#[cfg(not(feature = "std"))]
-	use alloc::format;
-	use super::*;
+	use alloc::{format, vec::Vec};
+	use super::{Rlp, DecoderError};
+
+	fn hex(s: &str) -> Vec<u8> {
+		rustc_hex::FromHex::from_hex(s).unwrap()
+	}
 
 	#[test]
 	fn test_rlp_display() {
-		let data: Vec<u8> = rustc_hex::FromHex::from_hex("f84d0589010efbef67941f79b2a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470").unwrap();
+		let data = hex("f84d0589010efbef67941f79b2a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
 		let rlp = Rlp::new(&data);
 		assert_eq!(format!("{}", rlp), "[\"0x05\", \"0x010efbef67941f79b2\", \"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\", \"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470\"]");
 	}

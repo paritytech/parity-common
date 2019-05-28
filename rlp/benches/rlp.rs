@@ -14,6 +14,7 @@
 
 #![feature(test)]
 
+// TODO: get rid of this one fine day: https://doc.rust-lang.org/nightly/edition-guide/rust-2018/module-system/path-clarity.html#an-exception
 extern crate test;
 
 use rlp::{RlpStream, Rlp};

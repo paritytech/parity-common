@@ -12,7 +12,7 @@ use core::borrow::Borrow;
 
 use byteorder::{ByteOrder, BigEndian};
 
-use super::traits::Encodable;
+use crate::traits::Encodable;
 
 #[derive(Debug, Copy, Clone)]
 struct ListInfo {

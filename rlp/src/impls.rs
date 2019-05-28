@@ -13,10 +13,10 @@ use core::iter::{once, empty};
 
 use byteorder::{ByteOrder, BigEndian};
 
-use super::error::DecoderError;
-use super::rlpin::Rlp;
-use super::stream::RlpStream;
-use super::traits::{Encodable, Decodable};
+use crate::error::DecoderError;
+use crate::rlpin::Rlp;
+use crate::stream::RlpStream;
+use crate::traits::{Encodable, Decodable};
 
 pub fn decode_usize(bytes: &[u8]) -> Result<usize, DecoderError> {
 	match bytes.len() {

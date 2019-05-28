@@ -18,7 +18,7 @@ use std::cmp;
 use std::collections::HashMap;
 
 use ethereum_types::{H160 as Sender, U256};
-use {pool, scoring, Scoring, ShouldReplace, ReplaceTransaction, Ready, Readiness};
+use crate::{pool, scoring, Scoring, ShouldReplace, ReplaceTransaction, Ready, Readiness};
 use super::Transaction;
 
 #[derive(Debug, Default)]

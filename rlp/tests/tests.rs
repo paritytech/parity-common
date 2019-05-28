@@ -13,7 +13,10 @@ use alloc::{vec::Vec, string::String};
 use core::{fmt, cmp};
 
 use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
-use rustc_hex::FromHex;
+
+fn hex(s: &str) -> Vec<u8> {
+	rustc_hex::FromHex::from_hex(s).unwrap()
+}
 
 #[test]
 fn rlp_at() {
@@ -432,7 +435,7 @@ fn test_inner_length_capping_for_short_lists() {
 // https://github.com/paritytech/parity-ethereum/pull/9663
 #[test]
 fn test_list_at() {
-	let raw: Vec<u8> = FromHex::from_hex("f83e82022bd79020010db83c4d001500000000abcdef12820cfa8215a8d79020010db885a308d313198a2e037073488208ae82823a8443b9a355c5010203040531b9019afde696e582a78fa8d95ea13ce3297d4afb8ba6433e4154caa5ac6431af1b80ba76023fa4090c408f6b4bc3701562c031041d4702971d102c9ab7fa5eed4cd6bab8f7af956f7d565ee1917084a95398b6a21eac920fe3dd1345ec0a7ef39367ee69ddf092cbfe5b93e5e568ebc491983c09c76d922dc3").unwrap();
+	let raw = hex("f83e82022bd79020010db83c4d001500000000abcdef12820cfa8215a8d79020010db885a308d313198a2e037073488208ae82823a8443b9a355c5010203040531b9019afde696e582a78fa8d95ea13ce3297d4afb8ba6433e4154caa5ac6431af1b80ba76023fa4090c408f6b4bc3701562c031041d4702971d102c9ab7fa5eed4cd6bab8f7af956f7d565ee1917084a95398b6a21eac920fe3dd1345ec0a7ef39367ee69ddf092cbfe5b93e5e568ebc491983c09c76d922dc3");
 
 	let rlp = Rlp::new(&raw);
 	let _rlp1 = rlp.at(1).unwrap();
