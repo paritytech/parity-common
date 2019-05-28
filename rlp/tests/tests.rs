@@ -6,14 +6,10 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate rlp;
-#[macro_use]
-extern crate hex_literal;
-extern crate primitive_types;
-
 use primitive_types::{H160, U256};
 use std::{fmt, cmp};
 use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
+use hex_literal::hex;
 
 #[test]
 fn rlp_at() {
