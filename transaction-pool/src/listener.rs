@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::{fmt::{Debug, LowerHex}, sync::Arc};
-use error::Error;
+use crate::error::Error;
 
 /// Transaction pool listener.
 ///
