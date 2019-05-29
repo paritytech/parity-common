@@ -10,9 +10,11 @@
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 
-use crate::error::DecoderError;
-use crate::rlpin::Rlp;
-use crate::stream::RlpStream;
+use crate::{
+	error::DecoderError,
+	rlpin::Rlp,
+	stream::RlpStream,
+};
 
 /// RLP decodable trait
 pub trait Decodable: Sized {
