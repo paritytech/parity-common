@@ -20,7 +20,6 @@ use block_modes::{
 	Ecb,
 	block_padding::{Pkcs7, ZeroPadding}
 };
-use aes_ctr::{ Aes128Ctr, Aes256Ctr };
 use aes_ctr::stream_cipher::{ NewStreamCipher, SyncStreamCipher };
 use aes::{ Aes128, Aes256 };
 use aes::block_cipher_trait::generic_array::GenericArray;
@@ -56,14 +55,14 @@ impl AesEcb256 {
 
 
 /// Reusable encoder/decoder for Aes256 in Ctr mode and no padding
-pub struct AesCtr256(Aes256Ctr);
+pub struct AesCtr256(aes_ctr::Aes256Ctr);
 
 impl AesCtr256 {
 
 	/// New encoder/decoder
 	pub fn new(key: &[u8], iv: &[u8]) -> Result<Self, SymmError> {
 		Ok(AesCtr256(
-			Aes256Ctr::new(GenericArray::from_slice(key), GenericArray::from_slice(iv))
+			aes_ctr::Aes256Ctr::new(GenericArray::from_slice(key), GenericArray::from_slice(iv))
 		))
 	}
 
@@ -88,7 +87,7 @@ impl AesCtr256 {
 /// An error is returned if the input lengths are invalid.
 /// If possible prefer `inplace_encrypt_128_ctr` to avoid a slice copy.
 pub fn encrypt_128_ctr(k: &[u8], iv: &[u8], plain: &[u8], dest: &mut [u8]) -> Result<(), SymmError> {
-	let mut encryptor = Aes128Ctr::new(
+	let mut encryptor = aes_ctr::Aes128Ctr::new(
 		GenericArray::from_slice(k),
 		GenericArray::from_slice(iv),
 	);
@@ -103,7 +102,7 @@ pub fn encrypt_128_ctr(k: &[u8], iv: &[u8], plain: &[u8], dest: &mut [u8]) -> Re
 /// Key (`k`) length and initialisation vector (`iv`) length have to be 16 bytes each.
 /// An error is returned if the input lengths are invalid.
 pub fn inplace_encrypt_128_ctr(k: &[u8], iv: &[u8], data: &mut [u8]) -> Result<(), SymmError> {
-	let mut encryptor = Aes128Ctr::new(
+	let mut encryptor = aes_ctr::Aes128Ctr::new(
 		GenericArray::from_slice(k),
 		GenericArray::from_slice(iv),
 	);
@@ -118,7 +117,7 @@ pub fn inplace_encrypt_128_ctr(k: &[u8], iv: &[u8], data: &mut [u8]) -> Result<(
 /// An error is returned if the input lengths are invalid.
 /// If possible prefer `inplace_decrypt_128_ctr` instead.
 pub fn decrypt_128_ctr(k: &[u8], iv: &[u8], encrypted: &[u8], dest: &mut [u8]) -> Result<(), SymmError> {
-	let mut encryptor = Aes128Ctr::new(
+	let mut encryptor = aes_ctr::Aes128Ctr::new(
 		GenericArray::from_slice(k),
 		GenericArray::from_slice(iv),
 	);
@@ -133,7 +132,7 @@ pub fn decrypt_128_ctr(k: &[u8], iv: &[u8], encrypted: &[u8], dest: &mut [u8]) -
 /// Key (`k`) length and initialisation vector (`iv`) length have to be 16 bytes each.
 /// An error is returned if the input lengths are invalid.
 pub fn inplace_decrypt_128_ctr(k: &[u8], iv: &[u8], data: &mut [u8]) -> Result<(), SymmError> {
-	let mut encryptor = Aes128Ctr::new(
+	let mut encryptor = aes_ctr::Aes128Ctr::new(
 		GenericArray::from_slice(k),
 		GenericArray::from_slice(iv),
 	);
