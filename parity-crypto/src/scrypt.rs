@@ -14,9 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use error::ScryptError;
+use crate::error::ScryptError;
 use super::{KEY_LENGTH_AES, KEY_LENGTH};
-use rscrypt::{scrypt, ScryptParams};
+use scrypt::{scrypt, ScryptParams};
+
 #[cfg(test)]
 use std::io::Error;
 

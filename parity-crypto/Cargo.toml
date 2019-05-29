@@ -6,6 +6,7 @@ repository = "https://github.com/paritytech/parity-common"
 description = "Crypto utils used by ethstore and network."
 license = "GPL-3.0"
 autobenches = false
+edition = "2018"
 
 [[bench]]
 name = "bench"

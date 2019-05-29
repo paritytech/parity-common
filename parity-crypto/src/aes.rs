@@ -14,15 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use block_modes::{BlockMode};
-use block_modes::block_padding::Pkcs7;
-use block_modes::block_padding::ZeroPadding;
-use block_modes::{ Cbc, Ecb };
-use raes::{ Aes128, Aes256 };
+use block_modes::{
+	BlockMode,
+	Cbc,
+	Ecb,
+	block_padding::{Pkcs7, ZeroPadding}
+};
 use aes_ctr::{ Aes128Ctr, Aes256Ctr };
 use aes_ctr::stream_cipher::{ NewStreamCipher, SyncStreamCipher };
-use error::SymmError;
-use raes::block_cipher_trait::generic_array::GenericArray;
+use aes::{ Aes128, Aes256 };
+use aes::block_cipher_trait::generic_array::GenericArray;
+
+use crate::error::SymmError;
 
 
 /// One time encoder/decoder for Ecb mode Aes256 with zero padding

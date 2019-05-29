@@ -16,23 +16,6 @@
 
 //! Crypto utils used by ethstore and network.
 
-extern crate tiny_keccak;
-extern crate scrypt as rscrypt;
-extern crate ripemd160 as rripemd160;
-extern crate sha2 as rsha2;
-extern crate digest as rdigest;
-extern crate hmac as rhmac;
-extern crate aes as raes;
-extern crate aes_ctr;
-extern crate block_modes;
-extern crate pbkdf2 as rpbkdf2;
-extern crate subtle;
-extern crate memzero;
-
-#[cfg(test)]
-extern crate hex_literal;
-
-
 pub mod aes;
 pub mod error;
 pub mod scrypt;
@@ -40,7 +23,7 @@ pub mod digest;
 pub mod hmac;
 pub mod pbkdf2;
 
-pub use error::Error;
+pub use crate::error::Error;
 
 use tiny_keccak::Keccak;
 use subtle::ConstantTimeEq;
