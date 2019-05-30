@@ -654,6 +654,8 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 			fn from_str(
 				input: &str,
 			) -> $crate::core_::result::Result<$name, $crate::rustc_hex::FromHexError> {
+				#[cfg(not(feature = "std"))]
+				use $crate::alloc_::vec::Vec;
 				use $crate::rustc_hex::FromHex;
 				let bytes: Vec<u8> = input.from_hex()?;
 				if bytes.len() != Self::len_bytes() {
