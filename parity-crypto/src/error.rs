@@ -14,11 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use rscrypt;
-use block_modes;
-use aes_ctr;
-use std::error::Error as StdError;
-use std::{fmt, result};
+use std::{fmt, result, error::Error as StdError};
 
 #[derive(Debug)]
 pub enum Error {
@@ -32,8 +28,8 @@ pub enum ScryptError {
 	InvalidN,
 	// p <= (2^31-1 * 32)/(128 * r)
 	InvalidP,
-	ScryptParam(rscrypt::errors::InvalidParams),
-	ScryptLength(rscrypt::errors::InvalidOutputLen),
+	ScryptParam(scrypt::errors::InvalidParams),
+	ScryptLength(scrypt::errors::InvalidOutputLen),
 }
 
 #[derive(Debug)]
@@ -129,14 +125,14 @@ impl From<aes_ctr::stream_cipher::LoopError> for SymmError {
 	}
 }
 
-impl From<rscrypt::errors::InvalidParams> for ScryptError {
-	fn from(e: rscrypt::errors::InvalidParams) -> ScryptError {
+impl From<scrypt::errors::InvalidParams> for ScryptError {
+	fn from(e: scrypt::errors::InvalidParams) -> ScryptError {
 		ScryptError::ScryptParam(e)
 	}
 }
 
-impl From<rscrypt::errors::InvalidOutputLen> for ScryptError {
-	fn from(e: rscrypt::errors::InvalidOutputLen) -> ScryptError {
+impl From<scrypt::errors::InvalidOutputLen> for ScryptError {
+	fn from(e: scrypt::errors::InvalidOutputLen) -> ScryptError {
 		ScryptError::ScryptLength(e)
 	}
 }
