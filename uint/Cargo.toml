@@ -7,6 +7,7 @@ name = "uint"
 version = "0.7.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 readme = "README.md"
+edition = "2018"
 
 [dependencies]
 byteorder = { version = "1", default-features = false }

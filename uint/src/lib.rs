@@ -34,4 +34,4 @@ pub use crunchy::unroll;
 
 #[macro_use]
 mod uint;
-pub use uint::*;
+pub use crate::uint::*;
