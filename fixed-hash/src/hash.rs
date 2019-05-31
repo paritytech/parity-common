@@ -51,7 +51,7 @@ macro_rules! construct_fixed_hash {
 	( $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_bytes:expr ); ) => {
 		#[repr(C)]
 		$(#[$attr])*
-		$visibility struct $name ([u8; $n_bytes]);
+		$visibility struct $name (pub [u8; $n_bytes]);
 
 		impl From<[u8; $n_bytes]> for $name {
 			/// Constructs a hash type from the given bytes array of fixed length.
@@ -512,7 +512,7 @@ macro_rules! impl_rand_for_fixed_hash {
 
 			/// Assign `self` to a cryptographically random value.
 			pub fn randomize(&mut self) {
-				let mut rng = $crate::rand::OsRng::new().unwrap();
+				let mut rng = $crate::rand::rngs::EntropyRng::new();
 				self.randomize_using(&mut rng);
 			}
 
@@ -653,6 +653,8 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 			fn from_str(
 				input: &str,
 			) -> $crate::core_::result::Result<$name, $crate::rustc_hex::FromHexError> {
+				#[cfg(not(feature = "std"))]
+				use $crate::alloc_::vec::Vec;
 				use $crate::rustc_hex::FromHex;
 				let bytes: Vec<u8> = input.from_hex()?;
 				if bytes.len() != Self::len_bytes() {

@@ -16,23 +16,17 @@
 
 //! Crypto utils used by ethstore and network.
 
-extern crate crypto as rcrypto;
-#[macro_use]
-extern crate quick_error;
-extern crate ring;
-extern crate tiny_keccak;
-
 pub mod aes;
-pub mod aes_gcm;
 pub mod error;
 pub mod scrypt;
 pub mod digest;
 pub mod hmac;
 pub mod pbkdf2;
 
-pub use error::Error;
+pub use crate::error::Error;
 
 use tiny_keccak::Keccak;
+use subtle::ConstantTimeEq;
 
 pub const KEY_LENGTH: usize = 32;
 pub const KEY_ITERATIONS: usize = 10240;
@@ -71,5 +65,19 @@ pub fn derive_mac(derived_left_bits: &[u8], cipher_text: &[u8]) -> Vec<u8> {
 }
 
 pub fn is_equal(a: &[u8], b: &[u8]) -> bool {
-	ring::constant_time::verify_slices_are_equal(a, b).is_ok()
+	a.ct_eq(b).into()
+}
+
+#[cfg(test)]
+mod test {
+	use super::*;
+
+	#[test]
+	fn can_test_for_equality() {
+		let a = b"abc";
+		let b = b"abc";
+		let c = b"efg";
+		assert!(is_equal(a, b));
+		assert!(!is_equal(a, c));
+	}
 }

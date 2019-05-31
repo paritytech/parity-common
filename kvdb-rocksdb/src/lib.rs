@@ -59,6 +59,8 @@ fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<error::Error + Send + Sy
 	io::Error::new(io::ErrorKind::Other, e)
 }
 
+const KB: usize = 1024;
+const MB: usize = 1024 * KB;
 const DB_DEFAULT_MEMORY_BUDGET_MB: usize = 128;
 
 enum KeyState {
@@ -142,8 +144,8 @@ impl CompactionProfile {
 	/// Default profile suitable for SSD storage
 	pub fn ssd() -> CompactionProfile {
 		CompactionProfile {
-			initial_file_size: 64 * 1024 * 1024,
-			block_size: 16 * 1024,
+			initial_file_size: 64 * MB as u64,
+			block_size: 16 * KB,
 			write_rate_limit: None,
 		}
 	}
@@ -151,9 +153,9 @@ impl CompactionProfile {
 	/// Slow HDD compaction profile
 	pub fn hdd() -> CompactionProfile {
 		CompactionProfile {
-			initial_file_size: 256 * 1024 * 1024,
-			block_size: 64 * 1024,
-			write_rate_limit: Some(16 * 1024 * 1024),
+			initial_file_size: 256 * MB as u64,
+			block_size: 64 * KB,
+			write_rate_limit: Some(16 * MB as u64),
 		}
 	}
 }
@@ -181,7 +183,7 @@ impl DatabaseConfig {
 	}
 
 	pub fn memory_budget(&self) -> usize {
-		self.memory_budget.unwrap_or(DB_DEFAULT_MEMORY_BUDGET_MB) * 1024 * 1024
+		self.memory_budget.unwrap_or(DB_DEFAULT_MEMORY_BUDGET_MB) * MB
 	}
 
 	pub fn memory_budget_per_col(&self) -> usize {
@@ -303,7 +305,9 @@ impl Database {
 
 		{
 			block_opts.set_block_size(config.compaction.block_size);
-			let cache_size = cmp::max(8, config.memory_budget() / 3);
+			// Set cache size as recommended by
+			// https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
+			let cache_size = config.memory_budget() / 3;
 			let cache = Cache::new(cache_size);
 			block_opts.set_cache(cache);
 		}
@@ -729,49 +733,49 @@ mod tests {
 		let key3 = H256::from_str("01c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
 
 		let mut batch = db.transaction();
-		batch.put(None, &key1, b"cat");
-		batch.put(None, &key2, b"dog");
+		batch.put(None, key1.as_bytes(), b"cat");
+		batch.put(None, key2.as_bytes(), b"dog");
 		db.write(batch).unwrap();
 
-		assert_eq!(&*db.get(None, &key1).unwrap().unwrap(), b"cat");
+		assert_eq!(&*db.get(None, key1.as_bytes()).unwrap().unwrap(), b"cat");
 
 		let contents: Vec<_> = db.iter(None).into_iter().flat_map(|inner| inner).collect();
 		assert_eq!(contents.len(), 2);
-		assert_eq!(&*contents[0].0, &*key1);
+		assert_eq!(&*contents[0].0, key1.as_bytes());
 		assert_eq!(&*contents[0].1, b"cat");
-		assert_eq!(&*contents[1].0, &*key2);
+		assert_eq!(&*contents[1].0, key2.as_bytes());
 		assert_eq!(&*contents[1].1, b"dog");
 
 		let mut batch = db.transaction();
-		batch.delete(None, &key1);
+		batch.delete(None, key1.as_bytes());
 		db.write(batch).unwrap();
 
-		assert!(db.get(None, &key1).unwrap().is_none());
+		assert!(db.get(None, key1.as_bytes()).unwrap().is_none());
 
 		let mut batch = db.transaction();
-		batch.put(None, &key1, b"cat");
+		batch.put(None, key1.as_bytes(), b"cat");
 		db.write(batch).unwrap();
 
 		let mut transaction = db.transaction();
-		transaction.put(None, &key3, b"elephant");
-		transaction.delete(None, &key1);
+		transaction.put(None, key3.as_bytes(), b"elephant");
+		transaction.delete(None, key1.as_bytes());
 		db.write(transaction).unwrap();
-		assert!(db.get(None, &key1).unwrap().is_none());
-		assert_eq!(&*db.get(None, &key3).unwrap().unwrap(), b"elephant");
+		assert!(db.get(None, key1.as_bytes()).unwrap().is_none());
+		assert_eq!(&*db.get(None, key3.as_bytes()).unwrap().unwrap(), b"elephant");
 
-		assert_eq!(&*db.get_by_prefix(None, &key3).unwrap(), b"elephant");
-		assert_eq!(&*db.get_by_prefix(None, &key2).unwrap(), b"dog");
+		assert_eq!(&*db.get_by_prefix(None, key3.as_bytes()).unwrap(), b"elephant");
+		assert_eq!(&*db.get_by_prefix(None, key2.as_bytes()).unwrap(), b"dog");
 
 		let mut transaction = db.transaction();
-		transaction.put(None, &key1, b"horse");
-		transaction.delete(None, &key3);
+		transaction.put(None, key1.as_bytes(), b"horse");
+		transaction.delete(None, key3.as_bytes());
 		db.write_buffered(transaction);
-		assert!(db.get(None, &key3).unwrap().is_none());
-		assert_eq!(&*db.get(None, &key1).unwrap().unwrap(), b"horse");
+		assert!(db.get(None, key3.as_bytes()).unwrap().is_none());
+		assert_eq!(&*db.get(None, key1.as_bytes()).unwrap().unwrap(), b"horse");
 
 		db.flush().unwrap();
-		assert!(db.get(None, &key3).unwrap().is_none());
-		assert_eq!(&*db.get(None, &key1).unwrap().unwrap(), b"horse");
+		assert!(db.get(None, key3.as_bytes()).unwrap().is_none());
+		assert_eq!(&*db.get(None, key1.as_bytes()).unwrap().unwrap(), b"horse");
 	}
 
 	#[test]

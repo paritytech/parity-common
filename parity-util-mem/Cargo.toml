@@ -12,20 +12,21 @@ cfg-if = "0.1.6"
 malloc_size_of_derive = "0.1.0"
 dlmalloc = { version = "0.1", features = ["global"], optional = true }
 wee_alloc = { version = "0.4", optional = true }
-jemallocator = { version = "0.1", optional = true }
 
 elastic-array = { version = "*", optional = true }
 ethereum-types = { version = "*", optional = true }
 parking_lot = { version = "*", optional = true }
 
-[target."cfg(windows)".dependencies.winapi]
+[target.'cfg(target_os = "windows")'.dependencies.winapi]
 version = "0.3.4"
+
+[target.'cfg(not(target_os = "windows"))'.dependencies.jemallocator]
+version = "0.1"
+optional = true
 
 [features]
 default = ["std", "ethereum-impls"]
 std = []
-# when activated mem is removed through volatile primitive instead of clear_on_drop crate
-volatile-erase = []
 # use dlmalloc as global allocator
 dlmalloc-global = ["dlmalloc", "estimate-heapsize"]
 # use wee_alloc as global allocator

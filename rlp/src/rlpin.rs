@@ -9,8 +9,8 @@
 use std::cell::Cell;
 use std::fmt;
 use rustc_hex::ToHex;
-use impls::decode_usize;
-use {Decodable, DecoderError};
+use crate::impls::decode_usize;
+use crate::{Decodable, DecoderError};
 
 /// rlp offset
 #[derive(Copy, Clone, Debug)]
@@ -387,7 +387,8 @@ impl<'a> BasicDecoder<'a> {
 
 #[cfg(test)]
 mod tests {
-	use {Rlp, DecoderError};
+	use crate::{Rlp, DecoderError};
+	use hex_literal::hex;
 
 	#[test]
 	fn test_rlp_display() {

@@ -6,16 +6,10 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[cfg(feature = "ethereum")]
-extern crate ethereum_types;
-extern crate rlp;
-#[macro_use]
-extern crate hex_literal;
-
+use primitive_types::{H160, U256};
 use std::{fmt, cmp};
-#[cfg(feature = "ethereum")]
-use ethereum_types::{U256, H160};
 use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
+use hex_literal::hex;
 
 #[test]
 fn rlp_at() {
@@ -134,7 +128,6 @@ fn encode_u64() {
 	run_encode_tests(tests);
 }
 
-#[cfg(feature = "ethereum")]
 #[test]
 fn encode_u256() {
 	let tests = vec![ETestPair(U256::from(0u64), vec![0x80u8]),
@@ -167,11 +160,10 @@ fn encode_str() {
 	run_encode_tests(tests);
 }
 
-#[cfg(feature = "ethereum")]
 #[test]
 fn encode_address() {
 	let tests = vec![
-		ETestPair(H160::from("ef2d6d194084c2de36e0dabfce45d046b37d1106"),
+		ETestPair(H160::from(hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106")),
 				  vec![0x94, 0xef, 0x2d, 0x6d, 0x19, 0x40, 0x84, 0xc2, 0xde,
 							 0x36, 0xe0, 0xda, 0xbf, 0xce, 0x45, 0xd0, 0x46,
 							 0xb3, 0x7d, 0x11, 0x06])
@@ -278,7 +270,6 @@ fn decode_untrusted_u64() {
 	run_decode_tests(tests);
 }
 
-#[cfg(feature = "ethereum")]
 #[test]
 fn decode_untrusted_u256() {
 	let tests = vec![DTestPair(U256::from(0u64), vec![0x80u8]),
@@ -313,11 +304,10 @@ fn decode_untrusted_str() {
 	run_decode_tests(tests);
 }
 
-#[cfg(feature = "ethereum")]
 #[test]
 fn decode_untrusted_address() {
 	let tests = vec![
-		DTestPair(H160::from("ef2d6d194084c2de36e0dabfce45d046b37d1106"),
+		DTestPair(H160::from(hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106")),
 				  vec![0x94, 0xef, 0x2d, 0x6d, 0x19, 0x40, 0x84, 0xc2, 0xde,
 							 0x36, 0xe0, 0xda, 0xbf, 0xce, 0x45, 0xd0, 0x46,
 							 0xb3, 0x7d, 0x11, 0x06])

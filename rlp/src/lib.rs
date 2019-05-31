@@ -32,13 +32,7 @@
 //! * You want to get view onto rlp-slice.
 //! * You don't want to decode whole rlp at once.
 
-extern crate byteorder;
-#[cfg(feature = "ethereum")]
-extern crate ethereum_types;
-extern crate rustc_hex;
-#[cfg(test)]
-#[macro_use]
-extern crate hex_literal;
+use std::borrow::Borrow;
 
 mod traits;
 mod error;
@@ -46,12 +40,10 @@ mod rlpin;
 mod stream;
 mod impls;
 
-use std::borrow::Borrow;
-
-pub use error::DecoderError;
-pub use traits::{Decodable, Encodable};
-pub use rlpin::{Rlp, RlpIterator, PayloadInfo, Prototype};
-pub use stream::RlpStream;
+pub use crate::error::DecoderError;
+pub use crate::traits::{Decodable, Encodable};
+pub use crate::rlpin::{Rlp, RlpIterator, PayloadInfo, Prototype};
+pub use crate::stream::RlpStream;
 
 /// The RLP encoded empty data (used to mean "null value").
 pub const NULL_RLP: [u8; 1] = [0x80; 1];

@@ -1,0 +1,26 @@
+[package]
+name = "uint-fuzz"
+description = "Fuzzers for uint algorithms"
+publish = false
+version = "0.1.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+edition = "2018"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+uint = { path = ".." }
+libfuzzer-sys = { git = "https://github.com/rust-fuzz/libfuzzer-sys.git" }
+rug = { version = "1.4", default-features = false, features = ["integer"] }
+
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "div_mod"
+path = "fuzz_targets/div_mod.rs"
+
+[[bin]]
+name = "div_mod_word"
+path = "fuzz_targets/div_mod_word.rs"

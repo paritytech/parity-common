@@ -18,7 +18,7 @@ use std::cmp;
 use std::collections::HashMap;
 
 use ethereum_types::{H160 as Sender, U256};
-use {pool, scoring, Scoring, Ready, Readiness};
+use crate::{pool, scoring, Scoring, ShouldReplace, ReplaceTransaction, Ready, Readiness};
 use super::Transaction;
 
 #[derive(Debug, Default)]
@@ -68,7 +68,13 @@ impl Scoring<Transaction> for DummyScoring {
 		}
 	}
 
-	fn should_replace(&self, old: &Transaction, new: &Transaction) -> scoring::Choice {
+	fn should_ignore_sender_limit(&self, _new: &Transaction) -> bool {
+		self.always_insert
+	}
+}
+
+impl ShouldReplace<Transaction> for DummyScoring {
+	fn should_replace(&self, old: &ReplaceTransaction<Transaction>, new: &ReplaceTransaction<Transaction>) -> scoring::Choice {
 		if self.always_insert {
 			scoring::Choice::InsertNew
 		} else if new.gas_price > old.gas_price {
@@ -76,10 +82,6 @@ impl Scoring<Transaction> for DummyScoring {
 		} else {
 			scoring::Choice::RejectNew
 		}
-	}
-
-	fn should_ignore_sender_limit(&self, _new: &Transaction) -> bool {
-		self.always_insert
 	}
 }
 

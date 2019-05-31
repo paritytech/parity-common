@@ -14,11 +14,10 @@
 
 #![feature(test)]
 
-extern crate ethereum_types;
-extern crate rlp;
+// TODO: get rid of this one fine day: https://doc.rust-lang.org/nightly/edition-guide/rust-2018/module-system/path-clarity.html#an-exception
 extern crate test;
 
-use ethereum_types::U256;
+use primitive_types::U256;
 use rlp::{RlpStream, Rlp};
 use test::Bencher;
 

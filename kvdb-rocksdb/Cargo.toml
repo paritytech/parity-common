@@ -19,4 +19,4 @@ parity-rocksdb = "0.5"
 
 [dev-dependencies]
 tempdir = "0.3"
-ethereum-types = "0.4"
+ethereum-types = { version = "0.7", path = "../ethereum-types" }

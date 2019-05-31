@@ -17,7 +17,7 @@
 //! A transactions ordering abstraction.
 
 use std::{cmp, fmt};
-use pool::Transaction;
+use crate::pool::Transaction;
 
 /// Represents a decision what to do with
 /// a new transaction that tries to enter the pool.
@@ -72,14 +72,12 @@ pub enum Change<T = ()> {
 /// - Returned `Score`s should match ordering of `compare` method.
 /// - `compare` will be called only within a context of transactions from the same sender.
 /// - `choose` may be called even if `compare` returns `Ordering::Equal`
-/// - `should_replace` is used to decide if new transaction should push out an old transaction already in the queue.
 /// - `Score`s and `compare` should align with `Ready` implementation.
 ///
 /// Example: Natural ordering of Ethereum transactions.
 /// - `compare`: compares transaction `nonce` ()
 /// - `choose`: compares transactions `gasPrice` (decides if old transaction should be replaced)
 /// - `update_scores`: score defined as `gasPrice` if `n==0` and `max(scores[n-1], gasPrice)` if `n>0`
-/// - `should_replace`: compares `gasPrice` (decides if transaction from a different sender is more valuable)
 ///
 pub trait Scoring<T>: fmt::Debug {
 	/// A score of a transaction.
@@ -97,11 +95,6 @@ pub trait Scoring<T>: fmt::Debug {
 	/// NOTE: you can safely assume that both slices have the same length.
 	/// (i.e. score at index `i` represents transaction at the same index)
 	fn update_scores(&self, txs: &[Transaction<T>], scores: &mut [Self::Score], change: Change<Self::Event>);
-
-	/// Decides if `new` should push out `old` transaction from the pool.
-	///
-	/// NOTE returning `InsertNew` here can lead to some transactions being accepted above pool limits.
-	fn should_replace(&self, old: &T, new: &T) -> Choice;
 
 	/// Decides if the transaction should ignore per-sender limit in the pool.
 	///

@@ -20,8 +20,8 @@ macro_rules! impl_uint_rlp {
 	($name: ident, $size: expr) => {
 		impl $crate::rlp::Encodable for $name {
 			fn rlp_append(&self, s: &mut $crate::rlp::RlpStream) {
-				let leading_empty_bytes = $size - (self.bits() + 7) / 8;
-				let mut buffer = [0u8; $size];
+				let leading_empty_bytes = $size * 8 - (self.bits() + 7) / 8;
+				let mut buffer = [0u8; $size * 8];
 				self.to_big_endian(&mut buffer);
 				s.encoder().encode_value(&buffer[leading_empty_bytes..]);
 			}
@@ -32,7 +32,7 @@ macro_rules! impl_uint_rlp {
 				rlp.decoder().decode_value(|bytes| {
 					if !bytes.is_empty() && bytes[0] == 0 {
 						Err($crate::rlp::DecoderError::RlpInvalidIndirection)
-					} else if bytes.len() <= $size {
+					} else if bytes.len() <= $size * 8 {
 						Ok($name::from(bytes))
 					} else {
 						Err($crate::rlp::DecoderError::RlpIsTooBig)
