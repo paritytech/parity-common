@@ -29,18 +29,11 @@ extern crate cfg_if;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
-extern crate clear_on_drop as cod;
-
-#[macro_use] extern crate malloc_size_of_derive as malloc_size_derive;
+extern crate malloc_size_of_derive as malloc_size_derive;
 
 use std::ops::{Deref, DerefMut};
 
-#[cfg(feature = "volatile-erase")]
 use std::ptr;
-
-#[cfg(not(feature = "volatile-erase"))]
-pub use cod::clear::Clear;
-
 
 cfg_if! {
 	if #[cfg(all(
@@ -91,11 +84,6 @@ use core as std;
 #[cfg(feature = "ethereum-impls")]
 pub mod impls;
 
-/// Reexport clear_on_drop crate.
-pub mod clear_on_drop {
-	pub use cod::*;
-}
-
 pub use malloc_size_derive::*;
 pub use malloc_size::{
  	MallocSizeOfOps,
@@ -115,7 +103,6 @@ impl<T: AsMut<[u8]>> From<T> for Memzero<T> {
 	}
 }
 
-#[cfg(feature = "volatile-erase")]
 impl<T: AsMut<[u8]>> Drop for Memzero<T> {
 	fn drop(&mut self) {
 		unsafe {
@@ -123,13 +110,6 @@ impl<T: AsMut<[u8]>> Drop for Memzero<T> {
 				ptr::write_volatile(byte_ref, 0)
 			}
 		}
-	}
-}
-
-#[cfg(not(feature = "volatile-erase"))]
-impl<T: AsMut<[u8]>> Drop for Memzero<T> {
-	fn drop(&mut self) {
-		self.as_mut().clear();
 	}
 }
 

@@ -1525,7 +1525,6 @@ macro_rules! construct_uint {
 		}
 
 		impl_std_for_uint!($name, $n_words);
-		impl_heapsize_for_uint!($name);
 		// `$n_words * 8` because macro expects bytes and
 		// uints use 64 bit (8 byte) words
 		impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
@@ -1565,26 +1564,6 @@ macro_rules! impl_std_for_uint {
 #[doc(hidden)]
 macro_rules! impl_std_for_uint {
 	($name: ident, $n_words: tt) => {}
-}
-
-#[cfg(feature = "heapsize")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_heapsize_for_uint {
-	($name: ident) => {
-		impl $crate::heapsize::HeapSizeOf for $name {
-			fn heap_size_of_children(&self) -> usize {
-				0
-			}
-		}
-	}
-}
-
-#[cfg(not(feature = "heapsize"))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_heapsize_for_uint {
-	($name: ident) => {}
 }
 
 #[cfg(feature = "quickcheck")]
