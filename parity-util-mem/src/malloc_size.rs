@@ -60,7 +60,9 @@ mod std {
 #[cfg(feature = "std")]
 use std::sync::Arc;
 
-use std::hash::{BuildHasher, Hash};
+#[cfg(feature = "std")]
+use std::hash::BuildHasher;
+use std::hash::Hash;
 use std::mem::size_of;
 use std::ops::Range;
 use std::ops::{Deref, DerefMut};
