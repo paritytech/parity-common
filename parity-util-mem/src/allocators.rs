@@ -33,15 +33,18 @@
 //!	 - jemalloc: compile error
 
 
-use malloc_size::{MallocSizeOfOps, VoidPtrToSizeFn, MallocSizeOf};
+use crate::malloc_size::{MallocSizeOfOps, VoidPtrToSizeFn, MallocSizeOf};
 #[cfg(feature = "std")]
-use malloc_size::MallocUnconditionalSizeOf;
+use crate::malloc_size::MallocUnconditionalSizeOf;
+
 #[cfg(feature = "std")]
 use std::os::raw::c_void;
 #[cfg(not(feature = "std"))]
 use core::ffi::c_void;
 #[cfg(not(feature = "std"))]
 use alloc::collections::btree_set::BTreeSet;
+
+use cfg_if::cfg_if;
 
 mod usable_size {
 

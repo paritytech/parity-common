@@ -22,15 +22,10 @@
 #![cfg_attr(not(feature = "std"), feature(core_intrinsics))]
 #![cfg_attr(not(feature = "std"), feature(alloc))]
 
-#[macro_use]
-extern crate cfg_if;
+use cfg_if::cfg_if;
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;
-
-extern crate clear_on_drop as cod;
-
-#[macro_use] extern crate malloc_size_of_derive as malloc_size_derive;
 
 use std::ops::{Deref, DerefMut};
 
@@ -38,7 +33,7 @@ use std::ops::{Deref, DerefMut};
 use std::ptr;
 
 #[cfg(not(feature = "volatile-erase"))]
-pub use cod::clear::Clear;
+pub use ::clear_on_drop::clear::Clear;
 
 
 cfg_if! {
@@ -87,15 +82,13 @@ pub mod impls;
 
 /// Reexport clear_on_drop crate.
 pub mod clear_on_drop {
-	pub use cod::*;
+	pub use ::clear_on_drop::*;
 }
 
-pub use malloc_size_derive::*;
-pub use malloc_size::{
- 	MallocSizeOfOps,
-	MallocSizeOf,
-};
-pub use allocators::MallocSizeOfExt;
+use malloc_size_of_derive as malloc_size_derive;
+pub use crate::malloc_size_derive::*;
+pub use crate::malloc_size::{MallocSizeOfOps, MallocSizeOf};
+pub use crate::allocators::MallocSizeOfExt;
 
 /// Wrapper to zero out memory when dropped.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
