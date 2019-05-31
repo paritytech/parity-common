@@ -75,7 +75,7 @@ pub use alloc::boxed::Box;
 pub type VoidPtrToSizeFn = unsafe extern "C" fn(ptr: *const c_void) -> usize;
 
 /// A closure implementing a stateful predicate on pointers.
-pub type VoidPtrToBoolFnMut = FnMut(*const c_void) -> bool;
+pub type VoidPtrToBoolFnMut = dyn FnMut(*const c_void) -> bool;
 
 /// Operations used when measuring heap usage of data structures.
 pub struct MallocSizeOfOps {

@@ -29,7 +29,7 @@ extern crate cfg_if;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
-#[macro_use] extern crate malloc_size_of_derive as malloc_size_derive;
+extern crate malloc_size_of_derive as malloc_size_derive;
 
 use std::ops::{Deref, DerefMut};
 
