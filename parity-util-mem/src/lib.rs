@@ -22,6 +22,7 @@
 #![cfg_attr(not(feature = "std"), feature(core_intrinsics))]
 #![cfg_attr(not(feature = "std"), feature(alloc))]
 
+
 #[macro_use]
 extern crate cfg_if;
 
@@ -43,7 +44,6 @@ pub use cod::clear::Clear;
 
 cfg_if! {
 	if #[cfg(all(
-		feature = "jemalloc-global",
 		feature = "jemalloc-global",
 		not(target_os = "windows"),
 		not(target_arch = "wasm32")
@@ -69,7 +69,13 @@ cfg_if! {
 
 pub mod allocators;
 
-#[cfg(feature = "estimate-heapsize")]
+#[cfg(any(
+	all(
+		target_os = "macos",
+		not(feature = "jemalloc-global"),
+	),
+	feature = "estimate-heapsize"
+))]
 pub mod sizeof;
 
 #[cfg(not(feature = "std"))]
@@ -141,7 +147,7 @@ impl<T: AsMut<[u8]>> DerefMut for Memzero<T> {
 	}
 }
 
-#[cfg(std)]
+#[cfg(feature = "std")]
 #[cfg(test)]
 mod test {
 	use std::sync::Arc;
@@ -153,5 +159,4 @@ mod test {
 		let s = val.malloc_size_of();
 		assert!(s > 0);
 	}
-
 }

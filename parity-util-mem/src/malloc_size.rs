@@ -200,24 +200,58 @@ pub trait MallocConditionalShallowSizeOf {
     fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
 }
 
-#[cfg(not(feature = "estimate-heapsize"))]
+#[cfg(not(any(
+	all(
+		target_os = "macos",
+		not(feature = "jemalloc-global"),
+	),
+	feature = "estimate-heapsize"
+)))]
+pub mod inner_allocator_use {
+
+use super::*;
+
+impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
+    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+        unsafe { ops.malloc_size_of(&**self) }
+    }
+}
+
+impl<T> MallocShallowSizeOf for Vec<T> {
+    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+        unsafe { ops.malloc_size_of(self.as_ptr()) }
+    }
+}
+
+// currently this seems only fine with jemalloc
+#[cfg(feature = "std")]
+#[cfg(all(feature = "jemalloc-global", not(target_os = "windows")))]
+impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
+    fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+        unsafe { ops.malloc_size_of(arc_ptr(self)) }
+    }
+}
+
+#[cfg(feature = "std")]
+#[cfg(not(all(feature = "jemalloc-global", not(target_os = "windows"))))]
+impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
+    fn unconditional_shallow_size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
+		    size_of::<T>()
+   }
+}
+
 impl MallocSizeOf for String {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         unsafe { ops.malloc_size_of(self.as_ptr()) }
     }
 }
 
+}
+
 impl<'a, T: ?Sized> MallocSizeOf for &'a T {
     fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
         // Zero makes sense for a non-owning reference.
         0
-    }
-}
-
-#[cfg(not(feature = "estimate-heapsize"))]
-impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
-    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        unsafe { ops.malloc_size_of(&**self) }
     }
 }
 
@@ -317,13 +351,6 @@ impl<T: MallocSizeOf> MallocSizeOf for [T] {
             n += elem.size_of(ops);
         }
         n
-    }
-}
-
-#[cfg(not(feature = "estimate-heapsize"))]
-impl<T> MallocShallowSizeOf for Vec<T> {
-    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        unsafe { ops.malloc_size_of(self.as_ptr()) }
     }
 }
 
@@ -484,27 +511,6 @@ impl<T> MallocSizeOf for std::marker::PhantomData<T> {
 fn arc_ptr<T>(s: &Arc<T>) -> * const T {
   &(**s) as *const T
 }
-
-
-// currently this seems only fine with jemalloc
-#[cfg(feature = "std")]
-#[cfg(not(feature = "estimate-heapsize"))]
-#[cfg(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global"))]
-impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
-    fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        unsafe { ops.malloc_size_of(arc_ptr(self)) }
-    }
-}
-
-#[cfg(feature = "std")]
-#[cfg(not(feature = "estimate-heapsize"))]
-#[cfg(not(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android", feature = "jemalloc-global")))]
-impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
-    fn unconditional_shallow_size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-		    size_of::<T>()
-   }
-}
-
 
 #[cfg(feature = "std")]
 impl<T: MallocSizeOf> MallocUnconditionalSizeOf for Arc<T> {
