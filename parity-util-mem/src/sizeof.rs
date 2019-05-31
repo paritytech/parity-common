@@ -21,9 +21,20 @@
 use crate::malloc_size::{
 	MallocSizeOf,
 	MallocShallowSizeOf,
-	MallocUnconditionalShallowSizeOf,
 	MallocSizeOfOps
 };
+#[cfg(feature = "std")]
+use crate::malloc_size::MallocUnconditionalShallowSizeOf;
+
+#[cfg(not(feature = "std"))]
+use core as std;
+#[cfg(not(feature = "std"))]
+use ::alloc::{
+	boxed::Box,
+	vec::Vec,
+	string::String,
+};
+
 use std::mem::{size_of, size_of_val};
 
 impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
@@ -44,6 +55,7 @@ impl<T> MallocShallowSizeOf for Vec<T> {
 	}
 }
 
+#[cfg(feature = "std")]
 impl<T> MallocUnconditionalShallowSizeOf for std::sync::Arc<T> {
 	fn unconditional_shallow_size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
 		size_of::<T>()

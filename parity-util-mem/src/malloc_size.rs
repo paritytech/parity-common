@@ -48,19 +48,23 @@
 
 
 #[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-#[cfg(not(feature = "std"))]
-use alloc::string::String;
+use ::alloc::vec::Vec;
+#[cfg(not(feature = "estimate-heapsize"))]
+use ::alloc::string::String;
+
 #[cfg(not(feature = "std"))]
 mod std {
   pub use core::*;
-  pub use alloc::collections;
+  pub use ::alloc::collections;
 }
 
 #[cfg(feature = "std")]
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    hash::BuildHasher,
+};
 
-use std::hash::{BuildHasher, Hash};
+use std::hash::Hash;
 use std::mem::size_of;
 use std::ops::Range;
 use std::ops::{Deref, DerefMut};

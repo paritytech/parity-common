@@ -41,8 +41,6 @@ use crate::malloc_size::MallocUnconditionalSizeOf;
 use std::os::raw::c_void;
 #[cfg(not(feature = "std"))]
 use core::ffi::c_void;
-#[cfg(not(feature = "std"))]
-use alloc::collections::btree_set::BTreeSet;
 
 use cfg_if::cfg_if;
 
