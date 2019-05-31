@@ -1,7 +1,6 @@
 [package]
 name = "ethereum-types"
-# TODO: needs to be `0.6` but diff PR
-version = "0.5.3-beta.2"
+version = "0.6.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 homepage = "https://github.com/paritytech/parity-common"

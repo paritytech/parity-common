@@ -14,13 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use digest::{Sha256, Sha512};
-use rdigest::generic_array::{GenericArray, typenum::U32, typenum::U64};
-use rhmac::{Hmac, Mac as _};
-use rsha2;
 use std::marker::PhantomData;
 use std::ops::Deref;
+
+use digest::generic_array::{GenericArray, typenum::{U32, U64}};
+use hmac::{Hmac, Mac as _};
 use memzero::Memzero;
+
+use crate::digest::{Sha256, Sha512};
 
 /// HMAC signature.
 #[derive(Debug)]
@@ -97,8 +98,8 @@ pub fn sign<T>(k: &SigKey<T>, data: &[u8]) -> Signature<T> {
 pub struct Signer<T>(SignerInner, PhantomData<T>);
 
 enum SignerInner {
-	Sha256(Hmac<rsha2::Sha256>),
-	Sha512(Hmac<rsha2::Sha512>),
+	Sha256(Hmac<sha2::Sha256>),
+	Sha512(Hmac<sha2::Sha512>),
 }
 
 impl<T> Signer<T> {
@@ -107,7 +108,7 @@ impl<T> Signer<T> {
 			KeyInner::Sha256(key_bytes) => {
 				Signer(
 					SignerInner::Sha256(
-						Hmac::<rsha2::Sha256>::new_varkey(&key_bytes.0)
+						Hmac::<sha2::Sha256>::new_varkey(&key_bytes.0)
 							.expect("always returns Ok; qed")
 					),
 					PhantomData
@@ -116,7 +117,7 @@ impl<T> Signer<T> {
 			KeyInner::Sha512(key_bytes) => {
 				Signer(
 					SignerInner::Sha512(
-						Hmac::<rsha2::Sha512>::new_varkey(&key_bytes.0)
+						Hmac::<sha2::Sha512>::new_varkey(&key_bytes.0)
 							.expect("always returns Ok; qed")
 					), PhantomData
 				)
@@ -164,13 +165,13 @@ impl VerifyKey<Sha512> {
 pub fn verify<T>(key: &VerifyKey<T>, data: &[u8], sig: &[u8]) -> bool {
 	match &key.0 {
 		KeyInner::Sha256(key_bytes) => {
-			let mut ctx = Hmac::<rsha2::Sha256>::new_varkey(&key_bytes.0)
+			let mut ctx = Hmac::<sha2::Sha256>::new_varkey(&key_bytes.0)
 				.expect("always returns Ok; qed");
 			ctx.input(data);
 			ctx.verify(sig).is_ok()
 		},
 		KeyInner::Sha512(key_bytes) => {
-			let mut ctx = Hmac::<rsha2::Sha512>::new_varkey(&key_bytes.0)
+			let mut ctx = Hmac::<sha2::Sha512>::new_varkey(&key_bytes.0)
 				.expect("always returns Ok; qed");
 			ctx.input(data);
 			ctx.verify(sig).is_ok()

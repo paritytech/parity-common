@@ -14,13 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use rripemd160;
-use rsha2;
 use std::marker::PhantomData;
 use std::ops::Deref;
-use rdigest::generic_array::GenericArray;
-use rdigest::generic_array::typenum::{U20, U32, U64};
-use rsha2::Digest as RDigest;
+
+use digest::generic_array::{GenericArray, typenum::{U20, U32, U64}};
+use sha2::Digest as RDigest;
 
 /// The message digest.
 pub struct Digest<T>(InnerDigest, PhantomData<T>);
@@ -74,26 +72,26 @@ pub enum Ripemd160 {}
 pub struct Hasher<T>(Inner, PhantomData<T>);
 
 enum Inner {
-	Sha256(rsha2::Sha256),
-	Sha512(rsha2::Sha512),
-	Ripemd160(rripemd160::Ripemd160)
+	Sha256(sha2::Sha256),
+	Sha512(sha2::Sha512),
+	Ripemd160(ripemd160::Ripemd160)
 }
 
 impl Hasher<Sha256> {
 	pub fn sha256() -> Hasher<Sha256> {
-		Hasher(Inner::Sha256(rsha2::Sha256::default()), PhantomData)
+		Hasher(Inner::Sha256(sha2::Sha256::default()), PhantomData)
 	}
 }
 
 impl Hasher<Sha512> {
 	pub fn sha512() -> Hasher<Sha512> {
-		Hasher(Inner::Sha512(rsha2::Sha512::default()), PhantomData)
+		Hasher(Inner::Sha512(sha2::Sha512::default()), PhantomData)
 	}
 }
 
 impl Hasher<Ripemd160> {
 	pub fn ripemd160() -> Hasher<Ripemd160> {
-		Hasher(Inner::Ripemd160(rripemd160::Ripemd160::default()), PhantomData)
+		Hasher(Inner::Ripemd160(ripemd160::Ripemd160::default()), PhantomData)
 	}
 }
 

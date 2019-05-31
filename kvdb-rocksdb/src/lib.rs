@@ -733,49 +733,49 @@ mod tests {
 		let key3 = H256::from_str("01c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
 
 		let mut batch = db.transaction();
-		batch.put(None, &key1, b"cat");
-		batch.put(None, &key2, b"dog");
+		batch.put(None, key1.as_bytes(), b"cat");
+		batch.put(None, key2.as_bytes(), b"dog");
 		db.write(batch).unwrap();
 
-		assert_eq!(&*db.get(None, &key1).unwrap().unwrap(), b"cat");
+		assert_eq!(&*db.get(None, key1.as_bytes()).unwrap().unwrap(), b"cat");
 
 		let contents: Vec<_> = db.iter(None).into_iter().flat_map(|inner| inner).collect();
 		assert_eq!(contents.len(), 2);
-		assert_eq!(&*contents[0].0, &*key1);
+		assert_eq!(&*contents[0].0, key1.as_bytes());
 		assert_eq!(&*contents[0].1, b"cat");
-		assert_eq!(&*contents[1].0, &*key2);
+		assert_eq!(&*contents[1].0, key2.as_bytes());
 		assert_eq!(&*contents[1].1, b"dog");
 
 		let mut batch = db.transaction();
-		batch.delete(None, &key1);
+		batch.delete(None, key1.as_bytes());
 		db.write(batch).unwrap();
 
-		assert!(db.get(None, &key1).unwrap().is_none());
+		assert!(db.get(None, key1.as_bytes()).unwrap().is_none());
 
 		let mut batch = db.transaction();
-		batch.put(None, &key1, b"cat");
+		batch.put(None, key1.as_bytes(), b"cat");
 		db.write(batch).unwrap();
 
 		let mut transaction = db.transaction();
-		transaction.put(None, &key3, b"elephant");
-		transaction.delete(None, &key1);
+		transaction.put(None, key3.as_bytes(), b"elephant");
+		transaction.delete(None, key1.as_bytes());
 		db.write(transaction).unwrap();
-		assert!(db.get(None, &key1).unwrap().is_none());
-		assert_eq!(&*db.get(None, &key3).unwrap().unwrap(), b"elephant");
+		assert!(db.get(None, key1.as_bytes()).unwrap().is_none());
+		assert_eq!(&*db.get(None, key3.as_bytes()).unwrap().unwrap(), b"elephant");
 
-		assert_eq!(&*db.get_by_prefix(None, &key3).unwrap(), b"elephant");
-		assert_eq!(&*db.get_by_prefix(None, &key2).unwrap(), b"dog");
+		assert_eq!(&*db.get_by_prefix(None, key3.as_bytes()).unwrap(), b"elephant");
+		assert_eq!(&*db.get_by_prefix(None, key2.as_bytes()).unwrap(), b"dog");
 
 		let mut transaction = db.transaction();
-		transaction.put(None, &key1, b"horse");
-		transaction.delete(None, &key3);
+		transaction.put(None, key1.as_bytes(), b"horse");
+		transaction.delete(None, key3.as_bytes());
 		db.write_buffered(transaction);
-		assert!(db.get(None, &key3).unwrap().is_none());
-		assert_eq!(&*db.get(None, &key1).unwrap().unwrap(), b"horse");
+		assert!(db.get(None, key3.as_bytes()).unwrap().is_none());
+		assert_eq!(&*db.get(None, key1.as_bytes()).unwrap().unwrap(), b"horse");
 
 		db.flush().unwrap();
-		assert!(db.get(None, &key3).unwrap().is_none());
-		assert_eq!(&*db.get(None, &key1).unwrap().unwrap(), b"horse");
+		assert!(db.get(None, key3.as_bytes()).unwrap().is_none());
+		assert_eq!(&*db.get(None, key1.as_bytes()).unwrap().unwrap(), b"horse");
 	}
 
 	#[test]
