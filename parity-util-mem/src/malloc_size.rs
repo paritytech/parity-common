@@ -50,8 +50,6 @@
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 #[cfg(not(feature = "std"))]
-use alloc::string::String;
-#[cfg(not(feature = "std"))]
 mod std {
   pub use core::*;
   pub use alloc::collections;
@@ -212,6 +210,9 @@ pub trait MallocConditionalShallowSizeOf {
 pub mod inner_allocator_use {
 
 use super::*;
+
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
 
 impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
     fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
