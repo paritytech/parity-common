@@ -310,17 +310,6 @@ mod from_str {
 	}
 }
 
-#[cfg(all(
-	feature = "heapsize",
-	not(target_os = "unknown")
-))]
-#[test]
-fn test_heapsizeof() {
-	use heapsize::HeapSizeOf;
-	let h = H128::zero();
-	assert_eq!(h.heap_size_of_children(), 0);
-}
-
 #[test]
 fn from_h160_to_h256() {
 	let h160 = H160::from([

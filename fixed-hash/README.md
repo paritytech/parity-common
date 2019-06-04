@@ -63,8 +63,6 @@ fixed-hash = { version = "0.3", default-features = false }
     - Enabled by default.
 - `byteorder`: Provide API based on the `byteorder` crate.
     - Enabled by default.
-- `heapsize`: Provide `HeapsizeOf` implementation for hash types.
-    - Disabled by default.
 - `quickcheck`: Provide `quickcheck` implementation for hash types.
     - Disabled by default.
 - `api-dummy`: Generate a dummy hash type for API documentation.

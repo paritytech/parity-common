@@ -43,10 +43,6 @@ pub extern crate byteorder;
 #[doc(hidden)]
 pub mod libc {}
 
-#[cfg(feature = "heapsize")]
-#[doc(hidden)]
-pub extern crate heapsize;
-
 #[cfg(feature = "rustc-hex")]
 #[doc(hidden)]
 pub extern crate rustc_hex;

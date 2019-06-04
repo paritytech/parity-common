@@ -26,6 +26,11 @@
 //!	 - jemalloc: use jemallocator crate
 //!	 - weealloc: default to `estimate_size`
 //!	 - dlmalloc: default to `estimate_size`
+//! - arch x86/macos:
+//!	 - no features: use default alloc, requires using `estimate_size`
+//!	 - jemalloc: use jemallocator crate
+//!	 - weealloc: default to `estimate_size`
+//!	 - dlmalloc: default to `estimate_size`
 //! - arch wasm32:
 //!	 - no features: default to `estimate_size`
 //!	 - weealloc: default to `estimate_size`
@@ -40,8 +45,6 @@ use malloc_size::MallocUnconditionalSizeOf;
 use std::os::raw::c_void;
 #[cfg(not(feature = "std"))]
 use core::ffi::c_void;
-#[cfg(not(feature = "std"))]
-use alloc::collections::btree_set::BTreeSet;
 
 mod usable_size {
 
@@ -92,14 +95,17 @@ cfg_if! {
 			jemallocator::usable_size(ptr)
 		}
 
-	} else	{
+	} else if #[cfg(target_os = "linux")] {
 
-		// default allocator used
-		/// Macos, ios and android calls jemalloc.
 		/// Linux call system allocator (currently malloc).
 		extern "C" {
-			#[cfg_attr(any(prefixed_jemalloc, target_os = "macos", target_os = "ios", target_os = "android"), link_name = "je_malloc_usable_size")]
 			pub fn malloc_usable_size(ptr: *const c_void) -> usize;
+		}
+
+	} else {
+		// default allocator for non linux or windows system use estimate
+		pub unsafe extern "C" fn malloc_usable_size(_ptr: *const c_void) -> usize {
+			unreachable!("estimate heapsize or feature allocator needed")
 		}
 
 	}

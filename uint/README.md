@@ -13,7 +13,7 @@ Support a very similar API as the built-in primitive integer types.
 In your `Cargo.toml` paste
 
 ```
-uint = "0.7"
+uint = "0.8"
 ```
 
 Construct your own big unsigned integer type as follows.
@@ -56,5 +56,3 @@ see fuzz [README.md](fuzz/README.md)
 	- Enabled by default.
 - `quickcheck`: Enable quickcheck-style property testing
 	- Use with `cargo test --release --features=quickcheck`.
-- `heapsize`: Implement base trait of the `heapsizeof` crate
-	- Use with `cargo build --feature=heapsize`.

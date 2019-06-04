@@ -1,6 +1,6 @@
 [package]
 name = "ethbloom"
-version = "0.6.4"
+version = "0.7.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "Ethereum bloom filter"
 license = "MIT"
@@ -11,7 +11,7 @@ repository = "https://github.com/paritytech/parity-common"
 [dependencies]
 tiny-keccak = "1.4"
 crunchy = { version = "0.2", default-features = false, features = ["limit_256"] }
-fixed-hash = { path = "../fixed-hash", version = "0.3", default-features = false }
+fixed-hash = { path = "../fixed-hash", version = "0.4", default-features = false }
 impl-serde = { path = "../primitive-types/impls/serde", version = "0.2", default-features = false, optional = true }
 impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.2", default-features = false }
 
@@ -20,7 +20,6 @@ rand = { version = "0.4" }
 hex-literal = "0.1.1"
 
 [features]
-default = ["std", "heapsize", "serialize", "fixed-hash/libc", "fixed-hash/rustc-hex"]
+default = ["std", "serialize", "fixed-hash/libc", "fixed-hash/rustc-hex"]
 std = ["fixed-hash/std", "crunchy/std"]
-heapsize = ["fixed-hash/heapsize"]
 serialize = ["std", "impl-serde"]
