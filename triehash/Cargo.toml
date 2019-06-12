@@ -7,11 +7,11 @@ repository = "https://github.com/paritytech/parity-common"
 license = "GPL-3.0"
 
 [dependencies]
-hash-db = { git = "https://github.com/cheme/trie", branch = "deprecate_heapsize", default-features = false, features = ["std"] }
+hash-db = { version = "0.12.3", default-features = false, features = ["std"] }
 rlp = { version = "0.4", path = "../rlp" }
 
 [dev-dependencies]
-keccak-hasher = { git = "https://github.com/cheme/trie", branch = "deprecate_heapsize" }
+keccak-hasher = "0.12.3"
 tiny-keccak = "1.4.2"
 ethereum-types = { version = "0.7", path = "../ethereum-types" }
 hex-literal = "0.2"

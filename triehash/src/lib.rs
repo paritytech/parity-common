@@ -281,7 +281,7 @@ where
 	hash256rlp::<H, _, _>(input, pre_len, &mut s);
 	let out = s.out();
 	match out.len() {
-		0...31 => stream.append_raw(&out, 1),
+		0..=31 => stream.append_raw(&out, 1),
 		_ => stream.append(&H::hash(&out).as_ref())
 	};
 }
