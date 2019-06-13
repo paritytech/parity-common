@@ -1,6 +1,6 @@
 [package]
 name = "triehash"
-version = "0.5.1"
+version = "0.6.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "In-memory patricia trie operations"
 repository = "https://github.com/paritytech/parity-common"
