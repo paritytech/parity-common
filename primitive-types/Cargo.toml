@@ -10,7 +10,7 @@ description = "Primitive types shared by Ethereum and Substrate"
 fixed-hash = { version = "0.4", path = "../fixed-hash", default-features = false }
 uint = { version = "0.8", path = "../uint", default-features = false }
 impl-serde = { version = "0.2", path = "impls/serde", default-features = false, optional = true }
-impl-codec = { version = "0.2", path = "impls/codec", default-features = false, optional = true }
+impl-codec = { version = "0.3", path = "impls/codec", default-features = false, optional = true }
 impl-rlp = { version = "0.2", path = "impls/rlp", default-features = false, optional = true }
 
 [features]
