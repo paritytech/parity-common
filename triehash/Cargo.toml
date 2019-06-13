@@ -7,7 +7,7 @@ repository = "https://github.com/paritytech/parity-common"
 license = "GPL-3.0"
 
 [dependencies]
-hash-db = { version = "0.12.3", default-features = false, features = ["std"] }
+hash-db = "0.12.3"
 rlp = { version = "0.4", path = "../rlp" }
 
 [dev-dependencies]
