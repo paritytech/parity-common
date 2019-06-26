@@ -16,9 +16,6 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(not(feature = "std"))]
-extern crate alloc;
-
 #[cfg(feature = "std")]
 use std::io;
 use core::slice;
@@ -93,7 +90,10 @@ pub fn keccak_buffer(r: &mut dyn io::BufRead) -> Result<H256, io::Error> {
 #[cfg(test)]
 mod tests {
 	#[cfg(not(feature = "std"))]
+	extern crate alloc;
+	#[cfg(not(feature = "std"))]
 	use alloc::{vec, vec::Vec};
+
 	use super::*;
 
 	#[test]
