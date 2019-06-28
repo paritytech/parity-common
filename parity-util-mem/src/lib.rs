@@ -55,6 +55,14 @@ cfg_if! {
 		#[global_allocator]
 		/// Global allocator
 		pub static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+	} else if #[cfg(all(
+			feature = "mimalloc-global",
+			not(target_arch = "wasm32")
+		))] {
+		extern crate mimallocator;
+		#[global_allocator]
+		/// Global allocator
+		pub static ALLOC: mimallocator::Mimalloc = mimallocator::Mimalloc;
 	} else {
 		// default allocator used
 	}

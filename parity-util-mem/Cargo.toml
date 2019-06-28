@@ -12,6 +12,7 @@ cfg-if = "0.1.6"
 malloc_size_of_derive = "0.1.0"
 dlmalloc = { version = "0.1", features = ["global"], optional = true }
 wee_alloc = { version = "0.4", optional = true }
+mimallocator = { version = "0.1", optional = true }
 
 elastic-array = { version = "0", optional = true }
 ethereum-types = { version = "0", optional = true }
@@ -33,6 +34,8 @@ dlmalloc-global = ["dlmalloc", "estimate-heapsize"]
 weealloc-global = ["wee_alloc", "estimate-heapsize"]
 # use jemalloc as global allocator
 jemalloc-global = ["jemallocator"]
+# use mimalloc as global allocator
+mimalloc-global = ["mimallocator"]
 # implement additional types
 ethereum-impls = ["ethereum-types", "elastic-array", "parking_lot"]
 # Full estimate: no call to allocator

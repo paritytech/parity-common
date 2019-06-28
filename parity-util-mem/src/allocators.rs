@@ -21,21 +21,25 @@
 //!	 - weealloc: default to `estimate_size`
 //!	 - dlmalloc: default to `estimate_size`
 //!	 - jemalloc: default windows allocator is used instead
+//!	 - mimalloc: use mimallocator crate
 //! - arch x86:
 //!	 - no features: use default alloc
 //!	 - jemalloc: use jemallocator crate
 //!	 - weealloc: default to `estimate_size`
 //!	 - dlmalloc: default to `estimate_size`
+//!	 - mimalloc: use mimallocator crate
 //! - arch x86/macos:
 //!	 - no features: use default alloc, requires using `estimate_size`
 //!	 - jemalloc: use jemallocator crate
 //!	 - weealloc: default to `estimate_size`
 //!	 - dlmalloc: default to `estimate_size`
+//!	 - mimalloc: use mimallocator crate
 //! - arch wasm32:
 //!	 - no features: default to `estimate_size`
 //!	 - weealloc: default to `estimate_size`
 //!	 - dlmalloc: default to `estimate_size`
 //!	 - jemalloc: compile error
+//!	 - mimalloc: compile error (until https://github.com/microsoft/mimalloc/pull/32 is merged)
 
 
 use malloc_size::{MallocSizeOfOps, VoidPtrToSizeFn, MallocSizeOf};
@@ -95,6 +99,13 @@ cfg_if! {
 			jemallocator::usable_size(ptr)
 		}
 
+	} else if #[cfg(feature = "mimalloc-global")] {
+
+		/// Use of mimalloc usable size C function through mimallocator crate call.
+		pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
+			mimallocator::usable_size(ptr)
+		}
+
 	} else if #[cfg(target_os = "linux")] {
 
 		/// Linux call system allocator (currently malloc).
@@ -130,10 +141,10 @@ pub fn new_malloc_size_ops() -> MallocSizeOfOps {
 
 /// Extension methods for `MallocSizeOf` trait, do not implement
 /// directly.
-/// It allows getting heapsize without exposing `MallocSizeOfOps` 
+/// It allows getting heapsize without exposing `MallocSizeOfOps`
 /// (a single default `MallocSizeOfOps` is used for each call).
 pub trait MallocSizeOfExt: MallocSizeOf {
-	/// Method to launch a heapsize measurement with a 
+	/// Method to launch a heapsize measurement with a
 	/// fresh state.
 	fn malloc_size_of(&self) -> usize {
 		let mut ops = new_malloc_size_ops();
