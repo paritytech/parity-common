@@ -25,7 +25,7 @@ aes-ctr = "0.3.0"
 block-modes = "0.3.3"
 pbkdf2 = "0.3.0"
 subtle = "2.1"
-memzero = "0.1"
+zeroize = "0.9.1"
 
 [dev-dependencies]
 criterion = "0.2"
