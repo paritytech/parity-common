@@ -1,13 +1,12 @@
 [package]
 name = "parity-util-mem"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "Collection of memory related utilities"
 license = "GPL-3.0"
 
 [dependencies]
-clear_on_drop = "0.2"
 cfg-if = "0.1.6"
 malloc_size_of_derive = "0.1.0"
 dlmalloc = { version = "0.1", features = ["global"], optional = true }
