@@ -103,7 +103,7 @@ cfg_if! {
 
 		/// Use of mimalloc usable size C function through mimallocator crate call.
 		pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
-			mimallocator::usable_size(ptr)
+			mimalloc_sys::mi_usable_size(ptr as *mut _)
 		}
 
 	} else if #[cfg(target_os = "linux")] {

@@ -57,6 +57,7 @@ cfg_if! {
 			not(target_arch = "wasm32")
 		))] {
 		extern crate mimallocator;
+		extern crate mimalloc_sys;
 		#[global_allocator]
 		/// Global allocator
 		pub static ALLOC: mimallocator::Mimalloc = mimallocator::Mimalloc;
