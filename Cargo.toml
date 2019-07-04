@@ -19,7 +19,3 @@ members = [
 	"ethereum-types",
 	"ethbloom",
 ]
-
-[patch.crates-io]
-# TODO: waiting for https://github.com/gnzlbg/mimallocator/pull/5
-mimallocator = { git = "https://github.com/ordian/mimallocator" }
