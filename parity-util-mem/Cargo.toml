@@ -11,6 +11,11 @@ cfg-if = "0.1.6"
 malloc_size_of_derive = "0.1.0"
 dlmalloc = { version = "0.1", features = ["global"], optional = true }
 wee_alloc = { version = "0.4", optional = true }
+# from https://github.com/microsoft/mimalloc:
+# mimalloc can be built in secure mode,
+# adding guard pages, randomized allocation, encrypted free lists, etc.
+# to protect against various heap vulnerabilities.
+# The performance penalty is only around 3% on average over our benchmarks.
 mimallocator = { version = "0.1", features = ["secure"], optional = true }
 mimalloc-sys = { version = "0.1", optional = true }
 
