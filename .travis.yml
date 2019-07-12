@@ -11,6 +11,7 @@ matrix:
     - os: linux
       rust: nightly
     - os: osx
+      osx_image: xcode11
       rust: stable
   allow_failures:
     - rust: nightly
