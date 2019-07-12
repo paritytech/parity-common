@@ -101,8 +101,10 @@ cfg_if! {
 
 	} else if #[cfg(feature = "mimalloc-global")] {
 
-		/// Use of mimalloc usable size C function through mimallocator crate call.
+		/// Use of mimalloc usable size C function through mimalloc_sys crate call.
 		pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
+			// mimalloc doesn't actually mutate the value ptr points to,
+			// but requires a mut pointer in the API
 			mimalloc_sys::mi_usable_size(ptr as *mut _)
 		}
 
