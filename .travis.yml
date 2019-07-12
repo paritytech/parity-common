@@ -5,10 +5,13 @@ branches:
 matrix:
   include:
     - os: linux
+      dist: xenial
       rust: stable
     - os: linux
+      dist: xenial
       rust: beta
     - os: linux
+      dist: xenial
       rust: nightly
     - os: osx
       osx_image: xcode11
