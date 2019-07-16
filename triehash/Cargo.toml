@@ -1,17 +1,17 @@
 [package]
 name = "triehash"
-version = "0.5.0"
+version = "0.7.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "In-memory patricia trie operations"
 repository = "https://github.com/paritytech/parity-common"
 license = "GPL-3.0"
 
 [dependencies]
-hash-db = { version = "0.11.0", default-features = false }
+hash-db = "0.14"
 rlp = { version = "0.4", path = "../rlp" }
 
 [dev-dependencies]
-keccak-hasher = { version = "0.11.0" }
+keccak-hasher = "0.14"
 tiny-keccak = "1.4.2"
 ethereum-types = { version = "0.7", path = "../ethereum-types" }
 hex-literal = "0.2"

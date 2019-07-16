@@ -5,12 +5,20 @@ branches:
 matrix:
   include:
     - os: linux
+# without this line
+# travis downgrades the image to trusty somehow
+# which doesn't have C11 support
+# see https://travis-ci.org/paritytech/parity-common/jobs/557850274
+      dist: xenial
       rust: stable
     - os: linux
+      dist: xenial
       rust: beta
     - os: linux
+      dist: xenial
       rust: nightly
     - os: osx
+      osx_image: xcode11
       rust: stable
   allow_failures:
     - rust: nightly
@@ -20,7 +28,7 @@ script:
   - cargo test --all --exclude uint --exclude fixed-hash
   - if [ "$TRAVIS_RUST_VERSION" == "nightly" ]; then
     cd parity-bytes/ && cargo build --no-default-features && cd ..;
-    cd fixed-hash/ && cargo test --no-default-features --features="rustc-hex,byteorder" && cd..;
+    cd fixed-hash/ && cargo test --no-default-features --features="rustc-hex,byteorder" && cd ..;
     cd keccak-hash/ && cargo test --no-default-features && cd ..;
     fi
   - cd fixed-hash/ && cargo test --all-features && cd ..
@@ -28,3 +36,4 @@ script:
   - cd plain_hasher/ && cargo test --no-default-features && cd ..
   - cd parity-util-mem/ && cargo test --features=estimate-heapsize && cd ..
   - cd parity-util-mem/ && cargo test --features=jemalloc-global && cd ..
+  - cd parity-util-mem/ && cargo test --features=mimalloc-global && cd ..

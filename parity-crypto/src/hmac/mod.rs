@@ -19,7 +19,7 @@ use std::ops::Deref;
 
 use digest::generic_array::{GenericArray, typenum::{U32, U64}};
 use hmac::{Hmac, Mac as _};
-use memzero::Memzero;
+use zeroize::Zeroize;
 
 use crate::digest::{Sha256, Sha512};
 
@@ -49,7 +49,7 @@ pub struct SigKey<T>(KeyInner, PhantomData<T>);
 
 #[derive(PartialEq)]
 // Using `Box[u8]` guarantees no reallocation can happen
-struct DisposableBox(Memzero<Box<[u8]>>);
+struct DisposableBox(Box<[u8]>);
 
 impl std::fmt::Debug for DisposableBox {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -59,7 +59,13 @@ impl std::fmt::Debug for DisposableBox {
 
 impl DisposableBox {
 	fn from_slice(data: &[u8]) -> Self {
-		Self(Memzero::from(data.to_vec().into_boxed_slice()))
+		Self(data.to_vec().into_boxed_slice())
+	}
+}
+
+impl Drop for DisposableBox {
+	fn drop(&mut self) {
+		self.0.zeroize()
 	}
 }
 
