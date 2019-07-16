@@ -8,7 +8,6 @@
 
 use std::{mem, str};
 use std::iter::{once, empty};
-use byteorder::{ByteOrder, BigEndian};
 use crate::traits::{Encodable, Decodable};
 use crate::stream::RlpStream;
 use crate::{Rlp, DecoderError};
@@ -117,12 +116,11 @@ impl Decodable for u8 {
 }
 
 macro_rules! impl_encodable_for_u {
-	($name: ident, $func: ident, $size: expr) => {
+	($name: ident, $size: expr) => {
 		impl Encodable for $name {
 			fn rlp_append(&self, s: &mut RlpStream) {
 				let leading_empty_bytes = self.leading_zeros() as usize / 8;
-				let mut buffer = [0u8; $size];
-				BigEndian::$func(&mut buffer, *self);
+				let buffer: [u8; $size] = self.to_be_bytes();
 				s.encoder().encode_value(&buffer[leading_empty_bytes..]);
 			}
 		}
@@ -155,9 +153,9 @@ macro_rules! impl_decodable_for_u {
 	}
 }
 
-impl_encodable_for_u!(u16, write_u16, 2);
-impl_encodable_for_u!(u32, write_u32, 4);
-impl_encodable_for_u!(u64, write_u64, 8);
+impl_encodable_for_u!(u16, 2);
+impl_encodable_for_u!(u32, 4);
+impl_encodable_for_u!(u64, 8);
 
 impl_decodable_for_u!(u16);
 impl_decodable_for_u!(u32);

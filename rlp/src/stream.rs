@@ -7,7 +7,6 @@
 // except according to those terms.
 
 use std::borrow::Borrow;
-use byteorder::{ByteOrder, BigEndian};
 use crate::traits::Encodable;
 
 #[derive(Debug, Copy, Clone)]
@@ -354,8 +353,7 @@ impl<'a> BasicEncoder<'a> {
 		let size = size as u32;
 		let leading_empty_bytes = size.leading_zeros() as usize / 8;
 		let size_bytes = 4 - leading_empty_bytes as u8;
-		let mut buffer = [0u8; 4];
-		BigEndian::write_u32(&mut buffer, size);
+		let buffer: [u8; 4] = size.to_be_bytes();
 		assert!(position <= self.buffer.len());
 
 		self.buffer.extend_from_slice(&buffer[leading_empty_bytes..]);
