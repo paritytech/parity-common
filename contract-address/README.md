@@ -4,7 +4,7 @@ Provides a function to create an ethereum contract address.
 
 ## Examples
 
-Simple 256 bit (32 bytes) hash type.
+Create an ethereum address from sender and nonce.
 
 ```rust
 use contract_address::{

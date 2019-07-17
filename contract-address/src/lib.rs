@@ -14,7 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-//! A utility to create an ethereum contract address.
+#![cfg_attr(feature = "external_doc", feature(external_doc))]
+
+#![cfg_attr(feature = "external_doc", doc(include = "../README.md"))]
 
 pub use ethereum_types::{Address, H256, U256};
 use keccak_hash::keccak;
