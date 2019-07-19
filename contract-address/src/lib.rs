@@ -78,4 +78,27 @@ mod tests {
 		let scheme = CreateContractAddress::FromSenderAndNonce;
 		assert_eq!(expected, contract_address(scheme, &sender, &U256::from(88), &[]).0);
 	}
+
+	#[test]
+	fn test_from_sender_salt_and_code_hash() {
+		let sender = Address::zero();
+		let expected_address = Address::from_str("e33c0c7f7df4809055c3eba6c09cfe4baf1bd9e0").unwrap();
+		let expected_code_hash = H256::from_str("c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470").ok();
+		let scheme = CreateContractAddress::FromSenderSaltAndCodeHash(H256::zero());
+		let (x, y) = contract_address(scheme, &sender, &U256::zero(), &[]);
+		assert_eq!(expected_address, x);
+		assert_eq!(expected_code_hash, y);
+	}
+
+	#[test]
+	fn test_from_sender_and_code_hash() {
+		let code = [0u8, 1, 2, 3];
+		let sender = Address::from_str("0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d").unwrap();
+		let expected_address = Address::from_str("064417880f5680b141ed7fcac031aad40df080b0").unwrap();
+		let expected_code_hash = H256::from_str("d98f2e8134922f73748703c8e7084d42f13d2fa1439936ef5a3abcf5646fe83f").ok();
+		let scheme = CreateContractAddress::FromSenderAndCodeHash;
+		let (x, y) = contract_address(scheme, &sender, &U256::zero(), &code);
+		assert_eq!(expected_address, x);
+		assert_eq!(expected_code_hash, y);
+	}
 }
