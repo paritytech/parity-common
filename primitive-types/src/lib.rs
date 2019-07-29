@@ -9,7 +9,7 @@
 //! Primitive types shared by Substrate and Parity Ethereum.
 //!
 //! Those are uint types `U128`, `U256` and `U512`, and fixed hash types `H160`,
-//! `H256` and `H512`, with optional serde serialization, parity-codec and
+//! `H256` and `H512`, with optional serde serialization, parity-scale-codec and
 //! rlp encoding.
 
 #![cfg_attr(not(feature = "std"), no_std)]
