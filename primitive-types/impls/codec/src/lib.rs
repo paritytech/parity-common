@@ -25,6 +25,8 @@ macro_rules! impl_uint_codec {
 			}
 		}
 
+		impl $crate::codec::EncodeLike for $name {}
+
 		impl $crate::codec::Decode for $name {
 			fn decode<I: $crate::codec::Input>(input: &mut I)
 				-> core::result::Result<Self, $crate::codec::Error>
@@ -45,6 +47,9 @@ macro_rules! impl_fixed_hash_codec {
 				self.0.using_encoded(f)
 			}
 		}
+
+		impl $crate::codec::EncodeLike for $name {}
+
 		impl $crate::codec::Decode for $name {
 			fn decode<I: $crate::codec::Input>(input: &mut I)
 				-> core::result::Result<Self, $crate::codec::Error>
