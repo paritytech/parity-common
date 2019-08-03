@@ -36,3 +36,4 @@ script:
   - cd parity-util-mem/ && cargo test --features=estimate-heapsize && cd ..
   - cd parity-util-mem/ && cargo test --features=jemalloc-global && cd ..
   - cd parity-util-mem/ && cargo test --features=mimalloc-global && cd ..
+  - cargo check -p kvdb-web --target wasm32-unknown-unknown
