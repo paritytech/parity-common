@@ -37,6 +37,9 @@ pub fn run() {
 	insert(&db, b"hello", b"world");
 	console_log!("DB get {:?}", get(&db, b"hello"));
 
+	drop(db);
+	let db = Database::open("hello".into(), 1);
+
 	console_log!("DB get {:?}", get(&db, b"hello"));
 	console_log!("DB get {:?}", get(&db, b"trash"));
 }
