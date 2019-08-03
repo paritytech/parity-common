@@ -1,4 +1,22 @@
-//! TODO module docs, license
+// Copyright 2019 Parity Technologies (UK) Ltd.
+// This file is part of Parity.
+
+// Parity is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Parity is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+
+//! A key-value database for use in browsers
+//!
+//! An example on how to use it in a browser can be seen kvdb_web_demo crate.
 
 #![cfg(target_arch = "wasm32")]
 
@@ -55,7 +73,8 @@ pub struct Database {
 const RWLOCK_NO_POISONING_PROOF: &str = "RwLock poisoning can't happen in WASM; qed";
 
 impl Database {
-	/// Opens the database with the specified number of columns.
+	/// Opens the database with the given name
+	/// and the specified number of columns (not including the default one).
 	pub fn open(name: String, columns: u32) -> Arc<Database> {
 		let window = web_sys::window().expect_throw("are we in a browser?");
 		let local_storage = window.local_storage()
