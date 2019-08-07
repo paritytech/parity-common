@@ -425,7 +425,7 @@ macro_rules! construct_uint {
 		$visibility struct $name (pub [u64; $n_words]);
 
 		impl AsRef<[u64]> for $name {
-		#[inline]
+			#[inline]
 			fn as_ref(&self) -> &[u64] {
 				&self.0
 			}
