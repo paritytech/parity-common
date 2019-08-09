@@ -424,6 +424,7 @@ macro_rules! construct_uint {
 		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 		$visibility struct $name (pub [u64; $n_words]);
 
+		/// Get a reference to the underlying little-endian words. 
 		impl AsRef<[u64]> for $name {
 			#[inline]
 			fn as_ref(&self) -> &[u64] {
