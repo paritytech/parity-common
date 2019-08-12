@@ -11,7 +11,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[doc(hidden)]
-pub extern crate parity_codec as codec;
+pub extern crate parity_scale_codec as codec;
 
 /// Add Parity Codec serialization support to an integer created by `construct_uint!`.
 #[macro_export]
@@ -25,8 +25,12 @@ macro_rules! impl_uint_codec {
 			}
 		}
 
+		impl $crate::codec::EncodeLike for $name {}
+
 		impl $crate::codec::Decode for $name {
-			fn decode<I: $crate::codec::Input>(input: &mut I) -> Option<Self> {
+			fn decode<I: $crate::codec::Input>(input: &mut I)
+				-> core::result::Result<Self, $crate::codec::Error>
+			{
 				<[u8; $len * 8] as $crate::codec::Decode>::decode(input)
 					.map(|b| $name::from_little_endian(&b))
 			}
@@ -43,8 +47,13 @@ macro_rules! impl_fixed_hash_codec {
 				self.0.using_encoded(f)
 			}
 		}
+
+		impl $crate::codec::EncodeLike for $name {}
+
 		impl $crate::codec::Decode for $name {
-			fn decode<I: $crate::codec::Input>(input: &mut I) -> Option<Self> {
+			fn decode<I: $crate::codec::Input>(input: &mut I)
+				-> core::result::Result<Self, $crate::codec::Error>
+			{
 				<[u8; $len] as $crate::codec::Decode>::decode(input).map($name)
 			}
 		}

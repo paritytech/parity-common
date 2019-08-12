@@ -1130,13 +1130,13 @@ macro_rules! construct_uint {
 
 		impl $crate::core_::convert::From<[u8; $n_words * 8]> for $name {
 			fn from(bytes: [u8; $n_words * 8]) -> Self {
-				bytes[..].as_ref().into()
+				Self::from(&bytes)
 			}
 		}
 
 		impl<'a> $crate::core_::convert::From<&'a [u8; $n_words * 8]> for $name {
 			fn from(bytes: &[u8; $n_words * 8]) -> Self {
-				bytes[..].into()
+				Self::from(&bytes[..])
 			}
 		}
 
