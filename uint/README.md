@@ -3,7 +3,7 @@
 ## Description
 
 Provides facilities to construct big unsigned integer types.
-Also provides commonly used `U128, U256` and `U512` out of the box.
+If you want to use a predefined `U128`, `U256` or `U512` type, take a look at the [`primitive-types`](https://github.com/paritytech/parity-common/tree/master/primitive-types) or [`ethereum-types`](https://github.com/paritytech/parity-common/tree/master/ethereum-types) crate.
 
 The focus on the provided big unsigned integer types is performance and cross-platform availability.
 Support a very similar API as the built-in primitive integer types.
@@ -51,8 +51,6 @@ see fuzz [README.md](fuzz/README.md)
 
 - `std`: Use Rust's standard library.
 	- Enables `byteorder/std`, `rustc-hex/std`
-	- Enabled by default.
-- `common`: Provide commonly used `U128`, `U256` and `U512` big unsigned integer types.
 	- Enabled by default.
 - `quickcheck`: Enable quickcheck-style property testing
 	- Use with `cargo test --release --features=quickcheck`.
