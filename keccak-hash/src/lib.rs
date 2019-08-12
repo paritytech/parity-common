@@ -14,15 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate primitive_types;
-extern crate tiny_keccak;
+#![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "std")]
 use std::io;
-use std::slice;
-
-use tiny_keccak::Keccak;
+use core::slice;
 
 pub use primitive_types::H256;
+use tiny_keccak::Keccak;
 
 /// Get the KECCAK (i.e. Keccak) hash of the empty bytes string.
 pub const KECCAK_EMPTY: H256 = H256( [0xc5, 0xd2, 0x46, 0x01, 0x86, 0xf7, 0x23, 0x3c, 0x92, 0x7e, 0x7d, 0xb2, 0xdc, 0xc7, 0x03, 0xc0, 0xe5, 0x00, 0xb6, 0x53, 0xca, 0x82, 0x27, 0x3b, 0x7b, 0xfa, 0xd8, 0x04, 0x5d, 0x85, 0xa4, 0x70] );
@@ -63,7 +62,8 @@ pub fn keccak_512(input: &[u8], mut output: &mut [u8]) { Keccak::keccak512(input
 
 pub fn write_keccak<T: AsRef<[u8]>>(s: T, dest: &mut [u8]) { Keccak::keccak256(s.as_ref(), dest); }
 
-pub fn keccak_pipe(r: &mut io::BufRead, w: &mut io::Write) -> Result<H256, io::Error> {
+#[cfg(feature = "std")]
+pub fn keccak_pipe(r: &mut dyn io::BufRead, w: &mut dyn io::Write) -> Result<H256, io::Error> {
 	let mut output = [0u8; 32];
 	let mut input = [0u8; 1024];
 	let mut keccak = Keccak::new_keccak256();
@@ -82,20 +82,19 @@ pub fn keccak_pipe(r: &mut io::BufRead, w: &mut io::Write) -> Result<H256, io::E
 	Ok(output.into())
 }
 
-pub fn keccak_buffer(r: &mut io::BufRead) -> Result<H256, io::Error> {
+#[cfg(feature = "std")]
+pub fn keccak_buffer(r: &mut dyn io::BufRead) -> Result<H256, io::Error> {
 	keccak_pipe(r, &mut io::sink())
 }
 
 #[cfg(test)]
 mod tests {
-	extern crate tempdir;
+	#[cfg(not(feature = "std"))]
+	extern crate alloc;
+	#[cfg(not(feature = "std"))]
+	use alloc::{vec, vec::Vec};
 
-	use std::fs;
-	use std::io::{Write, BufReader};
-	use std::str::FromStr;
-
-	use self::tempdir::TempDir;
-	use super::{keccak, write_keccak, keccak_buffer, KECCAK_EMPTY};
+	use super::*;
 
 	#[test]
 	fn keccak_empty() {
@@ -104,7 +103,15 @@ mod tests {
 
 	#[test]
 	fn keccak_as() {
-		assert_eq!(keccak([0x41u8; 32]), FromStr::from_str("59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8").unwrap());
+		assert_eq!(
+			keccak([0x41u8; 32]),
+			H256([
+				0x59, 0xca, 0xd5, 0x94, 0x86, 0x73, 0x62, 0x2c,
+ 				0x1d, 0x64, 0xe2, 0x32, 0x24, 0x88, 0xbf, 0x01,
+				0x61, 0x9f, 0x7f, 0xf4, 0x57, 0x89, 0x74, 0x1b,
+				0x15, 0xa9, 0xf7, 0x82, 0xce, 0x92, 0x90, 0xa8
+			]),
+		);
 	}
 
 	#[test]
@@ -122,11 +129,15 @@ mod tests {
 		assert_eq!(dest, expected.as_ref());
 	}
 
+	#[cfg(feature = "std")]
 	#[test]
 	fn should_keccak_a_file() {
+		use std::fs;
+		use std::io::{Write, BufReader};
+
 		// given
-		let tempdir = TempDir::new("keccak").unwrap();
-		let mut path = tempdir.path().to_owned();
+		let tmpdir = tempdir::TempDir::new("keccak").unwrap();
+		let mut path = tmpdir.path().to_owned();
 		path.push("should_keccak_a_file");
 		// Prepare file
 		{

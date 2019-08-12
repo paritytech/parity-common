@@ -17,7 +17,6 @@
 #![feature(test)]
 
 extern crate test;
-extern crate keccak_hash;
 
 use keccak_hash::keccak;
 use test::Bencher;
