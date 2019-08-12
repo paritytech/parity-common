@@ -1,0 +1,26 @@
+[package]
+name = "contract-address"
+version = "0.1.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+license = "MIT"
+homepage = "https://github.com/paritytech/parity-common"
+repository = "https://github.com/paritytech/parity-common"
+description = "A utility crate to create an ethereum contract address"
+documentation = "https://docs.rs/contract-address/"
+edition = "2018"
+readme = "README.md"
+
+[dependencies]
+ethereum-types = { version = "0.7", path = "../ethereum-types" }
+rlp = { version = "0.4", path = "../rlp" }
+keccak-hash = { version = "0.3", path = "../keccak-hash", default-features = false }
+
+[features]
+default = []
+# this uses a nightly-only feature
+# to embed REAMDE.md into lib.rs module docs
+external_doc = []
+
+[package.metadata.docs.rs]
+# docs.rs builds the docs with nightly rust
+features = ["external_doc"]

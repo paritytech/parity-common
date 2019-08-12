@@ -1,5 +1,6 @@
 [workspace]
 members = [
+	"contract-address",
 	"fixed-hash",
 	"keccak-hash",
 	"kvdb",
