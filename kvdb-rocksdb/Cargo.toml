@@ -15,8 +15,7 @@ log = "0.4"
 num_cpus = "1.0"
 parking_lot = "0.6"
 regex = "1.0"
-#parity-rocksdb = "0.5"
-parity-rocksdb = { version = "0.5", git = "https://github.com/cheme/rust-rocksdb", branch = "del_range" }
+rocksdb = "0.12"
 
 [dev-dependencies]
 tempdir = "0.3"
