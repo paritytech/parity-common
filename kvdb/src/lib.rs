@@ -49,15 +49,20 @@ pub enum DBOp {
 	Delete {
 		col: Option<u32>,
 		key: ElasticArray32<u8>,
-	}
+	},
+	DeletePrefix {
+		col: Option<u32>,
+		prefix: ElasticArray32<u8>,
+	},
 }
 
 impl DBOp {
 	/// Returns the key associated with this operation.
-	pub fn key(&self) -> &[u8] {
+	pub fn key(&self) -> Option<&[u8]> {
 		match *self {
-			DBOp::Insert { ref key, .. } => key,
-			DBOp::Delete { ref key, .. } => key,
+			DBOp::Insert { ref key, .. } => Some(key),
+			DBOp::Delete { ref key, .. } => Some(key),
+			DBOp::DeletePrefix { .. } => None,
 		}
 	}
 
@@ -66,6 +71,7 @@ impl DBOp {
 		match *self {
 			DBOp::Insert { col, .. } => col,
 			DBOp::Delete { col, .. } => col,
+			DBOp::DeletePrefix { col, .. } => col,
 		}
 	}
 }
@@ -114,6 +120,17 @@ impl DBTransaction {
 			key: ekey,
 		});
 	}
+
+	/// Delete value by key.
+	pub fn delete_prefix(&mut self, col: Option<u32>, prefix: &[u8]) {
+		let mut eprefix = ElasticArray32::new();
+		eprefix.append_slice(prefix);
+		self.ops.push(DBOp::DeletePrefix {
+			col: col,
+			prefix: eprefix,
+		});
+	}
+
 }
 
 /// Generic key-value database.
@@ -153,6 +170,17 @@ pub trait KeyValueDB: Sync + Send {
 		self.flush()
 	}
 
+	/// Delete all prefixed key (do not delete buffered values and
+	/// do not support atomic operation in a transaction).
+	fn delete_prefix(&self, col: Option<u32>, prefix: &[u8]) -> io::Result<()> {
+		// default unefficient implementation.
+		let mut transaction = DBTransaction::new();
+		self.iter_from_prefix(col, prefix).for_each(|(key, _)| {
+			transaction.delete(col.clone(), &key[..]);
+		});
+		self.write(transaction)
+	}
+
 	/// Flush all buffered data.
 	fn flush(&self) -> io::Result<()>;
 
@@ -172,4 +200,21 @@ pub trait KeyValueDB: Sync + Send {
 pub trait KeyValueDBHandler: Send + Sync {
 	/// Open the predefined key-value database.
 	fn open(&self, path: &Path) -> io::Result<Arc<KeyValueDB>>;
+}
+
+/// Return start inclusive, end non inclusive or unbounded.
+pub fn util_end_for_prefix(prefix: &[u8]) -> Option<Vec<u8>> {
+	let mut end_range = prefix.to_vec();
+	loop {
+		if prefix.len() == 0 {
+			return None;
+		}
+		let end_index = end_range.len() - 1;
+		if end_range[end_index] < u8::max_value() {
+			end_range[end_index] = end_range[end_index] + 1;
+			return Some(end_range);
+		} else {
+			end_range.pop();
+		};
+	};
 }

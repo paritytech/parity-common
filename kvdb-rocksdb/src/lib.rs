@@ -30,7 +30,7 @@ extern crate ethereum_types;
 
 extern crate kvdb;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::marker::PhantomData;
 use std::{cmp, fs, io, mem, result, error};
 use std::path::Path;
@@ -44,7 +44,7 @@ use interleaved_ordered::{interleave_ordered, InterleaveOrdered};
 
 use elastic_array::ElasticArray32;
 use fs_swap::{swap, swap_nonatomic};
-use kvdb::{KeyValueDB, DBTransaction, DBValue, DBOp};
+use kvdb::{KeyValueDB, DBTransaction, DBValue, DBOp, util_end_for_prefix};
 
 #[cfg(target_os = "linux")]
 use regex::Regex;
@@ -255,8 +255,12 @@ pub struct Database {
 	path: String,
 	// Dirty values added with `write_buffered`. Cleaned on `flush`.
 	overlay: RwLock<Vec<HashMap<ElasticArray32<u8>, KeyState>>>,
+	// Keyspace added with `write_buffered`. Applied only on `flush`.
+	overlay_prefix: RwLock<Vec<HashSet<ElasticArray32<u8>>>>,
 	// Values currently being flushed. Cleared when `flush` completes.
 	flushing: RwLock<Vec<HashMap<ElasticArray32<u8>, KeyState>>>,
+	// Flushing prefix.
+	flushing_prefix: RwLock<Vec<HashSet<ElasticArray32<u8>>>>,
 	// Prevents concurrent flushes.
 	// Value indicates if a flush is in progress.
 	flushing_lock: Mutex<bool>,
@@ -388,7 +392,9 @@ impl Database {
 			config: config.clone(),
 			write_opts: write_opts,
 			overlay: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
+			overlay_prefix: RwLock::new((0..(num_cols + 1)).map(|_| HashSet::new()).collect()),
 			flushing: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
+			flushing_prefix: RwLock::new((0..(num_cols + 1)).map(|_| HashSet::new()).collect()),
 			flushing_lock: Mutex::new(false),
 			path: path.to_owned(),
 			read_opts: read_opts,
@@ -405,9 +411,18 @@ impl Database {
 		col.map_or(0, |c| (c + 1) as usize)
 	}
 
+	fn from_overlay_column(col: usize) -> Option<u32> {
+		if col > 0 {
+			Some((col - 1) as u32)
+		} else {
+			None
+		}
+	}
+
 	/// Commit transaction to database.
 	pub fn write_buffered(&self, tr: DBTransaction) {
 		let mut overlay = self.overlay.write();
+		let mut overlay_prefix = self.overlay_prefix.write();
 		let ops = tr.ops;
 		for op in ops {
 			match op {
@@ -419,6 +434,14 @@ impl Database {
 					let c = Self::to_overlay_column(col);
 					overlay[c].insert(key, KeyState::Delete);
 				},
+				DBOp::DeletePrefix { col, prefix } => {
+					// warnig DeletePrefix semantic is currently write on flush/commit.
+					// TODO EMCH consider deleting values and filtering on get??
+					// seems costy for current use case.
+					let c = Self::to_overlay_column(col);
+					overlay_prefix[c].insert(prefix);
+				},
+
 			}
 		};
 	}
@@ -429,6 +452,7 @@ impl Database {
 			Some(DBAndColumns { ref db, ref cfs }) => {
 				let batch = WriteBatch::new();
 				mem::swap(&mut *self.overlay.write(), &mut *self.flushing.write());
+				mem::swap(&mut *self.overlay_prefix.write(), &mut *self.flushing_prefix.write());
 				{
 					for (c, column) in self.flushing.read().iter().enumerate() {
 						for (key, state) in column.iter() {
@@ -447,6 +471,29 @@ impl Database {
 										batch.put(key, value).map_err(other_io_err)?;
 									}
 								},
+							}
+						}
+					}
+					for (c, column) in self.flushing_prefix.read().iter().enumerate() {
+						for prefix in column.iter() {
+							if let Some(end_range) = util_end_for_prefix(&prefix[..]) {
+								if c > 0 {
+									batch.delete_range_cf(cfs[c - 1], &prefix[..], &end_range[..])
+										.map_err(other_io_err)?;
+								} else {
+									batch.delete_range(&prefix[..], &end_range[..])
+										.map_err(other_io_err)?;
+								}
+							} else {
+								let ocol = Self::from_overlay_column(c);
+								let iter = self.iter_from_prefix_and_db(ocol, prefix, db, cfs);
+								let keys: Vec<_> = iter.collect();
+								// Note that this does not handle addition of key with longer number of 255 than
+								// the latest one is added afterward.
+								// TODO EMCH is it worth putting a switch: currently we drop on end so it is not.
+								for key in keys {
+									batch.delete(&key.0[..]).map_err(other_io_err)?;
+								}
 							}
 						}
 					}
@@ -489,7 +536,9 @@ impl Database {
 				let ops = tr.ops;
 				for op in ops {
 					// remove any buffered operation for this key
-					self.overlay.write()[Self::to_overlay_column(op.col())].remove(op.key());
+					op.key().map(|key| {
+						self.overlay.write()[Self::to_overlay_column(op.col())].remove(key);
+					});
 
 					match op {
 						DBOp::Insert { col, key, value } => match col {
@@ -499,7 +548,25 @@ impl Database {
 						DBOp::Delete { col, key } => match col {
 							None => batch.delete(&key).map_err(other_io_err)?,
 							Some(c) => batch.delete_cf(cfs[c as usize], &key).map_err(other_io_err)?,
-						}
+						},
+						DBOp::DeletePrefix { col, prefix } => {
+							if let Some(end_range) = util_end_for_prefix(&prefix[..]) {
+								match col {
+									None => batch.delete_range(&prefix[..], &end_range[..]).map_err(other_io_err)?,
+									Some(c) => batch.delete_range_cf(cfs[c as usize], &prefix[..], &end_range[..])
+										.map_err(other_io_err)?,
+								}
+							} else {
+								let iter = self.iter_from_prefix_and_db(col, &prefix[..], db, cfs);
+								let keys: Vec<_> = iter.collect();
+								// Note that this does not handle addition of key with longer number of 255 than
+								// the latest one is added afterward.
+								// TODO EMCH is it worth putting a switch: currently we drop on end so it is not.
+								for key in keys {
+									batch.delete(&key.0[..]).map_err(other_io_err)?;
+								}
+							}
+						},
 					}
 				}
 
@@ -579,18 +646,30 @@ impl Database {
 	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<DatabaseIterator> {
 		match *self.db.read() {
 			Some(DBAndColumns { ref db, ref cfs }) => {
-				let iter = col.map_or_else(|| db.iterator_opt(IteratorMode::From(prefix, Direction::Forward), &self.read_opts),
-					|c| db.iterator_cf_opt(cfs[c as usize], IteratorMode::From(prefix, Direction::Forward), &self.read_opts)
-						.expect("iterator params are valid; qed"));
-
-				Some(DatabaseIterator {
-					iter: interleave_ordered(Vec::new(), iter),
-					_marker: PhantomData,
-				})
+				Some(self.iter_from_prefix_and_db(col, prefix, db, cfs))
 			},
 			None => None,
 		}
 	}
+
+	fn iter_from_prefix_and_db(
+		&self,
+		col: Option<u32>,
+		prefix: &[u8],
+		db: &DB,
+		cfs: &Vec<Column>,
+	) -> DatabaseIterator {
+		let iter = col.map_or_else(|| db.iterator_opt(IteratorMode::From(prefix, Direction::Forward), &self.read_opts),
+			|c| db.iterator_cf_opt(cfs[c as usize], IteratorMode::From(prefix, Direction::Forward), &self.read_opts)
+				.expect("iterator params are valid; qed"));
+
+		DatabaseIterator {
+			iter: interleave_ordered(Vec::new(), iter),
+			_marker: PhantomData,
+		}
+	}
+
+
 
 	/// Close the database
 	fn close(&self) {

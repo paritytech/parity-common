@@ -20,7 +20,7 @@ extern crate kvdb;
 use std::collections::{BTreeMap, HashMap};
 use std::io;
 use parking_lot::RwLock;
-use kvdb::{DBValue, DBTransaction, KeyValueDB, DBOp};
+use kvdb::{DBValue, DBTransaction, KeyValueDB, DBOp, util_end_for_prefix};
 
 /// A key-value database fulfilling the `KeyValueDB` trait, living in memory.
 /// This is generally intended for tests and is not particularly optimized.
@@ -79,6 +79,23 @@ impl KeyValueDB for InMemory {
 						col.remove(&*key);
 					}
 				},
+				DBOp::DeletePrefix { col, prefix } => {
+					if let Some(col) = columns.get_mut(&col) {
+						use std::ops::Bound;
+						let end_range = if let Some(end_range) = util_end_for_prefix(&prefix[..]) {
+							Bound::Excluded(end_range)
+						} else {
+							Bound::Unbounded
+						};
+						let start_range = Bound::Included(prefix.to_vec());
+						let keys: Vec<_> = col.range((start_range, end_range))
+							.map(|(k, _)| k.clone())
+							.collect();
+						for key in keys.into_iter() {
+							col.remove(&key[..]);
+						}
+					}
+				},
 			}
 		}
 	}
@@ -98,6 +115,7 @@ impl KeyValueDB for InMemory {
 		}
 	}
 
+	// TODO EMCH compare speed with commented range version..
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
 		-> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
 	{
@@ -111,6 +129,27 @@ impl KeyValueDB for InMemory {
 			None => Box::new(None.into_iter()),
 		}
 	}
+
+/*	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
+		-> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
+	{
+		use std::ops::Bound;
+		match self.columns.read().get(&col) {
+			Some(map) => {
+				let end_range = if let Some(end_range) = util_end_for_prefix(prefix) {
+					Bound::Excluded(end_range)
+				} else {
+					Bound::Unbounded
+				};
+				let start_range = Bound::Included(prefix.to_vec());
+				let vec: Vec<_> = map.range((start_range, end_range))
+					.map(|(k, v)| (k.to_vec().into_boxed_slice(), v.to_vec().into_boxed_slice()))
+					.collect();
+				Box::new(vec.into_iter())
+			},
+			None => Box::new(None.into_iter()),
+		}
+	}*/
 
 	fn restore(&self, _new_db: &str) -> io::Result<()> {
 		Err(io::Error::new(io::ErrorKind::Other, "Attempted to restore in-memory database"))
