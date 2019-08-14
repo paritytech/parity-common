@@ -206,11 +206,11 @@ impl Default for DatabaseConfig {
 // The compromise of holding only a virtual borrow vs. holding a lock on the
 // inner DB (to prevent closing via restoration) may be re-evaluated in the future.
 //
-pub struct DatabaseIterator<'a> {
-	iter: InterleaveOrdered<::std::vec::IntoIter<(Box<[u8]>, Box<[u8]>)>, DBIterator<'a>>,
+pub struct DatabaseIterator {
+	iter: InterleaveOrdered<::std::vec::IntoIter<(Box<[u8]>, Box<[u8]>)>, DBIterator<'static>>,
 }
 
-impl<'a> Iterator for DatabaseIterator<'a> {
+impl Iterator for DatabaseIterator {
 	type Item = (Box<[u8]>, Box<[u8]>);
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -357,17 +357,18 @@ impl Database {
 			Some(_) => {
 				match DB::open_cf(&opts, path, &cfnames) {
 					Ok(db) => {
-						cfs = cfnames.iter().map(|n| db.cf_handle(n)
-							.expect("rocksdb opens a cf_handle for each cfname; qed")).collect();
+						cfs = cfnames.iter().map(|n| unsafe_extend_ignore_cf_lifetime(db.cf_handle(n)
+							.expect("rocksdb opens a cf_handle for each cfname; qed"))).collect();
 						Ok(db)
 					}
 					Err(_) => {
 						// retry and create CFs
-						match DB::open_cf(&opts, path, &[]) {
-							Ok(mut db) => {
+						match DB::open_cf(&opts, path, None::<&str>) {
+							Ok(db) => {
 								cfs = cfnames.iter()
 									.enumerate()
-									.map(|(i, n)| db.create_cf(n, &cf_options[i]))
+									.map(|(i, n)| db.create_cf(n, &cf_options[i])
+										.map(|cf| unsafe_extend_ignore_cf_lifetime(cf)))
 									.collect::<::std::result::Result<_, _>>()
 									.map_err(other_io_err)?;
 								Ok(db)
@@ -390,8 +391,8 @@ impl Database {
 					DB::open(&opts, path).map_err(other_io_err)?
 				} else {
 					let db = DB::open_cf(&opts, path, &cfnames).map_err(other_io_err)?;
-					cfs = cfnames.iter().map(|n| db.cf_handle(n)
-						.expect("rocksdb opens a cf_handle for each cfname; qed")).collect();
+					cfs = cfnames.iter().map(|n| unsafe_extend_ignore_cf_lifetime(db.cf_handle(n)
+						.expect("rocksdb opens a cf_handle for each cfname; qed"))).collect();
 					db
 				}
 			}
@@ -505,10 +506,10 @@ impl Database {
 								// the latest one is added afterward.
 								// TODO EMCH is it worth putting a switch: currently we drop on end so it is not.
 								for key in keys {
-                  match ocol {
-							      None => batch.delete(&key.0[..]).map_err(other_io_err)?,
-							      Some(c) => batch.delete_cf(*cfs[c as usize], &key.0[..]).map_err(other_io_err)?,
-  						    }
+									match ocol {
+										None => batch.delete(&key.0[..]).map_err(other_io_err)?,
+										Some(c) => batch.delete_cf(*cfs[c as usize], &key.0[..]).map_err(other_io_err)?,
+									}
 								}
 							}
 						}
@@ -577,11 +578,11 @@ impl Database {
 								// the latest one is added afterward.
 								// TODO EMCH is it worth putting a switch: currently we drop on end so it is not.
 								for key in keys {
-                  match col {
-							      None => batch.delete(&key.0[..]).map_err(other_io_err)?,
-							      Some(c) => batch.delete_cf(*cfs[c as usize], &key.0[..]).map_err(other_io_err)?,
-                  }
-						    }
+									match col {
+										None => batch.delete(&key.0[..]).map_err(other_io_err)?,
+										Some(c) => batch.delete_cf(*cfs[c as usize], &key.0[..]).map_err(other_io_err)?,
+									}
+								}
 							}
 						},
 					}
@@ -662,7 +663,7 @@ impl Database {
 				);
 
 				Some(DatabaseIterator {
-					iter: interleave_ordered(overlay_data, iter),
+					iter: interleave_ordered(overlay_data, unsafe_extend_ignore_dbiter_lifetime(iter)),
 				})
 			},
 			None => None,
@@ -683,15 +684,15 @@ impl Database {
 		col: Option<u32>,
 		prefix: &[u8],
 		db: &DB,
-		cfs: &Vec<MakeSendSync<ColumnFamily<'static>>>,
+		cfs: &Vec<MakeSendSync<ColumnFamily>>,
 	) -> DatabaseIterator {
-    let iter = col.map_or_else(|| db.iterator(IteratorMode::From(prefix, Direction::Forward)),
+		let iter = col.map_or_else(|| db.iterator(IteratorMode::From(prefix, Direction::Forward)),
 					|c| db.iterator_cf(*cfs[c as usize], IteratorMode::From(prefix, Direction::Forward))
 						.expect("iterator params are valid; qed"));
 
 		DatabaseIterator {
-      // TODO EMCH this is incorrect.
-			iter: interleave_ordered(Vec::new(), iter),
+			// TODO EMCH this is incorrect.
+			iter: interleave_ordered(Vec::new(), unsafe_extend_ignore_dbiter_lifetime(iter)),
 		}
 	}
 
@@ -764,7 +765,10 @@ impl Database {
 			Some(DBAndColumns { ref mut db, ref mut cfs }) => {
 				let col = cfs.len() as u32;
 				let name = format!("col{}", col);
-				cfs.push(db.create_cf(&name, &col_config(&self.config, &self.block_opts)?).map_err(other_io_err)?.into());
+				cfs.push(MakeSendSync(
+					unsafe_extend_ignore_cf_lifetime(db.create_cf(&name, &col_config(&self.config, &self.block_opts)?)
+						.map_err(other_io_err)?)
+				));
 				Ok(())
 			},
 			None => Ok(()),
@@ -963,5 +967,18 @@ mod tests {
 		db.write(batch).unwrap();
 
 		assert_eq!(db.get(None, b"foo").unwrap().unwrap().as_ref(), b"baz");
+	}
+}
+
+// force static on create cf.
+fn unsafe_extend_ignore_cf_lifetime<'a>(cf: ColumnFamily<'a>) -> ColumnFamily<'static> {
+	unsafe {
+		std::mem::transmute::<ColumnFamily<'a>, ColumnFamily<'static>>(cf)
+	}
+}
+
+fn unsafe_extend_ignore_dbiter_lifetime<'a>(cf: DBIterator<'a>) -> DBIterator<'static> {
+	unsafe {
+		std::mem::transmute::<DBIterator<'a>, DBIterator<'static>>(cf)
 	}
 }
