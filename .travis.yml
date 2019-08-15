@@ -22,6 +22,8 @@ matrix:
       rust: stable
   allow_failures:
     - rust: nightly
+install:
+  - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 script:
   - cargo check --all --tests
   - cargo build --all
@@ -37,3 +39,4 @@ script:
   - cd parity-util-mem/ && cargo test --features=estimate-heapsize && cd ..
   - cd parity-util-mem/ && cargo test --features=jemalloc-global && cd ..
   - cd parity-util-mem/ && cargo test --features=mimalloc-global && cd ..
+  - cd kvdb-web/ && wasm-pack test --headless --chrome --firefox && cd ..
