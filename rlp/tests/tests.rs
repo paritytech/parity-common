@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use primitive_types::{H160, U256};
+use primitive_types::{H160, U256, H256};
 use std::{fmt, cmp};
 use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
 use hex_literal::hex;
@@ -473,6 +473,55 @@ fn test_inner_length_capping_for_short_lists() {
 	assert_eq!(Rlp::new(&vec![0xc0 + 2, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
 	assert_eq!(Rlp::new(&vec![0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0), Ok("ab".to_owned()));
 	assert_eq!(Rlp::new(&vec![0xc0 + 4, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+}
+
+// test describen in
+//
+// https://github.com/paritytech/parity-common/issues/105
+#[test]
+fn test_nested_list_roundtrip() {
+	#[derive(Debug, PartialEq, Eq)]
+	struct Inner(H256, H256);
+
+	impl Encodable for Inner {
+		fn rlp_append(&self, s: &mut RlpStream) {
+			s.begin_unbounded_list()
+				.append(&self.0)
+				.append(&self.1)
+				.complete_unbounded_list();
+		}
+	}
+
+	impl Decodable for Inner {
+		fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+			Ok(Inner(rlp.val_at(0)?, rlp.val_at(1)?))
+		}
+	}
+
+	#[derive(Debug, PartialEq, Eq)]
+	struct Nest(Vec<Inner>);
+
+	impl Encodable for Nest {
+		fn rlp_append(&self, s: &mut RlpStream) {
+			s.begin_list(1)
+				.append_list(&self.0);
+		}
+	}
+
+	impl Decodable for Nest {
+		fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+			Ok(Nest(rlp.list_at(0)?))
+		}
+	}
+
+
+	let items = (0..8).map(|_| Inner(H256::random(), H256::random())).collect();
+	let nest = Nest(items);
+
+	let encoded = rlp::encode(&nest);
+	let decoded = rlp::decode(&encoded).unwrap();
+
+	assert_eq!(nest, decoded)
 }
 
 // test described in

@@ -365,7 +365,7 @@ impl<'a> BasicEncoder<'a> {
 	fn insert_list_payload(&mut self, len: usize, pos: usize) {
 		// 1 byte was already reserved for payload earlier
 		match len {
-			0...55 => {
+			0..=55 => {
 				self.buffer[pos - 1] = 0xc0u8 + len as u8;
 			},
 			_ => {
@@ -394,7 +394,7 @@ impl<'a> BasicEncoder<'a> {
 		match len {
 			// just 0
 			0 => self.buffer.push(0x80u8),
-			len @ 1 ... 55 => {
+			len @ 1 ..= 55 => {
 				let first = value.next().expect("iterator length is higher than 1");
 				if len == 1 && first < 0x80 {
 					// byte is its own encoding if < 0x80
