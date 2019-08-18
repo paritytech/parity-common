@@ -13,7 +13,7 @@ wasm-bindgen = "0.2.49"
 js-sys = "0.3.26"
 kvdb = { version = "0.1", path = "../kvdb" }
 kvdb-memorydb = { version = "0.1", path = "../kvdb-memorydb" }
-futures-preview = "0.3.0-alpha.18"
+futures-preview = "0.3.0-alpha.17"
 log = "0.4.8"
 
 [dependencies.web-sys]
