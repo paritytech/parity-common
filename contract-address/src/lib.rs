@@ -39,33 +39,25 @@ impl ContractAddress {
     /// Computes the address of a contract from the sender's address, the salt and code hash
     ///
     /// pWASM `create2` scheme and EIP-1014 CREATE2 scheme
-    pub fn from_sender_salt_and_code(sender: &Address, salt: H256, code: &[u8]) -> (Self, H256) {
-        let code_hash = keccak(code);
+    pub fn from_sender_salt_and_code(sender: &Address, salt: H256, code_hash: H256) -> Self {
         let mut buffer = [0u8; 1 + 20 + 32 + 32];
         buffer[0] = 0xff;
         &mut buffer[1..(1 + 20)].copy_from_slice(&sender[..]);
         &mut buffer[(1 + 20)..(1 + 20 + 32)].copy_from_slice(&salt[..]);
         &mut buffer[(1 + 20 + 32)..].copy_from_slice(&code_hash[..]);
 
-        (
-            ContractAddress(Address::from(keccak(&buffer[..]))),
-            code_hash,
-        )
+        ContractAddress(Address::from(keccak(&buffer[..])))
     }
 
     /// Computes the address of a contract from the sender's address and the code hash
     ///
     /// Used by pwasm create ext.
-    pub fn from_sender_and_code(sender: &Address, code: &[u8]) -> (Self, H256) {
-        let code_hash = keccak(code);
+    pub fn from_sender_and_code(sender: &Address, code_hash: H256) -> Self {
         let mut buffer = [0u8; 20 + 32];
         &mut buffer[..20].copy_from_slice(&sender[..]);
         &mut buffer[20..].copy_from_slice(&code_hash[..]);
 
-        (
-            ContractAddress(Address::from(keccak(&buffer[..]))),
-            code_hash,
-        )
+        ContractAddress(Address::from(keccak(&buffer[..])))
     }
 }
 
@@ -101,32 +93,29 @@ mod tests {
     #[test]
     fn test_from_sender_salt_and_code_hash() {
         let sender = Address::zero();
-        let expected_address =
-            Address::from_str("e33c0c7f7df4809055c3eba6c09cfe4baf1bd9e0").unwrap();
-        let expected_code_hash =
+        let code_hash =
             H256::from_str("c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470")
                 .unwrap();
+        let expected_address =
+            Address::from_str("e33c0c7f7df4809055c3eba6c09cfe4baf1bd9e0").unwrap();
 
-        let (contract_address, code_hash) =
-            ContractAddress::from_sender_salt_and_code(&sender, H256::zero(), &[]);
+        let contract_address =
+            ContractAddress::from_sender_salt_and_code(&sender, H256::zero(), code_hash);
 
         assert_eq!(Address::from(contract_address), expected_address);
-        assert_eq!(code_hash, expected_code_hash);
     }
 
     #[test]
     fn test_from_sender_and_code_hash() {
-        let code = [0u8, 1, 2, 3];
         let sender = Address::from_str("0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d").unwrap();
-        let expected_address =
-            Address::from_str("064417880f5680b141ed7fcac031aad40df080b0").unwrap();
-        let expected_code_hash =
+        let code_hash =
             H256::from_str("d98f2e8134922f73748703c8e7084d42f13d2fa1439936ef5a3abcf5646fe83f")
                 .unwrap();
+        let expected_address =
+            Address::from_str("064417880f5680b141ed7fcac031aad40df080b0").unwrap();
 
-        let (contract_address, code_hash) = ContractAddress::from_sender_and_code(&sender, &code);
+        let contract_address = ContractAddress::from_sender_and_code(&sender, code_hash);
 
         assert_eq!(Address::from(contract_address), expected_address);
-        assert_eq!(code_hash, expected_code_hash);
     }
 }
