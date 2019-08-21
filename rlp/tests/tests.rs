@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use primitive_types::{H160, U256, H256};
+use primitive_types::{H160, U256};
 use std::{fmt, cmp};
 use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
 use hex_literal::hex;
@@ -480,8 +480,8 @@ fn test_inner_length_capping_for_short_lists() {
 // https://github.com/paritytech/parity-common/issues/105
 #[test]
 fn test_nested_list_roundtrip() {
-	#[derive(Debug, PartialEq, Eq)]
-	struct Inner(H256, H256);
+	#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+	struct Inner(u64, u64);
 
 	impl Encodable for Inner {
 		fn rlp_append(&self, s: &mut RlpStream) {
@@ -498,30 +498,38 @@ fn test_nested_list_roundtrip() {
 		}
 	}
 
-	#[derive(Debug, PartialEq, Eq)]
-	struct Nest(Vec<Inner>);
+	#[derive(Debug, Clone, PartialEq, Eq)]
+	struct Nest<T>(Vec<T>);
 
-	impl Encodable for Nest {
+	impl<T: Encodable> Encodable for Nest<T> {
 		fn rlp_append(&self, s: &mut RlpStream) {
-			s.begin_list(1)
-				.append_list(&self.0);
+			s.begin_unbounded_list()
+				.append_list(&self.0)
+				.complete_unbounded_list();
 		}
 	}
 
-	impl Decodable for Nest {
+	impl<T: Decodable> Decodable for Nest<T> {
 		fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
 			Ok(Nest(rlp.list_at(0)?))
 		}
 	}
 
 
-	let items = (0..8).map(|_| Inner(H256::random(), H256::random())).collect();
+	let items = (0..4).map(|i| Inner(i, i + 1)).collect();
 	let nest = Nest(items);
 
 	let encoded = rlp::encode(&nest);
 	let decoded = rlp::decode(&encoded).unwrap();
 
-	assert_eq!(nest, decoded)
+	assert_eq!(nest, decoded);
+
+	let nest2 = Nest(vec![nest.clone(), nest]);
+
+	let encoded = rlp::encode(&nest2);
+	let decoded = rlp::decode(&encoded).unwrap();
+
+	assert_eq!(nest2, decoded);
 }
 
 // test described in
