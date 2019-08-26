@@ -139,7 +139,7 @@ impl KeyValueDB for Database {
 
 	// NOTE: clones the whole db
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-		-> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
+		-> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
 	{
 		self.in_memory.iter_from_prefix(col, prefix)
 	}
