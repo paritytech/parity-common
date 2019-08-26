@@ -475,7 +475,7 @@ fn test_inner_length_capping_for_short_lists() {
 	assert_eq!(Rlp::new(&vec![0xc0 + 4, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
 }
 
-// test describen in
+// test described in
 //
 // https://github.com/paritytech/parity-common/issues/105
 #[test]
