@@ -48,29 +48,15 @@
 #[cfg(feature="std")]
 extern crate core;
 
-extern crate tiny_keccak;
-#[macro_use]
-extern crate crunchy;
-
-#[macro_use]
-extern crate fixed_hash;
-
-#[cfg(feature="serialize")]
-#[macro_use]
-extern crate impl_serde;
-
-#[macro_use]
-extern crate impl_rlp;
-
-#[cfg(test)]
-#[macro_use]
-extern crate hex_literal;
-
 use core::{ops, mem};
-use tiny_keccak::keccak256;
-
 #[cfg(feature="std")]
 use core::str;
+use crunchy::unroll;
+use fixed_hash::*;
+#[cfg(feature="serialize")]
+use impl_serde::impl_fixed_hash_serde;
+use impl_rlp::impl_fixed_hash_rlp;
+use tiny_keccak::keccak256;
 
 // 3 according to yellowpaper
 const BLOOM_BITS: u32 = 3;
@@ -264,6 +250,7 @@ impl_fixed_hash_serde!(Bloom, BLOOM_SIZE);
 #[cfg(test)]
 mod tests {
 	use super::{Bloom, Input};
+	use hex_literal::*;
 
 	#[test]
 	fn it_works() {
