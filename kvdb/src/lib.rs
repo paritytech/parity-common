@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
+// Copyright 2015-2019 Parity Technologies (UK) Ltd.
 // This file is part of Parity.
 
 // Parity is free software: you can redistribute it and/or modify
@@ -15,9 +15,6 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Key-Value store abstraction with `RocksDB` backend.
-
-extern crate elastic_array;
-extern crate parity_bytes as bytes;
 
 use std::io;
 use std::path::Path;
@@ -157,19 +154,20 @@ pub trait KeyValueDB: Sync + Send {
 	fn flush(&self) -> io::Result<()>;
 
 	/// Iterate over flushed data for a given column.
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>;
+	fn iter<'a>(&'a self, col: Option<u32>)
+		-> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>;
 
 	/// Iterate over flushed data for a given column, starting from a given prefix.
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-		-> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>;
+		-> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>;
 
 	/// Attempt to replace this database with a new one located at the given path.
 	fn restore(&self, new_db: &str) -> io::Result<()>;
 }
 
-/// Generic key-value database handler. This trait contains one function `open`. When called, it opens database with a
-/// predefined config.
+/// Generic key-value database handler. This trait contains one function `open`.
+/// When called, it opens database with a predefined config.
 pub trait KeyValueDBHandler: Send + Sync {
 	/// Open the predefined key-value database.
-	fn open(&self, path: &Path) -> io::Result<Arc<KeyValueDB>>;
+	fn open(&self, path: &Path) -> io::Result<Arc<dyn KeyValueDB>>;
 }
