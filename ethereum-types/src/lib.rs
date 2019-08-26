@@ -2,22 +2,6 @@
 
 #[cfg(feature = "std")]
 extern crate core;
-#[macro_use]
-extern crate uint as uint_crate;
-#[macro_use]
-extern crate fixed_hash;
-extern crate ethbloom;
-extern crate primitive_types;
-
-#[cfg(feature = "serialize")]
-#[macro_use]
-extern crate impl_serde;
-
-#[macro_use]
-extern crate impl_rlp;
-
-#[cfg(test)]
-extern crate serde_json;
 
 mod hash;
 mod uint;

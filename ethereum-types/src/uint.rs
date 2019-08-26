@@ -1,3 +1,8 @@
+use uint_crate::*;
+use impl_rlp::impl_uint_rlp;
+#[cfg(feature="serialize")]
+use impl_serde::impl_uint_serde;
+
 construct_uint! {
 	/// Unsigned 64-bit integer.
 	pub struct U64(1);
