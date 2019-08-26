@@ -26,6 +26,7 @@ use std::io;
 use std::rc::Rc;
 use kvdb::{DBValue, DBTransaction};
 use kvdb_memorydb::{InMemory, self as in_memory};
+use send_wrapper::SendWrapper;
 
 pub use kvdb::KeyValueDB;
 
@@ -37,16 +38,16 @@ pub struct Database {
 	name: String,
 	columns: u32,
 	in_memory: InMemory,
-	indexed_db: MakeSendSync<IdbDatabase>,
+	indexed_db: MakeSync<SendWrapper<IdbDatabase>>,
 }
 
-// TODO: is it safe for IdbDatabase?
-struct MakeSendSync<T>(T);
+// WARNING: this is UNSAFE for the current implementation
+// and relies on WASM being single-threaded atm.
+struct MakeSync<T>(T);
 
-unsafe impl<T> Send for MakeSendSync<T> {}
-unsafe impl<T> Sync for MakeSendSync<T> {}
+unsafe impl<T> Sync for MakeSync<T> {}
 
-impl<T> ::std::ops::Deref for MakeSendSync<T> {
+impl<T> ::std::ops::Deref for MakeSync<T> {
 	type Target = T;
 
 	fn deref(&self) -> &T {
@@ -54,9 +55,9 @@ impl<T> ::std::ops::Deref for MakeSendSync<T> {
 	}
 }
 
-impl<T> From<T> for MakeSendSync<T> {
-	fn from(data: T) -> MakeSendSync<T> {
-		MakeSendSync(data)
+impl<T> From<T> for MakeSync<T> {
+	fn from(data: T) -> MakeSync<T> {
+		MakeSync(data)
 	}
 }
 
@@ -95,9 +96,9 @@ impl Database {
 				name,
 				columns,
 				in_memory,
-				indexed_db: MakeSendSync::from(
+				indexed_db: MakeSync::from(SendWrapper::new(
 					Rc::try_unwrap(rc).expect("should have only 1 ref at this point; qed")
-				),
+				)),
 			}))
 		})
 	}
