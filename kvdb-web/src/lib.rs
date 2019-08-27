@@ -24,6 +24,7 @@ mod indexed_db;
 
 use std::io;
 use std::rc::Rc;
+use std::sync::Mutex;
 use kvdb::{DBValue, DBTransaction};
 use kvdb_memorydb::{InMemory, self as in_memory};
 use send_wrapper::SendWrapper;
@@ -38,27 +39,7 @@ pub struct Database {
 	name: String,
 	columns: u32,
 	in_memory: InMemory,
-	indexed_db: MakeSync<SendWrapper<IdbDatabase>>,
-}
-
-// WARNING: this is UNSAFE for the current implementation
-// and relies on WASM being single-threaded atm.
-struct MakeSync<T>(T);
-
-unsafe impl<T> Sync for MakeSync<T> {}
-
-impl<T> ::std::ops::Deref for MakeSync<T> {
-	type Target = T;
-
-	fn deref(&self) -> &T {
-		&self.0
-	}
-}
-
-impl<T> From<T> for MakeSync<T> {
-	fn from(data: T) -> MakeSync<T> {
-		MakeSync(data)
-	}
+	indexed_db: Mutex<SendWrapper<IdbDatabase>>,
 }
 
 // The default column is represented as `None`.
@@ -96,7 +77,7 @@ impl Database {
 				name,
 				columns,
 				in_memory,
-				indexed_db: MakeSync::from(SendWrapper::new(
+				indexed_db: Mutex::new(SendWrapper::new(
 					Rc::try_unwrap(rc).expect("should have only 1 ref at this point; qed")
 				)),
 			}))
@@ -111,7 +92,9 @@ impl Database {
 
 impl Drop for Database {
 	fn drop(&mut self) {
-		self.indexed_db.close()
+		if let Ok(db) = self.indexed_db.lock() {
+			db.close();
+		}
 	}
 }
 
@@ -125,7 +108,9 @@ impl KeyValueDB for Database {
 	}
 
 	fn write_buffered(&self, transaction: DBTransaction) {
-		let _ = indexed_db::idb_commit_transaction(&self.indexed_db, &transaction, self.columns);
+		if let Ok(guard) = self.indexed_db.lock() {
+			let _ = indexed_db::idb_commit_transaction(&*guard, &transaction, self.columns);
+		}
 		self.in_memory.write_buffered(transaction);
 	}
 
