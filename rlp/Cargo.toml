@@ -11,7 +11,6 @@ edition = "2018"
 rustc-hex = { version = "2.0", default-features = false }
 
 [dev-dependencies]
-hex-literal = "0.2"
 primitive-types = { path = "../primitive-types", version = "0.5", features = ["impl-rlp"] }
 
 [features]
