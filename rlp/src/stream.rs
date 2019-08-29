@@ -6,7 +6,10 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::borrow::Borrow;
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+use core::borrow::Borrow;
+
 use crate::traits::Encodable;
 
 #[derive(Debug, Copy, Clone)]
@@ -19,9 +22,9 @@ struct ListInfo {
 impl ListInfo {
 	fn new(position: usize, max: Option<usize>) -> ListInfo {
 		ListInfo {
-			position: position,
+			position,
 			current: 0,
-			max: max,
+			max,
 		}
 	}
 }
@@ -132,7 +135,7 @@ impl RlpStream {
 	/// 	assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// }
 	/// ```
-	pub fn append_iter<'a, I>(&'a mut self, value: I) -> &'a mut Self
+	pub fn append_iter<I>(&mut self, value: I) -> &mut Self
 	where I: IntoIterator<Item = u8>,
 	{
 		self.finished_list = false;
@@ -218,7 +221,7 @@ impl RlpStream {
 	}
 
 	/// Calculate total RLP size for appended payload.
-	pub fn estimate_size<'a>(&'a self, add: usize) -> usize {
+	pub fn estimate_size(&self, add: usize) -> usize {
 		let total_size = self.buffer.len() + add;
 		let mut base_size = total_size;
 		for list in &self.unfinished_lists[..] {
@@ -233,7 +236,7 @@ impl RlpStream {
 	}
 
 	/// Returns current RLP size in bytes for the data pushed into the list.
-	pub fn len<'a>(&'a self) -> usize {
+	pub fn len(&self) -> usize {
 		self.estimate_size(0)
 	}
 
@@ -275,7 +278,7 @@ impl RlpStream {
 	/// 	assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// }
 	pub fn is_finished(&self) -> bool {
-		self.unfinished_lists.len() == 0
+		self.unfinished_lists.is_empty()
 	}
 
 	/// Get raw encoded bytes
@@ -288,15 +291,16 @@ impl RlpStream {
 	///
 	/// panic! if stream is not finished.
 	pub fn out(self) -> Vec<u8> {
-		match self.is_finished() {
-			true => self.buffer,
-			false => panic!()
+		if self.is_finished() {
+			self.buffer
+		} else {
+			panic!()
 		}
 	}
 
 	/// Try to finish lists
-	fn note_appended(&mut self, inserted_items: usize) -> () {
-		if self.unfinished_lists.len() == 0 {
+	fn note_appended(&mut self, inserted_items: usize) {
+		if self.unfinished_lists.is_empty() {
 			return;
 		}
 
@@ -365,7 +369,7 @@ impl<'a> BasicEncoder<'a> {
 	fn insert_list_payload(&mut self, len: usize, pos: usize) {
 		// 1 byte was already reserved for payload earlier
 		match len {
-			0...55 => {
+			0..=55 => {
 				self.buffer[pos - 1] = 0xc0u8 + len as u8;
 			},
 			_ => {
@@ -394,7 +398,7 @@ impl<'a> BasicEncoder<'a> {
 		match len {
 			// just 0
 			0 => self.buffer.push(0x80u8),
-			len @ 1 ... 55 => {
+			len @ 1..=55 => {
 				let first = value.next().expect("iterator length is higher than 1");
 				if len == 1 && first < 0x80 {
 					// byte is its own encoding if < 0x80

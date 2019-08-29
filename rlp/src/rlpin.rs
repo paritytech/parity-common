@@ -6,11 +6,16 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::cell::Cell;
-use std::fmt;
+#[cfg(not(feature = "std"))]
+use alloc::{string::String, vec::Vec};
+use core::cell::Cell;
+use core::fmt;
+
 use rustc_hex::ToHex;
+
+use crate::error::DecoderError;
 use crate::impls::decode_usize;
-use crate::{Decodable, DecoderError};
+use crate::traits::Decodable;
 
 /// rlp offset
 #[derive(Copy, Clone, Debug)]
@@ -21,10 +26,7 @@ struct OffsetCache {
 
 impl OffsetCache {
 	fn new(index: usize, offset: usize) -> OffsetCache {
-		OffsetCache {
-			index: index,
-			offset: offset,
-		}
+		OffsetCache { index, offset }
 	}
 }
 
@@ -67,10 +69,7 @@ fn calculate_payload_info(header_bytes: &[u8], len_of_len: usize) -> Result<Payl
 
 impl PayloadInfo {
 	fn new(header_len: usize, value_len: usize) -> PayloadInfo {
-		PayloadInfo {
-			header_len: header_len,
-			value_len: value_len,
-		}
+		PayloadInfo { header_len, value_len }
 	}
 
 	/// Total size of the RLP.
@@ -129,7 +128,7 @@ impl<'a> fmt::Display for Rlp<'a> {
 impl<'a> Rlp<'a> {
 	pub fn new(bytes: &'a [u8]) -> Rlp<'a> {
 		Rlp {
-			bytes: bytes,
+			bytes,
 			offset_cache: Cell::new(None),
 			count_cache: Cell::new(None)
 		}
@@ -160,24 +159,26 @@ impl<'a> Rlp<'a> {
 	}
 
 	pub fn item_count(&self) -> Result<usize, DecoderError> {
-		match self.is_list() {
-			true => match self.count_cache.get() {
+		if self.is_list() {
+			match self.count_cache.get() {
 				Some(c) => Ok(c),
 				None => {
 					let c = self.iter().count();
 					self.count_cache.set(Some(c));
 					Ok(c)
 				}
-			},
-			false => Err(DecoderError::RlpExpectedToBeList),
+			}
+		} else {
+		     Err(DecoderError::RlpExpectedToBeList)
 		}
 	}
 
 	pub fn size(&self) -> usize {
-		match self.is_data() {
+		if self.is_data() {
 			// TODO: No panic on malformed data, but ideally would Err on no PayloadInfo.
-			true => BasicDecoder::payload_info(self.bytes).map(|b| b.value_len).unwrap_or(0),
-			false => 0
+			BasicDecoder::payload_info(self.bytes).map(|b| b.value_len).unwrap_or(0)
+		} else {
+			0
 		}
 	}
 
@@ -211,7 +212,7 @@ impl<'a> Rlp<'a> {
 	}
 
 	pub fn is_null(&self) -> bool {
-		self.bytes.len() == 0
+		self.bytes.is_empty()
 	}
 
 	pub fn is_empty(&self) -> bool {
@@ -232,9 +233,9 @@ impl<'a> Rlp<'a> {
 		}
 
 		match self.bytes[0] {
-			0...0x80 => true,
-			0x81...0xb7 => self.bytes[1] != 0,
-			b @ 0xb8...0xbf => {
+			0..=0x80 => true,
+			0x81..=0xb7 => self.bytes[1] != 0,
+			b @ 0xb8..=0xbf => {
 				let payload_idx = 1 + b as usize - 0xb7;
 				payload_idx < self.bytes.len() && self.bytes[payload_idx] != 0
 			},
@@ -290,9 +291,10 @@ impl<'a> Rlp<'a> {
 
 	/// consumes slice prefix of length `len`
 	fn consume(bytes: &'a [u8], len: usize) -> Result<&'a [u8], DecoderError> {
-		match bytes.len() >= len {
-			true => Ok(&bytes[len..]),
-			false => Err(DecoderError::RlpIsTooShort)
+		if bytes.len() >= len {
+			Ok(&bytes[len..])
+		} else {
+			Err(DecoderError::RlpIsTooShort)
 		}
 	}
 }
@@ -382,26 +384,5 @@ impl<'a> BasicDecoder<'a> {
 		} else {
 			Err(DecoderError::RlpExpectedToBeData)
 		}
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use crate::{Rlp, DecoderError};
-	use hex_literal::hex;
-
-	#[test]
-	fn test_rlp_display() {
-		let data = hex!("f84d0589010efbef67941f79b2a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
-		let rlp = Rlp::new(&data);
-		assert_eq!(format!("{}", rlp), "[\"0x05\", \"0x010efbef67941f79b2\", \"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\", \"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470\"]");
-	}
-
-	#[test]
-	fn length_overflow() {
-		let bs = [0xbf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xe5];
-		let rlp = Rlp::new(&bs);
-		let res: Result<u8, DecoderError> = rlp.as_val();
-		assert_eq!(Err(DecoderError::RlpInvalidLength), res);
 	}
 }

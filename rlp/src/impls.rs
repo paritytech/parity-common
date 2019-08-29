@@ -6,11 +6,15 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::{mem, str};
-use std::iter::{once, empty};
-use crate::traits::{Encodable, Decodable};
+#[cfg(not(feature = "std"))]
+use alloc::{borrow::ToOwned, vec::Vec, string::String};
+use core::{mem, str};
+use core::iter::{once, empty};
+
+use crate::error::DecoderError;
+use crate::rlpin::Rlp;
 use crate::stream::RlpStream;
-use crate::{Rlp, DecoderError};
+use crate::traits::{Encodable, Decodable};
 
 pub fn decode_usize(bytes: &[u8]) -> Result<usize, DecoderError> {
 	match bytes.len() {

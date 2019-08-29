@@ -6,10 +6,27 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use primitive_types::{H160, U256};
 use std::{fmt, cmp};
-use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
+
+use primitive_types::{H160, U256};
 use hex_literal::hex;
+
+use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
+
+#[test]
+fn test_rlp_display() {
+	let data = hex!("f84d0589010efbef67941f79b2a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+	let rlp = Rlp::new(&data);
+	assert_eq!(format!("{}", rlp), "[\"0x05\", \"0x010efbef67941f79b2\", \"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\", \"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470\"]");
+}
+
+#[test]
+fn length_overflow() {
+	let bs = [0xbf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xe5];
+	let rlp = Rlp::new(&bs);
+	let res: Result<u8, DecoderError> = rlp.as_val();
+	assert_eq!(Err(DecoderError::RlpInvalidLength), res);
+}
 
 #[test]
 fn rlp_at() {
