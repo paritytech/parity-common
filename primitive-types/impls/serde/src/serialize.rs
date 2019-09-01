@@ -11,6 +11,7 @@ use serde::{de, Serializer, Deserializer};
 
 static CHARS: &'static[u8] = b"0123456789abcdef";
 
+// FIXME this is inefficient.
 fn to_hex<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a str {
 	assert!(v.len() > 1 + bytes.len() * 2);
 
@@ -32,7 +33,8 @@ fn to_hex<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a str
 		idx += 2;
 	}
 
-	::std::str::from_utf8(&v[0..idx]).expect("All characters are coming from CHARS")
+	// SAFETY: all characters come from CHARS array.
+	unsafe { std::str::from_utf8_unchecked(&v[0..idx]) }
 }
 
 /// Serializes a slice of bytes.
@@ -117,9 +119,9 @@ pub fn deserialize_check_len<'a, 'de, D>(deserializer: D, len: ExpectedLen<'a>) 
 				buf <<= 4;
 
 				match byte {
-					b'A'...b'F' => buf |= byte - b'A' + 10,
-					b'a'...b'f' => buf |= byte - b'a' + 10,
-					b'0'...b'9' => buf |= byte - b'0',
+					b'A'..=b'F' => buf |= byte - b'A' + 10,
+					b'a'..=b'f' => buf |= byte - b'a' + 10,
+					b'0'..=b'9' => buf |= byte - b'0',
 					b' '|b'\r'|b'\n'|b'\t' => {
 						buf >>= 4;
 						continue
