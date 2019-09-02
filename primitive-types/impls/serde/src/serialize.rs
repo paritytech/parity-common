@@ -11,7 +11,6 @@ use serde::{de, Serializer, Deserializer};
 
 static CHARS: &'static[u8] = b"0123456789abcdef";
 
-// FIXME this is inefficient.
 fn to_hex<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a str {
 	assert!(v.len() > 1 + bytes.len() * 2);
 
@@ -33,7 +32,7 @@ fn to_hex<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a str
 		idx += 2;
 	}
 
-	// SAFETY: all characters come from CHARS array.
+	// SAFETY: all characters come either from CHARS or "0x", therefore valid UTF8
 	unsafe { std::str::from_utf8_unchecked(&v[0..idx]) }
 }
 
