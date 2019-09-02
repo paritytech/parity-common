@@ -1,6 +1,6 @@
 [package]
 name = "parity-crypto"
-version = "0.4.1"
+version = "0.5.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "Crypto utils used by ethstore and network."
@@ -15,6 +15,9 @@ harness = false
 
 [dependencies]
 tiny-keccak = "1.4"
+eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }
+ethereum-types = "0.6.0"
+lazy_static = "1.0"
 scrypt = { version = "0.2", default-features = false }
 ripemd160 = "0.8.0"
 sha2 = "0.8.0"
@@ -24,6 +27,9 @@ aes = "0.3.2"
 aes-ctr = "0.3.0"
 block-modes = "0.3.3"
 pbkdf2 = "0.3.0"
+quick-error = "1.2.2"
+rand = "0.6"
+rustc-hex = "1.0"
 subtle = "2.1"
 zeroize = "0.9.1"
 

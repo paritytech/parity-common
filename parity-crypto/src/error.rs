@@ -20,6 +20,20 @@ use std::{fmt, result, error::Error as StdError};
 pub enum Error {
 	Scrypt(ScryptError),
 	Symm(SymmError),
+	/// Invalid secret key
+	InvalidSecret,
+	/// Invalid public key
+	InvalidPublic,
+	/// Invalid address
+	InvalidAddress,
+	/// Invalid EC signature
+	InvalidSignature,
+	/// Invalid AES message
+	InvalidMessage,
+	/// IO Error
+	Io(::std::io::Error),
+	/// Custom
+	Custom(String),
 }
 
 #[derive(Debug)]
@@ -47,6 +61,8 @@ impl StdError for Error {
 		match self {
 			Error::Scrypt(scrypt_err) => Some(scrypt_err),
 			Error::Symm(symm_err) => Some(symm_err),
+			Error::Io(err) => Some(err),
+			_ => None,
 		}
 	}
 }
@@ -76,6 +92,13 @@ impl fmt::Display for Error {
 		match self {
 			Error::Scrypt(err)=> write!(f, "scrypt error: {}", err),
 			Error::Symm(err) => write!(f, "symm error: {}", err),
+			Error::InvalidSecret => write!(f, "invalid secret"),
+			Error::InvalidPublic => write!(f, "invalid public"),
+			Error::InvalidAddress => write!(f, "invalid address"),
+			Error::InvalidSignature => write!(f, "invalid EC signature"),
+			Error::InvalidMessage => write!(f, "invalid AES message"),
+			Error::Io(err) => write!(f, "I/O error: {}", err),
+			Error::Custom(err) => write!(f, "custom crypto error: {}", err),
 		}
 	}
 }
@@ -104,6 +127,17 @@ impl fmt::Display for SymmError {
 impl Into<std::io::Error> for Error {
 	fn into(self) -> std::io::Error {
 		std::io::Error::new(std::io::ErrorKind::Other, format!("Crypto error: {}",self))
+	}
+}
+
+impl From<::secp256k1::Error> for Error {
+	fn from(e: ::secp256k1::Error) -> Error {
+		match e {
+			::secp256k1::Error::InvalidMessage => Error::InvalidMessage,
+			::secp256k1::Error::InvalidPublicKey => Error::InvalidPublic,
+			::secp256k1::Error::InvalidSecretKey => Error::InvalidSecret,
+			_ => Error::InvalidSignature,
+		}
 	}
 }
 
