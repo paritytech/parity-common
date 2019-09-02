@@ -37,10 +37,18 @@ fn to_hex<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a str
 }
 
 /// Serializes a slice of bytes.
-pub fn serialize<S>(slice: &mut [u8], bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where
+pub fn serialize_raw<S>(slice: &mut [u8], bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where
 	S: Serializer,
 {
 	serializer.serialize_str(to_hex(slice, bytes, false))
+}
+
+/// Serializes a slice of bytes.
+pub fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where
+	S: Serializer,
+{
+	let mut slice = vec![0u8; (bytes.len() + 1) * 2];
+	serializer.serialize_str(to_hex(&mut *slice, bytes, false))
 }
 
 /// Serialize a slice of bytes as uint.
@@ -74,6 +82,65 @@ impl<'a> fmt::Display for ExpectedLen<'a> {
 			ExpectedLen::Between(min, ref v) => write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
 		}
 	}
+}
+
+/// Deserialize into vector of bytes.  This DOES NOT guard against DoS attacks!
+pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error> where
+	D: Deserializer<'de>,
+{
+	struct Visitor;
+
+	impl<'b> de::Visitor<'b> for Visitor {
+		type Value = Vec<u8>;
+
+		fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+			write!(formatter, "a 0x-prefixed hex string")
+		}
+
+		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+			if !v.starts_with("0x") {
+				return Err(E::custom("prefix is missing"))
+			}
+
+			let bytes_len = v.len() - 2;
+			let mut modulus = bytes_len % 2;
+			let mut bytes = vec![0u8; bytes_len / 2];
+			let mut buf = 0;
+			let mut pos = 0;
+			for (idx, byte) in v.bytes().enumerate().skip(2) {
+				buf <<= 4;
+
+				match byte {
+					b'A'..=b'F' => buf |= byte - b'A' + 10,
+					b'a'..=b'f' => buf |= byte - b'a' + 10,
+					b'0'..=b'9' => buf |= byte - b'0',
+					b' '|b'\r'|b'\n'|b'\t' => {
+						buf >>= 4;
+						continue
+					}
+					b => {
+						let ch = char::from(b);
+						return Err(E::custom(&format!("invalid hex character: {}, at {}", ch, idx)))
+					}
+				}
+
+				modulus += 1;
+				if modulus == 2 {
+					modulus = 0;
+					bytes[pos] = buf;
+					pos += 1;
+				}
+			}
+
+			Ok(bytes)
+		}
+
+		fn visit_string<E: de::Error>(self, v: String) -> Result<Self::Value, E> {
+			self.visit_str(&v)
+		}
+	}
+
+	deserializer.deserialize_str(Visitor)
 }
 
 /// Deserialize into vector of bytes with additional size check.
