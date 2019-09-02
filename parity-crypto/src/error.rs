@@ -30,6 +30,8 @@ pub enum Error {
 	InvalidSignature,
 	/// Invalid AES message
 	InvalidMessage,
+	/// secp256k1 enc error
+	Secp(secp256k1::Error),
 	/// IO Error
 	Io(::std::io::Error),
 	/// Custom
@@ -61,6 +63,7 @@ impl StdError for Error {
 		match self {
 			Error::Scrypt(scrypt_err) => Some(scrypt_err),
 			Error::Symm(symm_err) => Some(symm_err),
+			Error::Secp(secp_err) => Some(secp_err),
 			Error::Io(err) => Some(err),
 			_ => None,
 		}
@@ -97,6 +100,7 @@ impl fmt::Display for Error {
 			Error::InvalidAddress => write!(f, "invalid address"),
 			Error::InvalidSignature => write!(f, "invalid EC signature"),
 			Error::InvalidMessage => write!(f, "invalid AES message"),
+			Error::Secp(err) => write!(f, "secp error: {}", err),
 			Error::Io(err) => write!(f, "I/O error: {}", err),
 			Error::Custom(err) => write!(f, "custom crypto error: {}", err),
 		}

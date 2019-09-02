@@ -14,39 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-use secp256k1;
-use std::io;
-use crate::error::SymmError;
-use quick_error::quick_error;
-
-quick_error! {
-	#[derive(Debug)]
-	pub enum Error {
-		Secp(e: secp256k1::Error) {
-			display("secp256k1 error: {}", e)
-			cause(e)
-			from()
-		}
-		Io(e: io::Error) {
-			display("i/o error: {}", e)
-			cause(e)
-			from()
-		}
-		InvalidMessage {
-			display("invalid message")
-		}
-		Symm(e: SymmError) {
-			cause(e)
-			from()
-		}
-	}
-}
-
 /// ECDH functions
 pub mod ecdh {
 	use secp256k1::{self, ecdh, key};
-	use super::Error;
-	use crate::{Secret, Public, SECP256K1};
+	use crate::{Error, Secret, Public, SECP256K1};
 
 	/// Agree on a shared secret
 	pub fn agree(secret: &Secret, public: &Public) -> Result<Secret, Error> {
@@ -69,8 +40,8 @@ pub mod ecdh {
 /// ECIES function
 pub mod ecies {
 	use ethereum_types::H128;
-	use super::{ecdh, Error};
-	use crate::{Random, Generator, Public, Secret, aes, digest, hmac, is_equal};
+	use super::ecdh;
+	use crate::{Error, Random, Generator, Public, Secret, aes, digest, hmac, is_equal};
 
 	/// Encrypt a message with a public key, writing an HMAC covering both
 	/// the plaintext and authenticated data.
