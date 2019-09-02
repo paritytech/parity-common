@@ -22,6 +22,7 @@ pub mod scrypt;
 pub mod digest;
 pub mod hmac;
 pub mod pbkdf2;
+pub mod blake2_f;
 
 pub use crate::error::Error;
 
