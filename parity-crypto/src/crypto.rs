@@ -17,6 +17,7 @@
 use secp256k1;
 use std::io;
 use crate::error::SymmError;
+use quick_error::quick_error;
 
 quick_error! {
 	#[derive(Debug)]

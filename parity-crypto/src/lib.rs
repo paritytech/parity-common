@@ -16,15 +16,6 @@
 
 //! Crypto utils used by ethstore and network.
 
-extern crate ethereum_types;
-#[macro_use]
-extern crate quick_error;
-extern crate rand;
-extern crate rustc_hex;
-extern crate secp256k1;
-#[macro_use]
-extern crate lazy_static;
-
 mod keypair;
 mod random;
 mod signature;
@@ -51,6 +42,7 @@ pub use self::extended::{ExtendedPublic, ExtendedSecret, ExtendedKeyPair, Deriva
 use tiny_keccak::Keccak;
 use subtle::ConstantTimeEq;
 use ethereum_types::H256;
+use lazy_static::lazy_static;
 
 pub const KEY_LENGTH: usize = 32;
 pub const KEY_ITERATIONS: usize = 10240;
