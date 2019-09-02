@@ -124,9 +124,21 @@ impl fmt::Display for SymmError {
 	}
 }
 
+impl Into<String> for Error {
+	fn into(self) -> String {
+		format!("{}", self)
+	}
+}
+
 impl Into<std::io::Error> for Error {
 	fn into(self) -> std::io::Error {
 		std::io::Error::new(std::io::ErrorKind::Other, format!("Crypto error: {}",self))
+	}
+}
+
+impl From<::std::io::Error> for Error {
+	fn from(err: ::std::io::Error) -> Error {
+		Error::Io(err)
 	}
 }
 
