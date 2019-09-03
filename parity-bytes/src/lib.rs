@@ -20,39 +20,24 @@
 //! as
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(not(feature = "std"), feature(alloc))]
 
 #[cfg(not(feature = "std"))]
-#[macro_use]
 extern crate alloc;
 
-#[cfg(feature = "std")]
-extern crate core;
-
-use core::{
-	cmp::min,
-	fmt,
-	ops::{Deref, DerefMut},
-};
-
 #[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-
-#[cfg(feature = "std")]
-use std::vec::Vec;
-
-#[cfg(not(feature = "std"))]
-use alloc::string::String;
+use alloc::{format, string::String, vec::Vec};
+use core::{cmp::min, fmt, ops};
 
 /// Slice pretty print helper
-pub struct PrettySlice<'a> (&'a [u8]);
+pub struct PrettySlice<'a>(&'a [u8]);
 
 impl<'a> fmt::Debug for PrettySlice<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		for i in 0..self.0.len() {
-			match i > 0 {
-				true => { write!(f, "·{:02x}", self.0[i])?; },
-				false => { write!(f, "{:02x}", self.0[i])?; },
+			if i > 0 {
+				write!(f, "·{:02x}", self.0[i])?;
+			} else {
+				write!(f, "{:02x}", self.0[i])?;
 			}
 		}
 		Ok(())
@@ -109,9 +94,7 @@ impl<'a> BytesRef<'a> {
 			},
 			BytesRef::Fixed(ref mut data) if offset < data.len() => {
 				let max = min(data.len() - offset, input.len());
-				for i in 0..max {
-					data[offset + i] = input[i];
-				}
+				data[offset..(max + offset)].copy_from_slice(&input[..max]);
 				max
 			},
 			_ => 0
@@ -119,7 +102,7 @@ impl<'a> BytesRef<'a> {
 	}
 }
 
-impl<'a> Deref for BytesRef<'a> {
+impl<'a> ops::Deref for BytesRef<'a> {
 	type Target = [u8];
 
 	fn deref(&self) -> &[u8] {
@@ -130,7 +113,7 @@ impl<'a> Deref for BytesRef<'a> {
 	}
 }
 
-impl <'a> DerefMut for BytesRef<'a> {
+impl<'a> ops::DerefMut for BytesRef<'a> {
 	fn deref_mut(&mut self) -> &mut [u8] {
 		match *self {
 			BytesRef::Flexible(ref mut bytes) => bytes,
@@ -144,6 +127,8 @@ pub type Bytes = Vec<u8>;
 
 #[cfg(test)]
 mod tests {
+	#[cfg(not(feature = "std"))]
+	use alloc::vec;
 	use super::BytesRef;
 
 	#[test]
