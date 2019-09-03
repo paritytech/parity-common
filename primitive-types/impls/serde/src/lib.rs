@@ -47,7 +47,7 @@ macro_rules! impl_fixed_hash_serde {
 		impl $crate::serde::Serialize for $name {
 			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: $crate::serde::Serializer {
 				let mut slice = [0u8; 2 + 2 * $len];
-				$crate::serialize::serialize(&mut slice, &self.0, serializer)
+				$crate::serialize::serialize_raw(&mut slice, &self.0, serializer)
 			}
 		}
 
