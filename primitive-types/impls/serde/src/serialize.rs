@@ -84,7 +84,8 @@ impl<'a> fmt::Display for ExpectedLen<'a> {
 	}
 }
 
-/// Deserialize into vector of bytes.  This DOES NOT guard against DoS attacks!
+/// Deserialize into vector of bytes.  This will allocate an O(n) intermediate
+/// string.
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error> where
 	D: Deserializer<'de>,
 {
