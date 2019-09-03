@@ -89,7 +89,7 @@ impl RlpStream {
 	}
 
 	/// Appends raw (pre-serialised) RLP data. Use with caution. Chainable.
-	pub fn append_raw<'a>(&'a mut self, bytes: &[u8], item_count: usize) -> &'a mut Self {
+	pub fn append_raw(&mut self, bytes: &[u8], item_count: usize) -> &mut Self {
 		// push raw items
 		self.buffer.extend_from_slice(bytes);
 
@@ -113,7 +113,7 @@ impl RlpStream {
 	/// 	assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// }
 	/// ```
-	pub fn append<'a, E>(&'a mut self, value: &E) -> &'a mut Self where E: Encodable {
+	pub fn append<E>(&mut self, value: &E) -> &mut Self where E: Encodable {
 		self.finished_list = false;
 		value.rlp_append(self);
 		if !self.finished_list {
@@ -147,7 +147,7 @@ impl RlpStream {
 	}
 
 	/// Appends list of values to the end of stream, chainable.
-	pub fn append_list<'a, E, K>(&'a mut self, values: &[K]) -> &'a mut Self where E: Encodable, K: Borrow<E> {
+	pub fn append_list<E, K>(&mut self, values: &[K]) -> &mut Self where E: Encodable, K: Borrow<E> {
 		self.begin_list(values.len());
 		for value in values {
 			self.append(value.borrow());
@@ -157,7 +157,7 @@ impl RlpStream {
 
 	/// Appends value to the end of stream, but do not count it as an appended item.
 	/// It's useful for wrapper types
-	pub fn append_internal<'a, E>(&'a mut self, value: &E) -> &'a mut Self where E: Encodable {
+	pub fn append_internal<E>(&mut self, value: &E) -> &mut Self where E: Encodable {
 		value.rlp_append(self);
 		self
 	}
@@ -212,7 +212,7 @@ impl RlpStream {
 	}
 
 	/// Appends raw (pre-serialised) RLP data. Checks for size oveflow.
-	pub fn append_raw_checked<'a>(&'a mut self, bytes: &[u8], item_count: usize, max_size: usize) -> bool {
+	pub fn append_raw_checked(&mut self, bytes: &[u8], item_count: usize, max_size: usize) -> bool {
 		if self.estimate_size(bytes.len()) > max_size {
 			return false;
 		}

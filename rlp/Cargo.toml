@@ -11,10 +11,14 @@ edition = "2018"
 rustc-hex = { version = "2.0", default-features = false }
 
 [dev-dependencies]
+criterion = "0.3"
 primitive-types = { path = "../primitive-types", version = "0.5", features = ["impl-rlp"] }
 
 [features]
 default = ["std"]
-std = [
-    "rustc-hex/std",
-]
+std = ["rustc-hex/std"]
+
+[[bench]]
+name = "rlp"
+path = "benches/rlp.rs"
+harness = false
