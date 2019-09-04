@@ -496,6 +496,63 @@ fn test_inner_length_capping_for_short_lists() {
 
 // test described in
 //
+// https://github.com/paritytech/parity-common/issues/105
+#[test]
+fn test_nested_list_roundtrip() {
+	#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+	struct Inner(u64, u64);
+
+	impl Encodable for Inner {
+		fn rlp_append(&self, s: &mut RlpStream) {
+			s.begin_unbounded_list()
+				.append(&self.0)
+				.append(&self.1)
+				.complete_unbounded_list();
+		}
+	}
+
+	impl Decodable for Inner {
+		fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+			Ok(Inner(rlp.val_at(0)?, rlp.val_at(1)?))
+		}
+	}
+
+	#[derive(Debug, Clone, PartialEq, Eq)]
+	struct Nest<T>(Vec<T>);
+
+	impl<T: Encodable> Encodable for Nest<T> {
+		fn rlp_append(&self, s: &mut RlpStream) {
+			s.begin_unbounded_list()
+				.append_list(&self.0)
+				.complete_unbounded_list();
+		}
+	}
+
+	impl<T: Decodable> Decodable for Nest<T> {
+		fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+			Ok(Nest(rlp.list_at(0)?))
+		}
+	}
+
+
+	let items = (0..4).map(|i| Inner(i, i + 1)).collect();
+	let nest = Nest(items);
+
+	let encoded = rlp::encode(&nest);
+	let decoded = rlp::decode(&encoded).unwrap();
+
+	assert_eq!(nest, decoded);
+
+	let nest2 = Nest(vec![nest.clone(), nest]);
+
+	let encoded = rlp::encode(&nest2);
+	let decoded = rlp::decode(&encoded).unwrap();
+
+	assert_eq!(nest2, decoded);
+}
+
+// test described in
+//
 // https://github.com/paritytech/parity-ethereum/pull/9663
 #[test]
 fn test_list_at() {

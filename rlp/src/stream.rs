@@ -316,7 +316,6 @@ impl RlpStream {
 				}
 			}
 		};
-
 		if should_finish {
 			let x = self.unfinished_lists.pop().unwrap();
 			let len = self.buffer.len() - x.position;
@@ -330,7 +329,7 @@ impl RlpStream {
 		BasicEncoder::new(self)
 	}
 
-	/// Finalize current ubnbound list. Panics if no unbounded list has been opened.
+	/// Finalize current unbounded list. Panics if no unbounded list has been opened.
 	pub fn complete_unbounded_list(&mut self) {
 		let list = self.unfinished_lists.pop().expect("No open list.");
 		if list.max.is_some() {
@@ -339,6 +338,7 @@ impl RlpStream {
 		let len = self.buffer.len() - list.position;
 		self.encoder().insert_list_payload(len, list.position);
 		self.note_appended(1);
+		self.finished_list = true;
 	}
 }
 
