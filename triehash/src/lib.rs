@@ -18,17 +18,10 @@
 //!
 //! This module should be used to generate trie root hash.
 
-extern crate hash_db;
-extern crate rlp;
-#[cfg(test)]
-extern crate keccak_hasher;
-#[cfg(test)]
-#[macro_use]
-extern crate hex_literal;
-
-use std::collections::BTreeMap;
 use std::cmp;
+use std::collections::BTreeMap;
 use std::iter::once;
+
 use hash_db::Hasher;
 use rlp::RlpStream;
 
@@ -96,7 +89,6 @@ where
 	H: Hasher,
 	<H as hash_db::Hasher>::Out: cmp::Ord,
 {
-
 	// first put elements into btree to sort them and to remove duplicates
 	let input = input
 		.into_iter()
@@ -240,19 +232,18 @@ where
 	stream.begin_list(17);
 
 	// if first key len is equal to prefix_len, move to next element
-	let mut begin = match pre_len == key.len() {
-		true => 1,
-		false => 0
-	};
+	let mut begin = if pre_len == key.len() { 1 } else { 0 };
 
 	// iterate over all possible nibbles
 	for i in 0..16 {
 		// count how many successive elements have same next nibble
-		let len = match begin < input.len() {
-			true => input[begin..].iter()
-				.take_while(| pair | pair.0.as_ref()[pre_len] == i )
-				.count(),
-			false => 0
+		let len = if begin < input.len() {
+			input[begin..]
+				.iter()
+				.take_while(|pair| pair.0.as_ref()[pre_len] == i)
+				.count()
+		} else {
+			0
 		};
 
 		// if at least 1 successive element has the same nibble
@@ -265,10 +256,11 @@ where
 	}
 
 	// if fist key len is equal prefix, append its value
-	match pre_len == key.len() {
-		true => { stream.append(&value); },
-		false => { stream.append_empty_data(); }
-	};
+	if pre_len == key.len() {
+		stream.append(&value);
+	} else {
+		stream.append_empty_data();
+	}
 }
 
 fn hash256aux<H, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut RlpStream)
@@ -288,10 +280,10 @@ where
 
 #[cfg(test)]
 mod tests {
-	extern crate ethereum_types;
 	use super::{trie_root, shared_prefix_len, hex_prefix_encode};
 	use keccak_hasher::KeccakHasher;
-	use self::ethereum_types::H256;
+	use ethereum_types::H256;
+	use hex_literal::hex;
 
 	#[test]
 	fn test_hex_prefix_encode() {
@@ -328,23 +320,28 @@ mod tests {
 
 	#[test]
 	fn simple_test() {
-		assert_eq!(trie_root::<KeccakHasher, _, _, _>(vec![
-			(b"A", b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as &[u8])
-		]), H256::from(hex!("d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab")).as_ref());
+		assert_eq!(
+			trie_root::<KeccakHasher, _, _, _>(vec![
+				(b"A", b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as &[u8])
+			]),
+			H256::from(hex!("d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab")).as_ref(),
+		);
 	}
 
 	#[test]
 	fn test_triehash_out_of_order() {
-		assert!(trie_root::<KeccakHasher, _, _, _>(vec![
-			(vec![0x01u8, 0x23], vec![0x01u8, 0x23]),
-			(vec![0x81u8, 0x23], vec![0x81u8, 0x23]),
-			(vec![0xf1u8, 0x23], vec![0xf1u8, 0x23]),
-		]) ==
-		trie_root::<KeccakHasher, _, _, _>(vec![
-			(vec![0x01u8, 0x23], vec![0x01u8, 0x23]),
-			(vec![0xf1u8, 0x23], vec![0xf1u8, 0x23]), // last two tuples are swapped
-			(vec![0x81u8, 0x23], vec![0x81u8, 0x23]),
-		]));
+		assert_eq!(
+			trie_root::<KeccakHasher, _, _, _>(vec![
+				(vec![0x01u8, 0x23], vec![0x01u8, 0x23]),
+				(vec![0x81u8, 0x23], vec![0x81u8, 0x23]),
+				(vec![0xf1u8, 0x23], vec![0xf1u8, 0x23]),
+			]),
+			trie_root::<KeccakHasher, _, _, _>(vec![
+				(vec![0x01u8, 0x23], vec![0x01u8, 0x23]),
+				(vec![0xf1u8, 0x23], vec![0xf1u8, 0x23]), // last two tuples are swapped
+				(vec![0x81u8, 0x23], vec![0x81u8, 0x23]),
+			]),
+		);
 	}
 
 	#[test]
