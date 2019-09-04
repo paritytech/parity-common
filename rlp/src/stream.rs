@@ -19,9 +19,9 @@ struct ListInfo {
 impl ListInfo {
 	fn new(position: usize, max: Option<usize>) -> ListInfo {
 		ListInfo {
-			position: position,
+			position,
 			current: 0,
-			max: max,
+			max,
 		}
 	}
 }
@@ -295,7 +295,7 @@ impl RlpStream {
 	}
 
 	/// Try to finish lists
-	fn note_appended(&mut self, inserted_items: usize) -> () {
+	fn note_appended(&mut self, inserted_items: usize) {
 		if self.unfinished_lists.len() == 0 {
 			return;
 		}
@@ -312,7 +312,6 @@ impl RlpStream {
 				}
 			}
 		};
-
 		if should_finish {
 			let x = self.unfinished_lists.pop().unwrap();
 			let len = self.buffer.len() - x.position;
@@ -326,7 +325,7 @@ impl RlpStream {
 		BasicEncoder::new(self)
 	}
 
-	/// Finalize current ubnbound list. Panics if no unbounded list has been opened.
+	/// Finalize current unbounded list. Panics if no unbounded list has been opened.
 	pub fn complete_unbounded_list(&mut self) {
 		let list = self.unfinished_lists.pop().expect("No open list.");
 		if list.max.is_some() {
@@ -335,6 +334,7 @@ impl RlpStream {
 		let len = self.buffer.len() - list.position;
 		self.encoder().insert_list_payload(len, list.position);
 		self.note_appended(1);
+		self.finished_list = true;
 	}
 }
 
@@ -365,7 +365,7 @@ impl<'a> BasicEncoder<'a> {
 	fn insert_list_payload(&mut self, len: usize, pos: usize) {
 		// 1 byte was already reserved for payload earlier
 		match len {
-			0...55 => {
+			0..=55 => {
 				self.buffer[pos - 1] = 0xc0u8 + len as u8;
 			},
 			_ => {
@@ -394,7 +394,7 @@ impl<'a> BasicEncoder<'a> {
 		match len {
 			// just 0
 			0 => self.buffer.push(0x80u8),
-			len @ 1 ... 55 => {
+			len @ 1 ..= 55 => {
 				let first = value.next().expect("iterator length is higher than 1");
 				if len == 1 && first < 0x80 {
 					// byte is its own encoding if < 0x80
