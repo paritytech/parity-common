@@ -44,7 +44,6 @@
 //!
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::trivially_copy_pass_by_ref)]
 
 use core::{ops, mem};
 
@@ -201,15 +200,18 @@ impl Bloom {
 pub struct BloomRef<'a>(&'a [u8; BLOOM_SIZE]);
 
 impl<'a> BloomRef<'a> {
+	#[allow(clippy::trivially_copy_pass_by_ref)]
 	pub fn is_empty(&self) -> bool {
 		self.0.iter().all(|x| *x == 0)
 	}
 
+	#[allow(clippy::trivially_copy_pass_by_ref)]
 	pub fn contains_input(&self, input: Input<'_>) -> bool {
 		let bloom: Bloom = input.into();
 		self.contains_bloom(&bloom)
 	}
 
+	#[allow(clippy::trivially_copy_pass_by_ref)]
 	pub fn contains_bloom<'b, B>(&self, bloom: B) -> bool where BloomRef<'b>: From<B> {
 		let bloom_ref: BloomRef = bloom.into();
 		assert_eq!(self.0.len(), BLOOM_SIZE);
@@ -224,6 +226,7 @@ impl<'a> BloomRef<'a> {
 		true
 	}
 
+	#[allow(clippy::trivially_copy_pass_by_ref)]
 	pub fn data(&self) -> &'a [u8; BLOOM_SIZE] {
 		self.0
 	}

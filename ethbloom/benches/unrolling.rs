@@ -1,5 +1,3 @@
-#![allow(clippy::cognitive_complexity)]
-
 use criterion::{criterion_group, criterion_main, Criterion};
 use crunchy::unroll;
 use rand::RngCore;
