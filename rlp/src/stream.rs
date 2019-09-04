@@ -240,6 +240,10 @@ impl RlpStream {
 		self.estimate_size(0)
 	}
 
+	pub fn is_empty(&self) -> bool {
+		self.len() == 0
+	}
+
 	/// Clear the output stream so far.
 	///
 	/// ```rust

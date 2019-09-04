@@ -13,7 +13,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 fn bench_encode(c: &mut Criterion) {
 	c.bench_function("encode_u64", |b| b.iter(|| {
 		let mut stream = rlp::RlpStream::new();
-		stream.append(&0x1023456789abcdefu64);
+		stream.append(&0x1023_4567_89ab_cdefu64);
 		let _ = stream.out();
 	}));
 	c.bench_function("encode_u256", |b| b.iter(|| {
