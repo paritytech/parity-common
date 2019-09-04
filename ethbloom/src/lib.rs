@@ -43,17 +43,13 @@
 //! ```
 //!
 
-#![cfg_attr(not(feature="std"), no_std)]
-
-#[cfg(feature="std")]
-extern crate core;
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use core::{ops, mem};
-#[cfg(feature="std")]
-use core::str;
+
 use crunchy::unroll;
 use fixed_hash::*;
-#[cfg(feature="serialize")]
+#[cfg(feature = "serialize")]
 use impl_serde::impl_fixed_hash_serde;
 use impl_rlp::impl_fixed_hash_rlp;
 use tiny_keccak::keccak256;
@@ -138,7 +134,7 @@ impl Bloom {
 		self.0.iter().all(|x| *x == 0)
 	}
 
-	pub fn contains_input<'a>(&self, input: Input<'a>) -> bool {
+	pub fn contains_input(&self, input: Input<'_>) -> bool {
 		let bloom: Bloom = input.into();
 		self.contains_bloom(&bloom)
 	}
@@ -154,7 +150,7 @@ impl Bloom {
 		self_ref.contains_bloom(bloom)
 	}
 
-	pub fn accrue<'a>(&mut self, input: Input<'a>) {
+	pub fn accrue(&mut self, input: Input<'_>) {
 		let p = BLOOM_BITS;
 
 		let m = self.0.len();
@@ -204,16 +200,16 @@ impl Bloom {
 pub struct BloomRef<'a>(&'a [u8; BLOOM_SIZE]);
 
 impl<'a> BloomRef<'a> {
-	pub fn is_empty(&self) -> bool {
+	pub fn is_empty(self) -> bool {
 		self.0.iter().all(|x| *x == 0)
 	}
 
-	pub fn contains_input<'b>(&self, input: Input<'b>) -> bool {
+	pub fn contains_input(self, input: Input<'_>) -> bool {
 		let bloom: Bloom = input.into();
 		self.contains_bloom(&bloom)
 	}
 
-	pub fn contains_bloom<'b, B>(&self, bloom: B) -> bool where BloomRef<'b>: From<B> {
+	pub fn contains_bloom<'b, B>(self, bloom: B) -> bool where BloomRef<'b>: From<B> {
 		let bloom_ref: BloomRef = bloom.into();
 		assert_eq!(self.0.len(), BLOOM_SIZE);
 		assert_eq!(bloom_ref.0.len(), BLOOM_SIZE);
@@ -227,7 +223,7 @@ impl<'a> BloomRef<'a> {
 		true
 	}
 
-	pub fn data(&self) -> &'a [u8; BLOOM_SIZE] {
+	pub fn data(self) -> &'a [u8; BLOOM_SIZE] {
 		self.0
 	}
 }
@@ -249,12 +245,12 @@ impl_fixed_hash_serde!(Bloom, BLOOM_SIZE);
 
 #[cfg(test)]
 mod tests {
+	use core::str::FromStr;
+	use hex_literal::hex;
 	use super::{Bloom, Input};
-	use hex_literal::*;
 
 	#[test]
 	fn it_works() {
-		use std::str::FromStr;
 		let bloom = Bloom::from_str(
 			"00000000000000000000000000000000\
 			 00000000100000000000000000000000\
