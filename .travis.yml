@@ -38,4 +38,4 @@ script:
   - cd parity-util-mem/ && cargo test --features=estimate-heapsize && cd ..
   - cd parity-util-mem/ && cargo test --features=jemalloc-global && cd ..
   - cd parity-util-mem/ && cargo test --features=mimalloc-global && cd ..
-  - cd triehash/ && cargo test --benches -- --bench && cd ..
+  - cd triehash/ && cargo test --benches && cd ..
