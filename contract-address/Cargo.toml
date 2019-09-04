@@ -11,8 +11,8 @@ edition = "2018"
 readme = "README.md"
 
 [dependencies]
-ethereum-types = { version = "0.7", path = "../ethereum-types" }
-rlp = { version = "0.4", path = "../rlp" }
+ethereum-types = { version = "0.8", path = "../ethereum-types" }
+rlp = { version = "0.5", path = "../rlp" }
 keccak-hash = { version = "0.3", path = "../keccak-hash", default-features = false }
 
 [features]

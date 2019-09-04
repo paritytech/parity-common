@@ -67,7 +67,7 @@ macro_rules! construct_fixed_hash {
 
 		impl<'a> From<&'a [u8; $n_bytes]> for $name {
 			/// Constructs a hash type from the given reference
-			/// to the bytes array of fixed length. 
+			/// to the bytes array of fixed length.
 			///
 			/// # Note
 			///
@@ -80,7 +80,7 @@ macro_rules! construct_fixed_hash {
 
 		impl<'a> From<&'a mut [u8; $n_bytes]> for $name {
 			/// Constructs a hash type from the given reference
-			/// to the mutable bytes array of fixed length. 
+			/// to the mutable bytes array of fixed length.
 			///
 			/// # Note
 			///
@@ -328,7 +328,7 @@ macro_rules! construct_fixed_hash {
 }
 
 // Implementation for disabled byteorder crate support.
-// 
+//
 // # Note
 //
 // Feature guarded macro definitions instead of feature guarded impl blocks
@@ -342,7 +342,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 }
 
 // Implementation for enabled byteorder crate support.
-// 
+//
 // # Note
 //
 // Feature guarded macro definitions instead of feature guarded impl blocks
@@ -461,7 +461,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 }
 
 // Implementation for disabled rand crate support.
-// 
+//
 // # Note
 //
 // Feature guarded macro definitions instead of feature guarded impl blocks
@@ -475,7 +475,7 @@ macro_rules! impl_rand_for_fixed_hash {
 }
 
 // Implementation for enabled rand crate support.
-// 
+//
 // # Note
 //
 // Feature guarded macro definitions instead of feature guarded impl blocks
@@ -512,7 +512,7 @@ macro_rules! impl_rand_for_fixed_hash {
 
 			/// Assign `self` to a cryptographically random value.
 			pub fn randomize(&mut self) {
-				let mut rng = $crate::rand::rngs::EntropyRng::new();
+				let mut rng = $crate::rand::rngs::OsRng;
 				self.randomize_using(&mut rng);
 			}
 
@@ -538,7 +538,7 @@ macro_rules! impl_rand_for_fixed_hash {
 }
 
 // Implementation for disabled libc crate support.
-// 
+//
 // # Note
 //
 // Feature guarded macro definitions instead of feature guarded impl blocks
@@ -566,7 +566,7 @@ macro_rules! impl_libc_for_fixed_hash {
 }
 
 // Implementation for enabled libc crate support.
-// 
+//
 // # Note
 //
 // Feature guarded macro definitions instead of feature guarded impl blocks
@@ -612,7 +612,7 @@ macro_rules! impl_libc_for_fixed_hash {
 }
 
 // Implementation for disabled rustc-hex crate support.
-// 
+//
 // # Note
 //
 // Feature guarded macro definitions instead of feature guarded impl blocks
@@ -626,7 +626,7 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 }
 
 // Implementation for enabled rustc-hex crate support.
-// 
+//
 // # Note
 //
 // Feature guarded macro definitions instead of feature guarded impl blocks
@@ -667,7 +667,7 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 }
 
 // Implementation for disabled quickcheck crate support.
-// 
+//
 // # Note
 //
 // Feature guarded macro definitions instead of feature guarded impl blocks
@@ -681,7 +681,7 @@ macro_rules! impl_quickcheck_for_fixed_hash {
 }
 
 // Implementation for enabled quickcheck crate support.
-// 
+//
 // # Note
 //
 // Feature guarded macro definitions instead of feature guarded impl blocks

@@ -56,6 +56,9 @@ pub extern crate rand;
 #[doc(hidden)]
 pub extern crate quickcheck;
 
+#[cfg(test)]
+extern crate rand_xorshift;
+
 #[macro_use]
 mod hash;
 

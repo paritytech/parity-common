@@ -1,6 +1,6 @@
 [package]
 name = "kvdb-rocksdb"
-version = "0.1.4"
+version = "0.2.4"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "kvdb implementation backed by rocksDB"
@@ -19,4 +19,4 @@ parity-rocksdb = "0.5"
 
 [dev-dependencies]
 tempdir = "0.3"
-ethereum-types = { version = "0.7", path = "../ethereum-types" }
+ethereum-types = { version = "0.8", path = "../ethereum-types" }
