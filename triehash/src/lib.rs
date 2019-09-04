@@ -237,14 +237,11 @@ where
 	// iterate over all possible nibbles
 	for i in 0..16 {
 		// count how many successive elements have same next nibble
-		let len = if begin < input.len() {
-			input[begin..]
-				.iter()
-				.take_while(|pair| pair.0.as_ref()[pre_len] == i)
-				.count()
-		} else {
-			0
-		};
+		let len = input
+			.iter()
+			.skip(begin)
+			.take_while(|pair| pair.0.as_ref()[pre_len] == i)
+			.count();
 
 		// if at least 1 successive element has the same nibble
 		// append their suffixes
