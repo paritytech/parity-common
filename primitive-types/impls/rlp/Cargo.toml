@@ -7,7 +7,7 @@ homepage = "https://github.com/paritytech/parity-common"
 description = "RLP serialization support for uint and fixed hash."
 
 [dependencies]
-rlp = { version = "0.4", path = "../../../rlp" }
+rlp = { version = "0.4", path = "../../../rlp", default-features = false }
 
 [features]
 default = ["std"]
