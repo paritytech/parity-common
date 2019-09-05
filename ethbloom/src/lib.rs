@@ -43,34 +43,16 @@
 //! ```
 //!
 
-#![cfg_attr(not(feature="std"), no_std)]
-
-#[cfg(feature="std")]
-extern crate core;
-
-extern crate tiny_keccak;
-#[macro_use]
-extern crate crunchy;
-
-#[macro_use]
-extern crate fixed_hash;
-
-#[cfg(feature="serialize")]
-#[macro_use]
-extern crate impl_serde;
-
-#[macro_use]
-extern crate impl_rlp;
-
-#[cfg(test)]
-#[macro_use]
-extern crate hex_literal;
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use core::{ops, mem};
-use tiny_keccak::keccak256;
 
-#[cfg(feature="std")]
-use core::str;
+use crunchy::unroll;
+use fixed_hash::*;
+#[cfg(feature = "serialize")]
+use impl_serde::impl_fixed_hash_serde;
+use impl_rlp::impl_fixed_hash_rlp;
+use tiny_keccak::keccak256;
 
 // 3 according to yellowpaper
 const BLOOM_BITS: u32 = 3;
@@ -152,7 +134,7 @@ impl Bloom {
 		self.0.iter().all(|x| *x == 0)
 	}
 
-	pub fn contains_input<'a>(&self, input: Input<'a>) -> bool {
+	pub fn contains_input(&self, input: Input<'_>) -> bool {
 		let bloom: Bloom = input.into();
 		self.contains_bloom(&bloom)
 	}
@@ -168,7 +150,7 @@ impl Bloom {
 		self_ref.contains_bloom(bloom)
 	}
 
-	pub fn accrue<'a>(&mut self, input: Input<'a>) {
+	pub fn accrue(&mut self, input: Input<'_>) {
 		let p = BLOOM_BITS;
 
 		let m = self.0.len();
@@ -218,15 +200,18 @@ impl Bloom {
 pub struct BloomRef<'a>(&'a [u8; BLOOM_SIZE]);
 
 impl<'a> BloomRef<'a> {
+	#[allow(clippy::trivially_copy_pass_by_ref)]
 	pub fn is_empty(&self) -> bool {
 		self.0.iter().all(|x| *x == 0)
 	}
 
-	pub fn contains_input<'b>(&self, input: Input<'b>) -> bool {
+	#[allow(clippy::trivially_copy_pass_by_ref)]
+	pub fn contains_input(&self, input: Input<'_>) -> bool {
 		let bloom: Bloom = input.into();
 		self.contains_bloom(&bloom)
 	}
 
+	#[allow(clippy::trivially_copy_pass_by_ref)]
 	pub fn contains_bloom<'b, B>(&self, bloom: B) -> bool where BloomRef<'b>: From<B> {
 		let bloom_ref: BloomRef = bloom.into();
 		assert_eq!(self.0.len(), BLOOM_SIZE);
@@ -241,6 +226,7 @@ impl<'a> BloomRef<'a> {
 		true
 	}
 
+	#[allow(clippy::trivially_copy_pass_by_ref)]
 	pub fn data(&self) -> &'a [u8; BLOOM_SIZE] {
 		self.0
 	}
@@ -263,11 +249,12 @@ impl_fixed_hash_serde!(Bloom, BLOOM_SIZE);
 
 #[cfg(test)]
 mod tests {
+	use core::str::FromStr;
+	use hex_literal::hex;
 	use super::{Bloom, Input};
 
 	#[test]
 	fn it_works() {
-		use std::str::FromStr;
 		let bloom = Bloom::from_str(
 			"00000000000000000000000000000000\
 			 00000000100000000000000000000000\

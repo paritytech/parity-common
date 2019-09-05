@@ -6,9 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate ethereum_types;
-extern crate serde_json;
-
 use ethereum_types::{U256, U512, H160, H256};
 use serde_json as ser;
 

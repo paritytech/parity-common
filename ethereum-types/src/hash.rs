@@ -1,4 +1,8 @@
 use crate::{U64, U128, U256, U512};
+use fixed_hash::*;
+use impl_rlp::impl_fixed_hash_rlp;
+#[cfg(feature="serialize")]
+use impl_serde::impl_fixed_hash_serde;
 
 pub trait BigEndianHash {
 	type Uint;
