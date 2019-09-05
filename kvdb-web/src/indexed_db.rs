@@ -36,9 +36,9 @@ use log::{debug, warn};
 use crate::Column;
 
 
-/// Opens the IndexedDB with the given name and the specified number of columns
+/// Opens the IndexedDB with the given name, version and the specified number of columns
 /// (including the default one).
-pub fn open(name: &str, columns: u32) -> impl Future<Output = IdbDatabase> {
+pub fn open(name: &str, version: u32, columns: u32) -> impl Future<Output = IdbDatabase> {
 	let (tx, rx) = channel::oneshot::channel::<IdbDatabase>();
 	// TODO: handle errors more gracefully,
 	// return a Result instead of expect_throw?
@@ -47,8 +47,7 @@ pub fn open(name: &str, columns: u32) -> impl Future<Output = IdbDatabase> {
 		.expect_throw("IndexDB should be supported in your browser")
 		.expect_throw("IndexDB should be supported in your browser");
 
-	// TODO: don't hardcode version
-	let open_request = indexed_db.open_with_u32(name, /* version */ 1)
+	let open_request = indexed_db.open_with_u32(name, version)
 		.expect_throw("Should be able to open IndexDB");
 
 	try_create_object_stores(&open_request, columns);
@@ -102,7 +101,9 @@ fn try_create_object_stores(req: &IdbOpenDbRequest, columns: u32) {
 		let result = req.result().expect_throw("IdbRequest should have a result");
 		let db: &IdbDatabase = result.unchecked_ref();
 
-		for name in (0..=columns).map(store_name) {
+		let previous_columns = db.object_store_names().length();
+
+		for name in (previous_columns..=columns).map(store_name) {
 			let res = db.create_object_store(name.as_str());
 			if let Err(err) = res {
 				debug!("error creating object store {}: {:?}", name, err);

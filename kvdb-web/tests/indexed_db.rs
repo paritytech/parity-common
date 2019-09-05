@@ -9,14 +9,14 @@ use wasm_bindgen::JsValue;
 wasm_bindgen_test_configure!(run_in_browser);
 
 #[wasm_bindgen_test(async)]
-fn my_async_test() -> impl futures01::Future<Item = (), Error = JsValue> {
-	console_log::init_with_level(log::Level::Trace).expect("error initializing log");
+fn reopen_the_database_with_more_columns() -> impl futures01::Future<Item = (), Error = JsValue> {
+	let _ = console_log::init_with_level(log::Level::Trace);
 
-	fn open_db() -> impl future::Future<Output = Database> {
-		Database::open("MyAsyncTest".into(), 4)
+	fn open_db(col: u32) -> impl future::Future<Output = Database> {
+		Database::open("MyAsyncTest".into(), col, col)
 	}
 
-	let fut = open_db().then(|db| {
+	let fut = open_db(1).then(|db| {
 		// Write a value into the database
 		let mut batch = db.transaction();
 		batch.put(None, b"hello", b"world");
@@ -27,8 +27,8 @@ fn my_async_test() -> impl futures01::Future<Item = (), Error = JsValue> {
 		// Close the database
 		drop(db);
 
-		// Reopen it again
-		open_db()
+		// Reopen it again with 2 columns
+		open_db(2)
 	}).map(|db| {
 		// The value should still be present
 		assert_eq!(db.get(None, b"hello").unwrap().unwrap().as_ref(), b"world");

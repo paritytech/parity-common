@@ -51,10 +51,12 @@ fn number_to_column(col: u32) -> Column {
 
 
 impl Database {
-	/// Opens the database with the given name
+	/// Opens the database with the given name, version
 	/// and the specified number of columns (not including the default one).
-	pub fn open(name: String, columns: u32) -> impl Future<Output = Database> {
-		let open_request = indexed_db::open(name.as_str(), columns);
+	/// Note, that it's not possible to open a database with a version
+	/// lower than it was opened previously.
+	pub fn open(name: String, version: u32, columns: u32) -> impl Future<Output = Database> {
+		let open_request = indexed_db::open(name.as_str(), version, columns);
 		// populate the in_memory db from the IndexedDB
 		open_request.then(move |db| {
 			let rc = Rc::new(db);
