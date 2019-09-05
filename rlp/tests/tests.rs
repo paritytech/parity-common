@@ -6,8 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[cfg(not(feature = "std"))]
-use alloc::{format, string::String, vec, vec::Vec};
 use core::{fmt, cmp};
 
 use primitive_types::{H160, U256};
