@@ -140,8 +140,6 @@ pub fn idb_commit_transaction(
 				let column = column_to_number(*col) as usize;
 
 				// Convert rust bytes to js arrays
-				// TODO (optimize): we could avoid copies
-				// with unsafe code (`Uint8Array::view`)
 				let key_js = Uint8Array::from(key.as_ref());
 				let val_js = Uint8Array::from(value.as_ref());
 
