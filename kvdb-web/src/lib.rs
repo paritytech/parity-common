@@ -37,6 +37,7 @@ use web_sys::IdbDatabase;
 
 pub struct Database {
 	name: String,
+	version: u32,
 	columns: u32,
 	in_memory: InMemory,
 	indexed_db: Mutex<SendWrapper<IdbDatabase>>,
@@ -77,6 +78,7 @@ impl Database {
 				})
 			}).then(move |in_memory| future::ready(Database {
 				name,
+				version,
 				columns,
 				in_memory,
 				indexed_db: Mutex::new(SendWrapper::new(
@@ -89,6 +91,11 @@ impl Database {
 	/// Get the database name.
 	pub fn name(&self) -> &str {
 		self.name.as_str()
+	}
+
+	/// Get the database version.
+	pub fn version(&self) -> u32 {
+		self.version
 	}
 }
 

@@ -24,6 +24,9 @@ fn reopen_the_database_with_more_columns() -> impl futures01::Future<Item = (), 
 
 		assert_eq!(db.get(None, b"hello").unwrap().unwrap().as_ref(), b"world");
 
+		// Check the database version
+		assert_eq!(db.version(), 1);
+
 		// Close the database
 		drop(db);
 
@@ -33,6 +36,9 @@ fn reopen_the_database_with_more_columns() -> impl futures01::Future<Item = (), 
 		// The value should still be present
 		assert_eq!(db.get(None, b"hello").unwrap().unwrap().as_ref(), b"world");
 		assert!(db.get(None, b"trash").unwrap().is_none());
+
+		// Check the database version again
+		assert_eq!(db.version(), 2);
 
 		Ok(())
 	});
