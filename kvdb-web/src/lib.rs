@@ -20,6 +20,7 @@
 //! on `open`.
 
 
+pub mod error;
 mod indexed_db;
 
 use std::io;
