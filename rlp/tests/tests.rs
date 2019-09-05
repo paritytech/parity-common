@@ -8,16 +8,13 @@
 
 use core::{fmt, cmp};
 
+use hex_literal::hex;
 use primitive_types::{H160, U256};
 use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
 
-fn hex(s: &str) -> Vec<u8> {
-	rustc_hex::FromHex::from_hex(s).unwrap()
-}
-
 #[test]
 fn test_rlp_display() {
-	let data = hex("f84d0589010efbef67941f79b2a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+	let data = hex!("f84d0589010efbef67941f79b2a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
 	let rlp = Rlp::new(&data);
 	assert_eq!(format!("{}", rlp), "[\"0x05\", \"0x010efbef67941f79b2\", \"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\", \"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470\"]");
 }
@@ -182,7 +179,7 @@ fn encode_str() {
 #[test]
 fn encode_address() {
 	let tests = vec![
-		ETestPair(H160::from_slice(&hex("ef2d6d194084c2de36e0dabfce45d046b37d1106")),
+		ETestPair(H160::from(hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106")),
 				  vec![0x94, 0xef, 0x2d, 0x6d, 0x19, 0x40, 0x84, 0xc2, 0xde,
 							 0x36, 0xe0, 0xda, 0xbf, 0xce, 0x45, 0xd0, 0x46,
 							 0xb3, 0x7d, 0x11, 0x06])
@@ -326,7 +323,7 @@ fn decode_untrusted_str() {
 #[test]
 fn decode_untrusted_address() {
 	let tests = vec![
-		DTestPair(H160::from_slice(&hex("ef2d6d194084c2de36e0dabfce45d046b37d1106")),
+		DTestPair(H160::from(hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106")),
 				  vec![0x94, 0xef, 0x2d, 0x6d, 0x19, 0x40, 0x84, 0xc2, 0xde,
 							 0x36, 0xe0, 0xda, 0xbf, 0xce, 0x45, 0xd0, 0x46,
 							 0xb3, 0x7d, 0x11, 0x06])
@@ -556,7 +553,7 @@ fn test_nested_list_roundtrip() {
 // https://github.com/paritytech/parity-ethereum/pull/9663
 #[test]
 fn test_list_at() {
-	let raw = hex("f83e82022bd79020010db83c4d001500000000abcdef12820cfa8215a8d79020010db885a308d313198a2e037073488208ae82823a8443b9a355c5010203040531b9019afde696e582a78fa8d95ea13ce3297d4afb8ba6433e4154caa5ac6431af1b80ba76023fa4090c408f6b4bc3701562c031041d4702971d102c9ab7fa5eed4cd6bab8f7af956f7d565ee1917084a95398b6a21eac920fe3dd1345ec0a7ef39367ee69ddf092cbfe5b93e5e568ebc491983c09c76d922dc3");
+	let raw = hex!("f83e82022bd79020010db83c4d001500000000abcdef12820cfa8215a8d79020010db885a308d313198a2e037073488208ae82823a8443b9a355c5010203040531b9019afde696e582a78fa8d95ea13ce3297d4afb8ba6433e4154caa5ac6431af1b80ba76023fa4090c408f6b4bc3701562c031041d4702971d102c9ab7fa5eed4cd6bab8f7af956f7d565ee1917084a95398b6a21eac920fe3dd1345ec0a7ef39367ee69ddf092cbfe5b93e5e568ebc491983c09c76d922dc3");
 
 	let rlp = Rlp::new(&raw);
 	let _rlp1 = rlp.at(1).unwrap();
