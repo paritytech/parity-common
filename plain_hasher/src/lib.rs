@@ -16,13 +16,10 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[macro_use]
-extern crate crunchy;
+use core::hash::Hasher;
 
-#[cfg(feature = "std")]
-extern crate core;
+use crunchy::unroll;
 
-use core::hash;
 /// Hasher that just takes 8 bytes of the provided value.
 /// May only be used for keys which are 32 bytes.
 #[derive(Default)]
@@ -30,7 +27,7 @@ pub struct PlainHasher {
 	prefix: u64,
 }
 
-impl hash::Hasher for PlainHasher {
+impl Hasher for PlainHasher {
 	#[inline]
 	fn finish(&self) -> u64 {
 		self.prefix
@@ -57,8 +54,7 @@ impl hash::Hasher for PlainHasher {
 
 #[cfg(test)]
 mod tests {
-	use core::hash::Hasher;
-	use super::PlainHasher;
+	use super::*;
 
 	#[test]
 	fn it_works() {
