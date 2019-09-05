@@ -6,10 +6,26 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use primitive_types::{H160, U256};
-use std::{fmt, cmp};
-use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
+use core::{fmt, cmp};
+
 use hex_literal::hex;
+use primitive_types::{H160, U256};
+use rlp::{Encodable, Decodable, Rlp, RlpStream, DecoderError};
+
+#[test]
+fn test_rlp_display() {
+	let data = hex!("f84d0589010efbef67941f79b2a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+	let rlp = Rlp::new(&data);
+	assert_eq!(format!("{}", rlp), "[\"0x05\", \"0x010efbef67941f79b2\", \"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\", \"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470\"]");
+}
+
+#[test]
+fn length_overflow() {
+	let bs = [0xbf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xe5];
+	let rlp = Rlp::new(&bs);
+	let res: Result<u8, DecoderError> = rlp.as_val();
+	assert_eq!(Err(DecoderError::RlpInvalidLength), res);
+}
 
 #[test]
 fn rlp_at() {
@@ -112,8 +128,8 @@ fn encode_u16() {
 fn encode_u32() {
 	let tests = vec![
 		ETestPair(0u32, vec![0x80u8]),
-		ETestPair(0x10000, vec![0x83, 0x01, 0x00, 0x00]),
-		ETestPair(0xffffff, vec![0x83, 0xff, 0xff, 0xff]),
+		ETestPair(0x0001_0000, vec![0x83, 0x01, 0x00, 0x00]),
+		ETestPair(0x00ff_ffff, vec![0x83, 0xff, 0xff, 0xff]),
 	];
 	run_encode_tests(tests);
 }
@@ -122,8 +138,8 @@ fn encode_u32() {
 fn encode_u64() {
 	let tests = vec![
 		ETestPair(0u64, vec![0x80u8]),
-		ETestPair(0x1000000, vec![0x84, 0x01, 0x00, 0x00, 0x00]),
-		ETestPair(0xFFFFFFFF, vec![0x84, 0xff, 0xff, 0xff, 0xff]),
+		ETestPair(0x0100_0000, vec![0x84, 0x01, 0x00, 0x00, 0x00]),
+		ETestPair(0xFFFF_FFFF, vec![0x84, 0xff, 0xff, 0xff, 0xff]),
 	];
 	run_encode_tests(tests);
 }
@@ -131,8 +147,8 @@ fn encode_u64() {
 #[test]
 fn encode_u256() {
 	let tests = vec![ETestPair(U256::from(0u64), vec![0x80u8]),
-					 ETestPair(U256::from(0x1000000u64), vec![0x84, 0x01, 0x00, 0x00, 0x00]),
-					 ETestPair(U256::from(0xffffffffu64),
+					 ETestPair(U256::from(0x0100_0000u64), vec![0x84, 0x01, 0x00, 0x00, 0x00]),
+					 ETestPair(U256::from(0xffff_ffffu64),
 							   vec![0x84, 0xff, 0xff, 0xff, 0xff]),
 					 ETestPair(("8090a0b0c0d0e0f00910203040506077000000000000\
 											   000100000000000012f0").into(),
@@ -189,7 +205,7 @@ fn encode_vector_u64() {
 		VETestPair(vec![], vec![0xc0]),
 		VETestPair(vec![15u64], vec![0xc1, 0x0f]),
 		VETestPair(vec![1, 2, 3, 7, 0xff], vec![0xc6, 1, 2, 3, 7, 0x81, 0xff]),
-		VETestPair(vec![0xffffffff, 1, 2, 3, 7, 0xff], vec![0xcb, 0x84, 0xff, 0xff, 0xff, 0xff,  1, 2, 3, 7, 0x81, 0xff]),
+		VETestPair(vec![0xffff_ffff, 1, 2, 3, 7, 0xff], vec![0xcb, 0x84, 0xff, 0xff, 0xff, 0xff,  1, 2, 3, 7, 0x81, 0xff]),
 	];
 	run_encode_tests_list(tests);
 }
@@ -255,8 +271,8 @@ fn decode_untrusted_u16() {
 #[test]
 fn decode_untrusted_u32() {
 	let tests = vec![
-		DTestPair(0x10000u32, vec![0x83, 0x01, 0x00, 0x00]),
-		DTestPair(0xffffffu32, vec![0x83, 0xff, 0xff, 0xff]),
+		DTestPair(0x0001_0000u32, vec![0x83, 0x01, 0x00, 0x00]),
+		DTestPair(0x00ff_ffffu32, vec![0x83, 0xff, 0xff, 0xff]),
 	];
 	run_decode_tests(tests);
 }
@@ -264,8 +280,8 @@ fn decode_untrusted_u32() {
 #[test]
 fn decode_untrusted_u64() {
 	let tests = vec![
-		DTestPair(0x1000000u64, vec![0x84, 0x01, 0x00, 0x00, 0x00]),
-		DTestPair(0xFFFFFFFFu64, vec![0x84, 0xff, 0xff, 0xff, 0xff]),
+		DTestPair(0x0100_0000u64, vec![0x84, 0x01, 0x00, 0x00, 0x00]),
+		DTestPair(0xFFFF_FFFFu64, vec![0x84, 0xff, 0xff, 0xff, 0xff]),
 	];
 	run_decode_tests(tests);
 }
@@ -273,8 +289,8 @@ fn decode_untrusted_u64() {
 #[test]
 fn decode_untrusted_u256() {
 	let tests = vec![DTestPair(U256::from(0u64), vec![0x80u8]),
-					 DTestPair(U256::from(0x1000000u64), vec![0x84, 0x01, 0x00, 0x00, 0x00]),
-					 DTestPair(U256::from(0xffffffffu64),
+					 DTestPair(U256::from(0x0100_0000u64), vec![0x84, 0x01, 0x00, 0x00, 0x00]),
+					 DTestPair(U256::from(0xffff_ffffu64),
 							   vec![0x84, 0xff, 0xff, 0xff, 0xff]),
 					 DTestPair(("8090a0b0c0d0e0f00910203040506077000000000000\
 											   000100000000000012f0").into(),
@@ -321,7 +337,7 @@ fn decode_untrusted_vector_u64() {
 		VDTestPair(vec![], vec![0xc0]),
 		VDTestPair(vec![15u64], vec![0xc1, 0x0f]),
 		VDTestPair(vec![1, 2, 3, 7, 0xff], vec![0xc6, 1, 2, 3, 7, 0x81, 0xff]),
-		VDTestPair(vec![0xffffffff, 1, 2, 3, 7, 0xff], vec![0xcb, 0x84, 0xff, 0xff, 0xff, 0xff,  1, 2, 3, 7, 0x81, 0xff]),
+		VDTestPair(vec![0xffff_ffff, 1, 2, 3, 7, 0xff], vec![0xcb, 0x84, 0xff, 0xff, 0xff, 0xff,  1, 2, 3, 7, 0x81, 0xff]),
 	];
 	run_decode_tests_list(tests);
 }
@@ -437,12 +453,12 @@ fn test_rlp_is_int() {
 #[test]
 fn test_canonical_string_encoding() {
 	assert_ne!(
-		Rlp::new(&vec![0xc0 + 4, 0xb7 + 1, 2, b'a', b'b']).val_at::<String>(0),
-		Rlp::new(&vec![0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0)
+		Rlp::new(&[0xc0 + 4, 0xb7 + 1, 2, b'a', b'b']).val_at::<String>(0),
+		Rlp::new(&[0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0)
 	);
 
 	assert_eq!(
-		Rlp::new(&vec![0xc0 + 4, 0xb7 + 1, 2, b'a', b'b']).val_at::<String>(0),
+		Rlp::new(&[0xc0 + 4, 0xb7 + 1, 2, b'a', b'b']).val_at::<String>(0),
 		Err(DecoderError::RlpInvalidIndirection)
 	);
 }
@@ -453,12 +469,12 @@ fn test_canonical_string_encoding() {
 #[test]
 fn test_canonical_list_encoding() {
 	assert_ne!(
-		Rlp::new(&vec![0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0),
-		Rlp::new(&vec![0xf7 + 1, 3, 0x82, b'a', b'b']).val_at::<String>(0)
+		Rlp::new(&[0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0),
+		Rlp::new(&[0xf7 + 1, 3, 0x82, b'a', b'b']).val_at::<String>(0)
 	);
 
 	assert_eq!(
-		Rlp::new(&vec![0xf7 + 1, 3, 0x82, b'a', b'b']).val_at::<String>(0),
+		Rlp::new(&[0xf7 + 1, 3, 0x82, b'a', b'b']).val_at::<String>(0),
 		Err(DecoderError::RlpInvalidIndirection)
 	);
 }
@@ -468,11 +484,11 @@ fn test_canonical_list_encoding() {
 // https://github.com/paritytech/parity-common/issues/48
 #[test]
 fn test_inner_length_capping_for_short_lists() {
-	assert_eq!(Rlp::new(&vec![0xc0 + 0, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
-	assert_eq!(Rlp::new(&vec![0xc0 + 1, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
-	assert_eq!(Rlp::new(&vec![0xc0 + 2, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
-	assert_eq!(Rlp::new(&vec![0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0), Ok("ab".to_owned()));
-	assert_eq!(Rlp::new(&vec![0xc0 + 4, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&[0xc0, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&[0xc0 + 1, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&[0xc0 + 2, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&[0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0), Ok("ab".to_owned()));
+	assert_eq!(Rlp::new(&[0xc0 + 4, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
 }
 
 // test described in

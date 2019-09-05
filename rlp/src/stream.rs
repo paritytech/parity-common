@@ -6,7 +6,10 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::borrow::Borrow;
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+use core::borrow::Borrow;
+
 use crate::traits::Encodable;
 
 #[derive(Debug, Copy, Clone)]
@@ -86,7 +89,7 @@ impl RlpStream {
 	}
 
 	/// Appends raw (pre-serialised) RLP data. Use with caution. Chainable.
-	pub fn append_raw<'a>(&'a mut self, bytes: &[u8], item_count: usize) -> &'a mut Self {
+	pub fn append_raw(&mut self, bytes: &[u8], item_count: usize) -> &mut Self {
 		// push raw items
 		self.buffer.extend_from_slice(bytes);
 
@@ -110,7 +113,7 @@ impl RlpStream {
 	/// 	assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// }
 	/// ```
-	pub fn append<'a, E>(&'a mut self, value: &E) -> &'a mut Self where E: Encodable {
+	pub fn append<E>(&mut self, value: &E) -> &mut Self where E: Encodable {
 		self.finished_list = false;
 		value.rlp_append(self);
 		if !self.finished_list {
@@ -132,7 +135,7 @@ impl RlpStream {
 	/// 	assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// }
 	/// ```
-	pub fn append_iter<'a, I>(&'a mut self, value: I) -> &'a mut Self
+	pub fn append_iter<I>(&mut self, value: I) -> &mut Self
 	where I: IntoIterator<Item = u8>,
 	{
 		self.finished_list = false;
@@ -144,7 +147,7 @@ impl RlpStream {
 	}
 
 	/// Appends list of values to the end of stream, chainable.
-	pub fn append_list<'a, E, K>(&'a mut self, values: &[K]) -> &'a mut Self where E: Encodable, K: Borrow<E> {
+	pub fn append_list<E, K>(&mut self, values: &[K]) -> &mut Self where E: Encodable, K: Borrow<E> {
 		self.begin_list(values.len());
 		for value in values {
 			self.append(value.borrow());
@@ -154,7 +157,7 @@ impl RlpStream {
 
 	/// Appends value to the end of stream, but do not count it as an appended item.
 	/// It's useful for wrapper types
-	pub fn append_internal<'a, E>(&'a mut self, value: &E) -> &'a mut Self where E: Encodable {
+	pub fn append_internal<E>(&mut self, value: &E) -> &mut Self where E: Encodable {
 		value.rlp_append(self);
 		self
 	}
@@ -209,7 +212,7 @@ impl RlpStream {
 	}
 
 	/// Appends raw (pre-serialised) RLP data. Checks for size oveflow.
-	pub fn append_raw_checked<'a>(&'a mut self, bytes: &[u8], item_count: usize, max_size: usize) -> bool {
+	pub fn append_raw_checked(&mut self, bytes: &[u8], item_count: usize, max_size: usize) -> bool {
 		if self.estimate_size(bytes.len()) > max_size {
 			return false;
 		}
@@ -218,7 +221,7 @@ impl RlpStream {
 	}
 
 	/// Calculate total RLP size for appended payload.
-	pub fn estimate_size<'a>(&'a self, add: usize) -> usize {
+	pub fn estimate_size(&self, add: usize) -> usize {
 		let total_size = self.buffer.len() + add;
 		let mut base_size = total_size;
 		for list in &self.unfinished_lists[..] {
@@ -233,8 +236,12 @@ impl RlpStream {
 	}
 
 	/// Returns current RLP size in bytes for the data pushed into the list.
-	pub fn len<'a>(&'a self) -> usize {
+	pub fn len(&self) -> usize {
 		self.estimate_size(0)
+	}
+
+	pub fn is_empty(&self) -> bool {
+		self.len() == 0
 	}
 
 	/// Clear the output stream so far.
@@ -275,7 +282,7 @@ impl RlpStream {
 	/// 	assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// }
 	pub fn is_finished(&self) -> bool {
-		self.unfinished_lists.len() == 0
+		self.unfinished_lists.is_empty()
 	}
 
 	/// Get raw encoded bytes
@@ -288,15 +295,16 @@ impl RlpStream {
 	///
 	/// panic! if stream is not finished.
 	pub fn out(self) -> Vec<u8> {
-		match self.is_finished() {
-			true => self.buffer,
-			false => panic!()
+		if self.is_finished() {
+			self.buffer
+		} else {
+			panic!()
 		}
 	}
 
 	/// Try to finish lists
 	fn note_appended(&mut self, inserted_items: usize) {
-		if self.unfinished_lists.len() == 0 {
+		if self.unfinished_lists.is_empty() {
 			return;
 		}
 
@@ -394,7 +402,7 @@ impl<'a> BasicEncoder<'a> {
 		match len {
 			// just 0
 			0 => self.buffer.push(0x80u8),
-			len @ 1 ..= 55 => {
+			len @ 1..=55 => {
 				let first = value.next().expect("iterator length is higher than 1");
 				if len == 1 && first < 0x80 {
 					// byte is its own encoding if < 0x80
