@@ -29,7 +29,7 @@ script:
   - if [ "$TRAVIS_RUST_VERSION" == "nightly" ]; then
     cd contract-address/ && cargo test --features=external_doc && cd ..;
     fi
-  - cd ethbloom/ && cargo test --no-default-features --features="rustc-hex" && cargo test --benches && cd ..
+  - cd ethbloom/ && cargo test --no-default-features --features="rustc-hex" && cargo check --benches && cd ..
   - cd fixed-hash/ && cargo test --all-features && cargo test --no-default-features --features="byteorder,rustc-hex" && cd ..
   - cd uint/ && cargo test --all-features && cargo test --no-default-features && cd ..
   - cd keccak-hash/ && cargo test --no-default-features && cd ..
@@ -38,4 +38,4 @@ script:
   - cd parity-util-mem/ && cargo test --features=estimate-heapsize && cd ..
   - cd parity-util-mem/ && cargo test --features=jemalloc-global && cd ..
   - cd parity-util-mem/ && cargo test --features=mimalloc-global && cd ..
-  - cd rlp/ && cargo test --no-default-features && cargo test --benches && cd ..
+  - cd rlp/ && cargo test --no-default-features && cargo check --benches && cd ..

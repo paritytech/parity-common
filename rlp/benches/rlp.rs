@@ -22,6 +22,13 @@ fn bench_encode(c: &mut Criterion) {
 		stream.append(&uint);
 		let _ = stream.out();
 	}));
+	c.bench_function("encode_1000_u64", |b| b.iter(|| {
+		let mut stream = rlp::RlpStream::new_list(1000);
+		for i in 0..1000u64 {
+			stream.append(&i);
+		}
+		let _ = stream.out();
+	}));
 	c.bench_function("encode_nested_empty_lists", |b| b.iter(|| {
 		// [ [], [[]], [ [], [[]] ] ]
 		let mut stream = rlp::RlpStream::new_list(3);
@@ -54,6 +61,19 @@ fn bench_decode(c: &mut Criterion) {
 		let rlp = rlp::Rlp::new(&data);
 		let _ : primitive_types::U256 = rlp.as_val().unwrap();
 	}));
+	c.bench_function("decode_1000_u64", |b| {
+		let mut stream = rlp::RlpStream::new_list(1000);
+		for i in 0..1000u64 {
+			stream.append(&i);
+		}
+		let data= stream.out();
+		b.iter(|| {
+			let rlp = rlp::Rlp::new(&data);
+			for i in 0..1000 {
+				let _: u64 = rlp.val_at(i).unwrap();
+			}
+		});
+	});
 	c.bench_function("decode_nested_empty_lists", |b| b.iter(|| {
 		// [ [], [[]], [ [], [[]] ] ]
 		let data = vec![0xc7, 0xc0, 0xc1, 0xc0, 0xc3, 0xc0, 0xc1, 0xc0];
@@ -67,13 +87,13 @@ fn bench_decode(c: &mut Criterion) {
 	c.bench_function("decode_1000_empty_lists", |b| {
 		let mut stream = rlp::RlpStream::new_list(1000);
 		for _ in 0..1000 {
-			stream.append(&primitive_types::U256::from(1));
+			stream.begin_list(0);
 		}
-		let data= stream.out();
+		let data = stream.out();
 		b.iter(|| {
 			let rlp = rlp::Rlp::new(&data);
 			for i in 0..1000 {
-				let _: primitive_types::U256 = rlp.val_at(i).unwrap();
+				let _: Vec<u8> = rlp.at(i).unwrap().as_list().unwrap();
 			}
 		});
 	});
