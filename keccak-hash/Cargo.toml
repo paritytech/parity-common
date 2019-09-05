@@ -1,6 +1,6 @@
 [package]
 name = "keccak-hash"
-version = "0.3.0"
+version = "0.4.0"
 description = "`keccak-hash` is a set of utility functions to facilitate working with Keccak hashes (256/512 bits long)."
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
