@@ -14,36 +14,28 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(test)]
-
-extern crate test;
-extern crate plain_hasher;
-
-use std::hash::Hasher;
 use std::collections::hash_map::DefaultHasher;
-use test::{Bencher, black_box};
+use std::hash::Hasher;
+
+use criterion::{criterion_group, criterion_main, Criterion};
 use plain_hasher::PlainHasher;
 
-#[bench]
-fn write_plain_hasher(b: &mut Bencher) {
-	b.iter(|| {
-		let n: u8 = black_box(100);
-		(0..n).fold(PlainHasher::default(), |mut old, new| {
-			let bb = black_box([new; 32]);
-			old.write(&bb as &[u8]);
+fn bench_write_hasher(c: &mut Criterion) {
+	c.bench_function("write_plain_hasher", |b| b.iter(|| {
+		(0..100u8).fold(PlainHasher::default(), |mut old, new| {
+			let bb = [new; 32];
+			old.write(&bb);
 			old
 		});
-	});
+	}));
+	c.bench_function("write_default_hasher", |b| b.iter(|| {
+		(0..100u8).fold(DefaultHasher::default(), |mut old, new| {
+			let bb = [new; 32];
+			old.write(&bb);
+			old
+		});
+	}));
 }
 
-#[bench]
-fn write_default_hasher(b: &mut Bencher) {
-	b.iter(|| {
-		let n: u8 = black_box(100);
-		(0..n).fold(DefaultHasher::default(), |mut old, new| {
-			let bb = black_box([new; 32]);
-			old.write(&bb as &[u8]);
-			old
-		});
-	});
-}
+criterion_group!(benches, bench_write_hasher);
+criterion_main!(benches);

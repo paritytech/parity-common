@@ -6,7 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::fmt;
+use core::fmt;
+#[cfg(feature = "std")]
 use std::error::Error as StdError;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -36,6 +37,7 @@ pub enum DecoderError {
 	Custom(&'static str),
 }
 
+#[cfg(feature = "std")]
 impl StdError for DecoderError {
 	fn description(&self) -> &str {
 		"builder error"

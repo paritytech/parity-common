@@ -6,11 +6,19 @@ authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 keywords = ["hash", "hasher"]
 homepage = "https://github.com/paritytech/parity-common"
-categories = [ "no-std"]
+categories = ["no-std"]
+edition = "2018"
 
 [dependencies]
-crunchy = { version = "0.2.1", default-features = false }
+crunchy = { version = "0.2", default-features = false }
+
+[dev-dependencies]
+criterion = "0.3"
 
 [features]
 default = ["std"]
 std = ["crunchy/std"]
+
+[[bench]]
+name = "bench"
+harness = false
