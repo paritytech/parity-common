@@ -183,18 +183,18 @@ pub fn idb_cursor(idb: &IdbDatabase, col: u32) -> impl Stream<Item = (Vec<u8>, V
 	let store_name = store_name(col);
 	let store_name = store_name.as_str();
 	let txn = idb.transaction_with_str(store_name)
-		.expect_throw("Failed to create an IndexedDB transaction");
+		.expect("Failed to create an IndexedDB transaction");
 
-	let store = txn.object_store(store_name).expect_throw("Opening a store shouldn't fail");
-	let cursor = store.open_cursor().expect_throw("Opening a cursor shoudn't fail");
+	let store = txn.object_store(store_name).expect("Opening a store shouldn't fail");
+	let cursor = store.open_cursor().expect("Opening a cursor shoudn't fail");
 
 	let (tx, rx) = channel::mpsc::unbounded();
 
 	let on_cursor = Closure::wrap(Box::new(move |event: &Event| {
 		// Extract the cursor from the event
-		let target = event.target().expect_throw("on_cursor should have a target");
-		let req = target.dyn_ref::<IdbRequest>().expect_throw("target should be IdbRequest");
-		let result = req.result().expect_throw("IdbRequest should have a result");
+		let target = event.target().expect("on_cursor should have a target");
+		let req = target.dyn_ref::<IdbRequest>().expect("target should be IdbRequest");
+		let result = req.result().expect("IdbRequest should have a result");
 		let cursor: &IdbCursorWithValue = result.unchecked_ref();
 
 		if let (Ok(key), Ok(value)) = (cursor.deref().key(), cursor.value()) {
