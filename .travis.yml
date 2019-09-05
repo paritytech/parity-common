@@ -39,3 +39,4 @@ script:
   - cd parity-util-mem/ && cargo test --features=jemalloc-global && cd ..
   - cd parity-util-mem/ && cargo test --features=mimalloc-global && cd ..
   - cd rlp/ && cargo test --no-default-features && cargo check --benches && cd ..
+  - cd triehash/ && cargo check --benches && cd ..
