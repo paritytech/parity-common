@@ -26,43 +26,35 @@ pub enum Error {
 	/// Accessing a Window has failed.
 	/// Are we in a WebWorker?
 	WindowNotAvailable,
-    /// IndexedDB is not supported by your browser.
-    NotSupported(JsValue),
-    /// Commiting a transaction to IndexedDB has failed.
-    TransactionFailed(JsValue),
-    /// This enum may grow additional variants,
+	/// IndexedDB is not supported by your browser.
+	NotSupported(JsValue),
+	/// This enum may grow additional variants,
 	/// so this makes sure clients don't count on exhaustive matching.
 	/// (Otherwise, adding a new variant could break existing code.)
-    #[doc(hidden)]
-    __Nonexhaustive,
+	#[doc(hidden)]
+	__Nonexhaustive,
 }
 
 impl std::error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
+	fn description(&self) -> &str {
+		match *self {
 			Error::WindowNotAvailable => "Accessing a Window has failed",
-            Error::NotSupported(_) => "IndexedDB is not supported by your browser",
-            Error::TransactionFailed(_) => "Commiting a transaction to IndexedDB has failed",
-            Error::__Nonexhaustive => unreachable!(),
-        }
-    }
+			Error::NotSupported(_) => "IndexedDB is not supported by your browser",
+			Error::__Nonexhaustive => unreachable!(),
+		}
+	}
 }
 
 impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match *self {
 			Error::WindowNotAvailable => write!(f, "Accessing a Window has failed"),
-            Error::NotSupported(ref err) => write!(
+			Error::NotSupported(ref err) => write!(
 				f,
 				"IndexedDB is not supported by your browser: {:?}",
 				err,
 			),
-            Error::TransactionFailed(ref err) => write!(
-				f,
-				"Commiting a transaction to IndexedDB has failed: {:?}",
-				err,
-            ),
-            Error::__Nonexhaustive => unreachable!(),
-        }
-    }
+			Error::__Nonexhaustive => unreachable!(),
+		}
+	}
 }
