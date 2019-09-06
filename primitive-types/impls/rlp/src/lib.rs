@@ -8,6 +8,8 @@
 
 //! RLP serialization support for uint and fixed hash.
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 #[doc(hidden)]
 pub extern crate rlp;
 
