@@ -16,7 +16,7 @@
 
 //! Utility functions to interact with IndexedDB browser API.
 
-use wasm_bindgen::{JsCast, JsValue, UnwrapThrowExt, closure::Closure};
+use wasm_bindgen::{JsCast, JsValue, closure::Closure};
 use web_sys::{
 	IdbDatabase, IdbRequest, IdbOpenDbRequest,
 	Event, IdbCursorWithValue,
@@ -33,33 +33,38 @@ use std::ops::Deref;
 use log::{debug, warn};
 
 
-use crate::Column;
+use crate::{Column, error::Error};
 
 
 /// Opens the IndexedDB with the given name, version and the specified number of columns
 /// (including the default one).
-pub fn open(name: &str, version: u32, columns: u32) -> impl Future<Output = IdbDatabase> {
+pub fn open(name: &str, version: u32, columns: u32) -> impl Future<Output = Result<IdbDatabase, Error>> {
 	let (tx, rx) = channel::oneshot::channel::<IdbDatabase>();
-	// TODO: handle errors more gracefully,
-	// return a Result instead of expect_throw?
-	let window = web_sys::window().expect_throw("are we in a browser?");
-	let indexed_db = window.indexed_db()
-		.expect_throw("IndexDB should be supported in your browser")
-		.expect_throw("IndexDB should be supported in your browser");
 
-	let open_request = indexed_db.open_with_u32(name, version)
-		.expect_throw("Should be able to open IndexDB");
+	let window = match web_sys::window() {
+		Some(window) => window,
+		None => return future::Either::Right(future::err(Error::WindowNotAvailable)),
+	};
+	let idb_factory = window.indexed_db();
+
+	let idb_factory = match idb_factory {
+		Ok(idb_factory) => idb_factory.expect("We can't get a null pointer back; qed"),
+		Err(err) => return future::Either::Right(future::err(Error::NotSupported(err))),
+	};
+
+	let open_request = idb_factory.open_with_u32(name, version)
+		.expect("TypeError is not possible with Rust; qed");
 
 	try_create_object_stores(&open_request, columns);
 
 	let on_success = Closure::once(move |event: &Event| {
 		// Extract database handle from the event
-		let target = event.target().expect_throw("Event should have a target");
-		let req = target.dyn_ref::<IdbRequest>().expect_throw("Event target is IdbRequest");
+		let target = event.target().expect("Event should have a target; qed");
+		let req = target.dyn_ref::<IdbRequest>().expect("Event target is IdbRequest; qed");
 
 		let result = req
 			.result()
-			.expect_throw("IndexedDB.onsuccess should have a valid result");
+			.expect("IndexedDB.onsuccess should have a valid result; qed");
 		assert!(result.is_instance_of::<IdbDatabase>());
 
 		// errors if the receiving end was dropped before this call
@@ -68,7 +73,9 @@ pub fn open(name: &str, version: u32, columns: u32) -> impl Future<Output = IdbD
 	open_request.set_onsuccess(Some(on_success.as_ref().unchecked_ref()));
 	on_success.forget();
 
-	rx.then(|r| future::ready(r.expect("Sender isn't dropped; qed")))
+	future::Either::Left(
+		rx.then(|r| future::ok(r.expect("Sender isn't dropped; qed")))
+	)
 }
 
 fn store_name(num: u32) -> String {
@@ -96,9 +103,9 @@ fn try_create_object_stores(req: &IdbOpenDbRequest, columns: u32) {
 	let on_upgradeneeded = Closure::once(move |event: &Event| {
 		debug!("Upgrading or creating the database");
 		// Extract database handle from the event
-		let target = event.target().expect_throw("Event should have a target");
-		let req = target.dyn_ref::<IdbRequest>().expect_throw("Event target is IdbRequest");
-		let result = req.result().expect_throw("IdbRequest should have a result");
+		let target = event.target().expect("Event should have a target; qed");
+		let req = target.dyn_ref::<IdbRequest>().expect("Event target is IdbRequest; qed");
+		let result = req.result().expect("IdbRequest should have a result; qed");
 		let db: &IdbDatabase = result.unchecked_ref();
 
 		let previous_columns = db.object_store_names().length();
@@ -126,7 +133,7 @@ pub fn idb_commit_transaction(
 	// Create a transaction
 	let mode = IdbTransactionMode::Readwrite;
 	let idb_txn = idb.transaction_with_str_sequence_and_mode(&store_names_js, mode)
-		.expect_throw("Failed to create an IndexedDB transaction");
+		.expect("The provided mode and store names are valid; qed");
 
 	// Open object stores (columns)
 	let object_stores = (0..=columns).map(|n| {
@@ -183,18 +190,18 @@ pub fn idb_cursor(idb: &IdbDatabase, col: u32) -> impl Stream<Item = (Vec<u8>, V
 	let store_name = store_name(col);
 	let store_name = store_name.as_str();
 	let txn = idb.transaction_with_str(store_name)
-		.expect("Failed to create an IndexedDB transaction");
+		.expect("The stores were created on open; qed");
 
-	let store = txn.object_store(store_name).expect("Opening a store shouldn't fail");
-	let cursor = store.open_cursor().expect("Opening a cursor shoudn't fail");
+	let store = txn.object_store(store_name).expect("Opening a store shouldn't fail; qed");
+	let cursor = store.open_cursor().expect("Opening a cursor shoudn't fail; qed");
 
 	let (tx, rx) = channel::mpsc::unbounded();
 
 	let on_cursor = Closure::wrap(Box::new(move |event: &Event| {
 		// Extract the cursor from the event
-		let target = event.target().expect("on_cursor should have a target");
-		let req = target.dyn_ref::<IdbRequest>().expect("target should be IdbRequest");
-		let result = req.result().expect("IdbRequest should have a result");
+		let target = event.target().expect("on_cursor should have a target; qed");
+		let req = target.dyn_ref::<IdbRequest>().expect("target should be IdbRequest; qed");
+		let result = req.result().expect("IdbRequest should have a result; qed");
 		let cursor: &IdbCursorWithValue = result.unchecked_ref();
 
 		if let (Ok(key), Ok(value)) = (cursor.deref().key(), cursor.value()) {

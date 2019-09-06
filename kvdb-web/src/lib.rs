@@ -20,7 +20,7 @@
 //! on `open`.
 
 
-pub mod error;
+mod error;
 mod indexed_db;
 
 use std::io;
@@ -30,6 +30,7 @@ use kvdb::{DBValue, DBTransaction};
 use kvdb_memorydb::{InMemory, self as in_memory};
 use send_wrapper::SendWrapper;
 
+pub use error::Error;
 pub use kvdb::KeyValueDB;
 
 use futures::prelude::*;
@@ -57,14 +58,19 @@ impl Database {
 	/// and the specified number of columns (not including the default one).
 	/// Note, that it's not possible to open a database with a version
 	/// lower than it was opened previously.
-	pub fn open(name: String, version: u32, columns: u32) -> impl Future<Output = Database> {
+	pub fn open(name: String, version: u32, columns: u32) -> impl Future<Output = Result<Database, error::Error>> {
 		let open_request = indexed_db::open(name.as_str(), version, columns);
 		// populate the in_memory db from the IndexedDB
 		open_request.then(move |db| {
+			let db = match db {
+				Ok(db) => db,
+				Err(err) => return future::Either::Right(future::err(err)),
+			};
+
 			let rc = Rc::new(db);
 			let weak = Rc::downgrade(&rc);
 			// read the columns from the IndexedDB
-			stream::iter(0..=columns).map(move |n| {
+			future::Either::Left(stream::iter(0..=columns).map(move |n| {
 				let db = weak.upgrade().expect("rc should live at least as long; qed");
 				indexed_db::idb_cursor(&db, n).fold(DBTransaction::new(), move |mut txn, (key, value)| {
 					let column = number_to_column(n);
@@ -77,7 +83,7 @@ impl Database {
 					m.write_buffered(txn);
 					future::ready(m)
 				})
-			}).then(move |in_memory| future::ready(Database {
+			}).then(move |in_memory| future::ok(Database {
 				name,
 				version,
 				columns,
@@ -85,7 +91,7 @@ impl Database {
 				indexed_db: Mutex::new(SendWrapper::new(
 					Rc::try_unwrap(rc).expect("should have only 1 ref at this point; qed")
 				)),
-			}))
+			})))
 		})
 	}
 

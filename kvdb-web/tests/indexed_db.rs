@@ -1,5 +1,5 @@
 use futures::compat;
-use futures::future::{self, FutureExt as _};
+use futures::future::{self, FutureExt as _, TryFutureExt as _};
 
 use kvdb_web::{Database, KeyValueDB as _};
 
@@ -14,6 +14,7 @@ fn reopen_the_database_with_more_columns() -> impl futures01::Future<Item = (), 
 
 	fn open_db(col: u32) -> impl future::Future<Output = Database> {
 		Database::open("MyAsyncTest".into(), col, col)
+			.unwrap_or_else(|err| panic!("{}", err))
 	}
 
 	let fut = open_db(1).then(|db| {
