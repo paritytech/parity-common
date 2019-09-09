@@ -611,8 +611,10 @@ impl<'a, T, R, S, L> Iterator for PendingIterator<'a, T, R, S, L> where
 				self.best_transactions.take(&best).expect("Just taken from iterator; qed")
 			};
 
-			match self.ready.is_ready(&best.transaction) {
-				Readiness::Ready => {
+			let tx_state = self.ready.is_ready(&best.transaction);
+			// Add the next best sender's transaction when applicable
+			match tx_state {
+				Readiness::Ready | Readiness::Stale => {
 					// retrieve next one from that sender.
 					let next = self.pool.transactions
 						.get(best.transaction.sender())
@@ -620,10 +622,14 @@ impl<'a, T, R, S, L> Iterator for PendingIterator<'a, T, R, S, L> where
 					if let Some((score, tx)) = next {
 						self.best_transactions.insert(ScoreWithRef::new(score, tx));
 					}
-
+				},
+				_ => (),
+			}
+			match tx_state {
+				Readiness::Ready => {
 					return Some(best.transaction.transaction)
 				},
-				state => trace!("[{:?}] Ignoring {:?} transaction.", best.transaction.hash(), state),
+				_ => trace!("[{:?}] Ignoring {:?} transaction.", best.transaction.hash(), tx_state),
 			}
 		}
 
