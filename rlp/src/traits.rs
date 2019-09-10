@@ -7,7 +7,12 @@
 // except according to those terms.
 
 //! Common RLP traits
-use crate::{DecoderError, Rlp, RlpStream};
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
+use crate::error::DecoderError;
+use crate::rlpin::Rlp;
+use crate::stream::RlpStream;
 
 /// RLP decodable trait
 pub trait Decodable: Sized {

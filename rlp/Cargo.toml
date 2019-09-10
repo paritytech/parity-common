@@ -8,8 +8,18 @@ authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
 
 [dependencies]
-rustc-hex = {version = "2.0", default-features = false }
+rustc-hex = { version = "2.0", default-features = false }
 
 [dev-dependencies]
+criterion = "0.3"
 hex-literal = "0.2"
 primitive-types = { path = "../primitive-types", version = "0.6", features = ["impl-rlp"] }
+
+[features]
+default = ["std"]
+std = ["rustc-hex/std"]
+
+[[bench]]
+name = "rlp"
+path = "benches/rlp.rs"
+harness = false
