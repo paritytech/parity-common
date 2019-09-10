@@ -22,6 +22,7 @@ pub mod scrypt;
 pub mod digest;
 pub mod hmac;
 pub mod pbkdf2;
+#[cfg(feature = "publickey")]
 pub mod publickey;
 
 pub use crate::error::Error;
