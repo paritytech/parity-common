@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::{SECP256K1, Public, Secret, Error};
+use super::{SECP256K1, Public, Secret, Error};
 use secp256k1::key;
 use secp256k1::constants::{GENERATOR_X, GENERATOR_Y, CURVE_ORDER};
 use ethereum_types::{BigEndianHash as _, U256, H256};

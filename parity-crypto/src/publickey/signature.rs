@@ -23,7 +23,7 @@ use secp256k1::{Message as SecpMessage, RecoverableSignature, RecoveryId, Error 
 use secp256k1::key::{SecretKey, PublicKey};
 use rustc_hex::{ToHex, FromHex};
 use ethereum_types::{H520, H256};
-use crate::{Secret, Public, SECP256K1, Error, Message, public_to_address, Address};
+use super::{Secret, Public, SECP256K1, Message, public_to_address, Address, Error};
 
 /// Signature encoded as RSV components
 #[repr(C)]
@@ -260,7 +260,7 @@ pub fn recover(signature: &Signature, message: &Message) -> Result<Public, Error
 #[cfg(test)]
 mod tests {
 	use std::str::FromStr;
-	use crate::{Generator, Random, Message};
+	use super::super::{Generator, Random, Message};
 	use super::{sign, verify_public, verify_address, recover, Signature};
 
 	#[test]

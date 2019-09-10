@@ -16,39 +16,22 @@
 
 //! Crypto utils used by ethstore and network.
 
-mod keypair;
-mod random;
-mod signature;
-mod secret;
-mod extended;
-
 pub mod aes;
 pub mod error;
 pub mod scrypt;
 pub mod digest;
 pub mod hmac;
 pub mod pbkdf2;
-pub mod crypto;
-pub mod math;
+pub mod publickey;
 
 pub use crate::error::Error;
-pub use self::keypair::{KeyPair, public_to_address};
-pub use self::math::public_is_valid;
-pub use self::random::Random;
-pub use self::signature::{sign, verify_public, verify_address, recover, Signature};
-pub use self::secret::Secret;
-pub use self::extended::{ExtendedPublic, ExtendedSecret, ExtendedKeyPair, DerivationError, Derivation};
 
 use tiny_keccak::Keccak;
 use subtle::ConstantTimeEq;
-use ethereum_types::H256;
-use lazy_static::lazy_static;
 
 pub const KEY_LENGTH: usize = 32;
 pub const KEY_ITERATIONS: usize = 10240;
 pub const KEY_LENGTH_AES: usize = KEY_LENGTH / 2;
-pub use ethereum_types::{Address, Public};
-pub type Message = H256;
 
 /// Default authenticated data to use (in RPC).
 pub const DEFAULT_MAC: [u8; 2] = [0, 0];
@@ -84,22 +67,6 @@ pub fn derive_mac(derived_left_bits: &[u8], cipher_text: &[u8]) -> Vec<u8> {
 
 pub fn is_equal(a: &[u8], b: &[u8]) -> bool {
 	a.ct_eq(b).into()
-}
-
-lazy_static! {
-	pub static ref SECP256K1: secp256k1::Secp256k1 = secp256k1::Secp256k1::new();
-}
-
-/// Uninstantiatable error type for infallible generators.
-#[derive(Debug)]
-pub enum Void {}
-
-/// Generates new keypair.
-pub trait Generator {
-	type Error;
-
-	/// Should be called to generate new keypair.
-	fn generate(&mut self) -> Result<KeyPair, Self::Error>;
 }
 
 #[cfg(test)]

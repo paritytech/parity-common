@@ -22,7 +22,7 @@ use secp256k1::constants::{SECRET_KEY_SIZE as SECP256K1_SECRET_KEY_SIZE};
 use secp256k1::key;
 use ethereum_types::H256;
 use zeroize::Zeroize;
-use crate::{Error, SECP256K1};
+use super::{SECP256K1, Error};
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Secret {

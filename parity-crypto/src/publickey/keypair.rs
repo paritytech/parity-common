@@ -16,7 +16,8 @@
 
 use std::fmt;
 use secp256k1::key;
-use crate::{Secret, Public, Address, SECP256K1, Error, Keccak256};
+use super::{Secret, Public, Address, SECP256K1, Error};
+use crate::Keccak256;
 
 pub fn public_to_address(public: &Public) -> Address {
 	let hash = public.keccak256();
@@ -92,7 +93,7 @@ impl KeyPair {
 #[cfg(test)]
 mod tests {
 	use std::str::FromStr;
-	use crate::{KeyPair, Secret};
+	use super::{KeyPair, Secret};
 
 	#[test]
 	fn from_secret() {

@@ -16,7 +16,7 @@
 
 //! Extended keys
 
-use crate::{Secret, Public};
+use super::{Secret, Public};
 use ethereum_types::H256;
 pub use self::derivation::Error as DerivationError;
 
@@ -205,10 +205,11 @@ impl ExtendedKeyPair {
 // Work is based on BIP0032
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
 mod derivation {
-	use crate::{hmac, Keccak256, SECP256K1};
+	use crate::{hmac, Keccak256};
+	use super::super::SECP256K1;
 	use ethereum_types::{BigEndianHash, U256, U512, H512, H256};
 	use secp256k1::key::{SecretKey, PublicKey};
-	use crate::math::curve_order;
+	use super::super::math::curve_order;
 	use super::{Label, Derivation};
 	use std::convert::TryInto;
 
@@ -372,7 +373,7 @@ mod derivation {
 #[cfg(test)]
 mod tests {
 	use super::{ExtendedSecret, ExtendedPublic, ExtendedKeyPair};
-	use crate::Secret;
+	use super::super::Secret;
 	use std::str::FromStr;
 	use ethereum_types::{H128, H256, H512};
 	use super::{derivation, Derivation};
