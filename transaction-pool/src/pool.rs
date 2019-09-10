@@ -615,7 +615,7 @@ impl<'a, T, R, S, L> Iterator for PendingIterator<'a, T, R, S, L> where
 			// Add the next best sender's transaction when applicable
 			match tx_state {
 				Readiness::Ready | Readiness::Stale => {
-					// retrieve next one from that sender.
+					// retrieve next one from the same sender.
 					let next = self.pool.transactions
 						.get(best.transaction.sender())
 						.and_then(|s| s.find_next(&best.transaction, &self.pool.scoring));
@@ -625,12 +625,12 @@ impl<'a, T, R, S, L> Iterator for PendingIterator<'a, T, R, S, L> where
 				},
 				_ => (),
 			}
-			match tx_state {
-				Readiness::Ready => {
-					return Some(best.transaction.transaction)
-				},
-				_ => trace!("[{:?}] Ignoring {:?} transaction.", best.transaction.hash(), tx_state),
+
+			if tx_state == Readiness::Ready {
+				return Some(best.transaction.transaction)
 			}
+
+			trace!("[{:?}] Ignoring {:?} transaction.", best.transaction.hash(), tx_state);
 		}
 
 		None
