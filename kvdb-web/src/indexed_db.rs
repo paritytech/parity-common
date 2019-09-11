@@ -35,11 +35,16 @@ use log::{debug, warn};
 
 use crate::{Column, error::Error};
 
+pub struct IndexedDB {
+	pub version: u32,
+	pub columns: u32,
+	pub inner: super::SendWrapper<IdbDatabase>,
+}
 
 /// Opens the IndexedDB with the given name, version and the specified number of columns
 /// (including the default one).
-pub fn open(name: &str, version: u32, columns: u32) -> impl Future<Output = Result<IdbDatabase, Error>> {
-	let (tx, rx) = channel::oneshot::channel::<IdbDatabase>();
+pub fn open(name: &str, version: Option<u32>, columns: u32) -> impl Future<Output = Result<IndexedDB, Error>> {
+	let (tx, rx) = channel::oneshot::channel::<IndexedDB>();
 
 	let window = match web_sys::window() {
 		Some(window) => window,
@@ -49,13 +54,16 @@ pub fn open(name: &str, version: u32, columns: u32) -> impl Future<Output = Resu
 
 	let idb_factory = match idb_factory {
 		Ok(idb_factory) => idb_factory.expect("We can't get a null pointer back; qed"),
-		Err(err) => return future::Either::Right(future::err(Error::NotSupported(err))),
+		Err(err) => return future::Either::Right(future::err(Error::NotSupported(format!("{:?}", err)))),
 	};
 
-	let open_request = idb_factory.open_with_u32(name, version)
-		.expect("TypeError is not possible with Rust; qed");
+	let open_request = match version {
+		Some(version) => idb_factory.open_with_u32(name, version)
+			.expect("TypeError is not possible with Rust; qed"),
+		None => idb_factory.open(name).expect("TypeError is not possible with Rust; qed"),
+	};
 
-	try_create_object_stores(&open_request, columns);
+	try_create_missing_stores(&open_request, columns, version);
 
 	let on_success = Closure::once(move |event: &Event| {
 		// Extract database handle from the event
@@ -67,8 +75,17 @@ pub fn open(name: &str, version: u32, columns: u32) -> impl Future<Output = Resu
 			.expect("IndexedDB.onsuccess should have a valid result; qed");
 		assert!(result.is_instance_of::<IdbDatabase>());
 
+		let db = IdbDatabase::from(result);
+		// JS returns version as f64
+		let version = db.version().round() as u32;
+		let columns = db.object_store_names().length();
+
 		// errors if the receiving end was dropped before this call
-		let _ = tx.send(IdbDatabase::from(result));
+		let _ = tx.send(IndexedDB {
+			version,
+			columns,
+			inner: super::SendWrapper::new(db),
+		});
 	});
 	open_request.set_onsuccess(Some(on_success.as_ref().unchecked_ref()));
 	on_success.forget();
@@ -99,9 +116,9 @@ fn store_names_js(columns: u32) -> Array {
 	js_array
 }
 
-fn try_create_object_stores(req: &IdbOpenDbRequest, columns: u32) {
+fn try_create_missing_stores(req: &IdbOpenDbRequest, columns: u32, version: Option<u32>) {
 	let on_upgradeneeded = Closure::once(move |event: &Event| {
-		debug!("Upgrading or creating the database");
+		debug!("Upgrading or creating the database to version {:?}, columns {}", version, columns);
 		// Extract database handle from the event
 		let target = event.target().expect("Event should have a target; qed");
 		let req = target.dyn_ref::<IdbRequest>().expect("Event target is IdbRequest; qed");
@@ -109,6 +126,7 @@ fn try_create_object_stores(req: &IdbOpenDbRequest, columns: u32) {
 		let db: &IdbDatabase = result.unchecked_ref();
 
 		let previous_columns = db.object_store_names().length();
+		debug!("Previous version: {}, columns {}", db.version(), previous_columns);
 
 		for name in (previous_columns..=columns).map(store_name) {
 			let res = db.create_object_store(name.as_str());
@@ -190,7 +208,7 @@ pub fn idb_cursor(idb: &IdbDatabase, col: u32) -> impl Stream<Item = (Vec<u8>, V
 	let store_name = store_name(col);
 	let store_name = store_name.as_str();
 	let txn = idb.transaction_with_str(store_name)
-		.expect("The stores were created on open; qed");
+		.expect("The stores were created on open: {}; qed");
 
 	let store = txn.object_store(store_name).expect("Opening a store shouldn't fail; qed");
 	let cursor = store.open_cursor().expect("Opening a cursor shoudn't fail; qed");

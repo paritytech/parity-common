@@ -54,20 +54,36 @@ fn number_to_column(col: u32) -> Column {
 
 
 impl Database {
-	/// Opens the database with the given name, version
+	/// Opens the database with the given name,
 	/// and the specified number of columns (not including the default one).
-	/// Note, that it's not possible to open a database with a version
-	/// lower than it was opened previously.
-	pub fn open(name: String, version: u32, columns: u32) -> impl Future<Output = Result<Database, error::Error>> {
-		let open_request = indexed_db::open(name.as_str(), version, columns);
-		// populate the in_memory db from the IndexedDB
+	pub fn open(name: String, columns: u32) -> impl Future<Output = Result<Database, error::Error>> {
+		// let's try to open the latest version of the db first
+		let open_request = indexed_db::open(name.as_str(), None, columns);
+		let name_clone = name.clone();
 		open_request.then(move |db| {
 			let db = match db {
 				Ok(db) => db,
 				Err(err) => return future::Either::Right(future::err(err)),
 			};
 
-			let rc = Rc::new(db);
+			// if we need more column than the latest version has,
+			// then bump the version (+ 1 for the default column)
+			if columns + 1 > db.columns {
+				let next_version = db.version + 1;
+				drop(db);
+				future::Either::Left(indexed_db::open(name.as_str(), Some(next_version), columns).boxed())
+			} else {
+				future::Either::Left(future::ok(db).boxed())
+			}
+		// populate the in_memory db from the IndexedDB
+		}).then(move |db| {
+			let db = match db {
+				Ok(db) => db,
+				Err(err) => return future::Either::Right(future::err(err)),
+			};
+
+			let indexed_db::IndexedDB { version, inner, .. } = db;
+			let rc = Rc::new(inner.take());
 			let weak = Rc::downgrade(&rc);
 			// read the columns from the IndexedDB
 			future::Either::Left(stream::iter(0..=columns).map(move |n| {
@@ -84,7 +100,7 @@ impl Database {
 					future::ready(m)
 				})
 			}).then(move |in_memory| future::ok(Database {
-				name,
+				name: name_clone,
 				version,
 				columns,
 				in_memory,

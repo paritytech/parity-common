@@ -17,7 +17,6 @@
 //! Errors that can occur when working with IndexedDB.
 
 use std::fmt;
-use wasm_bindgen::JsValue;
 
 
 /// An error that occurred when working with IndexedDB.
@@ -27,7 +26,7 @@ pub enum Error {
 	/// Are we in a WebWorker?
 	WindowNotAvailable,
 	/// IndexedDB is not supported by your browser.
-	NotSupported(JsValue),
+	NotSupported(String),
 	/// This enum may grow additional variants,
 	/// so this makes sure clients don't count on exhaustive matching.
 	/// (Otherwise, adding a new variant could break existing code.)
@@ -51,7 +50,7 @@ impl fmt::Display for Error {
 			Error::WindowNotAvailable => write!(f, "Accessing a Window has failed"),
 			Error::NotSupported(ref err) => write!(
 				f,
-				"IndexedDB is not supported by your browser: {:?}",
+				"IndexedDB is not supported by your browser: {}",
 				err,
 			),
 			Error::__Nonexhaustive => unreachable!(),

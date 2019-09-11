@@ -31,7 +31,7 @@ fn reopen_the_database_with_more_columns() -> impl futures01::Future<Item = (), 
 	let _ = console_log::init_with_level(log::Level::Trace);
 
 	fn open_db(col: u32) -> impl future::Future<Output = Database> {
-		Database::open("MyAsyncTest".into(), col, col)
+		Database::open("MyAsyncTest".into(), col)
 			.unwrap_or_else(|err| panic!("{}", err))
 	}
 
@@ -49,14 +49,14 @@ fn reopen_the_database_with_more_columns() -> impl futures01::Future<Item = (), 
 		// Close the database
 		drop(db);
 
-		// Reopen it again with 2 columns
-		open_db(2)
+		// Reopen it again with 3 columns
+		open_db(3)
 	}).map(|db| {
 		// The value should still be present
 		assert_eq!(db.get(None, b"hello").unwrap().unwrap().as_ref(), b"world");
 		assert!(db.get(None, b"trash").unwrap().is_none());
 
-		// Check the database version again
+		// The version should be bumped
 		assert_eq!(db.version(), 2);
 
 		Ok(())
