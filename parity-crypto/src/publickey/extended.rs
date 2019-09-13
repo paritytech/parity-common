@@ -14,7 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Extended keys
+//! Secret, public keys extended with the entropy (aka chain code), that allows further keys derivation
+//! Each extended key has 2^31 normal child keys, and 2^31 hardened child keys.
+//! Each of these child keys has an index. The normal child keys use indices 0 through 2^31 - 1.
+//! The hardened child keys use indices 2^31 through 2^32 - 1.
+//! See more details about derivation in https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
 
 use super::{Secret, Public};
 use ethereum_types::H256;
@@ -49,6 +53,8 @@ pub enum Derivation<T: Label> {
 
 impl From<u32> for Derivation<u32> {
 	fn from(index: u32) -> Self {
+		// Type of the derived key is defined by it index
+		// See module's documentation for more details
 		if index < (2 << 30) {
 			Derivation::Soft(index)
 		}

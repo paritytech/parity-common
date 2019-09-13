@@ -15,8 +15,8 @@ harness = false
 
 [dependencies]
 tiny-keccak = "1.4"
-eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1", optional = true }
-ethereum-types = "0.6.0"
+eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1", rev = "9791e79", optional = true }
+ethereum-types = "0.7.0"
 lazy_static = { version = "1.0", optional = true }
 scrypt = { version = "0.2", default-features = false }
 ripemd160 = "0.8.0"
@@ -28,7 +28,7 @@ aes-ctr = "0.3.0"
 block-modes = "0.3.3"
 pbkdf2 = "0.3.0"
 rand = "0.6"
-rustc-hex = "1.0"
+rustc-hex = "2.0"
 subtle = "2.1"
 zeroize = "0.9.1"
 

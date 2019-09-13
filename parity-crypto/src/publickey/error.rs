@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
+//! Module specific errors
+
 use std::{fmt, result, error::Error as StdError};
 use crate::error::SymmError;
 
@@ -22,9 +24,9 @@ pub enum Error {
 	/// secp256k1 enc error
 	Secp(secp256k1::Error),
 	/// Invalid secret key
-	InvalidSecret,
+	InvalidSecretKey,
 	/// Invalid public key
-	InvalidPublic,
+	InvalidPublicKey,
 	/// Invalid address
 	InvalidAddress,
 	/// Invalid EC signature
@@ -54,8 +56,8 @@ impl fmt::Display for Error {
 	fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
 		match self {
 			Error::Secp(err) => write!(f, "secp error: {}", err),
-			Error::InvalidSecret => write!(f, "invalid secret"),
-			Error::InvalidPublic => write!(f, "invalid public"),
+			Error::InvalidSecretKey => write!(f, "invalid secret key"),
+			Error::InvalidPublicKey => write!(f, "invalid public key"),
 			Error::InvalidAddress => write!(f, "invalid address"),
 			Error::InvalidSignature => write!(f, "invalid EC signature"),
 			Error::InvalidMessage => write!(f, "invalid AES message"),
@@ -88,8 +90,8 @@ impl From<::secp256k1::Error> for Error {
 	fn from(e: ::secp256k1::Error) -> Error {
 		match e {
 			::secp256k1::Error::InvalidMessage => Error::InvalidMessage,
-			::secp256k1::Error::InvalidPublicKey => Error::InvalidPublic,
-			::secp256k1::Error::InvalidSecretKey => Error::InvalidSecret,
+			::secp256k1::Error::InvalidPublicKey => Error::InvalidPublicKey,
+			::secp256k1::Error::InvalidSecretKey => Error::InvalidSecretKey,
 			_ => Error::InvalidSignature,
 		}
 	}

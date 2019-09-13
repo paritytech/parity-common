@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
+//! ECDSA signature
+
 use std::ops::{Deref, DerefMut};
 use std::cmp::PartialEq;
 use std::fmt;
@@ -124,16 +126,16 @@ impl Eq for Signature { }
 impl fmt::Debug for Signature {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
 		f.debug_struct("Signature")
-			.field("r", &self.0[0..32].to_hex())
-			.field("s", &self.0[32..64].to_hex())
-			.field("v", &self.0[64..65].to_hex())
+			.field("r", &self.0[0..32].to_hex::<String>())
+			.field("s", &self.0[32..64].to_hex::<String>())
+			.field("v", &self.0[64..65].to_hex::<String>())
 		.finish()
 	}
 }
 
 impl fmt::Display for Signature {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-		write!(f, "{}", self.to_hex())
+		write!(f, "{}", self.to_hex::<String>())
 	}
 }
 
@@ -141,7 +143,7 @@ impl FromStr for Signature {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		match s.from_hex() {
+		match s.from_hex::<Vec<u8>>() {
 			Ok(ref hex) if hex.len() == 65 => {
 				let mut data = [0; 65];
 				data.copy_from_slice(&hex[0..65]);
@@ -159,15 +161,15 @@ impl Default for Signature {
 }
 
 impl Hash for Signature {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-    	H520::from(self.0).hash(state);
-    }
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		H520::from(self.0).hash(state);
+	}
 }
 
 impl Clone for Signature {
-    fn clone(&self) -> Self {
-		Signature(self.0)
-    }
+	fn clone(&self) -> Self {
+		Signature(self.0.clone())
+	}
 }
 
 impl From<[u8; 65]> for Signature {

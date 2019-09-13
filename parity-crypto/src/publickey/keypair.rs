@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
+//! Key pair (public + secrect) description
+
 use std::fmt;
 use secp256k1::key;
 use super::{Secret, Public, Address, SECP256K1, Error};

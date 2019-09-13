@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
+//! Key pair generator's description
+
 use rand::rngs::OsRng;
 use super::{Generator, KeyPair, SECP256K1, Void};
 

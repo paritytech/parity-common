@@ -14,10 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
+//! Secret key implementation
+
 use std::fmt;
 use std::ops::Deref;
 use std::str::FromStr;
-use rustc_hex::ToHex;
 use secp256k1::constants::{SECRET_KEY_SIZE as SECP256K1_SECRET_KEY_SIZE};
 use secp256k1::key;
 use ethereum_types::H256;
@@ -32,12 +33,6 @@ pub struct Secret {
 impl Drop for Secret {
 	fn drop(&mut self) {
 		self.inner.0.zeroize()
-	}
-}
-
-impl ToHex for Secret {
-	fn to_hex(&self) -> String {
-		format!("{:x}", self.inner)
 	}
 }
 
@@ -84,6 +79,11 @@ impl Secret {
 	/// Checks validity of this key.
 	pub fn check_validity(&self) -> Result<(), Error> {
 		self.to_secp256k1_secret().map(|_| ())
+	}
+
+	/// Wrapper over to hex conversion
+	pub fn to_hex(&self) -> String {
+		format!("{:x}", self.inner)
 	}
 
 	/// Inplace add one secret key to another (scalar + scalar)

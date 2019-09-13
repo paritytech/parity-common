@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
+//! Multiple primitives for work with public and secret keys and with secp256k1 curve
+
 use super::{SECP256K1, Public, Secret, Error};
 use secp256k1::key;
 use secp256k1::constants::{GENERATOR_X, GENERATOR_Y, CURVE_ORDER};

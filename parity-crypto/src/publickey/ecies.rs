@@ -14,11 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-/// ECIES functions
+//! Functions for ECIES scheme encryption and decryption
 
 use ethereum_types::H128;
 use super::{Error, Random, Generator, Public, Secret, ecdh};
 use crate::{aes, digest, hmac, is_equal};
+
+const ENC_VERSION: u8 = 0x04;
 
 /// Encrypt a message with a public key, writing an HMAC covering both
 /// the plaintext and authenticated data.
@@ -34,24 +36,24 @@ pub fn encrypt(public: &Public, auth_data: &[u8], plain: &[u8]) -> Result<Vec<u8
 	let mkey = hmac::SigKey::sha256(&digest::sha256(&key[16..32]));
 
 	let mut msg = vec![0u8; 1 + 64 + 16 + plain.len() + 32];
-	msg[0] = 0x04u8;
+	msg[0] = ENC_VERSION;
 	{
-		let msgd = &mut msg[1..];
-		msgd[0..64].copy_from_slice(r.public().as_bytes());
+		let result_msg = &mut msg[1..];
+		result_msg[0..64].copy_from_slice(r.public().as_bytes());
 		let iv = H128::random();
-		msgd[64..80].copy_from_slice(iv.as_bytes());
+		result_msg[64..80].copy_from_slice(iv.as_bytes());
 		{
-			let cipher = &mut msgd[(64 + 16)..(64 + 16 + plain.len())];
+			let cipher = &mut result_msg[(64 + 16)..(64 + 16 + plain.len())];
 			aes::encrypt_128_ctr(ekey, iv.as_bytes(), plain, cipher)?;
 		}
 		let mut hmac = hmac::Signer::with(&mkey);
 		{
-			let cipher_iv = &msgd[64..(64 + 16 + plain.len())];
+			let cipher_iv = &result_msg[64..(64 + 16 + plain.len())];
 			hmac.update(cipher_iv);
 		}
 		hmac.update(auth_data);
 		let sig = hmac.sign();
-		msgd[(64 + 16 + plain.len())..].copy_from_slice(&sig);
+		result_msg[(64 + 16 + plain.len())..].copy_from_slice(&sig);
 	}
 	Ok(msg)
 }
@@ -59,8 +61,9 @@ pub fn encrypt(public: &Public, auth_data: &[u8], plain: &[u8]) -> Result<Vec<u8
 /// Decrypt a message with a secret key, checking HMAC for ciphertext
 /// and authenticated data validity.
 pub fn decrypt(secret: &Secret, auth_data: &[u8], encrypted: &[u8]) -> Result<Vec<u8>, Error> {
-	let meta_len = 1 + 64 + 16 + 32;
-	if encrypted.len() < meta_len  || encrypted[0] < 2 || encrypted[0] > 4 {
+	const META_LEN: usize = 1 + 64 + 16 + 32;
+	let enc_version = encrypted[0];
+	if encrypted.len() < META_LEN || enc_version < 2 || enc_version > 4 {
 		return Err(Error::InvalidMessage); //invalid message: publickey
 	}
 
@@ -73,11 +76,11 @@ pub fn decrypt(secret: &Secret, auth_data: &[u8], encrypted: &[u8]) -> Result<Ve
 	let ekey = &key[0..16];
 	let mkey = hmac::SigKey::sha256(&digest::sha256(&key[16..32]));
 
-	let clen = encrypted.len() - meta_len;
-	let cipher_with_iv = &e[64..(64+16+clen)];
+	let cipher_text_len = encrypted.len() - META_LEN;
+	let cipher_with_iv = &e[64..(64 + 16 + cipher_text_len)];
 	let cipher_iv = &cipher_with_iv[0..16];
 	let cipher_no_iv = &cipher_with_iv[16..];
-	let msg_mac = &e[(64+16+clen)..];
+	let msg_mac = &e[(64 + 16 + cipher_text_len)..];
 
 	// Verify tag
 	let mut hmac = hmac::Signer::with(&mkey);
@@ -89,7 +92,7 @@ pub fn decrypt(secret: &Secret, auth_data: &[u8], encrypted: &[u8]) -> Result<Ve
 		return Err(Error::InvalidMessage);
 	}
 
-	let mut msg = vec![0u8; clen];
+	let mut msg = vec![0u8; cipher_text_len];
 	aes::decrypt_128_ctr(ekey, cipher_iv, cipher_no_iv, &mut msg[..])?;
 	Ok(msg)
 }
