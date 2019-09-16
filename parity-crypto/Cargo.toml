@@ -38,4 +38,4 @@ hex-literal = "0.2"
 
 [features]
 default = []
-publickey = ["eth-secp256k1", "lazy_static"]
+publickey = ["eth-secp256k1", "lazy_static", "ethereum-types"]

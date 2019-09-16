@@ -15,23 +15,23 @@
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
 mod keypair;
-mod random;
-mod signature;
-mod secret;
-mod extended;
+mod keypair_generator;
+mod ecdsa_signature;
+mod secret_key;
+mod extended_keys;
 
 pub mod ecdh;
 pub mod ecies;
-pub mod math;
+pub mod ec_math_utils;
 pub mod error;
 
 pub use self::keypair::{KeyPair, public_to_address};
-pub use self::math::public_is_valid;
-pub use self::random::Random;
+pub use self::ec_math_utils::public_is_valid;
+pub use self::keypair_generator::Random;
 pub use self::error::Error;
-pub use self::signature::{sign, verify_public, verify_address, recover, Signature};
-pub use self::secret::Secret;
-pub use self::extended::{ExtendedPublic, ExtendedSecret, ExtendedKeyPair, DerivationError, Derivation};
+pub use self::ecdsa_signature::{sign, verify_public, verify_address, recover, Signature};
+pub use self::secret_key::Secret;
+pub use self::extended_keys::{ExtendedPublic, ExtendedSecret, ExtendedKeyPair, DerivationError, Derivation};
 
 use ethereum_types::H256;
 use lazy_static::lazy_static;

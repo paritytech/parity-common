@@ -215,7 +215,7 @@ mod derivation {
 	use super::super::SECP256K1;
 	use ethereum_types::{BigEndianHash, U256, U512, H512, H256};
 	use secp256k1::key::{SecretKey, PublicKey};
-	use super::super::math::curve_order;
+	use super::super::ec_math_utils::curve_order;
 	use super::{Label, Derivation};
 	use std::convert::TryInto;
 
