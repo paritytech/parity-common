@@ -16,7 +16,7 @@ harness = false
 [dependencies]
 tiny-keccak = "1.4"
 eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1", rev = "9791e79", optional = true }
-ethereum-types = "0.7.0"
+ethereum-types = { version = "0.7.0", optional = true }
 lazy_static = { version = "1.0", optional = true }
 scrypt = { version = "0.2", default-features = false }
 ripemd160 = "0.8.0"
