@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-//! ECDH scheme functions for key agreement
+//! ECDH key agreement scheme implemented as a free function.
 
 use secp256k1::{self, ecdh, key};
 use super::{Error, Secret, Public, SECP256K1};
@@ -32,6 +32,6 @@ pub fn agree(secret: &Secret, public: &Public) -> Result<Secret, Error> {
 	let sec = key::SecretKey::from_slice(context, secret.as_bytes())?;
 	let shared = ecdh::SharedSecret::new_raw(context, &publ, &sec);
 
-	Secret::from_unsafe_slice(&shared[0..32])
+	Secret::import_key(&shared[0..32])
 		.map_err(|_| Error::Secp(secp256k1::Error::InvalidSecretKey))
 }

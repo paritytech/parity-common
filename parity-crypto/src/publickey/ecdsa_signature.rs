@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-//! ECDSA signature
+//! Signature based on ECDSA, algorithm's description: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 
 use std::ops::{Deref, DerefMut};
 use std::cmp::PartialEq;
@@ -67,7 +67,7 @@ impl Signature {
 		Signature(sig)
 	}
 
-	/// Create a signature object from the sig.
+	/// Create a signature object from the RSV triple.
 	pub fn from_rsv(r: &H256, s: &H256, v: u8) -> Self {
 		let mut sig = [0u8; 65];
 		sig[0..32].copy_from_slice(r.as_ref());
@@ -76,22 +76,25 @@ impl Signature {
 		Signature(sig)
 	}
 
-	/// Check if this is a "low" signature.
+	/// Check if this is a "low" signature (that s part of the signature is in range
+	/// 0x1 and 0x7FFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF 5D576E73 57A4501D DFE92F46 681B20A0 (inclusive)).
+	/// This condition may be required by some verification algorithms
 	pub fn is_low_s(&self) -> bool {
-		// "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0"
-		const MASK: H256 = H256([
+		const LOW_SIG_THRESHOLD: H256 = H256([
 			0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 			0x5D, 0x57, 0x6E, 0x73, 0x57, 0xA4, 0x50, 0x1D,
 			0xDF, 0xE9, 0x2F, 0x46, 0x68, 0x1B, 0x20, 0xA0,
 		]);
-		H256::from_slice(self.s()) <= MASK
+		H256::from_slice(self.s()) <= LOW_SIG_THRESHOLD
 	}
 
-	/// Check if each component of the signature is in range.
+	/// Check if each component of the signature is in valid range.
+	/// r is in range 0x1 and 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141 (inclusive)
+	/// s is in range 0x1 and fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141 (inclusive)
+	/// v is 0 or 1
 	pub fn is_valid(&self) -> bool {
-		// "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141"
-		const MASK: H256 = H256([
+		const UPPER_BOUND: H256 = H256([
 			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
 			0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
@@ -106,13 +109,13 @@ impl Signature {
 		let r = H256::from_slice(self.r());
 		let s = H256::from_slice(self.s());
 		self.v() <= 1 &&
-			r < MASK && r >= ONE &&
-			s < MASK && s >= ONE
+			r < UPPER_BOUND && r >= ONE &&
+			s < UPPER_BOUND && s >= ONE
 	}
 }
 
 // manual implementation large arrays don't have trait impls by default.
-// remove when integer generics exist
+// TODO[grbIzl] remove when integer generics exist
 impl PartialEq for Signature {
 	fn eq(&self, other: &Self) -> bool {
 		&self.0[..] == &other.0[..]
@@ -210,6 +213,8 @@ impl DerefMut for Signature {
 	}
 }
 
+/// Signs message with the given secret key.
+/// Returns the corresponding signature
 pub fn sign(secret: &Secret, message: &Message) -> Result<Signature, Error> {
 	let context = &SECP256K1;
 	let sec = SecretKey::from_slice(context, secret.as_ref())?;
@@ -223,6 +228,7 @@ pub fn sign(secret: &Secret, message: &Message) -> Result<Signature, Error> {
 	Ok(Signature(data_arr))
 }
 
+/// Performs verification of the signature for the given message with corresponding public key
 pub fn verify_public(public: &Public, signature: &Signature, message: &Message) -> Result<bool, Error> {
 	let context = &SECP256K1;
 	let rsig = RecoverableSignature::from_compact(context, &signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
@@ -242,12 +248,14 @@ pub fn verify_public(public: &Public, signature: &Signature, message: &Message) 
 	}
 }
 
+/// Checks if the address corresponds to the public key from the signature for the message
 pub fn verify_address(address: &Address, signature: &Signature, message: &Message) -> Result<bool, Error> {
 	let public = recover(signature, message)?;
 	let recovered_address = public_to_address(&public);
 	Ok(address == &recovered_address)
 }
 
+/// Recovers the public key from the signature for the message
 pub fn recover(signature: &Signature, message: &Message) -> Result<Public, Error> {
 	let context = &SECP256K1;
 	let rsig = RecoverableSignature::from_compact(context, &signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;

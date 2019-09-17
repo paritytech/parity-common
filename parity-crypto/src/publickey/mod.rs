@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
+//! Submodule of crypto utils for working with public key crypto primitives
+
 mod keypair;
 mod keypair_generator;
 mod ecdsa_signature;

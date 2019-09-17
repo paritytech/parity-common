@@ -184,7 +184,7 @@ impl ExtendedKeyPair {
 	pub fn with_seed(seed: &[u8]) -> Result<ExtendedKeyPair, DerivationError> {
 		let (master_key, chain_code) = derivation::seed_pair(seed);
 		Ok(ExtendedKeyPair::with_secret(
-			Secret::from_unsafe_slice(master_key.as_bytes()).map_err(|_| DerivationError::InvalidSeed)?,
+			Secret::import_key(master_key.as_bytes()).map_err(|_| DerivationError::InvalidSeed)?,
 			chain_code,
 		))
 	}

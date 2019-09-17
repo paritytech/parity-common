@@ -56,7 +56,7 @@ impl fmt::Display for Secret {
 
 impl Secret {
 	/// Creates a `Secret` from the given slice, returning `None` if the slice length != 32.
-	pub fn from_slice(key: &[u8]) -> Option<Self> {
+	pub fn copy_from_slice(key: &[u8]) -> Option<Self> {
 		if key.len() != 32 {
 			return None
 		}
@@ -71,7 +71,7 @@ impl Secret {
 	}
 
 	/// Imports and validates the key.
-	pub fn from_unsafe_slice(key: &[u8]) -> Result<Self, Error> {
+	pub fn import_key(key: &[u8]) -> Result<Self, Error> {
 		let secret = key::SecretKey::from_slice(&super::SECP256K1, key)?;
 		Ok(secret.into())
 	}

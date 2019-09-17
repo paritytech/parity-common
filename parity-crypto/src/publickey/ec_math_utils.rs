@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Multiple primitives for work with public and secret keys and with secp256k1 curve
+//! Multiple primitives for work with public and secret keys and with secp256k1 curve points
 
 use super::{SECP256K1, Public, Secret, Error};
 use secp256k1::key;
@@ -27,7 +27,7 @@ pub fn public_is_valid(public: &Public) -> bool {
 		.map_or(false, |p| p.is_valid())
 }
 
-/// Inplace multiply public key by secret key (EC point * scalar)
+/// In-place multiply public key by secret key (EC point * scalar)
 pub fn public_mul_secret(public: &mut Public, secret: &Secret) -> Result<(), Error> {
 	let key_secret = secret.to_secp256k1_secret()?;
 	let mut key_public = to_secp256k1_public(public)?;
@@ -36,7 +36,7 @@ pub fn public_mul_secret(public: &mut Public, secret: &Secret) -> Result<(), Err
 	Ok(())
 }
 
-/// Inplace add one public key to another (EC point + EC point)
+/// In-place add one public key to another (EC point + EC point)
 pub fn public_add(public: &mut Public, other: &Public) -> Result<(), Error> {
 	let mut key_public = to_secp256k1_public(public)?;
 	let other_public = to_secp256k1_public(other)?;
@@ -45,7 +45,7 @@ pub fn public_add(public: &mut Public, other: &Public) -> Result<(), Error> {
 	Ok(())
 }
 
-/// Inplace sub one public key from another (EC point - EC point)
+/// In-place sub one public key from another (EC point - EC point)
 pub fn public_sub(public: &mut Public, other: &Public) -> Result<(), Error> {
 	let mut key_neg_other = to_secp256k1_public(other)?;
 	key_neg_other.mul_assign(&SECP256K1, &key::MINUS_ONE_KEY)?;
@@ -56,7 +56,7 @@ pub fn public_sub(public: &mut Public, other: &Public) -> Result<(), Error> {
 	Ok(())
 }
 
-/// Replace public key with its negation (EC point = - EC point)
+/// Replace a public key with its negation (EC point = - EC point)
 pub fn public_negate(public: &mut Public) -> Result<(), Error> {
 	let mut key_public = to_secp256k1_public(public)?;
 	key_public.mul_assign(&SECP256K1, &key::MINUS_ONE_KEY)?;
@@ -64,7 +64,7 @@ pub fn public_negate(public: &mut Public) -> Result<(), Error> {
 	Ok(())
 }
 
-/// Return base point of secp256k1
+/// Return the base point of secp256k1
 pub fn generation_point() -> Public {
 	let mut public_sec_raw = [0u8; 65];
 	public_sec_raw[0] = 4;
@@ -72,13 +72,13 @@ pub fn generation_point() -> Public {
 	public_sec_raw[33..65].copy_from_slice(&GENERATOR_Y);
 
 	let public_key = key::PublicKey::from_slice(&SECP256K1, &public_sec_raw)
-		.expect("constructing using predefined constants; qed");
+		.expect("constructed using constants; qed");
 	let mut public = Public::default();
 	set_public(&mut public, &public_key);
 	public
 }
 
-/// Return secp256k1 elliptic curve order
+/// Return the secp256k1 elliptic curve order
 pub fn curve_order() -> U256 {
 	H256::from_slice(&CURVE_ORDER).into_uint()
 }
