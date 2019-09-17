@@ -23,7 +23,7 @@ use super::{Generator, KeyPair, SECP256K1, Void};
 pub struct Random;
 
 impl Generator for Random {
-	type Error = ::std::io::Error;
+	type Error = std::io::Error;
 
 	fn generate(&mut self) -> Result<KeyPair, Self::Error> {
 		let mut rng = OsRng::new()?;

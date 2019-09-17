@@ -34,7 +34,7 @@ pub enum Error {
 	/// Invalid AES message
 	InvalidMessage,
 	/// IO Error
-	Io(::std::io::Error),
+	Io(std::io::Error),
 	/// Symmetric encryption error
 	Symm(SymmError),
 	/// Custom
@@ -74,8 +74,8 @@ impl Into<String> for Error {
 	}
 }
 
-impl From<::std::io::Error> for Error {
-	fn from(err: ::std::io::Error) -> Error {
+impl From<std::io::Error> for Error {
+	fn from(err: std::io::Error) -> Error {
 		Error::Io(err)
 	}
 }
@@ -86,14 +86,13 @@ impl From<SymmError> for Error {
 	}
 }
 
-impl From<::secp256k1::Error> for Error {
-	fn from(e: ::secp256k1::Error) -> Error {
+impl From<secp256k1::Error> for Error {
+	fn from(e: secp256k1::Error) -> Error {
 		match e {
-			::secp256k1::Error::InvalidMessage => Error::InvalidMessage,
-			::secp256k1::Error::InvalidPublicKey => Error::InvalidPublicKey,
-			::secp256k1::Error::InvalidSecretKey => Error::InvalidSecretKey,
+			secp256k1::Error::InvalidMessage => Error::InvalidMessage,
+			secp256k1::Error::InvalidPublicKey => Error::InvalidPublicKey,
+			secp256k1::Error::InvalidSecretKey => Error::InvalidSecretKey,
 			_ => Error::InvalidSignature,
 		}
 	}
 }
-
