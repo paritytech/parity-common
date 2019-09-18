@@ -69,7 +69,7 @@ pub fn public_negate(public: &mut Public) -> Result<(), Error> {
 	Ok(())
 }
 
-/// Return the base point of secp256k1
+/// Return the generation point (aka base point) of secp256k1
 pub fn generation_point() -> Public {
 	let mut public_sec_raw = [0u8; 65];
 	public_sec_raw[0] = 4;

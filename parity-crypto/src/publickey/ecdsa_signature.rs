@@ -93,6 +93,8 @@ impl Signature {
 	/// r is in range 0x1 and 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141 (inclusive)
 	/// s is in range 0x1 and fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141 (inclusive)
 	/// v is 0 or 1
+	/// Group order for secp256k1 defined as 'n' in "Standards for Efficient Cryptography" (SEC2) 2.7.1;
+	/// used here as the upper bound for a valid (r, s, v) tuple
 	pub fn is_valid(&self) -> bool {
 		const UPPER_BOUND: H256 = H256([
 			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
