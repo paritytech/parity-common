@@ -39,4 +39,5 @@ hex-literal = "0.2"
 [features]
 default = []
 # public key crypto utils
+# moved from ethkey module in parity ethereum repository
 publickey = ["eth-secp256k1", "lazy_static", "ethereum-types"]

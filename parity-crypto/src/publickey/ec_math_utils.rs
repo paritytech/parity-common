@@ -56,7 +56,7 @@ pub fn public_sub(public: &mut Public, other: &Public) -> Result<(), Error> {
 	Ok(())
 }
 
-/// Replace a public key with its negation (EC point = - EC point)
+/// Replace a public key with its additive inverse (EC point = - EC point)
 pub fn public_negate(public: &mut Public) -> Result<(), Error> {
 	let mut key_public = to_secp256k1_public(public)?;
 	key_public.mul_assign(&SECP256K1, &key::MINUS_ONE_KEY)?;
@@ -101,7 +101,7 @@ fn set_public(public: &mut Public, key_public: &key::PublicKey) {
 #[cfg(test)]
 mod tests {
 	use super::super::{Random, Generator};
-	use super::{public_add, public_sub};
+	use super::{public_add, public_sub, public_negate};
 
 	#[test]
 	fn public_addition_is_commutative() {
@@ -127,5 +127,15 @@ mod tests {
 		public_sub(&mut sum, &public2).unwrap();
 
 		assert_eq!(sum, public1);
+	}
+
+	#[test]
+	fn public_negation_is_involutory() {
+		let public = Random.generate().unwrap().public().clone();
+		let mut negation = public.clone();
+		public_negate(&mut negation).unwrap();
+		public_negate(&mut negation).unwrap();
+
+		assert_eq!(negation, public);
 	}
 }

@@ -21,8 +21,14 @@ extern crate parity_crypto;
 extern crate criterion;
 
 use criterion::{Criterion, Bencher};
+#[cfg(feature = "publickey")]
+use crate::parity_crypto::publickey::Generator;
 
-criterion_group!(benches, input_len);
+criterion_group!(
+	benches,
+	input_len,
+	ecdh_agree,
+);
 
 criterion_main!(benches);
 
@@ -43,7 +49,7 @@ fn input_len(c: &mut Criterion) {
 			let mut dest = vec![0; *size];
 			let k = [0; 16];
 			let iv = [0; 16];
- 
+
 			b.iter(||{
 				parity_crypto::aes::encrypt_128_ctr(&k[..], &iv[..], &data[..], &mut dest[..]).unwrap();
 				// same as encrypt but add it just in case
@@ -53,4 +59,18 @@ fn input_len(c: &mut Criterion) {
 		vec![100, 500, 1_000, 10_000, 100_000]
 	);
 
+}
+
+#[cfg(feature = "publickey")]
+fn ecdh_agree(c: &mut Criterion) {
+	let keypair = parity_crypto::publickey::Random.generate().unwrap();
+	let public = keypair.public().clone();
+	let secret = keypair.secret().clone();
+
+	c.bench_function("ecdh_agree", move |b| b.iter(|| parity_crypto::publickey::ecdh::agree(&secret, &public)));
+}
+
+#[cfg(not(feature = "publickey"))]
+fn ecdh_agree(_c: &mut Criterion) {
+	// do nothing
 }
