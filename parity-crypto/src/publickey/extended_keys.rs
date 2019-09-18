@@ -215,7 +215,7 @@ mod derivation {
 	use super::super::SECP256K1;
 	use ethereum_types::{BigEndianHash, U256, U512, H512, H256};
 	use secp256k1::key::{SecretKey, PublicKey};
-	use super::super::ec_math_utils::curve_order;
+	use super::super::ec_math_utils::CURVE_ORDER;
 	use super::{Label, Derivation};
 	use std::convert::TryInto;
 
@@ -292,7 +292,7 @@ mod derivation {
 
 	fn private_add(k1: U256, k2: U256) -> U256 {
 		let sum = U512::from(k1) + U512::from(k2);
-		modulo(sum, curve_order())
+		modulo(sum, *CURVE_ORDER)
 	}
 
 	// todo: surely can be optimized
@@ -327,7 +327,7 @@ mod derivation {
 		let new_chain_code = H256::from_slice(&i_512[32..64]);
 
 		// Generated private key can (extremely rarely) be out of secp256k1 key field
-		if curve_order() <= new_private.into_uint() { return Err(Error::MissingIndex); }
+		if *CURVE_ORDER <= new_private.into_uint() { return Err(Error::MissingIndex); }
 		let new_private_sec = SecretKey::from_slice(&SECP256K1, new_private.as_bytes())
 			.expect("Private key belongs to the field [0..CURVE_ORDER) (checked above); So initializing can never fail; qed");
 		let mut new_public = PublicKey::from_secret_key(&SECP256K1, &new_private_sec)
