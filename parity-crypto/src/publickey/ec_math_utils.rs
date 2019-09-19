@@ -18,9 +18,24 @@
 
 use super::{SECP256K1, Public, Secret, Error};
 use secp256k1::key;
-use secp256k1::constants::{GENERATOR_X, GENERATOR_Y, CURVE_ORDER as SECP256K1_CURVE_ORDER};
+use secp256k1::constants::{CURVE_ORDER as SECP256K1_CURVE_ORDER};
 use ethereum_types::{BigEndianHash as _, U256, H256};
 use lazy_static::lazy_static;
+
+/// Generation point array combined from X and Y coordinates
+pub const BASE_POINT_BYTES: [u8; 65] = [
+	0x4,
+	// The X coordinate of the generator
+	0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac,
+	0x55, 0xa0, 0x62, 0x95, 0xce, 0x87, 0x0b, 0x07,
+	0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 0xd9,
+	0x59, 0xf2, 0x81, 0x5b, 0x16, 0xf8, 0x17, 0x98,
+	// The Y coordinate of the generator
+	0x48, 0x3a, 0xda, 0x77, 0x26, 0xa3, 0xc4, 0x65,
+	0x5d, 0xa4, 0xfb, 0xfc, 0x0e, 0x11, 0x08, 0xa8,
+	0xfd, 0x17, 0xb4, 0x48, 0xa6, 0x85, 0x54, 0x19,
+	0x9c, 0x47, 0xd0, 0x8f, 0xfb, 0x10, 0xd4, 0xb8,
+];
 
 lazy_static! {
 	pub static ref CURVE_ORDER: U256 = H256::from_slice(&SECP256K1_CURVE_ORDER).into_uint();
@@ -71,12 +86,7 @@ pub fn public_negate(public: &mut Public) -> Result<(), Error> {
 
 /// Return the generation point (aka base point) of secp256k1
 pub fn generation_point() -> Public {
-	let mut public_sec_raw = [0u8; 65];
-	public_sec_raw[0] = 4;
-	public_sec_raw[1..33].copy_from_slice(&GENERATOR_X);
-	public_sec_raw[33..65].copy_from_slice(&GENERATOR_Y);
-
-	let public_key = key::PublicKey::from_slice(&SECP256K1, &public_sec_raw)
+	let public_key = key::PublicKey::from_slice(&SECP256K1, &BASE_POINT_BYTES)
 		.expect("constructed using constants; qed");
 	let mut public = Public::default();
 	set_public(&mut public, &public_key);
