@@ -21,7 +21,6 @@ extern crate parity_crypto;
 extern crate criterion;
 
 use criterion::{Criterion, Bencher};
-#[cfg(feature = "publickey")]
 use crate::parity_crypto::publickey::Generator;
 
 criterion_group!(
@@ -61,16 +60,10 @@ fn input_len(c: &mut Criterion) {
 
 }
 
-#[cfg(feature = "publickey")]
 fn ecdh_agree(c: &mut Criterion) {
 	let keypair = parity_crypto::publickey::Random.generate().unwrap();
 	let public = keypair.public().clone();
 	let secret = keypair.secret().clone();
 
 	c.bench_function("ecdh_agree", move |b| b.iter(|| parity_crypto::publickey::ecdh::agree(&secret, &public)));
-}
-
-#[cfg(not(feature = "publickey"))]
-fn ecdh_agree(_c: &mut Criterion) {
-	// do nothing
 }

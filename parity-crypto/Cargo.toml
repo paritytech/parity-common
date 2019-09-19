@@ -11,7 +11,7 @@ edition = "2018"
 [[bench]]
 name = "bench"
 harness = false
-
+required-features = ["publickey"]
 
 [dependencies]
 tiny-keccak = "1.4"
