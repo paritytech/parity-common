@@ -110,8 +110,9 @@ fn set_public(public: &mut Public, key_public: &key::PublicKey) {
 
 #[cfg(test)]
 mod tests {
-	use super::super::{Random, Generator};
-	use super::{public_add, public_sub, public_negate};
+	use super::super::{Random, Generator, Secret};
+	use super::{public_add, public_sub, public_negate, public_is_valid, generation_point, public_mul_secret};
+	use std::str::FromStr;
 
 	#[test]
 	fn public_addition_is_commutative() {
@@ -147,5 +148,25 @@ mod tests {
 		public_negate(&mut negation).unwrap();
 
 		assert_eq!(negation, public);
+	}
+
+	#[test]
+	fn known_public_is_valid() {
+		let public = Random.generate().unwrap().public().clone();
+		assert!(public_is_valid(&public));
+	}
+
+	#[test]
+	fn generation_point_expected() {
+		let point = generation_point();
+		assert_eq!(format!("{:x}", point), "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8");
+	}
+
+	#[test]
+	fn public_multiplication_verification() {
+		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
+		let mut public = generation_point();
+		public_mul_secret(&mut public, &secret).unwrap();
+		assert_eq!(format!("{:x}", public), "8ce0db0b0359ffc5866ba61903cc2518c3675ef2cf380a7e54bde7ea20e6fa1ab45b7617346cd11b7610001ee6ae5b0155c41cad9527cbcdff44ec67848943a4");
 	}
 }
