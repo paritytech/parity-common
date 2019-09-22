@@ -250,7 +250,7 @@ mod from_low_u64 {
 #[cfg(feature = "rand")]
 mod rand {
 	use super::*;
-	use ::rand::{SeedableRng, rngs::StdRng};
+	use crate::rand::{SeedableRng, rngs::StdRng};
 
 	#[test]
 	fn random() {
