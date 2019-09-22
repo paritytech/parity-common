@@ -258,7 +258,7 @@ mod rand {
 		let mut rng = StdRng::from_seed(default_seed);
 		assert_eq!(
 			H32::random_using(&mut rng),
-			H32::from([0x76, 0xa0, 0x40, 0x53])
+			H32::from([0x82, 0xa0, 0x7f, 0x0e])
 		);
 	}
 
@@ -272,7 +272,7 @@ mod rand {
 				ret.randomize_using(&mut rng);
 				ret
 			},
-			H32::from([0x76, 0xa0, 0x40, 0x53])
+			H32::from([0x82, 0xa0, 0x7f, 0x0e])
 		)
 	}
 }
