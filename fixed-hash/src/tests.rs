@@ -250,29 +250,29 @@ mod from_low_u64 {
 #[cfg(feature = "rand")]
 mod rand {
 	use super::*;
-	use rand::{SeedableRng, XorShiftRng};
+	use ::rand::{SeedableRng, rngs::StdRng};
 
 	#[test]
 	fn random() {
-		let default_seed = <XorShiftRng as SeedableRng>::Seed::default();
-		let mut rng = XorShiftRng::from_seed(default_seed);
+		let default_seed = <StdRng as SeedableRng>::Seed::default();
+		let mut rng = StdRng::from_seed(default_seed);
 		assert_eq!(
 			H32::random_using(&mut rng),
-			H32::from([0x43, 0xCA, 0x64, 0xED])
+			H32::from([0x76, 0xa0, 0x40, 0x53])
 		);
 	}
 
 	#[test]
 	fn randomize() {
-		let default_seed = <XorShiftRng as SeedableRng>::Seed::default();
-		let mut rng = XorShiftRng::from_seed(default_seed);
+		let default_seed = <StdRng as SeedableRng>::Seed::default();
+		let mut rng = StdRng::from_seed(default_seed);
 		assert_eq!(
 			{
 				let mut ret = H32::zero();
 				ret.randomize_using(&mut rng);
 				ret
 			},
-			H32::from([0x43, 0xCA, 0x64, 0xED])
+			H32::from([0x76, 0xa0, 0x40, 0x53])
 		)
 	}
 }
@@ -283,7 +283,7 @@ mod from_str {
 
 	#[test]
 	fn valid() {
-		use core_::str::FromStr;
+		use crate::core_::str::FromStr;
 
 		assert_eq!(
 			H64::from_str("0123456789ABCDEF").unwrap(),
@@ -293,19 +293,19 @@ mod from_str {
 
 	#[test]
 	fn empty_str() {
-		use core_::str::FromStr;
+		use crate::core_::str::FromStr;
 		assert!(H64::from_str("").is_err())
 	}
 
 	#[test]
 	fn invalid_digits() {
-		use core_::str::FromStr;
+		use crate::core_::str::FromStr;
 		assert!(H64::from_str("Hello, World!").is_err())
 	}
 
 	#[test]
 	fn too_many_digits() {
-		use core_::str::FromStr;
+		use crate::core_::str::FromStr;
 		assert!(H64::from_str("0123456789ABCDEF0").is_err())
 	}
 }
