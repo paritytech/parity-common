@@ -17,7 +17,8 @@
 //! Random key pair generator. Relies on the secp256k1 C-library to generate random data.
 
 use rand::rngs::OsRng;
-use super::{Generator, KeyPair, SECP256K1, Void};
+use std::convert::Infallible;
+use super::{Generator, KeyPair, SECP256K1};
 
 /// Randomly generates new keypair, instantiating the RNG each time.
 pub struct Random;
@@ -35,7 +36,7 @@ impl Generator for Random {
 }
 
 impl Generator for OsRng {
-	type Error = Void;
+	type Error = Infallible;
 
 	fn generate(&mut self) -> Result<KeyPair, Self::Error> {
 		let (sec, publ) = SECP256K1.generate_keypair(self)

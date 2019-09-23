@@ -19,6 +19,7 @@
 use std::fmt;
 use std::ops::Deref;
 use std::str::FromStr;
+use std::convert::TryFrom;
 use secp256k1::constants::{SECRET_KEY_SIZE as SECP256K1_SECRET_KEY_SIZE};
 use secp256k1::key;
 use ethereum_types::H256;
@@ -231,9 +232,11 @@ impl From<H256> for Secret {
 	}
 }
 
-impl From<&str> for Secret {
-	fn from(s: &str) -> Self {
-		s.parse().expect(&format!("invalid string literal for {}: '{}'", stringify!(Self), s))
+impl TryFrom<&str> for Secret {
+	type Error = Error;
+
+	fn try_from(s: &str) -> Result<Self, Error> {
+		s.parse().map_err(|e| Error::Custom(format!("{:?}", e)))
 	}
 }
 

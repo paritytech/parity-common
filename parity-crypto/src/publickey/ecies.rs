@@ -64,7 +64,7 @@ pub fn decrypt(secret: &Secret, auth_data: &[u8], encrypted: &[u8]) -> Result<Ve
 	const META_LEN: usize = 1 + 64 + 16 + 32;
 	let enc_version = encrypted[0];
 	if encrypted.len() < META_LEN || enc_version < 2 || enc_version > 4 {
-		return Err(Error::InvalidMessage); //invalid message: publickey
+		return Err(Error::InvalidMessage);
 	}
 
 	let e = &encrypted[1..];

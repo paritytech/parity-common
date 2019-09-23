@@ -46,10 +46,6 @@ lazy_static! {
 	pub static ref SECP256K1: secp256k1::Secp256k1 = secp256k1::Secp256k1::new();
 }
 
-/// Uninstantiatable error type for infallible generators.
-#[derive(Debug)]
-pub enum Void {}
-
 /// Generates new keypair.
 pub trait Generator {
 	type Error;
