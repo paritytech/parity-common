@@ -187,7 +187,6 @@ impl Secret {
 	}
 
 	/// Compute power of secret key inplace (secret ^ pow).
-	/// This function is not intended to be used with large powers.
 	pub fn pow(&mut self, pow: usize) -> Result<(), Error> {
 		if self.is_zero() {
 			return Ok(());
