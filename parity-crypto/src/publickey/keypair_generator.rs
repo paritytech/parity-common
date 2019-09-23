@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Key pair generator's description
+//! Random key pair generator. Relies on the secp256k1 C-library to generate random data.
 
 use rand::rngs::OsRng;
 use super::{Generator, KeyPair, SECP256K1, Void};

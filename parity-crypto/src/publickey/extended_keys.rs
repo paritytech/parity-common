@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Secret, public keys extended with the entropy (aka chain code), that allows further keys derivation
+//! Secret, public keys extended with the entropy (aka chain code), that allows further key derivation
 //! Each extended key has 2^31 normal child keys, and 2^31 hardened child keys.
 //! Each of these child keys has an index. The normal child keys use indices 0 through 2^31 - 1.
 //! The hardened child keys use indices 2^31 through 2^32 - 1.

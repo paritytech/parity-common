@@ -21,6 +21,7 @@ use secp256k1::key;
 use super::{Secret, Public, Address, SECP256K1, Error};
 use crate::Keccak256;
 
+/// Convert public key into the address
 pub fn public_to_address(public: &Public) -> Address {
 	let hash = public.keccak256();
 	let mut result = Address::zero();
@@ -62,10 +63,12 @@ impl KeyPair {
 		Ok(keypair)
 	}
 
+	/// Create a pair from the slice, which imported and verified as secret key
 	pub fn from_secret_slice(slice: &[u8]) -> Result<KeyPair, Error> {
 		Self::from_secret(Secret::import_key(slice)?)
 	}
 
+	/// Copies a pair from another one
 	pub fn from_keypair(sec: key::SecretKey, publ: key::PublicKey) -> Self {
 		let context = &SECP256K1;
 		let serialized = publ.serialize_vec(context, false);
@@ -74,19 +77,22 @@ impl KeyPair {
 		public.as_bytes_mut().copy_from_slice(&serialized[1..65]);
 
 		KeyPair {
-			secret: secret,
-			public: public,
+			secret,
+			public,
 		}
 	}
 
+	/// Returns secret part of the keypair
 	pub fn secret(&self) -> &Secret {
 		&self.secret
 	}
 
+	/// Returns public part of the keypair
 	pub fn public(&self) -> &Public {
 		&self.public
 	}
 
+	/// Returns public part of the keypair converted into Address
 	pub fn address(&self) -> Address {
 		public_to_address(&self.public)
 	}

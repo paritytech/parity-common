@@ -25,6 +25,7 @@ use ethereum_types::H256;
 use zeroize::Zeroize;
 use super::{SECP256K1, Error};
 
+/// Represents secret key
 #[derive(Clone, PartialEq, Eq)]
 pub struct Secret {
 	inner: H256,
@@ -81,7 +82,7 @@ impl Secret {
 		self.to_secp256k1_secret().map(|_| ())
 	}
 
-	/// Wrapper over to hex conversion
+	/// Wrapper over hex conversion
 	pub fn to_hex(&self) -> String {
 		format!("{:x}", self.inner)
 	}
@@ -230,8 +231,8 @@ impl From<H256> for Secret {
 	}
 }
 
-impl From<&'static str> for Secret {
-	fn from(s: &'static str) -> Self {
+impl From<&str> for Secret {
+	fn from(s: &str) -> Self {
 		s.parse().expect(&format!("invalid string literal for {}: '{}'", stringify!(Self), s))
 	}
 }

@@ -23,6 +23,7 @@ use ethereum_types::{BigEndianHash as _, U256, H256};
 use lazy_static::lazy_static;
 
 /// Generation point array combined from X and Y coordinates
+/// Equivalent to uncompressed form, see https://tools.ietf.org/id/draft-jivsov-ecc-compact-05.html#rfc.section.3
 pub const BASE_POINT_BYTES: [u8; 65] = [
 	0x4,
 	// The X coordinate of the generator
@@ -159,6 +160,7 @@ mod tests {
 	#[test]
 	fn generation_point_expected() {
 		let point = generation_point();
+		// Check the returned value equal to uncompressed form for sec2561k1
 		assert_eq!(format!("{:x}", point), "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8");
 	}
 

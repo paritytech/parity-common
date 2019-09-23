@@ -15,7 +15,7 @@
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Submodule of crypto utils for working with public key crypto primitives
-//! All functionality moved from ethkey module in parity ethereum repository
+//! If you are looking for git history please refer to the `ethkey` crate in the `parity-ethereum` repository.
 
 mod keypair;
 mod keypair_generator;

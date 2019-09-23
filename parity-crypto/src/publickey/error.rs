@@ -19,6 +19,7 @@
 use std::{fmt, result, error::Error as StdError};
 use crate::error::SymmError;
 
+/// Module specific errors
 #[derive(Debug)]
 pub enum Error {
 	/// secp256k1 enc error
