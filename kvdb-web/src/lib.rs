@@ -71,7 +71,7 @@ impl Database {
 			// If we need more column than the latest version has,
 			// then bump the version (+ 1 for the default column).
 			// In order to bump the version, we close the database
-			// and reopen it with higher version that it was opened previously.
+			// and reopen it with a higher version than it was opened with previously.
 			// cf. https://github.com/paritytech/parity-common/pull/202#discussion_r321221751
 			if columns + 1 > db.columns {
 				let next_version = db.version + 1;
