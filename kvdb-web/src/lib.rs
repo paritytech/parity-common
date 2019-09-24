@@ -19,6 +19,7 @@
 //! Writes data both into memory and IndexedDB, reads from the IndexedDB
 //! on `open`.
 
+#![deny(missing_docs)]
 
 mod error;
 mod indexed_db;
@@ -37,6 +38,7 @@ use futures::prelude::*;
 
 use web_sys::IdbDatabase;
 
+/// Database backed by both IndexedDB and in memory implementation.
 pub struct Database {
 	name: String,
 	version: u32,
