@@ -196,7 +196,12 @@ pub fn idb_commit_transaction(
 	});
 	idb_txn.set_oncomplete(Some(on_complete.as_ref().unchecked_ref()));
 	on_complete.forget();
-	// TODO: handle idb_txn.onerror
+
+	let on_error = Closure::once(move || {
+		warn!("Failed to commit a transaction to IndexedDB");
+	});
+	idb_txn.set_onerror(Some(on_error.as_ref().unchecked_ref()));
+	on_error.forget();
 
 	rx.map(|_| ())
 }
