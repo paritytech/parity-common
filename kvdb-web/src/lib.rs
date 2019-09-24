@@ -16,8 +16,8 @@
 
 //! A key-value database for use in browsers
 //!
-//! Writes data both into memory and IndexedDB, reads from the IndexedDB
-//! on `open`.
+//! Writes data both into memory and IndexedDB, reads the whole database in memory and
+//! from the IndexedDB on `open`.
 
 #![deny(missing_docs)]
 
