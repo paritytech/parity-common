@@ -22,6 +22,8 @@ matrix:
       rust: stable
   allow_failures:
     - rust: nightly
+install:
+  - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 script:
   - cargo check --all --tests
   - cargo build --all
@@ -40,3 +42,6 @@ script:
   - cd parity-util-mem/ && cargo test --features=mimalloc-global && cd ..
   - cd rlp/ && cargo test --no-default-features && cargo check --benches && cd ..
   - cd triehash/ && cargo check --benches && cd ..
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
+    cd kvdb-web/ && wasm-pack test --headless --chrome --firefox && cd ..;
+    fi
