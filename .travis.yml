@@ -5,17 +5,10 @@ branches:
 matrix:
   include:
     - os: linux
-# without this line
-# travis downgrades the image to trusty somehow
-# which doesn't have C11 support
-# see https://travis-ci.org/paritytech/parity-common/jobs/557850274
-      dist: xenial
       rust: stable
     - os: linux
-      dist: xenial
       rust: beta
     - os: linux
-      dist: xenial
       rust: nightly
     - os: osx
       osx_image: xcode11
