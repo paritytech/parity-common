@@ -346,7 +346,7 @@ impl RlpStream {
 	}
 
 	/// Finalize current unbounded list. Panics if no unbounded list has been opened.
-	#[deprecated(since = "0.4.3", reason = "use finalize_unbounded_list instead")]
+	#[deprecated(since = "0.4.3", note = "use finalize_unbounded_list instead")]
 	pub fn complete_unbounded_list(&mut self) {
 		self.finalize_unbounded_list();
 	}
