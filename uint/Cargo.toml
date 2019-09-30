@@ -1,5 +1,5 @@
 [package]
-description = "Large fixed-size integers arithmetics"
+description = "Large fixed-size integer arithmetic"
 homepage = "http://parity.io"
 repository = "https://github.com/paritytech/parity-common"
 license = "MIT/Apache-2.0"

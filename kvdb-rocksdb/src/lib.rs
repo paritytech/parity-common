@@ -526,7 +526,7 @@ impl Database {
 	pub fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
 		self.iter_from_prefix(col, prefix).and_then(|mut iter| {
 			match iter.next() {
-				// TODO: use prefix_same_as_start read option (not availabele in C API currently)
+				// TODO: use prefix_same_as_start read option (not available in C API currently)
 				Some((k, v)) => if k[0 .. prefix.len()] == prefix[..] { Some(v) } else { None },
 				_ => None
 			}

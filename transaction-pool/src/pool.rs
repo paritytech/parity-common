@@ -33,9 +33,9 @@ use crate::{
 
 /// Internal representation of transaction.
 ///
-/// Includes unique insertion id that can be used for scoring explictly,
+/// Includes unique insertion id that can be used for scoring explicitly,
 /// but internally is used to resolve conflicts in case of equal scoring
-/// (newer transactionsa are preferred).
+/// (newer transactions are preferred).
 #[derive(Debug)]
 pub struct Transaction<T> {
 	/// Sequential id of the transaction

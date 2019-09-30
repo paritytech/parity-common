@@ -216,7 +216,7 @@ pub fn idb_cursor(idb: &IdbDatabase, col: u32) -> impl Stream<Item = (Vec<u8>, V
 		.expect("The stores were created on open: {}; qed");
 
 	let store = txn.object_store(store_name).expect("Opening a store shouldn't fail; qed");
-	let cursor = store.open_cursor().expect("Opening a cursor shoudn't fail; qed");
+	let cursor = store.open_cursor().expect("Opening a cursor shouldn't fail; qed");
 
 	let (tx, rx) = channel::mpsc::unbounded();
 

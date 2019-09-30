@@ -211,7 +211,7 @@ impl RlpStream {
 		self
 	}
 
-	/// Appends raw (pre-serialised) RLP data. Checks for size oveflow.
+	/// Appends raw (pre-serialised) RLP data. Checks for size overflow.
 	pub fn append_raw_checked(&mut self, bytes: &[u8], item_count: usize, max_size: usize) -> bool {
 		if self.estimate_size(bytes.len()) > max_size {
 			return false;

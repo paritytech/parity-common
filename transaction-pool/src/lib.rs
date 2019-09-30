@@ -51,7 +51,7 @@
 //! 1. The pool groups transactions from particular sender together
 //!    and stores them ordered by `Scoring` within that group
 //!    i.e. `HashMap<Sender, Vec<Transaction>>`.
-//! 2. Additionaly we maintain the best and the worst transaction from each sender
+//! 2. Additionally we maintain the best and the worst transaction from each sender
 //!    (by `Scoring` not `priority`) ordered by `priority`.
 //!    It means that we can easily identify the best transaction inside the entire pool
 //!    and the worst transaction.
