@@ -19,9 +19,6 @@
 //! memory erasure.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(not(feature = "std"), feature(core_intrinsics))]
-#![cfg_attr(not(feature = "std"), feature(alloc))]
-
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;
@@ -68,9 +65,6 @@ pub mod allocators;
 	feature = "estimate-heapsize"
 ))]
 pub mod sizeof;
-
-#[cfg(not(feature = "std"))]
-use core as std;
 
 /// This is a copy of patched crate `malloc_size_of` as a module.
 /// We need to have it as an inner module to be able to define our own traits implementation,
