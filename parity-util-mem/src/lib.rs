@@ -19,36 +19,27 @@
 //! memory erasure.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(not(feature = "std"), feature(core_intrinsics))]
-#![cfg_attr(not(feature = "std"), feature(alloc))]
-
-
-#[macro_use]
-extern crate cfg_if;
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
-extern crate malloc_size_of_derive as malloc_size_derive;
+use malloc_size_of_derive as malloc_size_derive;
 
 
-cfg_if! {
+cfg_if::cfg_if! {
 	if #[cfg(all(
 		feature = "jemalloc-global",
 		not(target_os = "windows"),
 		not(target_arch = "wasm32")
 	))] {
-		extern crate jemallocator;
 		#[global_allocator]
 		/// Global allocator
 		pub static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 	} else if #[cfg(feature = "dlmalloc-global")] {
-		extern crate dlmalloc;
 		#[global_allocator]
 		/// Global allocator
 		pub static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
 	} else if #[cfg(feature = "weealloc-global")] {
-		extern crate wee_alloc;
 		#[global_allocator]
 		/// Global allocator
 		pub static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
@@ -56,8 +47,6 @@ cfg_if! {
 			feature = "mimalloc-global",
 			not(target_arch = "wasm32")
 		))] {
-		extern crate mimallocator;
-		extern crate mimalloc_sys;
 		#[global_allocator]
 		/// Global allocator
 		pub static ALLOC: mimallocator::Mimalloc = mimallocator::Mimalloc;
@@ -76,9 +65,6 @@ pub mod allocators;
 	feature = "estimate-heapsize"
 ))]
 pub mod sizeof;
-
-#[cfg(not(feature = "std"))]
-use core as std;
 
 /// This is a copy of patched crate `malloc_size_of` as a module.
 /// We need to have it as an inner module to be able to define our own traits implementation,
