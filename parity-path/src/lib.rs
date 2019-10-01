@@ -18,11 +18,13 @@
 use std::path::Path;
 use std::path::PathBuf;
 
+use home::home_dir;
+
 #[cfg(target_os = "macos")]
 /// Get the config path for application `name`.
 /// `name` should be capitalized, e.g. `"Ethereum"`, `"Parity"`.
 pub fn config_path(name: &str) -> PathBuf {
-	let mut home = ::std::env::home_dir().expect("Failed to get home dir");
+	let mut home = home_dir().expect("Failed to get home dir");
 	home.push("Library");
 	home.push(name);
 	home
@@ -32,7 +34,7 @@ pub fn config_path(name: &str) -> PathBuf {
 /// Get the config path for application `name`.
 /// `name` should be capitalized, e.g. `"Ethereum"`, `"Parity"`.
 pub fn config_path(name: &str) -> PathBuf {
-	let mut home = ::std::env::home_dir().expect("Failed to get home dir");
+	let mut home = home_dir().expect("Failed to get home dir");
 	home.push("AppData");
 	home.push("Roaming");
 	home.push(name);
@@ -43,7 +45,7 @@ pub fn config_path(name: &str) -> PathBuf {
 /// Get the config path for application `name`.
 /// `name` should be capitalized, e.g. `"Ethereum"`, `"Parity"`.
 pub fn config_path(name: &str) -> PathBuf {
-	let mut home = ::std::env::home_dir().expect("Failed to get home dir");
+	let mut home = home_dir().expect("Failed to get home dir");
 	home.push(format!(".{}", name.to_lowercase()));
 	home
 }
