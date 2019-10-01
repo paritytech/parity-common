@@ -5,6 +5,7 @@ version = "0.1.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 license = "GPL-3.0"
+edition = "2018"
 
 [dependencies]
 log = "0.4"
