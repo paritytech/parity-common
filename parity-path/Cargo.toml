@@ -8,4 +8,4 @@ license = "GPL-3.0"
 edition = "2018"
 
 [dependencies]
-home = "0.3.4"
+home = "0.5"
