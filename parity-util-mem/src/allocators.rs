@@ -74,7 +74,7 @@ cfg_if::cfg_if! {
 
 	} else if #[cfg(target_os = "windows")] {
 
-		use self::winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
+		use winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
 
 		/// Get the size of a heap block.
 		/// Call windows allocator through `winapi` crate
