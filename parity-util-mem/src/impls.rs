@@ -19,16 +19,12 @@
 //! - elastic_array arrays
 //! - parking_lot mutex structures
 
-extern crate elastic_array;
-extern crate ethereum_types;
-extern crate parking_lot;
-
-use self::ethereum_types::{
+use ethereum_types::{
 	U64, U128, U256, U512, H32, H64,
 	H128, H160, H256, H264, H512, H520,
 	Bloom
 };
-use self::elastic_array::{
+use elastic_array::{
 	ElasticArray2,
 	ElasticArray4,
 	ElasticArray8,
@@ -42,7 +38,7 @@ use self::elastic_array::{
 	ElasticArray1024,
 	ElasticArray2048,
 };
-use self::parking_lot::{Mutex, RwLock};
+use parking_lot::{Mutex, RwLock};
 use super::{MallocSizeOf, MallocSizeOfOps};
 
 #[cfg(not(feature = "std"))]

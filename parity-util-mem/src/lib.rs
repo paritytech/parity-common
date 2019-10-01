@@ -23,32 +23,26 @@
 #![cfg_attr(not(feature = "std"), feature(alloc))]
 
 
-#[macro_use]
-extern crate cfg_if;
-
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
-extern crate malloc_size_of_derive as malloc_size_derive;
+use malloc_size_of_derive as malloc_size_derive;
 
 
-cfg_if! {
+cfg_if::cfg_if! {
 	if #[cfg(all(
 		feature = "jemalloc-global",
 		not(target_os = "windows"),
 		not(target_arch = "wasm32")
 	))] {
-		extern crate jemallocator;
 		#[global_allocator]
 		/// Global allocator
 		pub static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 	} else if #[cfg(feature = "dlmalloc-global")] {
-		extern crate dlmalloc;
 		#[global_allocator]
 		/// Global allocator
 		pub static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
 	} else if #[cfg(feature = "weealloc-global")] {
-		extern crate wee_alloc;
 		#[global_allocator]
 		/// Global allocator
 		pub static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
@@ -56,8 +50,6 @@ cfg_if! {
 			feature = "mimalloc-global",
 			not(target_arch = "wasm32")
 		))] {
-		extern crate mimallocator;
-		extern crate mimalloc_sys;
 		#[global_allocator]
 		/// Global allocator
 		pub static ALLOC: mimallocator::Mimalloc = mimallocator::Mimalloc;
