@@ -14,10 +14,10 @@ rlp = { version = "0.4", path = "../rlp" }
 [dev-dependencies]
 criterion = "0.3"
 keccak-hasher = "0.15"
+ethereum-types = { version = "0.8", path = "../ethereum-types" }
 tiny-keccak = "1.5"
 trie-standardmap = "0.15"
 hex-literal = "0.2"
-ethereum-types = { version = "0.7", path = "../ethereum-types" }
 
 [[bench]]
 name = "triehash"

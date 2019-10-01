@@ -1,6 +1,6 @@
 [package]
 name = "fixed-hash"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 homepage = "https://github.com/paritytech/parity-common"
@@ -13,11 +13,14 @@ readme = "README.md"
 features = ["quickcheck", "api-dummy"]
 
 [dependencies]
-rand = { version = "0.5", optional = true, default-features = false }
+rand = { version = "0.7", optional = true, default-features = false }
 rustc-hex = { version = "2.0", optional = true, default-features = false }
 quickcheck = { version = "0.7", optional = true }
 byteorder = { version = "1.2", optional = true, default-features = false }
 static_assertions = "0.2"
+
+[dev-dependencies]
+rand_xorshift = "0.2.0"
 
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
 libc = { version = "0.2", optional = true, default-features = false }

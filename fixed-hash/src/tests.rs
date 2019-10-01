@@ -250,7 +250,8 @@ mod from_low_u64 {
 #[cfg(feature = "rand")]
 mod rand {
 	use super::*;
-	use rand::{SeedableRng, XorShiftRng};
+	use rand::SeedableRng;
+	use rand_xorshift::XorShiftRng;
 
 	#[test]
 	fn random() {
