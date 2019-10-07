@@ -5,6 +5,7 @@ authors = ["Parity Technologies <admin@parity.io>"]
 license = "Apache-2.0/MIT"
 homepage = "https://github.com/paritytech/parity-common"
 description = "Serde serialization support for uint and fixed hash."
+edition = "2018"
 
 [dependencies]
 serde = "1.0"

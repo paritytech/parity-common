@@ -5,6 +5,7 @@ authors = ["Parity Technologies <admin@parity.io>"]
 license = "Apache-2.0/MIT"
 homepage = "https://github.com/paritytech/parity-common"
 description = "Parity Codec serialization support for uint and fixed hash."
+edition = "2018"
 
 [dependencies]
 parity-scale-codec = { version = "1.0.3", default-features = false }
