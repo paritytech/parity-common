@@ -5,6 +5,7 @@ authors = ["Parity Technologies <admin@parity.io>"]
 license = "Apache-2.0/MIT"
 homepage = "https://github.com/paritytech/parity-common"
 description = "Primitive types shared by Ethereum and Substrate"
+edition = "2018"
 
 [dependencies]
 fixed-hash = { version = "0.5", path = "../fixed-hash", default-features = false }
