@@ -12,7 +12,7 @@
 // requiring `use alloc` downstream.
 #[cfg(not(feature = "std"))]
 #[doc(hidden)]
-pub use alloc as alloc_;
+pub extern crate alloc as alloc_;
 
 // Re-export libcore using an alias so that the macros can work without
 // requiring `use core` downstream.

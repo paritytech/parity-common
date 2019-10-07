@@ -250,8 +250,7 @@ mod from_low_u64 {
 #[cfg(feature = "rand")]
 mod rand {
 	use super::*;
-	use rand::SeedableRng;
-	use rand_xorshift::XorShiftRng;
+	use ::rand::{SeedableRng, rngs::StdRng};
 
 	#[test]
 	fn random() {
@@ -259,7 +258,7 @@ mod rand {
 		let mut rng = StdRng::from_seed(default_seed);
 		assert_eq!(
 			H32::random_using(&mut rng),
-			H32::from([0x82, 0xa0, 0x7f, 0x0e])
+			H32::from([0x76, 0xa0, 0x40, 0x53])
 		);
 	}
 
@@ -273,7 +272,7 @@ mod rand {
 				ret.randomize_using(&mut rng);
 				ret
 			},
-			H32::from([0x82, 0xa0, 0x7f, 0x0e])
+			H32::from([0x76, 0xa0, 0x40, 0x53])
 		)
 	}
 }
