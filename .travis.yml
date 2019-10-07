@@ -5,23 +5,18 @@ branches:
 matrix:
   include:
     - os: linux
-# without this line
-# travis downgrades the image to trusty somehow
-# which doesn't have C11 support
-# see https://travis-ci.org/paritytech/parity-common/jobs/557850274
-      dist: xenial
       rust: stable
     - os: linux
-      dist: xenial
       rust: beta
     - os: linux
-      dist: xenial
       rust: nightly
     - os: osx
       osx_image: xcode11
       rust: stable
   allow_failures:
     - rust: nightly
+install:
+  - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 script:
   - cargo check --all --tests
   - cargo build --all
@@ -38,5 +33,9 @@ script:
   - cd parity-util-mem/ && cargo test --features=estimate-heapsize && cd ..
   - cd parity-util-mem/ && cargo test --features=jemalloc-global && cd ..
   - cd parity-util-mem/ && cargo test --features=mimalloc-global && cd ..
+  - cd parity-util-mem/ && cargo test --no-default-features --features=dlmalloc-global && cd ..
   - cd rlp/ && cargo test --no-default-features && cargo check --benches && cd ..
   - cd triehash/ && cargo check --benches && cd ..
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
+    cd kvdb-web/ && wasm-pack test --headless --chrome --firefox && cd ..;
+    fi

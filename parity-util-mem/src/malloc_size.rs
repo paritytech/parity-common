@@ -49,10 +49,17 @@
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
+#[cfg(feature = "std")]
+mod rstd {
+	pub use std::*;
+}
 #[cfg(not(feature = "std"))]
-mod std {
+mod rstd {
   pub use core::*;
-  pub use alloc::collections;
+	pub mod collections {
+		pub use alloc::collections::*;
+		pub use vec_deque::VecDeque;
+	}
 }
 
 #[cfg(feature = "std")]
@@ -60,10 +67,10 @@ use std::sync::Arc;
 
 #[cfg(feature = "std")]
 use std::hash::BuildHasher;
-use std::hash::Hash;
-use std::mem::size_of;
-use std::ops::Range;
-use std::ops::{Deref, DerefMut};
+use rstd::hash::Hash;
+use rstd::mem::size_of;
+use rstd::ops::Range;
+use rstd::ops::{Deref, DerefMut};
 #[cfg(feature = "std")]
 use std::os::raw::c_void;
 #[cfg(not(feature = "std"))]
@@ -322,13 +329,13 @@ impl<T: MallocSizeOf, E: MallocSizeOf> MallocSizeOf for Result<T, E> {
     }
 }
 
-impl<T: MallocSizeOf + Copy> MallocSizeOf for std::cell::Cell<T> {
+impl<T: MallocSizeOf + Copy> MallocSizeOf for rstd::cell::Cell<T> {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         self.get().size_of(ops)
     }
 }
 
-impl<T: MallocSizeOf> MallocSizeOf for std::cell::RefCell<T> {
+impl<T: MallocSizeOf> MallocSizeOf for rstd::cell::RefCell<T> {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         self.borrow().size_of(ops)
     }
@@ -367,7 +374,7 @@ impl<T: MallocSizeOf> MallocSizeOf for Vec<T> {
     }
 }
 
-impl<T> MallocShallowSizeOf for std::collections::VecDeque<T> {
+impl<T> MallocShallowSizeOf for rstd::collections::VecDeque<T> {
     fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         if ops.has_malloc_enclosing_size_of() {
             if let Some(front) = self.front() {
@@ -384,7 +391,7 @@ impl<T> MallocShallowSizeOf for std::collections::VecDeque<T> {
     }
 }
 
-impl<T: MallocSizeOf> MallocSizeOf for std::collections::VecDeque<T> {
+impl<T: MallocSizeOf> MallocSizeOf for rstd::collections::VecDeque<T> {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         let mut n = self.shallow_size_of(ops);
         for elem in self.iter() {
@@ -466,7 +473,7 @@ where
     }
 }
 
-impl<K, V> MallocShallowSizeOf for std::collections::BTreeMap<K, V>
+impl<K, V> MallocShallowSizeOf for rstd::collections::BTreeMap<K, V>
 where
     K: Eq + Hash,
 {
@@ -481,7 +488,7 @@ where
     }
 }
 
-impl<K, V> MallocSizeOf for std::collections::BTreeMap<K, V>
+impl<K, V> MallocSizeOf for rstd::collections::BTreeMap<K, V>
 where
     K: Eq + Hash + MallocSizeOf,
     V: MallocSizeOf,
@@ -497,7 +504,7 @@ where
 }
 
 // PhantomData is always 0.
-impl<T> MallocSizeOf for std::marker::PhantomData<T> {
+impl<T> MallocSizeOf for rstd::marker::PhantomData<T> {
     fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
         0
     }
@@ -586,9 +593,9 @@ malloc_size_of_is_0!(u8, u16, u32, u64, u128, usize);
 malloc_size_of_is_0!(i8, i16, i32, i64, i128, isize);
 malloc_size_of_is_0!(f32, f64);
 
-malloc_size_of_is_0!(std::sync::atomic::AtomicBool);
-malloc_size_of_is_0!(std::sync::atomic::AtomicIsize);
-malloc_size_of_is_0!(std::sync::atomic::AtomicUsize);
+malloc_size_of_is_0!(rstd::sync::atomic::AtomicBool);
+malloc_size_of_is_0!(rstd::sync::atomic::AtomicIsize);
+malloc_size_of_is_0!(rstd::sync::atomic::AtomicUsize);
 
 malloc_size_of_is_0!(Range<u8>, Range<u16>, Range<u32>, Range<u64>, Range<usize>);
 malloc_size_of_is_0!(Range<i8>, Range<i16>, Range<i32>, Range<i64>, Range<isize>);

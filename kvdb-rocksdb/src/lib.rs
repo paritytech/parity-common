@@ -14,26 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-#[macro_use]
-extern crate log;
-
-extern crate elastic_array;
-extern crate fs_swap;
-extern crate interleaved_ordered;
-extern crate num_cpus;
-extern crate parking_lot;
-extern crate regex;
-extern crate parity_rocksdb;
-
-#[cfg(test)]
-extern crate ethereum_types;
-
-extern crate kvdb;
-
-use std::collections::HashMap;
-use std::marker::PhantomData;
-use std::{cmp, fs, io, mem, result, error};
-use std::path::Path;
+use std::{
+	cmp, fs, io, mem, result, error,
+	collections::HashMap, marker::PhantomData, path::Path
+};
 
 use parking_lot::{Mutex, MutexGuard, RwLock};
 use parity_rocksdb::{
@@ -42,6 +26,7 @@ use parity_rocksdb::{
 };
 use interleaved_ordered::{interleave_ordered, InterleaveOrdered};
 
+use log::{debug, warn};
 use elastic_array::ElasticArray32;
 use fs_swap::{swap, swap_nonatomic};
 use kvdb::{KeyValueDB, DBTransaction, DBValue, DBOp};
@@ -55,7 +40,7 @@ use std::fs::File;
 #[cfg(target_os = "linux")]
 use std::path::PathBuf;
 
-fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<error::Error + Send + Sync>> {
+fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<dyn error::Error + Send + Sync>> {
 	io::Error::new(io::ErrorKind::Other, e)
 }
 
@@ -541,7 +526,7 @@ impl Database {
 	pub fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
 		self.iter_from_prefix(col, prefix).and_then(|mut iter| {
 			match iter.next() {
-				// TODO: use prefix_same_as_start read option (not availabele in C API currently)
+				// TODO: use prefix_same_as_start read option (not available in C API currently)
 				Some((k, v)) => if k[0 .. prefix.len()] == prefix[..] { Some(v) } else { None },
 				_ => None
 			}
@@ -692,13 +677,13 @@ impl KeyValueDB for Database {
 		Database::flush(self)
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
 		let unboxed = Database::iter(self, col);
 		Box::new(unboxed.into_iter().flat_map(|inner| inner))
 	}
 
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-		-> Box<Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
+		-> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
 	{
 		let unboxed = Database::iter_from_prefix(self, col, prefix);
 		Box::new(unboxed.into_iter().flat_map(|inner| inner))

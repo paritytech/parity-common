@@ -42,9 +42,9 @@
 //!	 - mimalloc: compile error (until https://github.com/microsoft/mimalloc/pull/32 is merged)
 
 
-use malloc_size::{MallocSizeOfOps, VoidPtrToSizeFn, MallocSizeOf};
+use crate::malloc_size::{MallocSizeOfOps, VoidPtrToSizeFn, MallocSizeOf};
 #[cfg(feature = "std")]
-use malloc_size::MallocUnconditionalSizeOf;
+use crate::malloc_size::MallocUnconditionalSizeOf;
 #[cfg(feature = "std")]
 use std::os::raw::c_void;
 #[cfg(not(feature = "std"))]
@@ -54,7 +54,7 @@ mod usable_size {
 
 	use super::*;
 
-cfg_if! {
+cfg_if::cfg_if! {
 
 	if #[cfg(any(
 		target_arch = "wasm32",
@@ -74,10 +74,7 @@ cfg_if! {
 
 	} else if #[cfg(target_os = "windows")] {
 
-		// default windows allocator
-		extern crate winapi;
-
-		use self::winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
+		use winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
 
 		/// Get the size of a heap block.
 		/// Call windows allocator through `winapi` crate

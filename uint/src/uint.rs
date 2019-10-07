@@ -424,7 +424,7 @@ macro_rules! construct_uint {
 		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 		$visibility struct $name (pub [u64; $n_words]);
 
-		/// Get a reference to the underlying little-endian words. 
+		/// Get a reference to the underlying little-endian words.
 		impl AsRef<[u64]> for $name {
 			#[inline]
 			fn as_ref(&self) -> &[u64] {
@@ -818,7 +818,7 @@ macro_rules! construct_uint {
 				self.div_mod_knuth(other, n, m)
 			}
 
-			/// Fast exponentation by squaring
+			/// Fast exponentiation by squaring
 			/// https://en.wikipedia.org/wiki/Exponentiation_by_squaring
 			///
 			/// # Panics
@@ -849,7 +849,7 @@ macro_rules! construct_uint {
 				x * y
 			}
 
-			/// Fast exponentation by squaring. Returns result and overflow flag.
+			/// Fast exponentiation by squaring. Returns result and overflow flag.
 			pub fn overflowing_pow(self, expon: Self) -> (Self, bool) {
 				if expon.is_zero() { return (Self::one(), false) }
 

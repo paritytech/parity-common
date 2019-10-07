@@ -21,7 +21,7 @@ use crate::error::Error;
 ///
 /// Listener is being notified about status of every transaction in the pool.
 pub trait Listener<T> {
-	/// The transaction has been successfuly added to the pool.
+	/// The transaction has been successfully added to the pool.
 	/// If second argument is `Some` the transaction has took place of some other transaction
 	/// which was already in pool.
 	/// NOTE: You won't be notified about drop of `old` transaction separately.

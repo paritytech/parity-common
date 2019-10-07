@@ -434,7 +434,7 @@ fn test_rlp_stream_unbounded_list() {
 	stream.append(&40u32);
 	stream.append(&41u32);
 	assert!(!stream.is_finished());
-	stream.complete_unbounded_list();
+	stream.finalize_unbounded_list();
 	assert!(stream.is_finished());
 }
 
@@ -504,7 +504,7 @@ fn test_nested_list_roundtrip() {
 			s.begin_unbounded_list()
 				.append(&self.0)
 				.append(&self.1)
-				.complete_unbounded_list();
+				.finalize_unbounded_list();
 		}
 	}
 
@@ -521,7 +521,7 @@ fn test_nested_list_roundtrip() {
 		fn rlp_append(&self, s: &mut RlpStream) {
 			s.begin_unbounded_list()
 				.append_list(&self.0)
-				.complete_unbounded_list();
+				.finalize_unbounded_list();
 		}
 	}
 
