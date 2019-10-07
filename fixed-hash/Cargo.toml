@@ -8,6 +8,7 @@ repository = "https://github.com/paritytech/parity-common"
 description = "Macros to define custom fixed-size hash types"
 documentation = "https://docs.rs/fixed-hash/"
 readme = "README.md"
+edition = "2018"
 
 [package.metadata.docs.rs]
 features = ["quickcheck", "api-dummy"]
@@ -15,9 +16,9 @@ features = ["quickcheck", "api-dummy"]
 [dependencies]
 rand = { version = "0.7", optional = true, default-features = false }
 rustc-hex = { version = "2.0", optional = true, default-features = false }
-quickcheck = { version = "0.7", optional = true }
+quickcheck = { version = "0.9", optional = true }
 byteorder = { version = "1.2", optional = true, default-features = false }
-static_assertions = "0.2"
+static_assertions = "0.3"
 
 [dev-dependencies]
 rand_xorshift = "0.2.0"

@@ -15,21 +15,20 @@
 pub extern crate alloc as alloc_;
 
 // Re-export libcore using an alias so that the macros can work without
-// requiring `extern crate core` downstream.
+// requiring `use core` downstream.
 #[doc(hidden)]
-pub extern crate core as core_;
+pub use core as core_;
 
 #[cfg(all(feature = "libc", not(target_os = "unknown")))]
 #[doc(hidden)]
-pub extern crate libc;
+pub use libc;
 
 // This disables a warning for unused #[macro_use(..)]
 // which is incorrect since the compiler does not check
 // for all available configurations.
 #[allow(unused_imports)]
-#[macro_use(const_assert)]
 #[doc(hidden)]
-pub extern crate static_assertions;
+pub use static_assertions;
 
 // Export `const_assert` macro so that users of this crate do not
 // have to import the `static_assertions` crate themselves.
@@ -38,7 +37,7 @@ pub use static_assertions::const_assert;
 
 #[cfg(feature = "byteorder")]
 #[doc(hidden)]
-pub extern crate byteorder;
+pub use byteorder;
 
 #[cfg(not(feature = "libc"))]
 #[doc(hidden)]
@@ -46,15 +45,15 @@ pub mod libc {}
 
 #[cfg(feature = "rustc-hex")]
 #[doc(hidden)]
-pub extern crate rustc_hex;
+pub use rustc_hex;
 
 #[cfg(feature = "rand")]
 #[doc(hidden)]
-pub extern crate rand;
+pub use rand;
 
 #[cfg(feature = "quickcheck")]
 #[doc(hidden)]
-pub extern crate quickcheck;
+pub use quickcheck;
 
 #[cfg(test)]
 extern crate rand_xorshift;
