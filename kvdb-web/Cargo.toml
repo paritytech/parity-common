@@ -1,6 +1,6 @@
 [package]
 name = "kvdb-web"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "A key-value database for use in browsers"
@@ -9,16 +9,16 @@ license = "GPL-3.0"
 edition = "2018"
 
 [dependencies]
-wasm-bindgen = "0.2.49"
-js-sys = "0.3.26"
+wasm-bindgen = "0.2.51"
+js-sys = "0.3.28"
 kvdb = { version = "0.1", path = "../kvdb" }
 kvdb-memorydb = { version = "0.1", path = "../kvdb-memorydb" }
-futures-preview = "0.3.0-alpha.18"
+futures-preview = "0.3.0-alpha.19"
 log = "0.4.8"
 send_wrapper = "0.2.0"
 
 [dependencies.web-sys]
-version = "0.3.26"
+version = "0.3.28"
 features = [
 	'console',
 	'Window',
@@ -38,6 +38,6 @@ features = [
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2.49"
-futures-preview = { version = "0.3.0-alpha.18", features = ['compat'] }
+futures-preview = { version = "0.3.0-alpha.19", features = ['compat'] }
 futures01 = { package = "futures", version = "0.1" }
 console_log = "0.1.2"

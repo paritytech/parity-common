@@ -1,6 +1,6 @@
 [package]
 name = "ethereum-types"
-version = "0.8.0"
+version = "0.8.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 homepage = "https://github.com/paritytech/parity-common"
@@ -16,7 +16,7 @@ impl-serde = { path = "../primitive-types/impls/serde", version = "0.2", default
 impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.2", default-features = false }
 
 [dev-dependencies]
-serde_json = "1.0"
+serde_json = "1.0.41"
 
 [features]
 default = ["std", "serialize"]

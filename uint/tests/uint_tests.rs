@@ -1,4 +1,4 @@
-extern crate core;
+
 
 #[macro_use]
 extern crate uint;
@@ -8,7 +8,7 @@ extern crate uint;
 extern crate quickcheck;
 
 #[cfg_attr(all(test, feature = "quickcheck"), macro_use(unroll))]
-extern crate crunchy;
+
 
 use core::u64::MAX;
 use core::str::FromStr;

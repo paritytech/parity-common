@@ -409,7 +409,7 @@ impl Database {
 	}
 
 	/// Commit buffered changes to database. Must be called under `flush_lock`
-	fn write_flushing_with_lock(&self, _lock: &mut MutexGuard<bool>) -> io::Result<()> {
+	fn write_flushing_with_lock(&self, _lock: &mut MutexGuard<'_, bool>) -> io::Result<()> {
 		match *self.db.read() {
 			Some(DBAndColumns { ref db, ref cfs }) => {
 				let batch = WriteBatch::new();
@@ -534,7 +534,7 @@ impl Database {
 	}
 
 	/// Get database iterator for flushed data.
-	pub fn iter(&self, col: Option<u32>) -> Option<DatabaseIterator> {
+	pub fn iter(&self, col: Option<u32>) -> Option<DatabaseIterator<'_>> {
 		match *self.db.read() {
 			Some(DBAndColumns { ref db, ref cfs }) => {
 				let overlay = &self.overlay.read()[Self::to_overlay_column(col)];
@@ -561,7 +561,7 @@ impl Database {
 		}
 	}
 
-	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<DatabaseIterator> {
+	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<DatabaseIterator<'_>> {
 		match *self.db.read() {
 			Some(DBAndColumns { ref db, ref cfs }) => {
 				let iter = col.map_or_else(|| db.iterator_opt(IteratorMode::From(prefix, Direction::Forward), &self.read_opts),
@@ -703,7 +703,7 @@ impl Drop for Database {
 
 #[cfg(test)]
 mod tests {
-	extern crate tempdir;
+	use tempdir;
 
 	use std::str::FromStr;
 	use self::tempdir::TempDir;

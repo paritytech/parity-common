@@ -2,7 +2,7 @@
 name = "uint-fuzz"
 description = "Fuzzers for uint algorithms"
 publish = false
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
 

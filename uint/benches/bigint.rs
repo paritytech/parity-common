@@ -14,11 +14,11 @@
 
 #[macro_use]
 extern crate criterion;
-extern crate core;
+
 #[macro_use]
 extern crate uint;
-extern crate num_bigint;
-extern crate rug;
+
+
 
 construct_uint! {
 	pub struct U256(4);
@@ -381,7 +381,7 @@ fn conversions(c: &mut Criterion) {
 	);
 }
 
-fn bench_convert_to_biguit(b: &mut Bencher, i: u64) {
+fn bench_convert_to_biguit(b: &mut Bencher<'_>, i: u64) {
 	let z = U256::from(i);
 	let z512 = U512::from(i);
 	b.iter(|| {
@@ -390,7 +390,7 @@ fn bench_convert_to_biguit(b: &mut Bencher, i: u64) {
 	});
 }
 
-fn bench_convert_to_gmp(b: &mut Bencher, i: u64) {
+fn bench_convert_to_gmp(b: &mut Bencher<'_>, i: u64) {
 	let z = U256::from(i);
 	let z512 = U512::from(i);
 	b.iter(|| {
@@ -408,7 +408,7 @@ fn u512_mul_u32_vs_u64(c: &mut Criterion) {
 	);
 }
 
-fn bench_u512_mul_u32(b: &mut Bencher, i: u32) {
+fn bench_u512_mul_u32(b: &mut Bencher<'_>, i: u32) {
 	let x =
 		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	b.iter(|| {
@@ -416,7 +416,7 @@ fn bench_u512_mul_u32(b: &mut Bencher, i: u32) {
 	});
 }
 
-fn bench_u512_mul_u64(b: &mut Bencher, i: u64) {
+fn bench_u512_mul_u64(b: &mut Bencher<'_>, i: u64) {
 	let x =
 		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	b.iter(|| {
@@ -439,7 +439,7 @@ fn mulmod_u512_vs_biguint_vs_gmp(c: &mut Criterion) {
 	);
 }
 
-fn bench_biguint_mulmod(b: &mut Bencher, z: U256) {
+fn bench_biguint_mulmod(b: &mut Bencher<'_>, z: U256) {
 	let x =
 		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	let y =
@@ -450,7 +450,7 @@ fn bench_biguint_mulmod(b: &mut Bencher, z: U256) {
 	});
 }
 
-fn bench_gmp_mulmod(b: &mut Bencher, z: U256) {
+fn bench_gmp_mulmod(b: &mut Bencher<'_>, z: U256) {
 	let x =
 		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	let y =
@@ -461,7 +461,7 @@ fn bench_gmp_mulmod(b: &mut Bencher, z: U256) {
 	});
 }
 
-fn bench_u512_mulmod(b: &mut Bencher, z: U256) {
+fn bench_u512_mulmod(b: &mut Bencher<'_>, z: U256) {
 	let x =
 		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	let y =

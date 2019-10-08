@@ -15,7 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 
-extern crate parity_crypto;
+use parity_crypto;
 
 #[macro_use]
 extern crate criterion;
@@ -30,7 +30,7 @@ criterion_main!(benches);
 fn input_len(c: &mut Criterion) {
 
 	c.bench_function_over_inputs("ripemd",
-		|b: &mut Bencher, size: &usize| {
+		|b: &mut Bencher<'_>, size: &usize| {
 			let data = vec![0u8; *size];
 			b.iter(|| parity_crypto::digest::ripemd160(&data[..]));
 		},
@@ -38,7 +38,7 @@ fn input_len(c: &mut Criterion) {
 	);
 
 	c.bench_function_over_inputs("aes_ctr",
-		|b: &mut Bencher, size: &usize| {
+		|b: &mut Bencher<'_>, size: &usize| {
 			let data = vec![0u8; *size];
 			let mut dest = vec![0; *size];
 			let k = [0; 16];

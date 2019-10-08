@@ -526,13 +526,6 @@ macro_rules! impl_rand_for_fixed_hash {
 				ret.randomize_using(rng);
 				ret
 			}
-
-			/// Create a new hash with cryptographically random content.
-			pub fn random() -> Self {
-				let mut hash = Self::zero();
-				hash.randomize();
-				hash
-			}
 		}
 	}
 }
@@ -779,7 +772,6 @@ macro_rules! impl_ops_for_hash {
 macro_rules! impl_fixed_hash_conversions {
 	($large_ty:ident, $small_ty:ident) => {
 		$crate::static_assertions::const_assert!(
-			VALID_SIZES;
 			$crate::core_::mem::size_of::<$small_ty>() < $crate::core_::mem::size_of::<$large_ty>()
 		);
 
