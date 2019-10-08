@@ -14,10 +14,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "std")]
 use core::convert::TryFrom;
 use fixed_hash::*;
+#[cfg(feature = "impl-codec")]
 use impl_codec::*;
+#[cfg(feature = "impl-rlp")]
 use impl_rlp::*;
+#[cfg(feature = "impl-serde")]
 use impl_serde::*;
 use uint::*;
 
