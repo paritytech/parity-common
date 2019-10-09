@@ -779,7 +779,6 @@ macro_rules! impl_ops_for_hash {
 macro_rules! impl_fixed_hash_conversions {
 	($large_ty:ident, $small_ty:ident) => {
 		$crate::static_assertions::const_assert!(
-			VALID_SIZES;
 			$crate::core_::mem::size_of::<$small_ty>() < $crate::core_::mem::size_of::<$large_ty>()
 		);
 
