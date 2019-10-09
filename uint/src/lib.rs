@@ -25,6 +25,7 @@ pub use rustc_hex;
 #[doc(hidden)]
 pub use quickcheck;
 
+#[doc(hidden)]
 pub use crunchy::unroll;
 
 #[macro_use]

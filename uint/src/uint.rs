@@ -81,7 +81,10 @@ macro_rules! uint_overflowing_binop {
 		let ret_ptr = &mut ret as *mut [u64; $n_words] as *mut u64;
 		let mut carry = 0u64;
 
-		$crate::unroll! {
+		// `unroll!` is recursive, but doesn’t use `$crate::unroll`, so we need to ensure that it
+		// is in scope unqualified.
+		use $crate::unroll;
+		unroll! {
 			for i in 0..$n_words {
 				use $crate::core_::ptr;
 
@@ -131,12 +134,13 @@ macro_rules! uint_full_mul_reg {
 		let $name(ref you) = $other;
 		let mut ret = [0u64; $n_words * 2];
 
-		$crate::unroll! {
+		use $crate::unroll;
+		unroll! {
 			for i in 0..$n_words {
 				let mut carry = 0u64;
 				let b = you[i];
 
-				$crate::unroll! {
+				unroll! {
 					for j in 0..$n_words {
 						if $check(me[j], carry) {
 							let a = me[j];
@@ -181,7 +185,8 @@ macro_rules! uint_overflowing_mul {
 		// The compiler WILL NOT inline this if you remove this annotation.
 		#[inline(always)]
 		fn any_nonzero(arr: &[u64; $n_words]) -> bool {
-			$crate::unroll! {
+			use $crate::unroll;
+			unroll! {
 				for i in 0..$n_words {
 					if arr[i] != 0 {
 						return true;
