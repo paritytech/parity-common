@@ -1106,6 +1106,7 @@ fn trailing_zeros() {
 
 #[cfg(feature="quickcheck")]
 pub mod laws {
+	use super::construct_uint;
 	macro_rules! uint_laws {
 		($mod_name:ident, $uint_ty:ident) => {
 			mod $mod_name {
