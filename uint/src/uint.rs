@@ -38,6 +38,9 @@ pub enum FromDecStrErr {
 	InvalidLength,
 }
 
+#[doc(hidden)]
+pub extern crate rand;
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_map_from {
@@ -1577,7 +1580,8 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 			fn arbitrary<G: $crate::quickcheck::Gen>(g: &mut G) -> Self {
 				let mut res = [0u8; $n_bytes];
 
-				let p: f64 = rand::rngs::OsRng.gen();
+				use $crate::rand::Rng;
+				let p: f64 = $crate::rand::rngs::OsRng.gen();
 				// make it more likely to generate smaller numbers that
 				// don't use up the full $n_bytes
 				let range =

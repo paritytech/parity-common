@@ -11,8 +11,6 @@ extern crate core;
 
 #[macro_use]
 extern crate uint;
-extern crate rand;
-use rand::Rng;
 
 construct_uint! {
 	pub struct U256(4);
