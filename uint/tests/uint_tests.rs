@@ -6,20 +6,19 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[macro_use]
-extern crate uint;
-
-#[cfg(feature = "quickcheck")]
-#[macro_use]
-extern crate quickcheck;
-
-#[cfg_attr(all(test, feature = "quickcheck"), macro_use(unroll))]
-
+// Copyright 2015-2017 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 use core::u64::MAX;
 use core::str::FromStr;
 use core::convert::TryInto;
-use uint::{FromDecStrErr};
+use uint::{FromDecStrErr, construct_uint, overflowing};
+use crunchy::unroll;
 
 construct_uint! {
 	pub struct U256(4);
@@ -1110,8 +1109,8 @@ pub mod laws {
 	macro_rules! uint_laws {
 		($mod_name:ident, $uint_ty:ident) => {
 			mod $mod_name {
-				use quickcheck::TestResult;
-				use super::{$uint_ty};
+				use quickcheck::{TestResult, quickcheck};
+				use super::$uint_ty;
 
 				quickcheck! {
 					fn associative_add(x: $uint_ty, y: $uint_ty, z: $uint_ty) -> TestResult {

@@ -11,20 +11,19 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[doc(hidden)]
-pub extern crate byteorder;
+pub use byteorder;
 
 // Re-export libcore using an alias so that the macros can work without
 // requiring `extern crate core` downstream.
 #[doc(hidden)]
-pub extern crate core as core_;
+pub use core as core_;
 
 #[doc(hidden)]
-pub extern crate rustc_hex;
+pub use rustc_hex;
 
 #[cfg(feature="quickcheck")]
 #[doc(hidden)]
-pub extern crate quickcheck;
-
+pub use quickcheck;
 
 pub use crunchy::unroll;
 
