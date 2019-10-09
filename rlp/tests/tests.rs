@@ -509,7 +509,7 @@ fn test_nested_list_roundtrip() {
 	}
 
 	impl Decodable for Inner {
-		fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+		fn decode(rlp: &Rlp<'_>) -> Result<Self, DecoderError> {
 			Ok(Inner(rlp.val_at(0)?, rlp.val_at(1)?))
 		}
 	}
@@ -526,7 +526,7 @@ fn test_nested_list_roundtrip() {
 	}
 
 	impl<T: Decodable> Decodable for Nest<T> {
-		fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+		fn decode(rlp: &Rlp<'_>) -> Result<Self, DecoderError> {
 			Ok(Nest(rlp.list_at(0)?))
 		}
 	}

@@ -14,11 +14,11 @@
 
 #[macro_use]
 extern crate criterion;
-extern crate core;
+
 #[macro_use]
 extern crate uint;
-extern crate num_bigint;
-extern crate rug;
+
+
 
 construct_uint! {
 	pub struct U256(4);

@@ -140,13 +140,13 @@ impl Bloom {
 	}
 
 	pub fn contains_bloom<'a, B>(&self, bloom: B) -> bool where BloomRef<'a>: From<B> {
-		let bloom_ref: BloomRef = bloom.into();
+		let bloom_ref: BloomRef<'_> = bloom.into();
 		// workaround for https://github.com/rust-lang/rust/issues/43644
 		self.contains_bloom_ref(bloom_ref)
 	}
 
-	fn contains_bloom_ref(&self, bloom: BloomRef) -> bool {
-		let self_ref: BloomRef = self.into();
+	fn contains_bloom_ref(&self, bloom: BloomRef<'_>) -> bool {
+		let self_ref: BloomRef<'_> = self.into();
 		self_ref.contains_bloom(bloom)
 	}
 
@@ -158,7 +158,7 @@ impl Bloom {
 		let mask = bloom_bits - 1;
 		let bloom_bytes = (log2(bloom_bits) + 7) / 8;
 
-		let hash: Hash = input.into();
+		let hash: Hash<'_> = input.into();
 
 		// must be a power of 2
 		assert_eq!(m & (m - 1), 0);
@@ -183,7 +183,7 @@ impl Bloom {
 	}
 
 	pub fn accrue_bloom<'a, B>(&mut self, bloom: B) where BloomRef<'a>: From<B> {
-		let bloom_ref: BloomRef = bloom.into();
+		let bloom_ref: BloomRef<'_> = bloom.into();
 		assert_eq!(self.0.len(), BLOOM_SIZE);
 		assert_eq!(bloom_ref.0.len(), BLOOM_SIZE);
 		for i in 0..BLOOM_SIZE {
@@ -213,7 +213,7 @@ impl<'a> BloomRef<'a> {
 
 	#[allow(clippy::trivially_copy_pass_by_ref)]
 	pub fn contains_bloom<'b, B>(&self, bloom: B) -> bool where BloomRef<'b>: From<B> {
-		let bloom_ref: BloomRef = bloom.into();
+		let bloom_ref: BloomRef<'_> = bloom.into();
 		assert_eq!(self.0.len(), BLOOM_SIZE);
 		assert_eq!(bloom_ref.0.len(), BLOOM_SIZE);
 		for i in 0..BLOOM_SIZE {

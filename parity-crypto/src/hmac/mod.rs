@@ -52,7 +52,7 @@ pub struct SigKey<T>(KeyInner, PhantomData<T>);
 struct DisposableBox(Box<[u8]>);
 
 impl std::fmt::Debug for DisposableBox {
-	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{:?}", &self.0.as_ref())
 	}
 }

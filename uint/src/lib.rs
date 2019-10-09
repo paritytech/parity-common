@@ -25,7 +25,7 @@ pub extern crate rustc_hex;
 #[doc(hidden)]
 pub extern crate quickcheck;
 
-extern crate crunchy;
+
 pub use crunchy::unroll;
 
 #[macro_use]

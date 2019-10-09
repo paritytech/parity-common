@@ -43,7 +43,7 @@ enum PrivSymmErr {
 }
 
 impl StdError for Error {
-	fn source(&self) -> Option<&(StdError + 'static)> {
+	fn source(&self) -> Option<&(dyn StdError + 'static)> {
 		match self {
 			Error::Scrypt(scrypt_err) => Some(scrypt_err),
 			Error::Symm(symm_err) => Some(symm_err),
@@ -52,7 +52,7 @@ impl StdError for Error {
 }
 
 impl StdError for ScryptError {
-	fn source(&self) -> Option<&(StdError + 'static)> {
+	fn source(&self) -> Option<&(dyn StdError + 'static)> {
 		match self {
 			ScryptError::ScryptParam(err) => Some(err),
 			ScryptError::ScryptLength(err) => Some(err),
@@ -62,7 +62,7 @@ impl StdError for ScryptError {
 }
 
 impl StdError for SymmError {
-	fn source(&self) -> Option<&(StdError + 'static)> {
+	fn source(&self) -> Option<&(dyn StdError + 'static)> {
 		match &self.0 {
 			PrivSymmErr::BlockMode(err) => Some(err),
 			PrivSymmErr::InvalidKeyLength(err) => Some(err),
@@ -72,7 +72,7 @@ impl StdError for SymmError {
 }
 
 impl fmt::Display for Error {
-	fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> result::Result<(), fmt::Error> {
 		match self {
 			Error::Scrypt(err)=> write!(f, "scrypt error: {}", err),
 			Error::Symm(err) => write!(f, "symm error: {}", err),
@@ -81,7 +81,7 @@ impl fmt::Display for Error {
 }
 
 impl fmt::Display for ScryptError {
-	fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> result::Result<(), fmt::Error> {
 		match self {
 			ScryptError::InvalidN => write!(f, "invalid n argument"),
 			ScryptError::InvalidP => write!(f, "invalid p argument"),
@@ -92,7 +92,7 @@ impl fmt::Display for ScryptError {
 }
 
 impl fmt::Display for SymmError {
-	fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> result::Result<(), fmt::Error> {
 		match self {
 			SymmError(PrivSymmErr::BlockMode(err)) => write!(f, "block cipher error: {}", err),
 			SymmError(PrivSymmErr::KeyStream(err)) => write!(f, "ctr key stream ended: {}", err),

@@ -70,7 +70,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		self.transactions.len()
 	}
 
-	pub fn iter(&self) -> ::std::slice::Iter<Transaction<T>> {
+	pub fn iter(&self) -> ::std::slice::Iter<'_, Transaction<T>> {
 		self.transactions.iter()
 	}
 
