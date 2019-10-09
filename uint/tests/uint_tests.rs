@@ -14,6 +14,7 @@ use core::u64::MAX;
 use core::str::FromStr;
 use core::convert::TryInto;
 use uint::{FromDecStrErr};
+extern crate rand;
 
 construct_uint! {
 	pub struct U256(4);
@@ -1101,6 +1102,7 @@ fn trailing_zeros() {
 
 #[cfg(feature="quickcheck")]
 pub mod laws {
+	use super::Rng;
 	macro_rules! uint_laws {
 		($mod_name:ident, $uint_ty:ident) => {
 			mod $mod_name {
