@@ -16,11 +16,20 @@ In your `Cargo.toml` paste
 uint = "0.8"
 ```
 
+Put in the header of your main file
+
+```
+#[macro_use]
+extern crate uint;
+```
+
 Construct your own big unsigned integer type as follows.
 
 ```
 // U1024 with 1024 bits consisting of 16 x 64-bit words
-construct_uint!(U1024; 16);
+construct_uint! {
+	pub struct U1024(16);
+}
 ```
 
 ## Tests
