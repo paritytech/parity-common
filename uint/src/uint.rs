@@ -74,39 +74,42 @@ macro_rules! impl_try_from_for_primitive {
 #[doc(hidden)]
 macro_rules! uint_overflowing_binop {
 	($name:ident, $n_words: tt, $self_expr: expr, $other: expr, $fn:expr) => ({
+		use $crate::{core_ as core};
 		let $name(ref me) = $self_expr;
 		let $name(ref you) = $other;
 
-		use $crate::core_::mem::MaybeUninit;
-		unsafe {
-			// SAFETY: MaybeUninit need not be initialized
-			let mut ret: [MaybeUninit<u64>; $n_words] =  MaybeUninit::uninit().assume_init();
-			let ret_ptr = &mut ret as *mut [MaybeUninit<u64>; $n_words] as *mut MaybeUninit<u64>;
-			let mut carry = 0u64;
-			assert!($n_words < $crate::core_::isize::MAX as usize, "overly excessive $n_words");
-			unroll! {
-				for i in 0..$n_words {
-					use $crate::core_::ptr;
+		let mut ret = [0u64; $n_words];
+		let ret_ptr = &mut ret as *mut [u64; $n_words] as *mut u64;
+		let mut carry = 0u64;
+		$crate::static_assertions::const_assert!(core::isize::MAX as usize / core::mem::size_of::<u64>() > $n_words);
 
-					if carry != 0 {
-						let (res1, overflow1) = ($fn)(me[i], you[i]);
-						let (res2, overflow2) = ($fn)(res1, carry);
-						// SAFETY: i < isize::MAX and i is within bounds.
-						*ret_ptr.offset(i as _) = MaybeUninit::new(res2);
-						carry = (overflow1 as u8 + overflow2 as u8) as u64;
-					} else {
-						let (res, overflow) = ($fn)(me[i], you[i]);
-						// SAFETY: i < isize::MAX and i is within bounds.
-						*ret_ptr.offset(i as _) = MaybeUninit::new(res);
-						carry = overflow as u64;
+		unroll! {
+			for i in 0..$n_words {
+				use core::ptr;
+
+				if carry != 0 {
+					let (res1, overflow1) = ($fn)(me[i], you[i]);
+					let (res2, overflow2) = ($fn)(res1, carry);
+
+					unsafe {
+						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
+						*ret_ptr.offset(i as _) = res2
 					}
+					carry = (overflow1 as u8 + overflow2 as u8) as u64;
+				} else {
+					let (res, overflow) = ($fn)(me[i], you[i]);
+
+					unsafe {
+						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
+						*ret_ptr.offset(i as _) = res
+					}
+
+					carry = overflow as u64;
 				}
 			}
-
-			// SAFETY: MaybeUninit<T> has the same representation as T, and
-			// `ret` has been fully initialized.
-			($name($crate::core_::mem::transmute(ret)), carry > 0)
 		}
+
+		($name(ret), carry > 0)
 	})
 }
 
