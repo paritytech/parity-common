@@ -39,7 +39,7 @@ pub enum FromDecStrErr {
 }
 
 #[doc(hidden)]
-pub extern crate rand;
+pub use rand;
 
 #[macro_export]
 #[doc(hidden)]

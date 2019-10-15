@@ -1101,7 +1101,7 @@ fn trailing_zeros() {
 
 #[cfg(feature="quickcheck")]
 pub mod laws {
-	use crate::rand::Rng;
+	use crate::uint::rand::Rng;
 	macro_rules! uint_laws {
 		($mod_name:ident, $uint_ty:ident) => {
 			mod $mod_name {
