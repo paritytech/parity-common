@@ -24,7 +24,7 @@ static_assertions = "1.0.0"
 rand_xorshift = "0.2.0"
 
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
-libc = { version = "0.2.62", optional = true, default-features = false }
+libc = { version = "0.2.64", optional = true, default-features = false }
 
 [features]
 default = ["std", "libc", "rand", "rustc-hex", "byteorder"]

@@ -272,9 +272,9 @@ fn should_skip_staled_pending_transactions() {
 	let b = TransactionBuilder::default();
 	let mut txq = TestPool::default();
 
-	let tx0 = import(&mut txq, b.tx().nonce(0).gas_price(5).new()).unwrap();
+	let _tx0 = import(&mut txq, b.tx().nonce(0).gas_price(5).new()).unwrap();
 	let tx2 = import(&mut txq, b.tx().nonce(2).gas_price(5).new()).unwrap();
-	let tx1 = import(&mut txq, b.tx().nonce(1).gas_price(5).new()).unwrap();
+	let _tx1 = import(&mut txq, b.tx().nonce(1).gas_price(5).new()).unwrap();
 
 	// tx0 and tx1 are Stale, tx2 is Ready
 	let mut pending = txq.pending(NonceReady::new(2));
