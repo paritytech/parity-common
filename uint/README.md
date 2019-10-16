@@ -16,7 +16,13 @@ In your `Cargo.toml` paste
 uint = "0.8"
 ```
 
-Put in the header of your main file
+Import the macro
+
+```
+use uint::construct_uint;
+```
+
+If you're using pre-edition Rust in your main file
 
 ```
 #[macro_use]
