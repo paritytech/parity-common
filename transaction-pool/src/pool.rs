@@ -138,7 +138,7 @@ impl<T, S, L> Pool<T, S, L> where
 	/// new transaction via the supplied `ShouldReplace` implementation and may be evicted.
 	///
 	/// The `Listener` will be informed on any drops or rejections.
-	pub fn import(&mut self, transaction: T, replace: &ShouldReplace<T>) -> error::Result<Arc<T>, T::Hash> {
+	pub fn import(&mut self, transaction: T, replace: &dyn ShouldReplace<T>) -> error::Result<Arc<T>, T::Hash> {
 		let mem_usage = transaction.mem_usage();
 
 		if self.by_hash.contains_key(transaction.hash()) {
@@ -288,7 +288,7 @@ impl<T, S, L> Pool<T, S, L> where
 	///
 	/// Returns `None` in case we couldn't decide if the transaction should replace the worst transaction or not.
 	/// In such case we will accept the transaction even though it is going to exceed the limit.
-	fn remove_worst(&mut self, transaction: &Transaction<T>, replace: &ShouldReplace<T>) -> error::Result<Option<Transaction<T>>, T::Hash> {
+	fn remove_worst(&mut self, transaction: &Transaction<T>, replace: &dyn ShouldReplace<T>) -> error::Result<Option<Transaction<T>>, T::Hash> {
 		let to_remove = match self.worst_transactions.iter().next_back() {
 			// No elements to remove? and the pool is still full?
 			None => {
@@ -437,7 +437,7 @@ impl<T, S, L> Pool<T, S, L> where
 	}
 
 	/// Returns an iterator of pending (ready) transactions.
-	pub fn pending<R: Ready<T>>(&self, ready: R) -> PendingIterator<T, R, S, L> {
+	pub fn pending<R: Ready<T>>(&self, ready: R) -> PendingIterator<'_, T, R, S, L> {
 		PendingIterator {
 			ready,
 			best_transactions: self.best_transactions.clone(),
@@ -446,7 +446,7 @@ impl<T, S, L> Pool<T, S, L> where
 	}
 
 	/// Returns pending (ready) transactions from given sender.
-	pub fn pending_from_sender<R: Ready<T>>(&self, ready: R, sender: &T::Sender) -> PendingIterator<T, R, S, L> {
+	pub fn pending_from_sender<R: Ready<T>>(&self, ready: R, sender: &T::Sender) -> PendingIterator<'_, T, R, S, L> {
 		let best_transactions = self.transactions.get(sender)
 			.and_then(|transactions| transactions.worst_and_best())
 			.map(|(_, best)| ScoreWithRef::new(best.0, best.1))
@@ -465,7 +465,7 @@ impl<T, S, L> Pool<T, S, L> where
 	}
 
 	/// Returns unprioritized list of ready transactions.
-	pub fn unordered_pending<R: Ready<T>>(&self, ready: R) -> UnorderedIterator<T, R, S> {
+	pub fn unordered_pending<R: Ready<T>>(&self, ready: R) -> UnorderedIterator<'_, T, R, S> {
 		UnorderedIterator {
 			ready,
 			senders: self.transactions.iter(),

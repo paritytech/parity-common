@@ -31,7 +31,7 @@ pub enum Error<Hash: fmt::Debug + fmt::LowerHex> {
 pub type Result<T, H> = result::Result<T, Error<H>>;
 
 impl<H: fmt::Debug + fmt::LowerHex> fmt::Display for Error<H> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
 			Error::AlreadyImported(h) =>
 				write!(f, "[{:?}] already imported", h),
