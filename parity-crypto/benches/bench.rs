@@ -40,7 +40,7 @@ fn input_len(c: &mut Criterion) {
 			let mut dest = vec![0; *size];
 			let k = [0; 16];
 			let iv = [0; 16];
- 
+
 			b.iter(||{
 				parity_crypto::aes::encrypt_128_ctr(&k[..], &iv[..], &data[..], &mut dest[..]).unwrap();
 				// same as encrypt but add it just in case
