@@ -15,7 +15,7 @@ kvdb = { version = "0.1", path = "../kvdb" }
 kvdb-memorydb = { version = "0.1", path = "../kvdb-memorydb" }
 futures-preview = "0.3.0-alpha.19"
 log = "0.4.8"
-send_wrapper = "0.2.0"
+send_wrapper = "0.3.0"
 
 [dependencies.web-sys]
 version = "0.3.28"
