@@ -26,6 +26,8 @@ pub use rustc_hex;
 pub use quickcheck;
 
 #[doc(hidden)]
+pub use static_assertions;
+
 pub use crunchy::unroll;
 
 #[macro_use]
