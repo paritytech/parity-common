@@ -32,7 +32,7 @@ use core::{cmp::min, fmt, ops};
 pub struct PrettySlice<'a>(&'a [u8]);
 
 impl<'a> fmt::Debug for PrettySlice<'a> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		for i in 0..self.0.len() {
 			if i > 0 {
 				write!(f, "·{:02x}", self.0[i])?;
@@ -45,7 +45,7 @@ impl<'a> fmt::Debug for PrettySlice<'a> {
 }
 
 impl<'a> fmt::Display for PrettySlice<'a> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		for i in 0..self.0.len() {
 			write!(f, "{:02x}", self.0[i])?;
 		}
@@ -57,7 +57,7 @@ impl<'a> fmt::Display for PrettySlice<'a> {
 /// defaults cannot otherwise be avoided.
 pub trait ToPretty {
 	/// Convert a type into a derivative form in order to make `format!` print it prettily.
-	fn pretty(&self) -> PrettySlice;
+	fn pretty(&self) -> PrettySlice<'_>;
 	/// Express the object as a hex string.
 	fn to_hex(&self) -> String {
 		format!("{}", self.pretty())
@@ -65,7 +65,7 @@ pub trait ToPretty {
 }
 
 impl<T: AsRef<[u8]>> ToPretty for T {
-	fn pretty(&self) -> PrettySlice {
+	fn pretty(&self) -> PrettySlice<'_> {
 		PrettySlice(self.as_ref())
 	}
 }

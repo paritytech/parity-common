@@ -74,7 +74,7 @@ impl Scoring<Transaction> for DummyScoring {
 }
 
 impl ShouldReplace<Transaction> for DummyScoring {
-	fn should_replace(&self, old: &ReplaceTransaction<Transaction>, new: &ReplaceTransaction<Transaction>) -> scoring::Choice {
+	fn should_replace(&self, old: &ReplaceTransaction<'_, Transaction>, new: &ReplaceTransaction<'_, Transaction>) -> scoring::Choice {
 		if self.always_insert {
 			scoring::Choice::InsertNew
 		} else if new.gas_price > old.gas_price {

@@ -12,13 +12,9 @@
 //! rustup run cargo bench
 //! ```
 
-#[macro_use]
-extern crate criterion;
-extern crate core;
-#[macro_use]
-extern crate uint;
-extern crate num_bigint;
-extern crate rug;
+
+use criterion::{criterion_group, criterion_main};
+use uint::{construct_uint, uint_full_mul_reg};
 
 construct_uint! {
 	pub struct U256(4);
