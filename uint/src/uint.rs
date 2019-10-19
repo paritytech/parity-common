@@ -74,39 +74,37 @@ macro_rules! impl_try_from_for_primitive {
 #[doc(hidden)]
 macro_rules! uint_overflowing_binop {
 	($name:ident, $n_words: tt, $self_expr: expr, $other: expr, $fn:expr) => ({
+		use $crate::{core_ as core};
 		let $name(ref me) = $self_expr;
 		let $name(ref you) = $other;
 
-		let mut ret = unsafe { $crate::core_::mem::uninitialized() };
+		let mut ret = [0u64; $n_words];
 		let ret_ptr = &mut ret as *mut [u64; $n_words] as *mut u64;
 		let mut carry = 0u64;
+		$crate::static_assertions::const_assert!(core::isize::MAX as usize / core::mem::size_of::<u64>() > $n_words);
 
 		// `unroll!` is recursive, but doesn’t use `$crate::unroll`, so we need to ensure that it
 		// is in scope unqualified.
 		use $crate::unroll;
 		unroll! {
 			for i in 0..$n_words {
-				use $crate::core_::ptr;
+				use core::ptr;
 
 				if carry != 0 {
 					let (res1, overflow1) = ($fn)(me[i], you[i]);
 					let (res2, overflow2) = ($fn)(res1, carry);
 
 					unsafe {
-						ptr::write(
-							ret_ptr.offset(i as _),
-							res2
-						);
+						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
+						*ret_ptr.offset(i as _) = res2
 					}
 					carry = (overflow1 as u8 + overflow2 as u8) as u64;
 				} else {
 					let (res, overflow) = ($fn)(me[i], you[i]);
 
 					unsafe {
-						ptr::write(
-							ret_ptr.offset(i as _),
-							res
-						);
+						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
+						*ret_ptr.offset(i as _) = res
 					}
 
 					carry = overflow as u64;

@@ -30,6 +30,8 @@ pub use qc;
 pub use rand;
 
 #[doc(hidden)]
+pub use static_assertions;
+
 pub use crunchy::unroll;
 
 #[macro_use]

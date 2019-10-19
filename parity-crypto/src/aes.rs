@@ -66,14 +66,14 @@ impl AesCtr256 {
 		))
 	}
 
-	/// In place encrypt a content without padding, the content length must be a multiple 
+	/// In place encrypt a content without padding, the content length must be a multiple
 	/// of the block size.
 	pub fn encrypt(&mut self, content: &mut[u8]) -> Result<(), SymmError> {
 		self.0.try_apply_keystream(content)?;
 		Ok(())
 	}
 
-	/// In place decrypt a content without padding, the content length must be a multiple 
+	/// In place decrypt a content without padding, the content length must be a multiple
 	/// of the block size.
 	pub fn decrypt(&mut self, content: &mut[u8]) -> Result<(), SymmError> {
 		self.0.try_apply_keystream(content)?;
