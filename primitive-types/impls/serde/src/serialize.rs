@@ -105,7 +105,7 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error> where
 
 			let bytes_len = v.len() - 2;
 			let mut modulus = bytes_len % 2;
-			let mut bytes = vec![0u8; bytes_len / 2];
+			let mut bytes = vec![0u8; bytes_len / 2 + 1];
 			let mut buf = 0;
 			let mut pos = 0;
 			for (idx, byte) in v.bytes().enumerate().skip(2) {
@@ -216,4 +216,28 @@ pub fn deserialize_check_len<'a, 'de, D>(deserializer: D, len: ExpectedLen<'a>) 
 	}
 
 	deserializer.deserialize_str(Visitor { len })
+}
+
+#[cfg(test)]
+mod tests {
+	extern crate serde_derive;
+
+	use self::serde_derive::Deserialize;
+
+	#[derive(Deserialize)]
+	struct Bytes(#[serde(with="super")] Vec<u8>);
+
+	#[test]
+	fn should_not_fail_on_short_string() {
+		let b: Bytes = serde_json::from_str("\"0x1\"").unwrap();
+
+		assert_eq!(b.0, vec![1]);
+	}
+
+	#[test]
+	fn should_not_fail_on_other_strings() {
+		let b: Bytes = serde_json::from_str("\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587b\"").unwrap();
+
+		assert_eq!(b.0.len(), 32);
+	}
 }
