@@ -1,6 +1,6 @@
 [package]
 name = "parity-crypto"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "Crypto utils used by ethstore and network."
@@ -11,10 +11,13 @@ edition = "2018"
 [[bench]]
 name = "bench"
 harness = false
-
+required-features = ["publickey"]
 
 [dependencies]
 tiny-keccak = "1.4"
+eth-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1", rev = "a96ad75", optional = true }
+ethereum-types = { version = "0.8.0", optional = true }
+lazy_static = { version = "1.0", optional = true }
 scrypt = { version = "0.2", default-features = false }
 ripemd160 = "0.8.0"
 sha2 = "0.8.0"
@@ -24,9 +27,17 @@ aes = "0.3.2"
 aes-ctr = "0.3.0"
 block-modes = "0.3.3"
 pbkdf2 = "0.3.0"
+rand = "0.6"
+rustc-hex = "2.0"
 subtle = "2.1"
 zeroize = "0.9.1"
 
 [dev-dependencies]
 criterion = "0.2"
 hex-literal = "0.2"
+
+[features]
+default = []
+# public key crypto utils
+# moved from ethkey module in parity ethereum repository
+publickey = ["eth-secp256k1", "lazy_static", "ethereum-types"]
