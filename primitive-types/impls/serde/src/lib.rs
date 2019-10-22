@@ -9,7 +9,7 @@
 //! Serde serialization support for uint and fixed hash.
 
 #[doc(hidden)]
-pub extern crate serde;
+pub use serde;
 
 #[doc(hidden)]
 pub mod serialize;
