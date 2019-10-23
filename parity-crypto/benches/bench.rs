@@ -18,8 +18,13 @@
 extern crate criterion;
 
 use criterion::{Criterion, Bencher};
+use crate::parity_crypto::publickey::Generator;
 
-criterion_group!(benches, input_len);
+criterion_group!(
+	benches,
+	input_len,
+	ecdh_agree,
+);
 
 criterion_main!(benches);
 
@@ -50,4 +55,12 @@ fn input_len(c: &mut Criterion) {
 		vec![100, 500, 1_000, 10_000, 100_000]
 	);
 
+}
+
+fn ecdh_agree(c: &mut Criterion) {
+	let keypair = parity_crypto::publickey::Random.generate().unwrap();
+	let public = keypair.public().clone();
+	let secret = keypair.secret().clone();
+
+	c.bench_function("ecdh_agree", move |b| b.iter(|| parity_crypto::publickey::ecdh::agree(&secret, &public)));
 }
