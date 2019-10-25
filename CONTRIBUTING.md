@@ -22,7 +22,7 @@ solve with the feature, any ideas for how parity-common could support solving th
 
 As many crates in the rust ecosystem, all crates in parity-common follow [semantic versioning]. This means bumping PATCH version on bug fixes that don't break backwards compatibility, MINOR version on new features and MAJOR version otherwise (MAJOR.MINOR.PATCH). Versions < 1.0 are considered to have the format 0.MAJOR.MINOR, which means bumping MINOR version for all non-breaking changes.
 
-If you bump a dependency that publicly exposed in crate's API (e.g. `pub use dependency;` or `pub field: dependency::Dependency`) and the version transition for dependency was semver-breaking, than it is considered to be a breaking change. To put it simply, if you change could cause a compilation error in user's code, it is a breaking change.
+If you bump a dependency that is publicly exposed in a crate's API (e.g. `pub use dependency;` or `pub field: dependency::Dependency`) and the version transition for the dependency was semver-breaking, then it is considered to be a breaking change for the consuming crate as well. To put it simply, if your change could cause a compilation error in user's code, it is a breaking change.
 
 ## Releasing a new version
 
