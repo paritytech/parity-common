@@ -1,0 +1,13 @@
+[package]
+name = "kvdb-sled"
+version = "0.1.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+repository = "https://github.com/paritytech/parity-common"
+description = "A key-value database backed by sled"
+documentation = "https://docs.rs/kvdb-sled/"
+license = "GPL-3.0"
+edition = "2018"
+
+[dependencies]
+sled = "0.29.1"
+kvdb = { version = "0.1", path = "../kvdb" }
