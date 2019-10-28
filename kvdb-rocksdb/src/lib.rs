@@ -193,8 +193,7 @@ impl Default for DatabaseConfig {
 // inner DB (to prevent closing via restoration) may be re-evaluated in the future.
 //
 pub struct DatabaseIterator<'a> {
-	iter: InterleaveOrdered<::std::vec::IntoIter<(Box<[u8]>, Box<[u8]>)>, DBIterator>,
-	_marker: PhantomData<&'a ()>,
+	iter: InterleaveOrdered<::std::vec::IntoIter<(Box<[u8]>, Box<[u8]>)>, DBIterator<'a>>,
 }
 
 impl<'a> Iterator for DatabaseIterator<'a> {
@@ -579,7 +578,6 @@ impl Database {
 
 				Some(DatabaseIterator {
 					iter: interleave_ordered(overlay_data, iter),
-					_marker: PhantomData,
 				})
 			},
 			None => None,
@@ -595,7 +593,6 @@ impl Database {
 
 				Some(DatabaseIterator {
 					iter: interleave_ordered(Vec::new(), iter),
-					_marker: PhantomData,
 				})
 			},
 			None => None,
