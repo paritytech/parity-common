@@ -50,19 +50,13 @@ pub fn keccak<T: AsRef<[u8]>>(s: T) -> H256 {
 pub unsafe fn keccak_256_unchecked(out: *mut u8, outlen: usize, input: *const u8, inputlen: usize) {
 	// This is safe since `keccak_*` uses an internal buffer and copies the result to the output. This
 	// means that we can reuse the input buffer for both input and output.
-	Keccak::keccak256(
-		slice::from_raw_parts(input, inputlen),
-		slice::from_raw_parts_mut(out, outlen),
-	);
+	Keccak::keccak256(slice::from_raw_parts(input, inputlen), slice::from_raw_parts_mut(out, outlen));
 }
 
 pub unsafe fn keccak_512_unchecked(out: *mut u8, outlen: usize, input: *const u8, inputlen: usize) {
 	// This is safe since `keccak_*` uses an internal buffer and copies the result to the output. This
 	// means that we can reuse the input buffer for both input and output.
-	Keccak::keccak512(
-		slice::from_raw_parts(input, inputlen),
-		slice::from_raw_parts_mut(out, outlen),
-	);
+	Keccak::keccak512(slice::from_raw_parts(input, inputlen), slice::from_raw_parts_mut(out, outlen));
 }
 
 pub fn keccak_256(input: &[u8], mut output: &mut [u8]) {
@@ -161,9 +155,6 @@ mod tests {
 		let hash = keccak_buffer(&mut file).unwrap();
 
 		// then
-		assert_eq!(
-			format!("{:x}", hash),
-			"68371d7e884c168ae2022c82bd837d51837718a7f7dfb7aa3f753074a35e1d87"
-		);
+		assert_eq!(format!("{:x}", hash), "68371d7e884c168ae2022c82bd837d51837718a7f7dfb7aa3f753074a35e1d87");
 	}
 }

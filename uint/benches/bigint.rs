@@ -106,11 +106,7 @@ fn u128_div(c: &mut Criterion) {
 					black_box(x / u128::from(*z))
 				})
 			},
-			vec![
-				(0u64, u64::max_value(), 100u64),
-				(u64::max_value(), u64::max_value(), 99),
-				(42, 42, 100500),
-			],
+			vec![(0u64, u64::max_value(), 100u64), (u64::max_value(), u64::max_value(), 99), (42, 42, 100500)],
 		),
 	);
 }
@@ -162,10 +158,7 @@ fn u256_mul(c: &mut Criterion) {
 			vec![
 				(U256::max_value(), 1u64),
 				(U256::from(3), u64::max_value()),
-				(
-					U256::from_dec_str("21674844646682989462120101885968193938394323990565507610662749").unwrap(),
-					173,
-				),
+				(U256::from_dec_str("21674844646682989462120101885968193938394323990565507610662749").unwrap(), 173),
 			],
 		),
 	);
@@ -245,10 +238,7 @@ fn u256_rem(c: &mut Criterion) {
 			|b, (x, y)| b.iter(|| black_box(x % y)),
 			vec![
 				(U256::max_value(), U256::from(1u64)),
-				(
-					U256::from(u64::max_value()),
-					U256::from(u64::from(u32::max_value()) + 1),
-				),
+				(U256::from(u64::max_value()), U256::from(u64::from(u32::max_value()) + 1)),
 				(
 					U256([12767554894655550452, 16333049135534778834, 140317443000293558, 598963]),
 					U256([2096410819092764509, 8483673822214032535, 36306297304129857, 3453]),
@@ -265,31 +255,10 @@ fn u256_rem(c: &mut Criterion) {
 fn u512_pairs() -> Vec<(U512, U512)> {
 	vec![
 		(U512::from(1u64), U512::from(0u64)),
+		(U512::from(u64::max_value()), U512::from(u64::from(u32::max_value()) + 1)),
 		(
-			U512::from(u64::max_value()),
-			U512::from(u64::from(u32::max_value()) + 1),
-		),
-		(
-			U512([
-				12767554894655550452,
-				16333049135534778834,
-				140317443000293558,
-				598963,
-				0,
-				0,
-				0,
-				0,
-			]),
-			U512([
-				0,
-				0,
-				0,
-				0,
-				2096410819092764509,
-				8483673822214032535,
-				36306297304129857,
-				3453,
-			]),
+			U512([12767554894655550452, 16333049135534778834, 140317443000293558, 598963, 0, 0, 0, 0]),
+			U512([0, 0, 0, 0, 2096410819092764509, 8483673822214032535, 36306297304129857, 3453]),
 		),
 		(
 			U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap(),
@@ -299,31 +268,20 @@ fn u512_pairs() -> Vec<(U512, U512)> {
 }
 
 fn u512_add(c: &mut Criterion) {
-	c.bench(
-		"u512_add",
-		ParameterizedBenchmark::new("", |b, (x, y)| b.iter(|| black_box(x + y)), u512_pairs()),
-	);
+	c.bench("u512_add", ParameterizedBenchmark::new("", |b, (x, y)| b.iter(|| black_box(x + y)), u512_pairs()));
 }
 
 fn u512_sub(c: &mut Criterion) {
 	c.bench(
 		"u512_sub",
-		ParameterizedBenchmark::new(
-			"",
-			|b, (x, y)| b.iter(|| black_box(x.overflowing_sub(*y).0)),
-			u512_pairs(),
-		),
+		ParameterizedBenchmark::new("", |b, (x, y)| b.iter(|| black_box(x.overflowing_sub(*y).0)), u512_pairs()),
 	);
 }
 
 fn u512_mul(c: &mut Criterion) {
 	c.bench(
 		"u512_mul",
-		ParameterizedBenchmark::new(
-			"",
-			|b, (x, y)| b.iter(|| black_box(x.overflowing_mul(*y).0)),
-			u512_pairs(),
-		),
+		ParameterizedBenchmark::new("", |b, (x, y)| b.iter(|| black_box(x.overflowing_mul(*y).0)), u512_pairs()),
 	);
 }
 
@@ -378,12 +336,8 @@ fn u512_rem(c: &mut Criterion) {
 fn conversions(c: &mut Criterion) {
 	c.bench(
 		"conversions biguint vs gmp",
-		ParameterizedBenchmark::new(
-			"BigUint",
-			|b, i| bench_convert_to_biguit(b, *i),
-			vec![0, 42, u64::max_value()],
-		)
-		.with_function("gmp", |b, i| bench_convert_to_gmp(b, *i)),
+		ParameterizedBenchmark::new("BigUint", |b, i| bench_convert_to_biguit(b, *i), vec![0, 42, u64::max_value()])
+			.with_function("gmp", |b, i| bench_convert_to_gmp(b, *i)),
 	);
 }
 
@@ -470,9 +424,7 @@ fn bench_u512_mulmod(b: &mut Bencher, z: U256) {
 // NOTE: uses native `u128` and does not measure this crates performance,
 // but might be interesting as a comparison.
 fn u128_mul(c: &mut Criterion) {
-	c.bench_function("u128_mul", |b| {
-		b.iter(|| black_box(12345u128 * u128::from(u64::max_value())))
-	});
+	c.bench_function("u128_mul", |b| b.iter(|| black_box(12345u128 * u128::from(u64::max_value()))));
 }
 
 fn u256_bit_and(c: &mut Criterion) {
@@ -681,9 +633,8 @@ fn from_fixed_array(c: &mut Criterion) {
 		255, 0, 0, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 121, 0, 0, 0, 0, 0, 213, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 45, 0, 0, 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 123,
 	];
-	let ary256: [u8; 32] = [
-		255, 0, 0, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 121, 0, 0, 0, 0, 0, 213, 0, 0, 0, 0, 0, 0,
-	];
+	let ary256: [u8; 32] =
+		[255, 0, 0, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 121, 0, 0, 0, 0, 0, 213, 0, 0, 0, 0, 0, 0];
 	c.bench_function("from_fixed_array", move |b| {
 		b.iter(|| {
 			let _: U512 = black_box(ary512.into());

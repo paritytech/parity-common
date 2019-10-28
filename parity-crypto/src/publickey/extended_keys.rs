@@ -84,10 +84,7 @@ pub struct ExtendedSecret {
 impl ExtendedSecret {
 	/// New extended key from given secret and chain code.
 	pub fn with_code(secret: Secret, chain_code: H256) -> ExtendedSecret {
-		ExtendedSecret {
-			secret: secret,
-			chain_code: chain_code,
-		}
+		ExtendedSecret { secret: secret, chain_code: chain_code }
 	}
 
 	/// New extended key from given secret with the random chain code.
@@ -129,18 +126,12 @@ pub struct ExtendedPublic {
 impl ExtendedPublic {
 	/// New extended public key from known parent and chain code
 	pub fn new(public: Public, chain_code: H256) -> Self {
-		ExtendedPublic {
-			public: public,
-			chain_code: chain_code,
-		}
+		ExtendedPublic { public: public, chain_code: chain_code }
 	}
 
 	/// Create new extended public key from known secret
 	pub fn from_secret(secret: &ExtendedSecret) -> Result<Self, DerivationError> {
-		Ok(ExtendedPublic::new(
-			derivation::point(**secret.as_raw())?,
-			secret.chain_code.clone(),
-		))
+		Ok(ExtendedPublic::new(derivation::point(**secret.as_raw())?, secret.chain_code.clone()))
 	}
 
 	/// Derive new public key
@@ -168,10 +159,7 @@ impl ExtendedKeyPair {
 		let extended_secret = ExtendedSecret::new(secret);
 		let extended_public =
 			ExtendedPublic::from_secret(&extended_secret).expect("Valid `Secret` always produces valid public; qed");
-		ExtendedKeyPair {
-			secret: extended_secret,
-			public: extended_public,
-		}
+		ExtendedKeyPair { secret: extended_secret, public: extended_public }
 	}
 
 	pub fn with_code(secret: Secret, public: Public, chain_code: H256) -> Self {
@@ -185,10 +173,7 @@ impl ExtendedKeyPair {
 		let extended_secret = ExtendedSecret::with_code(secret, chain_code);
 		let extended_public =
 			ExtendedPublic::from_secret(&extended_secret).expect("Valid `Secret` always produces valid public; qed");
-		ExtendedKeyPair {
-			secret: extended_secret,
-			public: extended_public,
-		}
+		ExtendedKeyPair { secret: extended_secret, public: extended_public }
 	}
 
 	pub fn with_seed(seed: &[u8]) -> Result<ExtendedKeyPair, DerivationError> {
@@ -213,10 +198,7 @@ impl ExtendedKeyPair {
 	{
 		let derived = self.secret.derive(index);
 
-		Ok(ExtendedKeyPair {
-			public: ExtendedPublic::from_secret(&derived)?,
-			secret: derived,
-		})
+		Ok(ExtendedKeyPair { public: ExtendedPublic::from_secret(&derived)?, secret: derived })
 	}
 }
 
@@ -364,9 +346,7 @@ mod derivation {
 			.expect("Valid private key produces valid public key");
 
 		// Adding two points on the elliptic curves (combining two public keys)
-		new_public
-			.add_assign(&SECP256K1, &public_sec)
-			.expect("Addition of two valid points produce valid point");
+		new_public.add_assign(&SECP256K1, &public_sec).expect("Addition of two valid points produce valid point");
 
 		let serialized = new_public.serialize_vec(&SECP256K1, false);
 
@@ -413,10 +393,8 @@ mod tests {
 	use std::str::FromStr;
 
 	fn master_chain_basic() -> (H256, H256) {
-		let seed = H128::from_str("000102030405060708090a0b0c0d0e0f")
-			.expect("Seed should be valid H128")
-			.as_bytes()
-			.to_vec();
+		let seed =
+			H128::from_str("000102030405060708090a0b0c0d0e0f").expect("Seed should be valid H128").as_bytes().to_vec();
 
 		derivation::seed_pair(&*seed)
 	}
@@ -462,9 +440,7 @@ mod tests {
 		);
 
 		let extended_public = ExtendedPublic::from_secret(&extended_secret).expect("Extended public should be created");
-		let derived_public = extended_public
-			.derive(0.into())
-			.expect("First derivation of public should succeed");
+		let derived_public = extended_public.derive(0.into()).expect("First derivation of public should succeed");
 		assert_eq!(
 			*derived_public.public(),
 			H512::from_str("f7b3244c96688f92372bfd4def26dc4151529747bab9f188a4ad34e141d47bd66522ff048bc6f19a0a4429b04318b1a8796c000265b4fa200dae5f6dda92dd94").unwrap(),
@@ -475,11 +451,7 @@ mod tests {
 			H256::from_low_u64_be(64),
 		);
 		assert_eq!(
-			**keypair
-				.derive(2147483648u32.into())
-				.expect("Derivation of keypair should succeed")
-				.secret()
-				.as_raw(),
+			**keypair.derive(2147483648u32.into()).expect("Derivation of keypair should succeed").secret().as_raw(),
 			H256::from_str("edef54414c03196557cf73774bc97a645c9a1df2164ed34f0c2a78d1375a930c").unwrap(),
 		);
 	}
@@ -524,9 +496,7 @@ mod tests {
 		let extended_public = ExtendedPublic::from_secret(&extended_secret).expect("Extended public should be created");
 
 		let derived_secret0 = extended_secret.derive(0.into());
-		let derived_public0 = extended_public
-			.derive(0.into())
-			.expect("First derivation of public should succeed");
+		let derived_public0 = extended_public.derive(0.into()).expect("First derivation of public should succeed");
 
 		let public_from_secret0 =
 			ExtendedPublic::from_secret(&derived_secret0).expect("Extended public should be created");
@@ -536,10 +506,8 @@ mod tests {
 
 	#[test]
 	fn test_seeds() {
-		let seed = H128::from_str("000102030405060708090a0b0c0d0e0f")
-			.expect("Seed should be valid H128")
-			.as_bytes()
-			.to_vec();
+		let seed =
+			H128::from_str("000102030405060708090a0b0c0d0e0f").expect("Seed should be valid H128").as_bytes().to_vec();
 
 		// private key from bitcoin test vector
 		// xprv9wTYmMFdV23N2TdNG573QoEsfRrWKQgWeibmLntzniatZvR9BmLnvSxqu53Kw1UmYPxLgboyZQaXwTCg8MSY3H2EU4pWcQDnRnrVA1xe8fs

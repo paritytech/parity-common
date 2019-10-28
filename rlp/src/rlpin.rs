@@ -129,11 +129,7 @@ impl<'a> fmt::Display for Rlp<'a> {
 
 impl<'a> Rlp<'a> {
 	pub fn new(bytes: &'a [u8]) -> Rlp<'a> {
-		Rlp {
-			bytes,
-			offset_cache: Cell::new(None),
-			count_cache: Cell::new(None),
-		}
+		Rlp { bytes, offset_cache: Cell::new(None), count_cache: Cell::new(None) }
 	}
 
 	pub fn as_raw<'view>(&'view self) -> &'a [u8]
@@ -202,11 +198,9 @@ impl<'a> Rlp<'a> {
 		// current search index, otherwise move to beginning of list
 		let cache = self.offset_cache.get();
 		let (bytes, indexes_to_skip, bytes_consumed) = match cache {
-			Some(ref cache) if cache.index <= index => (
-				Rlp::consume(self.bytes, cache.offset)?,
-				index - cache.index,
-				cache.offset,
-			),
+			Some(ref cache) if cache.index <= index => {
+				(Rlp::consume(self.bytes, cache.offset)?, index - cache.index, cache.offset)
+			}
 			_ => {
 				let (bytes, consumed) = self.consume_list_payload()?;
 				(bytes, index, consumed)
@@ -217,8 +211,7 @@ impl<'a> Rlp<'a> {
 		let (bytes, consumed) = Rlp::consume_items(bytes, indexes_to_skip)?;
 
 		// update the cache
-		self.offset_cache
-			.set(Some(OffsetCache::new(index, bytes_consumed + consumed)));
+		self.offset_cache.set(Some(OffsetCache::new(index, bytes_consumed + consumed)));
 
 		// construct new rlp
 		let found = BasicDecoder::payload_info(bytes)?;
@@ -302,10 +295,7 @@ impl<'a> Rlp<'a> {
 		if self.bytes.len() < (item.header_len + item.value_len) {
 			return Err(DecoderError::RlpIsTooShort);
 		}
-		Ok((
-			&self.bytes[item.header_len..item.header_len + item.value_len],
-			item.header_len,
-		))
+		Ok((&self.bytes[item.header_len..item.header_len + item.value_len], item.header_len))
 	}
 
 	/// consumes fixed number of items

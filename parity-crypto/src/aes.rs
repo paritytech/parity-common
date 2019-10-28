@@ -55,10 +55,7 @@ pub struct AesCtr256(aes_ctr::Aes256Ctr);
 impl AesCtr256 {
 	/// New encoder/decoder
 	pub fn new(key: &[u8], iv: &[u8]) -> Result<Self, SymmError> {
-		Ok(AesCtr256(aes_ctr::Aes256Ctr::new(
-			GenericArray::from_slice(key),
-			GenericArray::from_slice(iv),
-		)))
+		Ok(AesCtr256(aes_ctr::Aes256Ctr::new(GenericArray::from_slice(key), GenericArray::from_slice(iv))))
 	}
 
 	/// In place encrypt a content without padding, the content length must be a multiple

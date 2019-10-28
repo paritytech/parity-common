@@ -29,10 +29,7 @@ pub struct ReplaceTransaction<'a, T> {
 impl<'a, T> ReplaceTransaction<'a, T> {
 	/// Creates a new `ReplaceTransaction`
 	pub fn new(transaction: &'a Transaction<T>, pooled_by_sender: Option<&'a [Transaction<T>]>) -> Self {
-		ReplaceTransaction {
-			transaction,
-			pooled_by_sender,
-		}
+		ReplaceTransaction { transaction, pooled_by_sender }
 	}
 }
 

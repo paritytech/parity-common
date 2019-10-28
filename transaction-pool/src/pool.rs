@@ -46,10 +46,7 @@ pub struct Transaction<T> {
 
 impl<T> Clone for Transaction<T> {
 	fn clone(&self) -> Self {
-		Transaction {
-			insertion_id: self.insertion_id,
-			transaction: self.transaction.clone(),
-		}
+		Transaction { insertion_id: self.insertion_id, transaction: self.transaction.clone() }
 	}
 }
 
@@ -146,10 +143,7 @@ where
 		}
 
 		self.insertion_id += 1;
-		let transaction = Transaction {
-			insertion_id: self.insertion_id,
-			transaction: Arc::new(transaction),
-		};
+		let transaction = Transaction { insertion_id: self.insertion_id, transaction: Arc::new(transaction) };
 
 		// TODO [ToDr] Most likely move this after the transaction is inserted.
 		// Avoid using should_replace, but rather use scoring for that.
@@ -168,22 +162,14 @@ where
 			};
 
 			while self.by_hash.len() + 1 > self.options.max_count {
-				trace!(
-					"Count limit reached: {} > {}",
-					self.by_hash.len() + 1,
-					self.options.max_count
-				);
+				trace!("Count limit reached: {} > {}", self.by_hash.len() + 1, self.options.max_count);
 				if !remove_worst(self, &transaction)? {
 					break;
 				}
 			}
 
 			while self.mem_usage + mem_usage > self.options.max_mem_usage {
-				trace!(
-					"Mem limit reached: {} > {}",
-					self.mem_usage + mem_usage,
-					self.options.max_mem_usage
-				);
+				trace!("Mem limit reached: {} > {}", self.mem_usage + mem_usage, self.options.max_mem_usage);
 				if !remove_worst(self, &transaction)? {
 					break;
 				}
@@ -191,10 +177,8 @@ where
 		}
 
 		let (result, prev_state, current_state) = {
-			let transactions = self
-				.transactions
-				.entry(transaction.sender().clone())
-				.or_insert_with(Transactions::default);
+			let transactions =
+				self.transactions.entry(transaction.sender().clone()).or_insert_with(Transactions::default);
 			// get worst and best transactions for comparison
 			let prev = transactions.worst_and_best();
 			let result = transactions.add(transaction, &self.scoring, self.options.max_per_sender);
@@ -306,10 +290,7 @@ where
 			// No elements to remove? and the pool is still full?
 			None => {
 				warn!("The pool is full but there are no transactions to remove.");
-				return Err(error::Error::TooCheapToEnter(
-					transaction.hash().clone(),
-					"unknown".into(),
-				));
+				return Err(error::Error::TooCheapToEnter(transaction.hash().clone(), "unknown".into()));
 			}
 			Some(old) => {
 				let txs = &self.transactions;
@@ -441,10 +422,7 @@ where
 
 	/// Returns worst transaction in the queue (if any).
 	pub fn worst_transaction(&self) -> Option<Arc<T>> {
-		self.worst_transactions
-			.iter()
-			.next_back()
-			.map(|x| x.transaction.transaction.clone())
+		self.worst_transactions.iter().next_back().map(|x| x.transaction.transaction.clone())
 	}
 
 	/// Returns true if the pool is at it's capacity.
@@ -459,11 +437,7 @@ where
 
 	/// Returns an iterator of pending (ready) transactions.
 	pub fn pending<R: Ready<T>>(&self, ready: R) -> PendingIterator<'_, T, R, S, L> {
-		PendingIterator {
-			ready,
-			best_transactions: self.best_transactions.clone(),
-			pool: self,
-		}
+		PendingIterator { ready, best_transactions: self.best_transactions.clone(), pool: self }
 	}
 
 	/// Returns pending (ready) transactions from given sender.
@@ -480,20 +454,12 @@ where
 			})
 			.unwrap_or_default();
 
-		PendingIterator {
-			ready,
-			best_transactions,
-			pool: self,
-		}
+		PendingIterator { ready, best_transactions, pool: self }
 	}
 
 	/// Returns unprioritized list of ready transactions.
 	pub fn unordered_pending<R: Ready<T>>(&self, ready: R) -> UnorderedIterator<'_, T, R, S> {
-		UnorderedIterator {
-			ready,
-			senders: self.transactions.iter(),
-			transactions: None,
-		}
+		UnorderedIterator { ready, senders: self.transactions.iter(), transactions: None }
 	}
 
 	/// Update score of transactions of a particular sender.
@@ -633,15 +599,8 @@ where
 	fn next(&mut self) -> Option<Self::Item> {
 		while !self.best_transactions.is_empty() {
 			let best = {
-				let best = self
-					.best_transactions
-					.iter()
-					.next()
-					.expect("current_best is not empty; qed")
-					.clone();
-				self.best_transactions
-					.take(&best)
-					.expect("Just taken from iterator; qed")
+				let best = self.best_transactions.iter().next().expect("current_best is not empty; qed").clone();
+				self.best_transactions.take(&best).expect("Just taken from iterator; qed")
 			};
 
 			let tx_state = self.ready.is_ready(&best.transaction);

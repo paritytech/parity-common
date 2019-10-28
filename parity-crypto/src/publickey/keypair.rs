@@ -55,10 +55,7 @@ impl KeyPair {
 		let mut public = Public::default();
 		public.as_bytes_mut().copy_from_slice(&serialized[1..65]);
 
-		let keypair = KeyPair {
-			secret: secret,
-			public: public,
-		};
+		let keypair = KeyPair { secret: secret, public: public };
 
 		Ok(keypair)
 	}

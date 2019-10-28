@@ -38,15 +38,8 @@ pub struct DBTransaction {
 /// Database operation.
 #[derive(Clone, PartialEq)]
 pub enum DBOp {
-	Insert {
-		col: Option<u32>,
-		key: ElasticArray32<u8>,
-		value: DBValue,
-	},
-	Delete {
-		col: Option<u32>,
-		key: ElasticArray32<u8>,
-	},
+	Insert { col: Option<u32>, key: ElasticArray32<u8>, value: DBValue },
+	Delete { col: Option<u32>, key: ElasticArray32<u8> },
 }
 
 impl DBOp {
@@ -75,31 +68,21 @@ impl DBTransaction {
 
 	/// Create new transaction with capacity.
 	pub fn with_capacity(cap: usize) -> DBTransaction {
-		DBTransaction {
-			ops: Vec::with_capacity(cap),
-		}
+		DBTransaction { ops: Vec::with_capacity(cap) }
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
 	pub fn put(&mut self, col: Option<u32>, key: &[u8], value: &[u8]) {
 		let mut ekey = ElasticArray32::new();
 		ekey.append_slice(key);
-		self.ops.push(DBOp::Insert {
-			col: col,
-			key: ekey,
-			value: DBValue::from_slice(value),
-		});
+		self.ops.push(DBOp::Insert { col: col, key: ekey, value: DBValue::from_slice(value) });
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
 	pub fn put_vec(&mut self, col: Option<u32>, key: &[u8], value: Bytes) {
 		let mut ekey = ElasticArray32::new();
 		ekey.append_slice(key);
-		self.ops.push(DBOp::Insert {
-			col: col,
-			key: ekey,
-			value: DBValue::from_vec(value),
-		});
+		self.ops.push(DBOp::Insert { col: col, key: ekey, value: DBValue::from_vec(value) });
 	}
 
 	/// Delete value by key.

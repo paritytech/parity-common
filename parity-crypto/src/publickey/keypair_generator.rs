@@ -38,9 +38,7 @@ impl Generator for OsRng {
 	type Error = Infallible;
 
 	fn generate(&mut self) -> Result<KeyPair, Self::Error> {
-		let (sec, publ) = SECP256K1
-			.generate_keypair(self)
-			.expect("context always created with full capabilities; qed");
+		let (sec, publ) = SECP256K1.generate_keypair(self).expect("context always created with full capabilities; qed");
 
 		Ok(KeyPair::from_keypair(sec, publ))
 	}

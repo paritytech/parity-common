@@ -45,10 +45,7 @@ pub struct Transactions<T, S: Scoring<T>> {
 
 impl<T, S: Scoring<T>> Default for Transactions<T, S> {
 	fn default() -> Self {
-		Transactions {
-			transactions: Default::default(),
-			scores: Default::default(),
-		}
+		Transactions { transactions: Default::default(), scores: Default::default() }
 	}
 }
 
@@ -77,17 +74,14 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 	}
 
 	pub fn find_next(&self, tx: &T, scoring: &S) -> Option<(S::Score, Transaction<T>)> {
-		self.transactions
-			.binary_search_by(|old| scoring.compare(old, &tx))
-			.ok()
-			.and_then(|index| {
-				let index = index + 1;
-				if index < self.scores.len() {
-					Some((self.scores[index].clone(), self.transactions[index].clone()))
-				} else {
-					None
-				}
-			})
+		self.transactions.binary_search_by(|old| scoring.compare(old, &tx)).ok().and_then(|index| {
+			let index = index + 1;
+			if index < self.scores.len() {
+				Some((self.scores[index].clone(), self.transactions[index].clone()))
+			} else {
+				None
+			}
+		})
 	}
 
 	fn push_cheapest_transaction(
@@ -127,10 +121,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		// Decide if the transaction should replace some other.
 		match scoring.choose(&self.transactions[index], &new) {
 			// New transaction should be rejected
-			scoring::Choice::RejectNew => AddResult::TooCheap {
-				old: self.transactions[index].clone(),
-				new,
-			},
+			scoring::Choice::RejectNew => AddResult::TooCheap { old: self.transactions[index].clone(), new },
 			// New transaction should be kept along with old ones.
 			scoring::Choice::InsertNew => {
 				self.transactions.insert(index, new.clone());
@@ -204,9 +195,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		for _ in 0..first_non_stalled {
 			self.scores.pop();
 			result.push(
-				self.transactions
-					.pop()
-					.expect("first_non_stalled is never greater than transactions.len(); qed"),
+				self.transactions.pop().expect("first_non_stalled is never greater than transactions.len(); qed"),
 			);
 		}
 
@@ -214,11 +203,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		self.scores.reverse();
 
 		// update scoring
-		scoring.update_scores(
-			&self.transactions,
-			&mut self.scores,
-			scoring::Change::Culled(result.len()),
-		);
+		scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::Culled(result.len()));
 
 		// reverse the result to maintain correct order.
 		result.reverse();

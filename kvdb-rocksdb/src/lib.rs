@@ -134,11 +134,7 @@ impl CompactionProfile {
 
 	/// Default profile suitable for SSD storage
 	pub fn ssd() -> CompactionProfile {
-		CompactionProfile {
-			initial_file_size: 64 * MB as u64,
-			block_size: 16 * KB,
-			write_rate_limit: None,
-		}
+		CompactionProfile { initial_file_size: 64 * MB as u64, block_size: 16 * KB, write_rate_limit: None }
 	}
 
 	/// Slow HDD compaction profile
@@ -219,8 +215,7 @@ struct DBAndColumns {
 fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions) -> io::Result<Options> {
 	let mut opts = Options::new();
 
-	opts.set_parsed_options("level_compaction_dynamic_level_bytes=true")
-		.map_err(other_io_err)?;
+	opts.set_parsed_options("level_compaction_dynamic_level_bytes=true").map_err(other_io_err)?;
 
 	opts.set_block_based_table_factory(block_opts);
 
@@ -233,8 +228,7 @@ fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions) -> io::Re
 	opts.optimize_level_style_compaction(config.memory_budget_per_col() as i32);
 	opts.set_target_file_size_base(config.compaction.initial_file_size);
 
-	opts.set_parsed_options("compression_per_level=")
-		.map_err(other_io_err)?;
+	opts.set_parsed_options("compression_per_level=").map_err(other_io_err)?;
 
 	Ok(opts)
 }
@@ -285,15 +279,13 @@ impl Database {
 		let mut opts = Options::new();
 
 		if let Some(rate_limit) = config.compaction.write_rate_limit {
-			opts.set_parsed_options(&format!("rate_limiter_bytes_per_sec={}", rate_limit))
-				.map_err(other_io_err)?;
+			opts.set_parsed_options(&format!("rate_limiter_bytes_per_sec={}", rate_limit)).map_err(other_io_err)?;
 		}
 		opts.set_use_fsync(false);
 		opts.create_if_missing(true);
 		opts.set_max_open_files(config.max_open_files);
 		opts.set_parsed_options("keep_log_file_num=1").map_err(other_io_err)?;
-		opts.set_parsed_options("bytes_per_sync=1048576")
-			.map_err(other_io_err)?;
+		opts.set_parsed_options("bytes_per_sync=1048576").map_err(other_io_err)?;
 		opts.set_db_write_buffer_size(config.memory_budget_per_col() / 2);
 		opts.increase_parallelism(cmp::max(1, ::num_cpus::get() as i32 / 2));
 
@@ -521,10 +513,7 @@ impl Database {
 							Some(&KeyState::Delete) => Ok(None),
 							None => col
 								.map_or_else(
-									|| {
-										db.get_opt(key, &self.read_opts)
-											.map(|r| r.map(|v| DBValue::from_slice(&v)))
-									},
+									|| db.get_opt(key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))),
 									|c| {
 										db.get_cf_opt(cfs[c as usize], key, &self.read_opts)
 											.map(|r| r.map(|v| DBValue::from_slice(&v)))
@@ -565,10 +554,9 @@ impl Database {
 				let mut overlay_data = overlay
 					.iter()
 					.filter_map(|(k, v)| match *v {
-						KeyState::Insert(ref value) => Some((
-							k.clone().into_vec().into_boxed_slice(),
-							value.clone().into_vec().into_boxed_slice(),
-						)),
+						KeyState::Insert(ref value) => {
+							Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_vec().into_boxed_slice()))
+						}
 						KeyState::Delete => None,
 					})
 					.collect::<Vec<_>>();
@@ -582,10 +570,7 @@ impl Database {
 					},
 				);
 
-				Some(DatabaseIterator {
-					iter: interleave_ordered(overlay_data, iter),
-					_marker: PhantomData,
-				})
+				Some(DatabaseIterator { iter: interleave_ordered(overlay_data, iter), _marker: PhantomData })
 			}
 			None => None,
 		}
@@ -606,10 +591,7 @@ impl Database {
 					},
 				);
 
-				Some(DatabaseIterator {
-					iter: interleave_ordered(Vec::new(), iter),
-					_marker: PhantomData,
-				})
+				Some(DatabaseIterator { iter: interleave_ordered(Vec::new(), iter), _marker: PhantomData })
 			}
 			None => None,
 		}
@@ -671,10 +653,7 @@ impl Database {
 	/// Drop a column family.
 	pub fn drop_column(&self) -> io::Result<()> {
 		match *self.db.write() {
-			Some(DBAndColumns {
-				ref mut db,
-				ref mut cfs,
-			}) => {
+			Some(DBAndColumns { ref mut db, ref mut cfs }) => {
 				if let Some(col) = cfs.pop() {
 					let name = format!("col{}", cfs.len());
 					drop(col);
@@ -689,16 +668,10 @@ impl Database {
 	/// Add a column family.
 	pub fn add_column(&self) -> io::Result<()> {
 		match *self.db.write() {
-			Some(DBAndColumns {
-				ref mut db,
-				ref mut cfs,
-			}) => {
+			Some(DBAndColumns { ref mut db, ref mut cfs }) => {
 				let col = cfs.len() as u32;
 				let name = format!("col{}", col);
-				cfs.push(
-					db.create_cf(&name, &col_config(&self.config, &self.block_opts)?)
-						.map_err(other_io_err)?,
-				);
+				cfs.push(db.create_cf(&name, &col_config(&self.config, &self.block_opts)?).map_err(other_io_err)?);
 				Ok(())
 			}
 			None => Ok(()),

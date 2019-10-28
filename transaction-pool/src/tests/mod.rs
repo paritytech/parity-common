@@ -56,10 +56,7 @@ type TestPool = Pool<Transaction, DummyScoring>;
 
 impl TestPool {
 	pub fn with_limit(max_count: usize) -> Self {
-		Self::with_options(Options {
-			max_count,
-			..Default::default()
-		})
+		Self::with_options(Options { max_count, ..Default::default() })
 	}
 }
 
@@ -75,41 +72,20 @@ fn should_clear_queue() {
 	// given
 	let b = TransactionBuilder::default();
 	let mut txq = TestPool::default();
-	assert_eq!(
-		txq.light_status(),
-		LightStatus {
-			mem_usage: 0,
-			transaction_count: 0,
-			senders: 0,
-		}
-	);
+	assert_eq!(txq.light_status(), LightStatus { mem_usage: 0, transaction_count: 0, senders: 0 });
 	let tx1 = b.tx().nonce(0).new();
 	let tx2 = b.tx().nonce(1).mem_usage(1).new();
 
 	// add
 	import(&mut txq, tx1).unwrap();
 	import(&mut txq, tx2).unwrap();
-	assert_eq!(
-		txq.light_status(),
-		LightStatus {
-			mem_usage: 1,
-			transaction_count: 2,
-			senders: 1,
-		}
-	);
+	assert_eq!(txq.light_status(), LightStatus { mem_usage: 1, transaction_count: 2, senders: 1 });
 
 	// when
 	txq.clear();
 
 	// then
-	assert_eq!(
-		txq.light_status(),
-		LightStatus {
-			mem_usage: 0,
-			transaction_count: 0,
-			senders: 0,
-		}
-	);
+	assert_eq!(txq.light_status(), LightStatus { mem_usage: 0, transaction_count: 0, senders: 0 });
 }
 
 #[test]
@@ -147,20 +123,14 @@ fn should_replace_transaction() {
 #[test]
 fn should_reject_if_above_count() {
 	let b = TransactionBuilder::default();
-	let mut txq = TestPool::with_options(Options {
-		max_count: 1,
-		..Default::default()
-	});
+	let mut txq = TestPool::with_options(Options { max_count: 1, ..Default::default() });
 
 	// Reject second
 	let tx1 = b.tx().nonce(0).new();
 	let tx2 = b.tx().nonce(1).new();
 	let hash = tx2.hash.clone();
 	import(&mut txq, tx1).unwrap();
-	assert_eq!(
-		import(&mut txq, tx2).unwrap_err(),
-		error::Error::TooCheapToEnter(hash, "0x0".into())
-	);
+	assert_eq!(import(&mut txq, tx2).unwrap_err(), error::Error::TooCheapToEnter(hash, "0x0".into()));
 	assert_eq!(txq.light_status().transaction_count, 1);
 
 	txq.clear();
@@ -176,20 +146,14 @@ fn should_reject_if_above_count() {
 #[test]
 fn should_reject_if_above_mem_usage() {
 	let b = TransactionBuilder::default();
-	let mut txq = TestPool::with_options(Options {
-		max_mem_usage: 1,
-		..Default::default()
-	});
+	let mut txq = TestPool::with_options(Options { max_mem_usage: 1, ..Default::default() });
 
 	// Reject second
 	let tx1 = b.tx().nonce(1).mem_usage(1).new();
 	let tx2 = b.tx().nonce(2).mem_usage(2).new();
 	let hash = tx2.hash.clone();
 	import(&mut txq, tx1).unwrap();
-	assert_eq!(
-		import(&mut txq, tx2).unwrap_err(),
-		error::Error::TooCheapToEnter(hash, "0x0".into())
-	);
+	assert_eq!(import(&mut txq, tx2).unwrap_err(), error::Error::TooCheapToEnter(hash, "0x0".into()));
 	assert_eq!(txq.light_status().transaction_count, 1);
 
 	txq.clear();
@@ -205,20 +169,14 @@ fn should_reject_if_above_mem_usage() {
 #[test]
 fn should_reject_if_above_sender_count() {
 	let b = TransactionBuilder::default();
-	let mut txq = TestPool::with_options(Options {
-		max_per_sender: 1,
-		..Default::default()
-	});
+	let mut txq = TestPool::with_options(Options { max_per_sender: 1, ..Default::default() });
 
 	// Reject second
 	let tx1 = b.tx().nonce(1).new();
 	let tx2 = b.tx().nonce(2).new();
 	let hash = tx2.hash.clone();
 	import(&mut txq, tx1).unwrap();
-	assert_eq!(
-		import(&mut txq, tx2).unwrap_err(),
-		error::Error::TooCheapToEnter(hash, "0x0".into())
-	);
+	assert_eq!(import(&mut txq, tx2).unwrap_err(), error::Error::TooCheapToEnter(hash, "0x0".into()));
 	assert_eq!(txq.light_status().transaction_count, 1);
 
 	txq.clear();
@@ -229,10 +187,7 @@ fn should_reject_if_above_sender_count() {
 	let hash = tx2.hash.clone();
 	import(&mut txq, tx1).unwrap();
 	// This results in error because we also compare nonces
-	assert_eq!(
-		import(&mut txq, tx2).unwrap_err(),
-		error::Error::TooCheapToEnter(hash, "0x0".into())
-	);
+	assert_eq!(import(&mut txq, tx2).unwrap_err(), error::Error::TooCheapToEnter(hash, "0x0".into()));
 	assert_eq!(txq.light_status().transaction_count, 1);
 }
 
@@ -263,22 +218,8 @@ fn should_construct_pending() {
 	import(&mut txq, b.tx().sender(1).nonce(5).new()).unwrap();
 
 	assert_eq!(txq.light_status().transaction_count, 11);
-	assert_eq!(
-		txq.status(NonceReady::default()),
-		Status {
-			stalled: 0,
-			pending: 9,
-			future: 2,
-		}
-	);
-	assert_eq!(
-		txq.status(NonceReady::new(1)),
-		Status {
-			stalled: 3,
-			pending: 6,
-			future: 2,
-		}
-	);
+	assert_eq!(txq.status(NonceReady::default()), Status { stalled: 0, pending: 9, future: 2 });
+	assert_eq!(txq.status(NonceReady::new(1)), Status { stalled: 3, pending: 6, future: 2 });
 
 	// when
 	let mut current_gas = U256::zero();
@@ -341,22 +282,8 @@ fn should_return_unordered_iterator() {
 
 	let tx9 = import(&mut txq, b.tx().sender(2).nonce(0).new()).unwrap();
 	assert_eq!(txq.light_status().transaction_count, 11);
-	assert_eq!(
-		txq.status(NonceReady::default()),
-		Status {
-			stalled: 0,
-			pending: 9,
-			future: 2,
-		}
-	);
-	assert_eq!(
-		txq.status(NonceReady::new(1)),
-		Status {
-			stalled: 3,
-			pending: 6,
-			future: 2,
-		}
-	);
+	assert_eq!(txq.status(NonceReady::default()), Status { stalled: 0, pending: 9, future: 2 });
+	assert_eq!(txq.status(NonceReady::new(1)), Status { stalled: 3, pending: 6, future: 2 });
 
 	// when
 	let all: Vec<_> = txq.unordered_pending(NonceReady::default()).collect();
@@ -413,22 +340,8 @@ fn should_update_scoring_correctly() {
 	import(&mut txq, b.tx().sender(1).nonce(5).new()).unwrap();
 
 	assert_eq!(txq.light_status().transaction_count, 11);
-	assert_eq!(
-		txq.status(NonceReady::default()),
-		Status {
-			stalled: 0,
-			pending: 9,
-			future: 2,
-		}
-	);
-	assert_eq!(
-		txq.status(NonceReady::new(1)),
-		Status {
-			stalled: 3,
-			pending: 6,
-			future: 2,
-		}
-	);
+	assert_eq!(txq.status(NonceReady::default()), Status { stalled: 0, pending: 9, future: 2 });
+	assert_eq!(txq.status(NonceReady::new(1)), Status { stalled: 3, pending: 6, future: 2 });
 
 	txq.update_scores(&Address::zero(), ());
 
@@ -490,35 +403,14 @@ fn should_cull_stalled_transactions() {
 	import(&mut txq, b.tx().sender(1).nonce(1).new()).unwrap();
 	import(&mut txq, b.tx().sender(1).nonce(5).new()).unwrap();
 
-	assert_eq!(
-		txq.status(NonceReady::new(1)),
-		Status {
-			stalled: 2,
-			pending: 2,
-			future: 2,
-		}
-	);
+	assert_eq!(txq.status(NonceReady::new(1)), Status { stalled: 2, pending: 2, future: 2 });
 
 	// when
 	assert_eq!(txq.cull(None, NonceReady::new(1)), 2);
 
 	// then
-	assert_eq!(
-		txq.status(NonceReady::new(1)),
-		Status {
-			stalled: 0,
-			pending: 2,
-			future: 2,
-		}
-	);
-	assert_eq!(
-		txq.light_status(),
-		LightStatus {
-			transaction_count: 4,
-			senders: 2,
-			mem_usage: 0,
-		}
-	);
+	assert_eq!(txq.status(NonceReady::new(1)), Status { stalled: 0, pending: 2, future: 2 });
+	assert_eq!(txq.light_status(), LightStatus { transaction_count: 4, senders: 2, mem_usage: 0 });
 }
 
 #[test]
@@ -534,36 +426,15 @@ fn should_cull_stalled_transactions_from_a_sender() {
 	import(&mut txq, b.tx().sender(1).nonce(1).new()).unwrap();
 	import(&mut txq, b.tx().sender(1).nonce(2).new()).unwrap();
 
-	assert_eq!(
-		txq.status(NonceReady::new(2)),
-		Status {
-			stalled: 4,
-			pending: 1,
-			future: 0,
-		}
-	);
+	assert_eq!(txq.status(NonceReady::new(2)), Status { stalled: 4, pending: 1, future: 0 });
 
 	// when
 	let sender = Address::zero();
 	assert_eq!(txq.cull(Some(&[sender]), NonceReady::new(2)), 2);
 
 	// then
-	assert_eq!(
-		txq.status(NonceReady::new(2)),
-		Status {
-			stalled: 2,
-			pending: 1,
-			future: 0,
-		}
-	);
-	assert_eq!(
-		txq.light_status(),
-		LightStatus {
-			transaction_count: 3,
-			senders: 1,
-			mem_usage: 0,
-		}
-	);
+	assert_eq!(txq.status(NonceReady::new(2)), Status { stalled: 2, pending: 1, future: 0 });
+	assert_eq!(txq.light_status(), LightStatus { transaction_count: 3, senders: 1, mem_usage: 0 });
 }
 
 #[test]
@@ -576,36 +447,15 @@ fn should_re_insert_after_cull() {
 	import(&mut txq, b.tx().nonce(1).new()).unwrap();
 	import(&mut txq, b.tx().sender(1).nonce(0).new()).unwrap();
 	import(&mut txq, b.tx().sender(1).nonce(1).new()).unwrap();
-	assert_eq!(
-		txq.status(NonceReady::new(1)),
-		Status {
-			stalled: 2,
-			pending: 2,
-			future: 0,
-		}
-	);
+	assert_eq!(txq.status(NonceReady::new(1)), Status { stalled: 2, pending: 2, future: 0 });
 
 	// when
 	assert_eq!(txq.cull(None, NonceReady::new(1)), 2);
-	assert_eq!(
-		txq.status(NonceReady::new(1)),
-		Status {
-			stalled: 0,
-			pending: 2,
-			future: 0,
-		}
-	);
+	assert_eq!(txq.status(NonceReady::new(1)), Status { stalled: 0, pending: 2, future: 0 });
 	import(&mut txq, b.tx().nonce(0).gas_price(5).new()).unwrap();
 	import(&mut txq, b.tx().sender(1).nonce(0).new()).unwrap();
 
-	assert_eq!(
-		txq.status(NonceReady::new(1)),
-		Status {
-			stalled: 2,
-			pending: 2,
-			future: 0,
-		}
-	);
+	assert_eq!(txq.status(NonceReady::new(1)), Status { stalled: 2, pending: 2, future: 0 });
 }
 
 #[test]
@@ -644,37 +494,15 @@ fn should_return_is_full() {
 fn should_import_even_if_limit_is_reached_and_should_replace_returns_insert_new() {
 	// given
 	let b = TransactionBuilder::default();
-	let mut txq = TestPool::with_scoring(
-		DummyScoring::always_insert(),
-		Options {
-			max_count: 1,
-			..Default::default()
-		},
-	);
-	txq.import(b.tx().nonce(0).gas_price(5).new(), &mut DummyScoring::always_insert())
-		.unwrap();
-	assert_eq!(
-		txq.light_status(),
-		LightStatus {
-			transaction_count: 1,
-			senders: 1,
-			mem_usage: 0,
-		}
-	);
+	let mut txq = TestPool::with_scoring(DummyScoring::always_insert(), Options { max_count: 1, ..Default::default() });
+	txq.import(b.tx().nonce(0).gas_price(5).new(), &mut DummyScoring::always_insert()).unwrap();
+	assert_eq!(txq.light_status(), LightStatus { transaction_count: 1, senders: 1, mem_usage: 0 });
 
 	// when
-	txq.import(b.tx().nonce(1).gas_price(5).new(), &mut DummyScoring::always_insert())
-		.unwrap();
+	txq.import(b.tx().nonce(1).gas_price(5).new(), &mut DummyScoring::always_insert()).unwrap();
 
 	// then
-	assert_eq!(
-		txq.light_status(),
-		LightStatus {
-			transaction_count: 2,
-			senders: 1,
-			mem_usage: 0,
-		}
-	);
+	assert_eq!(txq.light_status(), LightStatus { transaction_count: 2, senders: 1, mem_usage: 0 });
 }
 
 #[test]
@@ -683,22 +511,9 @@ fn should_not_import_even_if_limit_is_reached_and_should_replace_returns_false()
 
 	// given
 	let b = TransactionBuilder::default();
-	let mut txq = TestPool::with_scoring(
-		DummyScoring::default(),
-		Options {
-			max_count: 1,
-			..Default::default()
-		},
-	);
+	let mut txq = TestPool::with_scoring(DummyScoring::default(), Options { max_count: 1, ..Default::default() });
 	import(&mut txq, b.tx().nonce(0).gas_price(5).new()).unwrap();
-	assert_eq!(
-		txq.light_status(),
-		LightStatus {
-			transaction_count: 1,
-			senders: 1,
-			mem_usage: 0,
-		}
-	);
+	assert_eq!(txq.light_status(), LightStatus { transaction_count: 1, senders: 1, mem_usage: 0 });
 
 	// when
 	let err = import(&mut txq, b.tx().nonce(1).gas_price(5).new()).unwrap_err();
@@ -711,14 +526,7 @@ fn should_not_import_even_if_limit_is_reached_and_should_replace_returns_false()
 			"0x5".into()
 		)
 	);
-	assert_eq!(
-		txq.light_status(),
-		LightStatus {
-			transaction_count: 1,
-			senders: 1,
-			mem_usage: 0,
-		}
-	);
+	assert_eq!(txq.light_status(), LightStatus { transaction_count: 1, senders: 1, mem_usage: 0 });
 }
 
 #[test]
@@ -727,36 +535,16 @@ fn should_import_even_if_sender_limit_is_reached() {
 	let b = TransactionBuilder::default();
 	let mut txq = TestPool::with_scoring(
 		DummyScoring::always_insert(),
-		Options {
-			max_count: 1,
-			max_per_sender: 1,
-			..Default::default()
-		},
+		Options { max_count: 1, max_per_sender: 1, ..Default::default() },
 	);
-	txq.import(b.tx().nonce(0).gas_price(5).new(), &mut DummyScoring::always_insert())
-		.unwrap();
-	assert_eq!(
-		txq.light_status(),
-		LightStatus {
-			transaction_count: 1,
-			senders: 1,
-			mem_usage: 0,
-		}
-	);
+	txq.import(b.tx().nonce(0).gas_price(5).new(), &mut DummyScoring::always_insert()).unwrap();
+	assert_eq!(txq.light_status(), LightStatus { transaction_count: 1, senders: 1, mem_usage: 0 });
 
 	// when
-	txq.import(b.tx().nonce(1).gas_price(5).new(), &mut DummyScoring::always_insert())
-		.unwrap();
+	txq.import(b.tx().nonce(1).gas_price(5).new(), &mut DummyScoring::always_insert()).unwrap();
 
 	// then
-	assert_eq!(
-		txq.light_status(),
-		LightStatus {
-			transaction_count: 2,
-			senders: 1,
-			mem_usage: 0,
-		}
-	);
+	assert_eq!(txq.light_status(), LightStatus { transaction_count: 2, senders: 1, mem_usage: 0 });
 }
 
 mod listener {
@@ -771,9 +559,7 @@ mod listener {
 
 	impl Listener<Transaction> for MyListener {
 		fn added(&mut self, _tx: &SharedTransaction, old: Option<&SharedTransaction>) {
-			self.0
-				.borrow_mut()
-				.push(if old.is_some() { "replaced" } else { "added" });
+			self.0.borrow_mut().push(if old.is_some() { "replaced" } else { "added" });
 		}
 
 		fn rejected<H: fmt::Debug + fmt::LowerHex>(&mut self, _tx: &SharedTransaction, _reason: &error::Error<H>) {
@@ -805,11 +591,7 @@ mod listener {
 		let mut txq = Pool::new(
 			listener,
 			DummyScoring::default(),
-			Options {
-				max_per_sender: 1,
-				max_count: 2,
-				..Default::default()
-			},
+			Options { max_per_sender: 1, max_count: 2, ..Default::default() },
 		);
 		assert!(results.borrow().is_empty());
 

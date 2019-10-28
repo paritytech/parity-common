@@ -56,10 +56,7 @@ cfg_if::cfg_if! {
 
 pub mod allocators;
 
-#[cfg(any(
-	all(target_os = "macos", not(feature = "jemalloc-global"),),
-	feature = "estimate-heapsize"
-))]
+#[cfg(any(all(target_os = "macos", not(feature = "jemalloc-global"),), feature = "estimate-heapsize"))]
 pub mod sizeof;
 
 /// This is a copy of patched crate `malloc_size_of` as a module.

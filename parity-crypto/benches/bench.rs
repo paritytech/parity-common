@@ -58,7 +58,5 @@ fn ecdh_agree(c: &mut Criterion) {
 	let public = keypair.public().clone();
 	let secret = keypair.secret().clone();
 
-	c.bench_function("ecdh_agree", move |b| {
-		b.iter(|| parity_crypto::publickey::ecdh::agree(&secret, &public))
-	});
+	c.bench_function("ecdh_agree", move |b| b.iter(|| parity_crypto::publickey::ecdh::agree(&secret, &public)));
 }

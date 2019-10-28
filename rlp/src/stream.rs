@@ -21,11 +21,7 @@ struct ListInfo {
 
 impl ListInfo {
 	fn new(position: usize, max: Option<usize>) -> ListInfo {
-		ListInfo {
-			position,
-			current: 0,
-			max,
-		}
+		ListInfo { position, current: 0, max }
 	}
 }
 
@@ -45,11 +41,7 @@ impl Default for RlpStream {
 impl RlpStream {
 	/// Initializes instance of empty `Stream`.
 	pub fn new() -> Self {
-		RlpStream {
-			unfinished_lists: Vec::with_capacity(16),
-			buffer: Vec::with_capacity(1024),
-			finished_list: false,
-		}
+		RlpStream { unfinished_lists: Vec::with_capacity(16), buffer: Vec::with_capacity(1024), finished_list: false }
 	}
 
 	/// Initializes the `Stream` as a list.
@@ -369,9 +361,7 @@ pub struct BasicEncoder<'a> {
 
 impl<'a> BasicEncoder<'a> {
 	fn new(stream: &'a mut RlpStream) -> Self {
-		BasicEncoder {
-			buffer: &mut stream.buffer,
-		}
+		BasicEncoder { buffer: &mut stream.buffer }
 	}
 
 	fn insert_size(&mut self, size: usize, position: usize) -> u8 {

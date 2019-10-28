@@ -53,12 +53,8 @@ pub fn open(name: &str, version: Option<u32>, columns: u32) -> impl Future<Outpu
 	};
 
 	let open_request = match version {
-		Some(version) => idb_factory
-			.open_with_u32(name, version)
-			.expect("TypeError is not possible with Rust; qed"),
-		None => idb_factory
-			.open(name)
-			.expect("TypeError is not possible with Rust; qed"),
+		Some(version) => idb_factory.open_with_u32(name, version).expect("TypeError is not possible with Rust; qed"),
+		None => idb_factory.open(name).expect("TypeError is not possible with Rust; qed"),
 	};
 
 	try_create_missing_stores(&open_request, columns, version);
@@ -68,9 +64,7 @@ pub fn open(name: &str, version: Option<u32>, columns: u32) -> impl Future<Outpu
 		let target = event.target().expect("Event should have a target; qed");
 		let req = target.dyn_ref::<IdbRequest>().expect("Event target is IdbRequest; qed");
 
-		let result = req
-			.result()
-			.expect("IndexedDB.onsuccess should have a valid result; qed");
+		let result = req.result().expect("IndexedDB.onsuccess should have a valid result; qed");
 		assert!(result.is_instance_of::<IdbDatabase>());
 
 		let db = IdbDatabase::from(result);
@@ -79,11 +73,7 @@ pub fn open(name: &str, version: Option<u32>, columns: u32) -> impl Future<Outpu
 		let columns = db.object_store_names().length();
 
 		// errors if the receiving end was dropped before this call
-		let _ = tx.send(IndexedDB {
-			version,
-			columns,
-			inner: super::SendWrapper::new(db),
-		});
+		let _ = tx.send(IndexedDB { version, columns, inner: super::SendWrapper::new(db) });
 	});
 	open_request.set_onsuccess(Some(on_success.as_ref().unchecked_ref()));
 	on_success.forget();
@@ -113,10 +103,7 @@ fn store_names_js(columns: u32) -> Array {
 
 fn try_create_missing_stores(req: &IdbOpenDbRequest, columns: u32, version: Option<u32>) {
 	let on_upgradeneeded = Closure::once(move |event: &Event| {
-		debug!(
-			"Upgrading or creating the database to version {:?}, columns {}",
-			version, columns
-		);
+		debug!("Upgrading or creating the database to version {:?}, columns {}", version, columns);
 		// Extract database handle from the event
 		let target = event.target().expect("Event should have a target; qed");
 		let req = target.dyn_ref::<IdbRequest>().expect("Event target is IdbRequest; qed");
@@ -209,13 +196,9 @@ pub fn idb_cursor(idb: &IdbDatabase, col: u32) -> impl Stream<Item = (Vec<u8>, V
 	// TODO: we could read all the columns in one db transaction
 	let store_name = store_name(col);
 	let store_name = store_name.as_str();
-	let txn = idb
-		.transaction_with_str(store_name)
-		.expect("The stores were created on open: {}; qed");
+	let txn = idb.transaction_with_str(store_name).expect("The stores were created on open: {}; qed");
 
-	let store = txn
-		.object_store(store_name)
-		.expect("Opening a store shouldn't fail; qed");
+	let store = txn.object_store(store_name).expect("Opening a store shouldn't fail; qed");
 	let cursor = store.open_cursor().expect("Opening a cursor shouldn't fail; qed");
 
 	let (tx, rx) = channel::mpsc::unbounded();
@@ -223,9 +206,7 @@ pub fn idb_cursor(idb: &IdbDatabase, col: u32) -> impl Stream<Item = (Vec<u8>, V
 	let on_cursor = Closure::wrap(Box::new(move |event: &Event| {
 		// Extract the cursor from the event
 		let target = event.target().expect("on_cursor should have a target; qed");
-		let req = target
-			.dyn_ref::<IdbRequest>()
-			.expect("target should be IdbRequest; qed");
+		let req = target.dyn_ref::<IdbRequest>().expect("target should be IdbRequest; qed");
 		let result = req.result().expect("IdbRequest should have a result; qed");
 		let cursor: &IdbCursorWithValue = result.unchecked_ref();
 

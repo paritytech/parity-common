@@ -263,6 +263,7 @@ mod tests {
 	use hex_literal::hex;
 
 	#[test]
+	#[rustfmt::skip]
 	fn it_works() {
 		let bloom = Bloom::from_str(
 			"00000000000000000000000000000000\
@@ -281,8 +282,7 @@ mod tests {
 			 00000000000000000000000000000000\
 			 00000000000000000000000000000000\
 			 00000000000000000000000000000000",
-		)
-		.unwrap();
+		).unwrap();
 		let address = hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106");
 		let topic = hex!("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc");
 

@@ -26,11 +26,7 @@ use hash_db::Hasher;
 use rlp::RlpStream;
 
 fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
-	first
-		.iter()
-		.zip(second.iter())
-		.position(|(f, s)| f != s)
-		.unwrap_or_else(|| cmp::min(first.len(), second.len()))
+	first.iter().zip(second.iter()).position(|(f, s)| f != s).unwrap_or_else(|| cmp::min(first.len(), second.len()))
 }
 
 /// Generates a trie root hash for a vector of values
@@ -105,11 +101,7 @@ where
 	}
 
 	// then move them to a vector
-	let input = input
-		.into_iter()
-		.zip(lens.windows(2))
-		.map(|((_, v), w)| (&nibbles[w[0]..w[1]], v))
-		.collect::<Vec<_>>();
+	let input = input.into_iter().zip(lens.windows(2)).map(|((_, v), w)| (&nibbles[w[0]..w[1]], v)).collect::<Vec<_>>();
 
 	let mut stream = RlpStream::new();
 	hash256rlp::<H, _, _>(&input, 0, &mut stream);
@@ -215,9 +207,7 @@ where
 		// skip first tuple
 		.skip(1)
 		// get minimum number of shared nibbles between first and each successive
-		.fold(key.len(), |acc, &(ref k, _)| {
-			cmp::min(shared_prefix_len(key, k.as_ref()), acc)
-		});
+		.fold(key.len(), |acc, &(ref k, _)| cmp::min(shared_prefix_len(key, k.as_ref()), acc));
 
 	// if shared prefix is higher than current prefix append its
 	// new part of the key to the stream
@@ -239,11 +229,7 @@ where
 	// iterate over all possible nibbles
 	for i in 0..16 {
 		// count how many successive elements have same next nibble
-		let len = input
-			.iter()
-			.skip(begin)
-			.take_while(|pair| pair.0.as_ref()[pre_len] == i)
-			.count();
+		let len = input.iter().skip(begin).take_while(|pair| pair.0.as_ref()[pre_len] == i).count();
 
 		// if at least 1 successive element has the same nibble
 		// append their suffixes

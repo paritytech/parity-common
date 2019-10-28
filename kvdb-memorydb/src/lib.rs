@@ -38,19 +38,14 @@ pub fn create(num_cols: u32) -> InMemory {
 		cols.insert(Some(idx), BTreeMap::new());
 	}
 
-	InMemory {
-		columns: RwLock::new(cols),
-	}
+	InMemory { columns: RwLock::new(cols) }
 }
 
 impl KeyValueDB for InMemory {
 	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let columns = self.columns.read();
 		match columns.get(&col) {
-			None => Err(io::Error::new(
-				io::ErrorKind::Other,
-				format!("No such column family: {:?}", col),
-			)),
+			None => Err(io::Error::new(io::ErrorKind::Other, format!("No such column family: {:?}", col))),
 			Some(map) => Ok(map.get(key).cloned()),
 		}
 	}
@@ -59,10 +54,9 @@ impl KeyValueDB for InMemory {
 		let columns = self.columns.read();
 		match columns.get(&col) {
 			None => None,
-			Some(map) => map
-				.iter()
-				.find(|&(ref k, _)| k.starts_with(prefix))
-				.map(|(_, v)| v.to_vec().into_boxed_slice()),
+			Some(map) => {
+				map.iter().find(|&(ref k, _)| k.starts_with(prefix)).map(|(_, v)| v.to_vec().into_boxed_slice())
+			}
 		}
 	}
 
@@ -93,9 +87,7 @@ impl KeyValueDB for InMemory {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				// TODO: worth optimizing at all?
-				map.clone()
-					.into_iter()
-					.map(|(k, v)| (k.into_boxed_slice(), v.into_vec().into_boxed_slice())),
+				map.clone().into_iter().map(|(k, v)| (k.into_boxed_slice(), v.into_vec().into_boxed_slice())),
 			),
 			None => Box::new(None.into_iter()),
 		}
@@ -118,9 +110,6 @@ impl KeyValueDB for InMemory {
 	}
 
 	fn restore(&self, _new_db: &str) -> io::Result<()> {
-		Err(io::Error::new(
-			io::ErrorKind::Other,
-			"Attempted to restore in-memory database",
-		))
+		Err(io::Error::new(io::ErrorKind::Other, "Attempted to restore in-memory database"))
 	}
 }

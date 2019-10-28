@@ -63,11 +63,9 @@ mod tests {
 			ser::to_string_pretty(&!U256::zero()).unwrap(),
 			"\"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\""
 		);
-		assert!(
-			ser::from_str::<U256>("\"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"")
-				.unwrap_err()
-				.is_data()
-		);
+		assert!(ser::from_str::<U256>("\"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"")
+			.unwrap_err()
+			.is_data());
 	}
 
 	#[test]

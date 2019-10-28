@@ -202,10 +202,7 @@ pub trait MallocConditionalShallowSizeOf {
 	fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
 }
 
-#[cfg(not(any(
-	all(target_os = "macos", not(feature = "jemalloc-global"),),
-	feature = "estimate-heapsize"
-)))]
+#[cfg(not(any(all(target_os = "macos", not(feature = "jemalloc-global"),), feature = "estimate-heapsize")))]
 pub mod inner_allocator_use {
 
 	use super::*;
@@ -404,9 +401,7 @@ where
 			// `ops.malloc_enclosing_size_of()` then gives us the storage size.
 			// This assumes that the `HashSet`'s contents (values and hashes)
 			// are all stored in a single contiguous heap allocation.
-			self.iter()
-				.next()
-				.map_or(0, |t| unsafe { ops.malloc_enclosing_size_of(t) })
+			self.iter().next().map_or(0, |t| unsafe { ops.malloc_enclosing_size_of(t) })
 		} else {
 			// An estimate.
 			self.capacity() * (size_of::<T>() + size_of::<usize>())
@@ -438,9 +433,7 @@ where
 	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		// See the implementation for std::collections::HashSet for details.
 		if ops.has_malloc_enclosing_size_of() {
-			self.values()
-				.next()
-				.map_or(0, |v| unsafe { ops.malloc_enclosing_size_of(v) })
+			self.values().next().map_or(0, |v| unsafe { ops.malloc_enclosing_size_of(v) })
 		} else {
 			self.capacity() * (size_of::<V>() + size_of::<K>() + size_of::<usize>())
 		}
@@ -470,9 +463,7 @@ where
 {
 	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		if ops.has_malloc_enclosing_size_of() {
-			self.values()
-				.next()
-				.map_or(0, |v| unsafe { ops.malloc_enclosing_size_of(v) })
+			self.values().next().map_or(0, |v| unsafe { ops.malloc_enclosing_size_of(v) })
 		} else {
 			self.len() * (size_of::<V>() + size_of::<K>() + size_of::<usize>())
 		}

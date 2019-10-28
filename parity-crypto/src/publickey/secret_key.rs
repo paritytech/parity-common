@@ -52,11 +52,7 @@ impl fmt::Debug for Secret {
 
 impl fmt::Display for Secret {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-		write!(
-			fmt,
-			"Secret: 0x{:x}{:x}..{:x}{:x}",
-			self.inner[0], self.inner[1], self.inner[30], self.inner[31]
-		)
+		write!(fmt, "Secret: 0x{:x}{:x}..{:x}{:x}", self.inner[0], self.inner[1], self.inner[30], self.inner[31])
 	}
 }
 
@@ -292,10 +288,7 @@ mod tests {
 
 		let mut pow0 = secret.clone();
 		pow0.pow(0).unwrap();
-		assert_eq!(
-			pow0,
-			Secret::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap()
-		);
+		assert_eq!(pow0, Secret::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap());
 
 		let mut pow1 = secret.clone();
 		pow1.pow(1).unwrap();

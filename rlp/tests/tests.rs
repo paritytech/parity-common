@@ -21,9 +21,7 @@ fn test_rlp_display() {
 
 #[test]
 fn length_overflow() {
-	let bs = [
-		0xbf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xe5,
-	];
+	let bs = [0xbf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xe5];
 	let rlp = Rlp::new(&bs);
 	let res: Result<u8, DecoderError> = rlp.as_val();
 	assert_eq!(Err(DecoderError::RlpInvalidLength), res);
@@ -231,10 +229,7 @@ fn encode_vector_u64() {
 
 #[test]
 fn encode_vector_str() {
-	let tests = vec![VETestPair(
-		vec!["cat", "dog"],
-		vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'],
-	)];
+	let tests = vec![VETestPair(vec!["cat", "dog"], vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'])];
 	run_encode_tests_list(tests);
 }
 
@@ -282,20 +277,13 @@ fn decode_vector_u8() {
 
 #[test]
 fn decode_untrusted_u8() {
-	let tests = vec![
-		DTestPair(0x0u8, vec![0x80]),
-		DTestPair(0x77u8, vec![0x77]),
-		DTestPair(0xccu8, vec![0x81, 0xcc]),
-	];
+	let tests = vec![DTestPair(0x0u8, vec![0x80]), DTestPair(0x77u8, vec![0x77]), DTestPair(0xccu8, vec![0x81, 0xcc])];
 	run_decode_tests(tests);
 }
 
 #[test]
 fn decode_untrusted_u16() {
-	let tests = vec![
-		DTestPair(0x100u16, vec![0x82, 0x01, 0x00]),
-		DTestPair(0xffffu16, vec![0x82, 0xff, 0xff]),
-	];
+	let tests = vec![DTestPair(0x100u16, vec![0x82, 0x01, 0x00]), DTestPair(0xffffu16, vec![0x82, 0xff, 0xff])];
 	run_decode_tests(tests);
 }
 
@@ -522,26 +510,11 @@ fn test_canonical_list_encoding() {
 // https://github.com/paritytech/parity-common/issues/48
 #[test]
 fn test_inner_length_capping_for_short_lists() {
-	assert_eq!(
-		Rlp::new(&[0xc0, 0x82, b'a', b'b']).val_at::<String>(0),
-		Err(DecoderError::RlpIsTooShort)
-	);
-	assert_eq!(
-		Rlp::new(&[0xc0 + 1, 0x82, b'a', b'b']).val_at::<String>(0),
-		Err(DecoderError::RlpIsTooShort)
-	);
-	assert_eq!(
-		Rlp::new(&[0xc0 + 2, 0x82, b'a', b'b']).val_at::<String>(0),
-		Err(DecoderError::RlpIsTooShort)
-	);
-	assert_eq!(
-		Rlp::new(&[0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0),
-		Ok("ab".to_owned())
-	);
-	assert_eq!(
-		Rlp::new(&[0xc0 + 4, 0x82, b'a', b'b']).val_at::<String>(0),
-		Err(DecoderError::RlpIsTooShort)
-	);
+	assert_eq!(Rlp::new(&[0xc0, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&[0xc0 + 1, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&[0xc0 + 2, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&[0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0), Ok("ab".to_owned()));
+	assert_eq!(Rlp::new(&[0xc0 + 4, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
 }
 
 // test described in
@@ -554,10 +527,7 @@ fn test_nested_list_roundtrip() {
 
 	impl Encodable for Inner {
 		fn rlp_append(&self, s: &mut RlpStream) {
-			s.begin_unbounded_list()
-				.append(&self.0)
-				.append(&self.1)
-				.finalize_unbounded_list();
+			s.begin_unbounded_list().append(&self.0).append(&self.1).finalize_unbounded_list();
 		}
 	}
 

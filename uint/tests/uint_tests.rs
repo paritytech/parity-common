@@ -77,14 +77,8 @@ fn uint256_from() {
 	assert_eq!(U256([0x1010, 0, 0, 0]), U256::from(&[0x10u8, 0x10][..]));
 	assert_eq!(U256([0x12f0, 0, 0, 0]), U256::from(&[0x12u8, 0xf0][..]));
 	assert_eq!(U256([0x12f0, 0, 0, 0]), U256::from(&[0, 0x12u8, 0xf0][..]));
-	assert_eq!(
-		U256([0x12f0, 0, 0, 0]),
-		U256::from(&[0, 0, 0, 0, 0, 0, 0, 0x12u8, 0xf0][..])
-	);
-	assert_eq!(
-		U256([0x12f0, 1, 0, 0]),
-		U256::from(&[1, 0, 0, 0, 0, 0, 0, 0x12u8, 0xf0][..])
-	);
+	assert_eq!(U256([0x12f0, 0, 0, 0]), U256::from(&[0, 0, 0, 0, 0, 0, 0, 0x12u8, 0xf0][..]));
+	assert_eq!(U256([0x12f0, 1, 0, 0]), U256::from(&[1, 0, 0, 0, 0, 0, 0, 0x12u8, 0xf0][..]));
 	assert_eq!(
 		U256([0x12f0, 1, 0x0910203040506077, 0x8090a0b0c0d0e0f0]),
 		U256::from(
@@ -194,10 +188,7 @@ fn uint256_from() {
 fn uint256_try_into_primitives() {
 	macro_rules! try_into_uint_primitive_ok {
 		($primitive: ty) => {
-			assert_eq!(
-				U256::from(10).try_into() as Result<$primitive, _>,
-				Ok(<$primitive>::from(10u8))
-			);
+			assert_eq!(U256::from(10).try_into() as Result<$primitive, _>, Ok(<$primitive>::from(10u8)));
 		};
 	}
 	try_into_uint_primitive_ok!(u8);
@@ -209,10 +200,7 @@ fn uint256_try_into_primitives() {
 
 	macro_rules! try_into_iint_primitive_ok {
 		($primitive: ty) => {
-			assert_eq!(
-				U256::from(10).try_into() as Result<$primitive, _>,
-				Ok(<$primitive>::from(10i8))
-			);
+			assert_eq!(U256::from(10).try_into() as Result<$primitive, _>, Ok(<$primitive>::from(10i8)));
 		};
 	}
 	try_into_iint_primitive_ok!(i8);
@@ -235,20 +223,14 @@ fn uint256_try_into_primitives() {
 	try_into_primitive_err!(u32, u64);
 	try_into_primitive_err!(usize, u128);
 	try_into_primitive_err!(u64, u128);
-	assert_eq!(
-		U256([0, 0, 1, 0]).try_into() as Result<u128, _>,
-		Err("integer overflow when casting to u128")
-	);
+	assert_eq!(U256([0, 0, 1, 0]).try_into() as Result<u128, _>, Err("integer overflow when casting to u128"));
 	try_into_primitive_err!(i8, i16);
 	try_into_primitive_err!(i16, i32);
 	try_into_primitive_err!(i32, i64);
 	try_into_primitive_err!(isize, i128);
 	try_into_primitive_err!(i64, i128);
 	try_into_primitive_err!(i128, u128);
-	assert_eq!(
-		U256([0, 0, 1, 0]).try_into() as Result<i128, _>,
-		Err("integer overflow when casting to i128")
-	);
+	assert_eq!(U256([0, 0, 1, 0]).try_into() as Result<i128, _>, Err("integer overflow when casting to i128"));
 }
 
 #[test]
@@ -451,10 +433,7 @@ pub fn display_u512() {
 fn uint256_overflowing_pow() {
 	assert_eq!(
 		U256::from(2).overflowing_pow(U256::from(0xff)),
-		(
-			U256::from_str("8000000000000000000000000000000000000000000000000000000000000000").unwrap(),
-			false
-		)
+		(U256::from_str("8000000000000000000000000000000000000000000000000000000000000000").unwrap(), false)
 	);
 	assert_eq!(U256::from(2).overflowing_pow(U256::from(0x100)), (U256::zero(), true));
 }
@@ -469,10 +448,7 @@ fn uint256_mul2() {
 	let a = U512::from_str("10000000000000000fffffffffffffffe").unwrap();
 	let b = U512::from_str("ffffffffffffffffffffffffffffffff").unwrap();
 
-	assert_eq!(
-		a * b,
-		U512::from_str("10000000000000000fffffffffffffffcffffffffffffffff0000000000000002").unwrap()
-	);
+	assert_eq!(a * b, U512::from_str("10000000000000000fffffffffffffffcffffffffffffffff0000000000000002").unwrap());
 }
 
 #[test]
@@ -498,11 +474,9 @@ fn uint512_mul() {
 #[test]
 fn uint256_mul_overflow() {
 	assert_eq!(
-		U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
-			.unwrap()
-			.overflowing_mul(
-				U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
-			),
+		U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap().overflowing_mul(
+			U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
+		),
 		(U256::from_str("1").unwrap(), true)
 	);
 }
@@ -518,13 +492,8 @@ fn uint256_mul_overflow_panic() {
 #[test]
 fn uint256_sub_overflow() {
 	assert_eq!(
-		U256::from_str("0")
-			.unwrap()
-			.overflowing_sub(U256::from_str("1").unwrap()),
-		(
-			U256::from_str("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap(),
-			true
-		)
+		U256::from_str("0").unwrap().overflowing_sub(U256::from_str("1").unwrap()),
+		(U256::from_str("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap(), true)
 	);
 }
 
@@ -940,10 +909,7 @@ fn example() {
 	for _ in 0..200 {
 		val = val * U256::from(2)
 	}
-	assert_eq!(
-		&format!("{}", val),
-		"1643897619276947051879427220465009342380213662639797070513307648"
-	);
+	assert_eq!(&format!("{}", val), "1643897619276947051879427220465009342380213662639797070513307648");
 }
 
 #[test]
@@ -1008,9 +974,8 @@ fn slice_roundtrip_le2() {
 
 #[test]
 fn from_little_endian() {
-	let source: [u8; 32] = [
-		1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	];
+	let source: [u8; 32] =
+		[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 	let number = U256::from_little_endian(&source[..]);
 
@@ -1019,9 +984,8 @@ fn from_little_endian() {
 
 #[test]
 fn from_big_endian() {
-	let source: [u8; 32] = [
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-	];
+	let source: [u8; 32] =
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 
 	let number = U256::from_big_endian(&source[..]);
 
@@ -1030,18 +994,15 @@ fn from_big_endian() {
 
 #[test]
 fn into_fixed_array() {
-	let expected: [u8; 32] = [
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-	];
+	let expected: [u8; 32] =
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 	let ary: [u8; 32] = U256::from(1).into();
 	assert_eq!(ary, expected);
 }
 
 #[test]
 fn test_u256_from_fixed_array() {
-	let ary = [
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 123,
-	];
+	let ary = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 123];
 	let num: U256 = ary.into();
 	assert_eq!(num, U256::from(std::u64::MAX) + 1 + 123);
 
@@ -1051,20 +1012,11 @@ fn test_u256_from_fixed_array() {
 
 #[test]
 fn test_from_ref_to_fixed_array() {
-	let ary: &[u8; 32] = &[
-		1, 0, 1, 2, 1, 0, 1, 2, 3, 0, 3, 4, 3, 0, 3, 4, 5, 0, 5, 6, 5, 0, 5, 6, 7, 0, 7, 8, 7, 0, 7, 8,
-	];
+	let ary: &[u8; 32] =
+		&[1, 0, 1, 2, 1, 0, 1, 2, 3, 0, 3, 4, 3, 0, 3, 4, 5, 0, 5, 6, 5, 0, 5, 6, 7, 0, 7, 8, 7, 0, 7, 8];
 	let big: U256 = ary.into();
 	// the numbers are each row of 8 bytes reversed and cast to u64
-	assert_eq!(
-		big,
-		U256([
-			504410889324070664,
-			360293493601469702,
-			216176097878868740,
-			72058702156267778u64
-		])
-	);
+	assert_eq!(big, U256([504410889324070664, 360293493601469702, 216176097878868740, 72058702156267778u64]));
 }
 
 #[test]
@@ -1082,42 +1034,18 @@ fn test_u512_from_fixed_array() {
 
 #[test]
 fn leading_zeros() {
-	assert_eq!(
-		U256::from("000000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1").leading_zeros(),
-		95
-	);
-	assert_eq!(
-		U256::from("f00000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1").leading_zeros(),
-		0
-	);
-	assert_eq!(
-		U256::from("0000000000000000000000000000000000000000000000000000000000000001").leading_zeros(),
-		255
-	);
-	assert_eq!(
-		U256::from("0000000000000000000000000000000000000000000000000000000000000000").leading_zeros(),
-		256
-	);
+	assert_eq!(U256::from("000000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1").leading_zeros(), 95);
+	assert_eq!(U256::from("f00000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1").leading_zeros(), 0);
+	assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000001").leading_zeros(), 255);
+	assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").leading_zeros(), 256);
 }
 
 #[test]
 fn trailing_zeros() {
-	assert_eq!(
-		U256::from("1adbdd6bd6ff027485484b97f8a6a4c7129756dd100000000000000000000000").trailing_zeros(),
-		92
-	);
-	assert_eq!(
-		U256::from("1adbdd6bd6ff027485484b97f8a6a4c7129756dd10000000000000000000000f").trailing_zeros(),
-		0
-	);
-	assert_eq!(
-		U256::from("8000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(),
-		255
-	);
-	assert_eq!(
-		U256::from("0000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(),
-		256
-	);
+	assert_eq!(U256::from("1adbdd6bd6ff027485484b97f8a6a4c7129756dd100000000000000000000000").trailing_zeros(), 92);
+	assert_eq!(U256::from("1adbdd6bd6ff027485484b97f8a6a4c7129756dd10000000000000000000000f").trailing_zeros(), 0);
+	assert_eq!(U256::from("8000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 255);
+	assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 256);
 }
 
 #[cfg(feature = "quickcheck")]
