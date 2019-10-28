@@ -17,7 +17,10 @@
 use std::marker::PhantomData;
 use std::ops::Deref;
 
-use digest::generic_array::{GenericArray, typenum::{U20, U32, U64}};
+use digest::generic_array::{
+	typenum::{U20, U32, U64},
+	GenericArray,
+};
 use sha2::Digest as RDigest;
 
 /// The message digest.
@@ -74,7 +77,7 @@ pub struct Hasher<T>(Inner, PhantomData<T>);
 enum Inner {
 	Sha256(sha2::Sha256),
 	Sha512(sha2::Sha512),
-	Ripemd160(ripemd160::Ripemd160)
+	Ripemd160(ripemd160::Ripemd160),
 }
 
 impl Hasher<Sha256> {
@@ -91,36 +94,27 @@ impl Hasher<Sha512> {
 
 impl Hasher<Ripemd160> {
 	pub fn ripemd160() -> Hasher<Ripemd160> {
-		Hasher(Inner::Ripemd160(ripemd160::Ripemd160::default()), PhantomData)
+		Hasher(
+			Inner::Ripemd160(ripemd160::Ripemd160::default()),
+			PhantomData,
+		)
 	}
 }
 
 impl<T> Hasher<T> {
 	pub fn update(&mut self, data: &[u8]) {
 		match self.0 {
-			Inner::Sha256(ref mut ctx) => {
-				ctx.input(data)
-			},
-			Inner::Sha512(ref mut ctx) => {
-				ctx.input(data)
-			},
-			Inner::Ripemd160(ref mut ctx) => {
-				ctx.input(data)
-			}
+			Inner::Sha256(ref mut ctx) => ctx.input(data),
+			Inner::Sha512(ref mut ctx) => ctx.input(data),
+			Inner::Ripemd160(ref mut ctx) => ctx.input(data),
 		}
 	}
 
 	pub fn finish(self) -> Digest<T> {
 		match self.0 {
-			Inner::Sha256(ctx) => {
-				Digest(InnerDigest::Sha256(ctx.result()), PhantomData)
-			},
-			Inner::Sha512(ctx) => {
-				Digest(InnerDigest::Sha512(ctx.result()), PhantomData)
-			},
-			Inner::Ripemd160(ctx) => {
-				Digest(InnerDigest::Ripemd160(ctx.result()), PhantomData)
-			}
+			Inner::Sha256(ctx) => Digest(InnerDigest::Sha256(ctx.result()), PhantomData),
+			Inner::Sha512(ctx) => Digest(InnerDigest::Sha512(ctx.result()), PhantomData),
+			Inner::Ripemd160(ctx) => Digest(InnerDigest::Ripemd160(ctx.result()), PhantomData),
 		}
 	}
 }

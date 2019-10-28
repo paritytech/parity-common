@@ -43,9 +43,7 @@
 //!   measured as well as the thing it points to. E.g.
 //!   `<Box<_> as MallocSizeOf>::size_of(field, ops)`.
 
-
 // This file is patched at commit 5bdea7dc1c80790a852a3fb03edfb2b8fbd403dc DO NOT EDIT.
-
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
@@ -55,7 +53,7 @@ mod rstd {
 }
 #[cfg(not(feature = "std"))]
 mod rstd {
-  pub use core::*;
+	pub use core::*;
 	pub mod collections {
 		pub use alloc::collections::*;
 		pub use vec_deque::VecDeque;
@@ -65,18 +63,18 @@ mod rstd {
 #[cfg(feature = "std")]
 use std::sync::Arc;
 
-#[cfg(feature = "std")]
-use std::hash::BuildHasher;
+#[cfg(not(feature = "std"))]
+pub use alloc::boxed::Box;
+#[cfg(not(feature = "std"))]
+use core::ffi::c_void;
 use rstd::hash::Hash;
 use rstd::mem::size_of;
 use rstd::ops::Range;
 use rstd::ops::{Deref, DerefMut};
 #[cfg(feature = "std")]
+use std::hash::BuildHasher;
+#[cfg(feature = "std")]
 use std::os::raw::c_void;
-#[cfg(not(feature = "std"))]
-use core::ffi::c_void;
-#[cfg(not(feature = "std"))]
-pub use alloc::boxed::Box;
 
 /// A C function that takes a pointer to a heap allocation and returns its size.
 pub type VoidPtrToSizeFn = unsafe extern "C" fn(ptr: *const c_void) -> usize;
@@ -86,428 +84,424 @@ pub type VoidPtrToBoolFnMut = dyn FnMut(*const c_void) -> bool;
 
 /// Operations used when measuring heap usage of data structures.
 pub struct MallocSizeOfOps {
-    /// A function that returns the size of a heap allocation.
-    size_of_op: VoidPtrToSizeFn,
+	/// A function that returns the size of a heap allocation.
+	size_of_op: VoidPtrToSizeFn,
 
-    /// Like `size_of_op`, but can take an interior pointer. Optional because
-    /// not all allocators support this operation. If it's not provided, some
-    /// memory measurements will actually be computed estimates rather than
-    /// real and accurate measurements.
-    enclosing_size_of_op: Option<VoidPtrToSizeFn>,
+	/// Like `size_of_op`, but can take an interior pointer. Optional because
+	/// not all allocators support this operation. If it's not provided, some
+	/// memory measurements will actually be computed estimates rather than
+	/// real and accurate measurements.
+	enclosing_size_of_op: Option<VoidPtrToSizeFn>,
 
-    /// Check if a pointer has been seen before, and remember it for next time.
-    /// Useful when measuring `Rc`s and `Arc`s. Optional, because many places
-    /// don't need it.
-    have_seen_ptr_op: Option<Box<VoidPtrToBoolFnMut>>,
+	/// Check if a pointer has been seen before, and remember it for next time.
+	/// Useful when measuring `Rc`s and `Arc`s. Optional, because many places
+	/// don't need it.
+	have_seen_ptr_op: Option<Box<VoidPtrToBoolFnMut>>,
 }
 
 impl MallocSizeOfOps {
-    pub fn new(
-        size_of: VoidPtrToSizeFn,
-        malloc_enclosing_size_of: Option<VoidPtrToSizeFn>,
-        have_seen_ptr: Option<Box<VoidPtrToBoolFnMut>>,
-    ) -> Self {
-        MallocSizeOfOps {
-            size_of_op: size_of,
-            enclosing_size_of_op: malloc_enclosing_size_of,
-            have_seen_ptr_op: have_seen_ptr,
-        }
-    }
+	pub fn new(
+		size_of: VoidPtrToSizeFn,
+		malloc_enclosing_size_of: Option<VoidPtrToSizeFn>,
+		have_seen_ptr: Option<Box<VoidPtrToBoolFnMut>>,
+	) -> Self {
+		MallocSizeOfOps {
+			size_of_op: size_of,
+			enclosing_size_of_op: malloc_enclosing_size_of,
+			have_seen_ptr_op: have_seen_ptr,
+		}
+	}
 
-    /// Check if an allocation is empty. This relies on knowledge of how Rust
-    /// handles empty allocations, which may change in the future.
-    fn is_empty<T: ?Sized>(ptr: *const T) -> bool {
-        // The correct condition is this:
-        //   `ptr as usize <= ::std::mem::align_of::<T>()`
-        // But we can't call align_of() on a ?Sized T. So we approximate it
-        // with the following. 256 is large enough that it should always be
-        // larger than the required alignment, but small enough that it is
-        // always in the first page of memory and therefore not a legitimate
-        // address.
-        return ptr as *const usize as usize <= 256;
-    }
+	/// Check if an allocation is empty. This relies on knowledge of how Rust
+	/// handles empty allocations, which may change in the future.
+	fn is_empty<T: ?Sized>(ptr: *const T) -> bool {
+		// The correct condition is this:
+		//   `ptr as usize <= ::std::mem::align_of::<T>()`
+		// But we can't call align_of() on a ?Sized T. So we approximate it
+		// with the following. 256 is large enough that it should always be
+		// larger than the required alignment, but small enough that it is
+		// always in the first page of memory and therefore not a legitimate
+		// address.
+		return ptr as *const usize as usize <= 256;
+	}
 
-    /// Call `size_of_op` on `ptr`, first checking that the allocation isn't
-    /// empty, because some types (such as `Vec`) utilize empty allocations.
-    pub unsafe fn malloc_size_of<T: ?Sized>(&self, ptr: *const T) -> usize {
-        if MallocSizeOfOps::is_empty(ptr) {
-            0
-        } else {
-            (self.size_of_op)(ptr as *const c_void)
-        }
-    }
+	/// Call `size_of_op` on `ptr`, first checking that the allocation isn't
+	/// empty, because some types (such as `Vec`) utilize empty allocations.
+	pub unsafe fn malloc_size_of<T: ?Sized>(&self, ptr: *const T) -> usize {
+		if MallocSizeOfOps::is_empty(ptr) {
+			0
+		} else {
+			(self.size_of_op)(ptr as *const c_void)
+		}
+	}
 
-    /// Is an `enclosing_size_of_op` available?
-    pub fn has_malloc_enclosing_size_of(&self) -> bool {
-        self.enclosing_size_of_op.is_some()
-    }
+	/// Is an `enclosing_size_of_op` available?
+	pub fn has_malloc_enclosing_size_of(&self) -> bool {
+		self.enclosing_size_of_op.is_some()
+	}
 
-    /// Call `enclosing_size_of_op`, which must be available, on `ptr`, which
-    /// must not be empty.
-    pub unsafe fn malloc_enclosing_size_of<T>(&self, ptr: *const T) -> usize {
-        assert!(!MallocSizeOfOps::is_empty(ptr));
-        (self.enclosing_size_of_op.unwrap())(ptr as *const c_void)
-    }
+	/// Call `enclosing_size_of_op`, which must be available, on `ptr`, which
+	/// must not be empty.
+	pub unsafe fn malloc_enclosing_size_of<T>(&self, ptr: *const T) -> usize {
+		assert!(!MallocSizeOfOps::is_empty(ptr));
+		(self.enclosing_size_of_op.unwrap())(ptr as *const c_void)
+	}
 
-    /// Call `have_seen_ptr_op` on `ptr`.
-    pub fn have_seen_ptr<T>(&mut self, ptr: *const T) -> bool {
-        let have_seen_ptr_op = self
-            .have_seen_ptr_op
-            .as_mut()
-            .expect("missing have_seen_ptr_op");
-        have_seen_ptr_op(ptr as *const c_void)
-    }
+	/// Call `have_seen_ptr_op` on `ptr`.
+	pub fn have_seen_ptr<T>(&mut self, ptr: *const T) -> bool {
+		let have_seen_ptr_op = self
+			.have_seen_ptr_op
+			.as_mut()
+			.expect("missing have_seen_ptr_op");
+		have_seen_ptr_op(ptr as *const c_void)
+	}
 }
 
 /// Trait for measuring the "deep" heap usage of a data structure. This is the
 /// most commonly-used of the traits.
 pub trait MallocSizeOf {
-    /// Measure the heap usage of all descendant heap-allocated structures, but
-    /// not the space taken up by the value itself.
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
+	/// Measure the heap usage of all descendant heap-allocated structures, but
+	/// not the space taken up by the value itself.
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
 }
 
 /// Trait for measuring the "shallow" heap usage of a container.
 pub trait MallocShallowSizeOf {
-    /// Measure the heap usage of immediate heap-allocated descendant
-    /// structures, but not the space taken up by the value itself. Anything
-    /// beyond the immediate descendants must be measured separately, using
-    /// iteration.
-    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
+	/// Measure the heap usage of immediate heap-allocated descendant
+	/// structures, but not the space taken up by the value itself. Anything
+	/// beyond the immediate descendants must be measured separately, using
+	/// iteration.
+	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
 }
 
 /// Like `MallocSizeOf`, but with a different name so it cannot be used
 /// accidentally with derive(MallocSizeOf). For use with types like `Rc` and
 /// `Arc` when appropriate (e.g. when measuring a "primary" reference).
 pub trait MallocUnconditionalSizeOf {
-    /// Measure the heap usage of all heap-allocated descendant structures, but
-    /// not the space taken up by the value itself.
-    fn unconditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
+	/// Measure the heap usage of all heap-allocated descendant structures, but
+	/// not the space taken up by the value itself.
+	fn unconditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
 }
 
 /// `MallocUnconditionalSizeOf` combined with `MallocShallowSizeOf`.
 pub trait MallocUnconditionalShallowSizeOf {
-    /// `unconditional_size_of` combined with `shallow_size_of`.
-    fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
+	/// `unconditional_size_of` combined with `shallow_size_of`.
+	fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
 }
 
 /// Like `MallocSizeOf`, but only measures if the value hasn't already been
 /// measured. For use with types like `Rc` and `Arc` when appropriate (e.g.
 /// when there is no "primary" reference).
 pub trait MallocConditionalSizeOf {
-    /// Measure the heap usage of all heap-allocated descendant structures, but
-    /// not the space taken up by the value itself, and only if that heap usage
-    /// hasn't already been measured.
-    fn conditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
+	/// Measure the heap usage of all heap-allocated descendant structures, but
+	/// not the space taken up by the value itself, and only if that heap usage
+	/// hasn't already been measured.
+	fn conditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
 }
 
 /// `MallocConditionalSizeOf` combined with `MallocShallowSizeOf`.
 pub trait MallocConditionalShallowSizeOf {
-    /// `conditional_size_of` combined with `shallow_size_of`.
-    fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
+	/// `conditional_size_of` combined with `shallow_size_of`.
+	fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
 }
 
 #[cfg(not(any(
-	all(
-		target_os = "macos",
-		not(feature = "jemalloc-global"),
-	),
+	all(target_os = "macos", not(feature = "jemalloc-global"),),
 	feature = "estimate-heapsize"
 )))]
 pub mod inner_allocator_use {
 
-use super::*;
+	use super::*;
 
-#[cfg(not(feature = "std"))]
-use alloc::string::String;
+	#[cfg(not(feature = "std"))]
+	use alloc::string::String;
 
-impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
-    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        unsafe { ops.malloc_size_of(&**self) }
-    }
-}
+	impl<T: ?Sized> MallocShallowSizeOf for Box<T> {
+		fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+			unsafe { ops.malloc_size_of(&**self) }
+		}
+	}
 
-impl<T> MallocShallowSizeOf for Vec<T> {
-    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        unsafe { ops.malloc_size_of(self.as_ptr()) }
-    }
-}
+	impl<T> MallocShallowSizeOf for Vec<T> {
+		fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+			unsafe { ops.malloc_size_of(self.as_ptr()) }
+		}
+	}
 
-// currently this seems only fine with jemalloc
-#[cfg(feature = "std")]
-#[cfg(all(feature = "jemalloc-global", not(target_os = "windows")))]
-impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
-    fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        unsafe { ops.malloc_size_of(arc_ptr(self)) }
-    }
-}
+	// currently this seems only fine with jemalloc
+	#[cfg(feature = "std")]
+	#[cfg(all(feature = "jemalloc-global", not(target_os = "windows")))]
+	impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
+		fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+			unsafe { ops.malloc_size_of(arc_ptr(self)) }
+		}
+	}
 
-#[cfg(feature = "std")]
-#[cfg(not(all(feature = "jemalloc-global", not(target_os = "windows"))))]
-impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
-    fn unconditional_shallow_size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-		    size_of::<T>()
-   }
-}
+	#[cfg(feature = "std")]
+	#[cfg(not(all(feature = "jemalloc-global", not(target_os = "windows"))))]
+	impl<T> MallocUnconditionalShallowSizeOf for Arc<T> {
+		fn unconditional_shallow_size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
+			size_of::<T>()
+		}
+	}
 
-impl MallocSizeOf for String {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        unsafe { ops.malloc_size_of(self.as_ptr()) }
-    }
-}
-
+	impl MallocSizeOf for String {
+		fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+			unsafe { ops.malloc_size_of(self.as_ptr()) }
+		}
+	}
 }
 
 impl<'a, T: ?Sized> MallocSizeOf for &'a T {
-    fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-        // Zero makes sense for a non-owning reference.
-        0
-    }
+	fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
+		// Zero makes sense for a non-owning reference.
+		0
+	}
 }
 
 impl<T: MallocSizeOf + ?Sized> MallocSizeOf for Box<T> {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        self.shallow_size_of(ops) + (**self).size_of(ops)
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.shallow_size_of(ops) + (**self).size_of(ops)
+	}
 }
 
 impl MallocSizeOf for () {
-    fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-        0
-    }
+	fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
+		0
+	}
 }
 
 impl<T1, T2> MallocSizeOf for (T1, T2)
 where
-    T1: MallocSizeOf,
-    T2: MallocSizeOf,
+	T1: MallocSizeOf,
+	T2: MallocSizeOf,
 {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        self.0.size_of(ops) + self.1.size_of(ops)
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.0.size_of(ops) + self.1.size_of(ops)
+	}
 }
 
 impl<T1, T2, T3> MallocSizeOf for (T1, T2, T3)
 where
-    T1: MallocSizeOf,
-    T2: MallocSizeOf,
-    T3: MallocSizeOf,
+	T1: MallocSizeOf,
+	T2: MallocSizeOf,
+	T3: MallocSizeOf,
 {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        self.0.size_of(ops) + self.1.size_of(ops) + self.2.size_of(ops)
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.0.size_of(ops) + self.1.size_of(ops) + self.2.size_of(ops)
+	}
 }
 
 impl<T1, T2, T3, T4> MallocSizeOf for (T1, T2, T3, T4)
 where
-    T1: MallocSizeOf,
-    T2: MallocSizeOf,
-    T3: MallocSizeOf,
-    T4: MallocSizeOf,
+	T1: MallocSizeOf,
+	T2: MallocSizeOf,
+	T3: MallocSizeOf,
+	T4: MallocSizeOf,
 {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        self.0.size_of(ops) + self.1.size_of(ops) + self.2.size_of(ops) + self.3.size_of(ops)
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.0.size_of(ops) + self.1.size_of(ops) + self.2.size_of(ops) + self.3.size_of(ops)
+	}
 }
 
 impl<T: MallocSizeOf> MallocSizeOf for Option<T> {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        if let Some(val) = self.as_ref() {
-            val.size_of(ops)
-        } else {
-            0
-        }
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		if let Some(val) = self.as_ref() {
+			val.size_of(ops)
+		} else {
+			0
+		}
+	}
 }
 
 impl<T: MallocSizeOf, E: MallocSizeOf> MallocSizeOf for Result<T, E> {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        match *self {
-            Ok(ref x) => x.size_of(ops),
-            Err(ref e) => e.size_of(ops),
-        }
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		match *self {
+			Ok(ref x) => x.size_of(ops),
+			Err(ref e) => e.size_of(ops),
+		}
+	}
 }
 
 impl<T: MallocSizeOf + Copy> MallocSizeOf for rstd::cell::Cell<T> {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        self.get().size_of(ops)
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.get().size_of(ops)
+	}
 }
 
 impl<T: MallocSizeOf> MallocSizeOf for rstd::cell::RefCell<T> {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        self.borrow().size_of(ops)
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.borrow().size_of(ops)
+	}
 }
 
 #[cfg(feature = "std")]
 impl<'a, B: ?Sized + ToOwned> MallocSizeOf for std::borrow::Cow<'a, B>
 where
-    B::Owned: MallocSizeOf,
+	B::Owned: MallocSizeOf,
 {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        match *self {
-            std::borrow::Cow::Borrowed(_) => 0,
-            std::borrow::Cow::Owned(ref b) => b.size_of(ops),
-        }
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		match *self {
+			std::borrow::Cow::Borrowed(_) => 0,
+			std::borrow::Cow::Owned(ref b) => b.size_of(ops),
+		}
+	}
 }
 
 impl<T: MallocSizeOf> MallocSizeOf for [T] {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        let mut n = 0;
-        for elem in self.iter() {
-            n += elem.size_of(ops);
-        }
-        n
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		let mut n = 0;
+		for elem in self.iter() {
+			n += elem.size_of(ops);
+		}
+		n
+	}
 }
 
 impl<T: MallocSizeOf> MallocSizeOf for Vec<T> {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        let mut n = self.shallow_size_of(ops);
-        for elem in self.iter() {
-            n += elem.size_of(ops);
-        }
-        n
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		let mut n = self.shallow_size_of(ops);
+		for elem in self.iter() {
+			n += elem.size_of(ops);
+		}
+		n
+	}
 }
 
 impl<T> MallocShallowSizeOf for rstd::collections::VecDeque<T> {
-    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        if ops.has_malloc_enclosing_size_of() {
-            if let Some(front) = self.front() {
-                // The front element is an interior pointer.
-                unsafe { ops.malloc_enclosing_size_of(&*front) }
-            } else {
-                // This assumes that no memory is allocated when the VecDeque is empty.
-                0
-            }
-        } else {
-            // An estimate.
-            self.capacity() * size_of::<T>()
-        }
-    }
+	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		if ops.has_malloc_enclosing_size_of() {
+			if let Some(front) = self.front() {
+				// The front element is an interior pointer.
+				unsafe { ops.malloc_enclosing_size_of(&*front) }
+			} else {
+				// This assumes that no memory is allocated when the VecDeque is empty.
+				0
+			}
+		} else {
+			// An estimate.
+			self.capacity() * size_of::<T>()
+		}
+	}
 }
 
 impl<T: MallocSizeOf> MallocSizeOf for rstd::collections::VecDeque<T> {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        let mut n = self.shallow_size_of(ops);
-        for elem in self.iter() {
-            n += elem.size_of(ops);
-        }
-        n
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		let mut n = self.shallow_size_of(ops);
+		for elem in self.iter() {
+			n += elem.size_of(ops);
+		}
+		n
+	}
 }
 
 #[cfg(feature = "std")]
 impl<T, S> MallocShallowSizeOf for std::collections::HashSet<T, S>
 where
-    T: Eq + Hash,
-    S: BuildHasher,
+	T: Eq + Hash,
+	S: BuildHasher,
 {
-    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        if ops.has_malloc_enclosing_size_of() {
-            // The first value from the iterator gives us an interior pointer.
-            // `ops.malloc_enclosing_size_of()` then gives us the storage size.
-            // This assumes that the `HashSet`'s contents (values and hashes)
-            // are all stored in a single contiguous heap allocation.
-            self.iter()
-                .next()
-                .map_or(0, |t| unsafe { ops.malloc_enclosing_size_of(t) })
-        } else {
-            // An estimate.
-            self.capacity() * (size_of::<T>() + size_of::<usize>())
-        }
-    }
+	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		if ops.has_malloc_enclosing_size_of() {
+			// The first value from the iterator gives us an interior pointer.
+			// `ops.malloc_enclosing_size_of()` then gives us the storage size.
+			// This assumes that the `HashSet`'s contents (values and hashes)
+			// are all stored in a single contiguous heap allocation.
+			self.iter()
+				.next()
+				.map_or(0, |t| unsafe { ops.malloc_enclosing_size_of(t) })
+		} else {
+			// An estimate.
+			self.capacity() * (size_of::<T>() + size_of::<usize>())
+		}
+	}
 }
 
 #[cfg(feature = "std")]
 impl<T, S> MallocSizeOf for std::collections::HashSet<T, S>
 where
-    T: Eq + Hash + MallocSizeOf,
-    S: BuildHasher,
+	T: Eq + Hash + MallocSizeOf,
+	S: BuildHasher,
 {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        let mut n = self.shallow_size_of(ops);
-        for t in self.iter() {
-            n += t.size_of(ops);
-        }
-        n
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		let mut n = self.shallow_size_of(ops);
+		for t in self.iter() {
+			n += t.size_of(ops);
+		}
+		n
+	}
 }
 
 #[cfg(feature = "std")]
 impl<K, V, S> MallocShallowSizeOf for std::collections::HashMap<K, V, S>
 where
-    K: Eq + Hash,
-    S: BuildHasher,
+	K: Eq + Hash,
+	S: BuildHasher,
 {
-    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        // See the implementation for std::collections::HashSet for details.
-        if ops.has_malloc_enclosing_size_of() {
-            self.values()
-                .next()
-                .map_or(0, |v| unsafe { ops.malloc_enclosing_size_of(v) })
-        } else {
-            self.capacity() * (size_of::<V>() + size_of::<K>() + size_of::<usize>())
-        }
-    }
+	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		// See the implementation for std::collections::HashSet for details.
+		if ops.has_malloc_enclosing_size_of() {
+			self.values()
+				.next()
+				.map_or(0, |v| unsafe { ops.malloc_enclosing_size_of(v) })
+		} else {
+			self.capacity() * (size_of::<V>() + size_of::<K>() + size_of::<usize>())
+		}
+	}
 }
 
 #[cfg(feature = "std")]
 impl<K, V, S> MallocSizeOf for std::collections::HashMap<K, V, S>
 where
-    K: Eq + Hash + MallocSizeOf,
-    V: MallocSizeOf,
-    S: BuildHasher,
+	K: Eq + Hash + MallocSizeOf,
+	V: MallocSizeOf,
+	S: BuildHasher,
 {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        let mut n = self.shallow_size_of(ops);
-        for (k, v) in self.iter() {
-            n += k.size_of(ops);
-            n += v.size_of(ops);
-        }
-        n
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		let mut n = self.shallow_size_of(ops);
+		for (k, v) in self.iter() {
+			n += k.size_of(ops);
+			n += v.size_of(ops);
+		}
+		n
+	}
 }
 
 impl<K, V> MallocShallowSizeOf for rstd::collections::BTreeMap<K, V>
 where
-    K: Eq + Hash,
+	K: Eq + Hash,
 {
-    fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        if ops.has_malloc_enclosing_size_of() {
-            self.values()
-                .next()
-                .map_or(0, |v| unsafe { ops.malloc_enclosing_size_of(v) })
-        } else {
-            self.len() * (size_of::<V>() + size_of::<K>() + size_of::<usize>())
-        }
-    }
+	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		if ops.has_malloc_enclosing_size_of() {
+			self.values()
+				.next()
+				.map_or(0, |v| unsafe { ops.malloc_enclosing_size_of(v) })
+		} else {
+			self.len() * (size_of::<V>() + size_of::<K>() + size_of::<usize>())
+		}
+	}
 }
 
 impl<K, V> MallocSizeOf for rstd::collections::BTreeMap<K, V>
 where
-    K: Eq + Hash + MallocSizeOf,
-    V: MallocSizeOf,
+	K: Eq + Hash + MallocSizeOf,
+	V: MallocSizeOf,
 {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        let mut n = self.shallow_size_of(ops);
-        for (k, v) in self.iter() {
-            n += k.size_of(ops);
-            n += v.size_of(ops);
-        }
-        n
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		let mut n = self.shallow_size_of(ops);
+		for (k, v) in self.iter() {
+			n += k.size_of(ops);
+			n += v.size_of(ops);
+		}
+		n
+	}
 }
 
 // PhantomData is always 0.
 impl<T> MallocSizeOf for rstd::marker::PhantomData<T> {
-    fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-        0
-    }
+	fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
+		0
+	}
 }
 
 // XXX: we don't want MallocSizeOf to be defined for Rc and Arc. If negative
@@ -518,37 +512,37 @@ impl<T> MallocSizeOf for rstd::marker::PhantomData<T> {
 //impl<T> !MallocShallowSizeOf for Arc<T> { }
 
 #[cfg(feature = "std")]
-fn arc_ptr<T>(s: &Arc<T>) -> * const T {
-  &(**s) as *const T
+fn arc_ptr<T>(s: &Arc<T>) -> *const T {
+	&(**s) as *const T
 }
 
 #[cfg(feature = "std")]
 impl<T: MallocSizeOf> MallocUnconditionalSizeOf for Arc<T> {
-    fn unconditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        self.unconditional_shallow_size_of(ops) + (**self).size_of(ops)
-    }
+	fn unconditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.unconditional_shallow_size_of(ops) + (**self).size_of(ops)
+	}
 }
 
 #[cfg(feature = "std")]
 impl<T> MallocConditionalShallowSizeOf for Arc<T> {
-    fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        if ops.have_seen_ptr(arc_ptr(self)) {
-            0
-        } else {
-            self.unconditional_shallow_size_of(ops)
-        }
-    }
+	fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		if ops.have_seen_ptr(arc_ptr(self)) {
+			0
+		} else {
+			self.unconditional_shallow_size_of(ops)
+		}
+	}
 }
 
 #[cfg(feature = "std")]
 impl<T: MallocSizeOf> MallocConditionalSizeOf for Arc<T> {
-    fn conditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        if ops.have_seen_ptr(arc_ptr(self)) {
-            0
-        } else {
-            self.unconditional_size_of(ops)
-        }
-    }
+	fn conditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		if ops.have_seen_ptr(arc_ptr(self)) {
+			0
+		} else {
+			self.unconditional_size_of(ops)
+		}
+	}
 }
 
 /// If a mutex is stored directly as a member of a data type that is being measured,
@@ -559,9 +553,9 @@ impl<T: MallocSizeOf> MallocConditionalSizeOf for Arc<T> {
 /// contents.
 #[cfg(feature = "std")]
 impl<T: MallocSizeOf> MallocSizeOf for std::sync::Mutex<T> {
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        (*self.lock().unwrap()).size_of(ops)
-    }
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		(*self.lock().unwrap()).size_of(ops)
+	}
 }
 
 #[macro_export]
@@ -607,15 +601,15 @@ malloc_size_of_is_0!(Range<f32>, Range<f64>);
 pub struct Measurable<T: MallocSizeOf>(pub T);
 
 impl<T: MallocSizeOf> Deref for Measurable<T> {
-    type Target = T;
+	type Target = T;
 
-    fn deref(&self) -> &T {
-        &self.0
-    }
+	fn deref(&self) -> &T {
+		&self.0
+	}
 }
 
 impl<T: MallocSizeOf> DerefMut for Measurable<T> {
-    fn deref_mut(&mut self) -> &mut T {
-        &mut self.0
-    }
+	fn deref_mut(&mut self) -> &mut T {
+		&mut self.0
+	}
 }

@@ -17,44 +17,42 @@
 #[macro_use]
 extern crate criterion;
 
-use criterion::{Criterion, Bencher};
 use crate::parity_crypto::publickey::Generator;
+use criterion::{Bencher, Criterion};
 
-criterion_group!(
-	benches,
-	input_len,
-	ecdh_agree,
-);
+criterion_group!(benches, input_len, ecdh_agree,);
 
 criterion_main!(benches);
 
 /// general benches for multiple input size
 fn input_len(c: &mut Criterion) {
-
-	c.bench_function_over_inputs("ripemd",
+	c.bench_function_over_inputs(
+		"ripemd",
 		|b: &mut Bencher, size: &usize| {
 			let data = vec![0u8; *size];
 			b.iter(|| parity_crypto::digest::ripemd160(&data[..]));
 		},
-		vec![100, 500, 1_000, 10_000, 100_000]
+		vec![100, 500, 1_000, 10_000, 100_000],
 	);
 
-	c.bench_function_over_inputs("aes_ctr",
+	c.bench_function_over_inputs(
+		"aes_ctr",
 		|b: &mut Bencher, size: &usize| {
 			let data = vec![0u8; *size];
 			let mut dest = vec![0; *size];
 			let k = [0; 16];
 			let iv = [0; 16];
 
-			b.iter(||{
-				parity_crypto::aes::encrypt_128_ctr(&k[..], &iv[..], &data[..], &mut dest[..]).unwrap();
+			b.iter(|| {
+				parity_crypto::aes::encrypt_128_ctr(&k[..], &iv[..], &data[..], &mut dest[..])
+					.unwrap();
 				// same as encrypt but add it just in case
-				parity_crypto::aes::decrypt_128_ctr(&k[..], &iv[..], &data[..], &mut dest[..]).unwrap();
+				parity_crypto::aes::decrypt_128_ctr(&k[..], &iv[..], &data[..], &mut dest[..])
+					.unwrap();
 			});
 		},
-		vec![100, 500, 1_000, 10_000, 100_000]
+		vec![100, 500, 1_000, 10_000, 100_000],
 	);
-
 }
 
 fn ecdh_agree(c: &mut Criterion) {
@@ -62,5 +60,7 @@ fn ecdh_agree(c: &mut Criterion) {
 	let public = keypair.public().clone();
 	let secret = keypair.secret().clone();
 
-	c.bench_function("ecdh_agree", move |b| b.iter(|| parity_crypto::publickey::ecdh::agree(&secret, &public)));
+	c.bench_function("ecdh_agree", move |b| {
+		b.iter(|| parity_crypto::publickey::ecdh::agree(&secret, &public))
+	});
 }

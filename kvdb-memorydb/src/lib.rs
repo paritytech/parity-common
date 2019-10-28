@@ -14,9 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::{io, collections::{BTreeMap, HashMap}};
+use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
 use parking_lot::RwLock;
-use kvdb::{DBValue, DBTransaction, KeyValueDB, DBOp};
+use std::{
+	collections::{BTreeMap, HashMap},
+	io,
+};
 
 /// A key-value database fulfilling the `KeyValueDB` trait, living in memory.
 /// This is generally intended for tests and is not particularly optimized.
@@ -36,7 +39,7 @@ pub fn create(num_cols: u32) -> InMemory {
 	}
 
 	InMemory {
-		columns: RwLock::new(cols)
+		columns: RwLock::new(cols),
 	}
 }
 
@@ -44,7 +47,10 @@ impl KeyValueDB for InMemory {
 	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let columns = self.columns.read();
 		match columns.get(&col) {
-			None => Err(io::Error::new(io::ErrorKind::Other, format!("No such column family: {:?}", col))),
+			None => Err(io::Error::new(
+				io::ErrorKind::Other,
+				format!("No such column family: {:?}", col),
+			)),
 			Some(map) => Ok(map.get(key).cloned()),
 		}
 	}
@@ -53,10 +59,10 @@ impl KeyValueDB for InMemory {
 		let columns = self.columns.read();
 		match columns.get(&col) {
 			None => None,
-			Some(map) =>
-				map.iter()
-					.find(|&(ref k ,_)| k.starts_with(prefix))
-					.map(|(_, v)| v.to_vec().into_boxed_slice())
+			Some(map) => map
+				.iter()
+				.find(|&(ref k, _)| k.starts_with(prefix))
+				.map(|(_, v)| v.to_vec().into_boxed_slice()),
 		}
 	}
 
@@ -69,12 +75,12 @@ impl KeyValueDB for InMemory {
 					if let Some(col) = columns.get_mut(&col) {
 						col.insert(key.into_vec(), value);
 					}
-				},
+				}
 				DBOp::Delete { col, key } => {
 					if let Some(col) = columns.get_mut(&col) {
 						col.remove(&*key);
 					}
-				},
+				}
 			}
 		}
 	}
@@ -83,32 +89,41 @@ impl KeyValueDB for InMemory {
 		Ok(())
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(
+		&'a self,
+		col: Option<u32>,
+	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
 		match self.columns.read().get(&col) {
-			Some(map) => Box::new( // TODO: worth optimizing at all?
+			Some(map) => Box::new(
+				// TODO: worth optimizing at all?
 				map.clone()
 					.into_iter()
-					.map(|(k, v)| (k.into_boxed_slice(), v.into_vec().into_boxed_slice()))
+					.map(|(k, v)| (k.into_boxed_slice(), v.into_vec().into_boxed_slice())),
 			),
 			None => Box::new(None.into_iter()),
 		}
 	}
 
-	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-		-> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
-	{
+	fn iter_from_prefix<'a>(
+		&'a self,
+		col: Option<u32>,
+		prefix: &'a [u8],
+	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				map.clone()
 					.into_iter()
 					.skip_while(move |&(ref k, _)| !k.starts_with(prefix))
-					.map(|(k, v)| (k.into_boxed_slice(), v.into_vec().into_boxed_slice()))
+					.map(|(k, v)| (k.into_boxed_slice(), v.into_vec().into_boxed_slice())),
 			),
 			None => Box::new(None.into_iter()),
 		}
 	}
 
 	fn restore(&self, _new_db: &str) -> io::Result<()> {
-		Err(io::Error::new(io::ErrorKind::Other, "Attempted to restore in-memory database"))
+		Err(io::Error::new(
+			io::ErrorKind::Other,
+			"Attempted to restore in-memory database",
+		))
 	}
 }

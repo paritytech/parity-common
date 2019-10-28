@@ -17,23 +17,19 @@
 //! Estimation for heapsize calculation. Usable to replace call to allocator method (for some
 //! allocators or simply because we just need a deterministic cunsumption measurement).
 
-
 use crate::malloc_size::{
-	MallocSizeOf,
-	MallocShallowSizeOf,
-	MallocUnconditionalShallowSizeOf,
-	MallocSizeOfOps
+	MallocShallowSizeOf, MallocSizeOf, MallocSizeOfOps, MallocUnconditionalShallowSizeOf,
 };
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
 #[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-#[cfg(not(feature = "std"))]
 use alloc::string::String;
 #[cfg(not(feature = "std"))]
-use core::mem::{size_of, size_of_val};
-#[cfg(not(feature = "std"))]
 use alloc::sync::Arc;
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use core::mem::{size_of, size_of_val};
 
 #[cfg(feature = "std")]
 use std::mem::{size_of, size_of_val};

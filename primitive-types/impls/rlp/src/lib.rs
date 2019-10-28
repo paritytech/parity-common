@@ -42,7 +42,7 @@ macro_rules! impl_uint_rlp {
 				})
 			}
 		}
-	}
+	};
 }
 
 /// Add RLP serialization support to a fixed-sized hash type created by `construct_fixed_hash!`.
@@ -57,16 +57,21 @@ macro_rules! impl_fixed_hash_rlp {
 
 		impl $crate::rlp::Decodable for $name {
 			fn decode(rlp: &$crate::rlp::Rlp) -> Result<Self, $crate::rlp::DecoderError> {
-				rlp.decoder().decode_value(|bytes| match bytes.len().cmp(&$size) {
-					$crate::core_::cmp::Ordering::Less => Err($crate::rlp::DecoderError::RlpIsTooShort),
-					$crate::core_::cmp::Ordering::Greater => Err($crate::rlp::DecoderError::RlpIsTooBig),
-					$crate::core_::cmp::Ordering::Equal => {
-						let mut t = [0u8; $size];
-						t.copy_from_slice(bytes);
-						Ok($name(t))
-					}
-				})
+				rlp.decoder()
+					.decode_value(|bytes| match bytes.len().cmp(&$size) {
+						$crate::core_::cmp::Ordering::Less => {
+							Err($crate::rlp::DecoderError::RlpIsTooShort)
+						}
+						$crate::core_::cmp::Ordering::Greater => {
+							Err($crate::rlp::DecoderError::RlpIsTooBig)
+						}
+						$crate::core_::cmp::Ordering::Equal => {
+							let mut t = [0u8; $size];
+							t.copy_from_slice(bytes);
+							Ok($name(t))
+						}
+					})
 			}
 		}
-	}
+	};
 }

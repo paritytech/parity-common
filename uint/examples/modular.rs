@@ -6,8 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-
-
 #[macro_use]
 extern crate uint;
 
@@ -22,8 +20,9 @@ fn main() {
 	// where the p is defined below
 	// (it's a prime!)
 	let p = U256::from_dec_str(
-		"38873241744847760218045702002058062581688990428170398542849190507947196700873"
-	).expect("p to be a good number in the example");
+		"38873241744847760218045702002058062581688990428170398542849190507947196700873",
+	)
+	.expect("p to be a good number in the example");
 
 	// then, on this field,
 	// (p-1) + (p+1) = 0
@@ -50,7 +49,7 @@ fn main() {
 	let multiplicator = 3;
 	let mul = {
 		let mut result = p_minus_1;
-		for _ in 0..multiplicator-1 {
+		for _ in 0..multiplicator - 1 {
 			result = (p_minus_1 + result) % p;
 		}
 		result

@@ -16,31 +16,22 @@
 
 use std::{fmt, mem};
 
-use smallvec::SmallVec;
 use log::warn;
+use smallvec::SmallVec;
 
 use crate::{
-	ready::{Ready, Readiness},
-	scoring::{self, Scoring},
 	pool::Transaction,
+	ready::{Readiness, Ready},
+	scoring::{self, Scoring},
 };
 
 #[derive(Debug)]
 pub enum AddResult<T, S> {
 	Ok(T),
 	TooCheapToEnter(T, S),
-	TooCheap {
-		old: T,
-		new: T,
-	},
-	Replaced {
-		old: T,
-		new: T,
-	},
-	PushedOut {
-		old: T,
-		new: T,
-	},
+	TooCheap { old: T, new: T },
+	Replaced { old: T, new: T },
+	PushedOut { old: T, new: T },
 }
 
 /// Represents all transactions from a particular sender ordered by nonce.
@@ -74,7 +65,9 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		self.transactions.iter()
 	}
 
-	pub fn worst_and_best(&self) -> Option<((S::Score, Transaction<T>), (S::Score, Transaction<T>))> {
+	pub fn worst_and_best(
+		&self,
+	) -> Option<((S::Score, Transaction<T>), (S::Score, Transaction<T>))> {
 		let len = self.scores.len();
 		self.scores.get(0).cloned().map(|best| {
 			let worst = self.scores[len - 1].clone();
@@ -86,17 +79,25 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 	}
 
 	pub fn find_next(&self, tx: &T, scoring: &S) -> Option<(S::Score, Transaction<T>)> {
-		self.transactions.binary_search_by(|old| scoring.compare(old, &tx)).ok().and_then(|index| {
-			let index = index + 1;
-			if index < self.scores.len() {
-				Some((self.scores[index].clone(), self.transactions[index].clone()))
-			} else {
-				None
-			}
-		})
+		self.transactions
+			.binary_search_by(|old| scoring.compare(old, &tx))
+			.ok()
+			.and_then(|index| {
+				let index = index + 1;
+				if index < self.scores.len() {
+					Some((self.scores[index].clone(), self.transactions[index].clone()))
+				} else {
+					None
+				}
+			})
 	}
 
-	fn push_cheapest_transaction(&mut self, tx: Transaction<T>, scoring: &S, max_count: usize) -> AddResult<Transaction<T>, S::Score> {
+	fn push_cheapest_transaction(
+		&mut self,
+		tx: Transaction<T>,
+		scoring: &S,
+		max_count: usize,
+	) -> AddResult<Transaction<T>, S::Score> {
 		let index = self.transactions.len();
 		if index == max_count && !scoring.should_ignore_sender_limit(&tx) {
 			let min_score = self.scores[index - 1].clone();
@@ -104,25 +105,41 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		} else {
 			self.transactions.push(tx.clone());
 			self.scores.push(Default::default());
-			scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::InsertedAt(index));
+			scoring.update_scores(
+				&self.transactions,
+				&mut self.scores,
+				scoring::Change::InsertedAt(index),
+			);
 
 			AddResult::Ok(tx)
 		}
 	}
 
 	pub fn update_scores(&mut self, scoring: &S, event: S::Event) {
-		scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::Event(event));
+		scoring.update_scores(
+			&self.transactions,
+			&mut self.scores,
+			scoring::Change::Event(event),
+		);
 	}
 
-	pub fn add(&mut self, new: Transaction<T>, scoring: &S, max_count: usize) -> AddResult<Transaction<T>, S::Score> {
-		let index = match self.transactions.binary_search_by(|old| scoring.compare(old, &new)) {
+	pub fn add(
+		&mut self,
+		new: Transaction<T>,
+		scoring: &S,
+		max_count: usize,
+	) -> AddResult<Transaction<T>, S::Score> {
+		let index = match self
+			.transactions
+			.binary_search_by(|old| scoring.compare(old, &new))
+		{
 			Ok(index) => index,
 			Err(index) => index,
 		};
 
 		// Insert at the end.
 		if index == self.transactions.len() {
-			return self.push_cheapest_transaction(new, scoring, max_count)
+			return self.push_cheapest_transaction(new, scoring, max_count);
 		}
 
 		// Decide if the transaction should replace some other.
@@ -136,51 +153,68 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 			scoring::Choice::InsertNew => {
 				self.transactions.insert(index, new.clone());
 				self.scores.insert(index, Default::default());
-				scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::InsertedAt(index));
+				scoring.update_scores(
+					&self.transactions,
+					&mut self.scores,
+					scoring::Change::InsertedAt(index),
+				);
 
 				if self.transactions.len() > max_count {
 					let old = self.transactions.pop().expect("len is non-zero");
 					self.scores.pop();
-					scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::RemovedAt(self.transactions.len()));
+					scoring.update_scores(
+						&self.transactions,
+						&mut self.scores,
+						scoring::Change::RemovedAt(self.transactions.len()),
+					);
 
-					AddResult::PushedOut {
-						old,
-						new,
-					}
+					AddResult::PushedOut { old, new }
 				} else {
 					AddResult::Ok(new)
 				}
-			},
+			}
 			// New transaction is replacing some other transaction already in the queue.
 			scoring::Choice::ReplaceOld => {
 				let old = mem::replace(&mut self.transactions[index], new.clone());
-				scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::ReplacedAt(index));
+				scoring.update_scores(
+					&self.transactions,
+					&mut self.scores,
+					scoring::Change::ReplacedAt(index),
+				);
 
-				AddResult::Replaced {
-					old,
-					new,
-				}
-			},
+				AddResult::Replaced { old, new }
+			}
 		}
 	}
 
 	pub fn remove(&mut self, tx: &T, scoring: &S) -> bool {
-		let index = match self.transactions.binary_search_by(|old| scoring.compare(old, tx)) {
+		let index = match self
+			.transactions
+			.binary_search_by(|old| scoring.compare(old, tx))
+		{
 			Ok(index) => index,
 			Err(_) => {
 				warn!("Attempting to remove non-existent transaction {:?}", tx);
 				return false;
-			},
+			}
 		};
 
 		self.transactions.remove(index);
 		self.scores.remove(index);
 		// Update scoring
-		scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::RemovedAt(index));
+		scoring.update_scores(
+			&self.transactions,
+			&mut self.scores,
+			scoring::Change::RemovedAt(index),
+		);
 		return true;
 	}
 
-	pub fn cull<R: Ready<T>>(&mut self, ready: &mut R, scoring: &S) -> SmallVec<[Transaction<T>; PER_SENDER]> {
+	pub fn cull<R: Ready<T>>(
+		&mut self,
+		ready: &mut R,
+		scoring: &S,
+	) -> SmallVec<[Transaction<T>; PER_SENDER]> {
 		let mut result = SmallVec::new();
 		if self.is_empty() {
 			return result;
@@ -191,7 +225,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 			match ready.is_ready(tx) {
 				Readiness::Stale => {
 					first_non_stalled += 1;
-				},
+				}
 				Readiness::Ready | Readiness::Future => break,
 			}
 		}
@@ -207,7 +241,9 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		for _ in 0..first_non_stalled {
 			self.scores.pop();
 			result.push(
-				self.transactions.pop().expect("first_non_stalled is never greater than transactions.len(); qed")
+				self.transactions
+					.pop()
+					.expect("first_non_stalled is never greater than transactions.len(); qed"),
 			);
 		}
 
@@ -215,7 +251,11 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		self.scores.reverse();
 
 		// update scoring
-		scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::Culled(result.len()));
+		scoring.update_scores(
+			&self.transactions,
+			&mut self.scores,
+			scoring::Change::Culled(result.len()),
+		);
 
 		// reverse the result to maintain correct order.
 		result.reverse();

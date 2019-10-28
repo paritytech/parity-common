@@ -16,24 +16,21 @@
 
 //! Utility functions to interact with IndexedDB browser API.
 
-use wasm_bindgen::{JsCast, JsValue, closure::Closure};
+use js_sys::{Array, ArrayBuffer, Uint8Array};
+use wasm_bindgen::{closure::Closure, JsCast, JsValue};
 use web_sys::{
-	IdbDatabase, IdbRequest, IdbOpenDbRequest,
-	Event, IdbCursorWithValue,
-	IdbTransactionMode,
+	Event, IdbCursorWithValue, IdbDatabase, IdbOpenDbRequest, IdbRequest, IdbTransactionMode,
 };
-use js_sys::{Array, Uint8Array, ArrayBuffer};
 
 use futures::channel;
 use futures::prelude::*;
 
 use kvdb::{DBOp, DBTransaction};
 
-use std::ops::Deref;
 use log::{debug, warn};
+use std::ops::Deref;
 
-
-use crate::{Column, error::Error};
+use crate::{error::Error, Column};
 
 pub struct IndexedDB {
 	pub version: u32,
@@ -43,7 +40,11 @@ pub struct IndexedDB {
 
 /// Opens the IndexedDB with the given name, version and the specified number of columns
 /// (including the default one).
-pub fn open(name: &str, version: Option<u32>, columns: u32) -> impl Future<Output = Result<IndexedDB, Error>> {
+pub fn open(
+	name: &str,
+	version: Option<u32>,
+	columns: u32,
+) -> impl Future<Output = Result<IndexedDB, Error>> {
 	let (tx, rx) = channel::oneshot::channel::<IndexedDB>();
 
 	let window = match web_sys::window() {
@@ -54,13 +55,18 @@ pub fn open(name: &str, version: Option<u32>, columns: u32) -> impl Future<Outpu
 
 	let idb_factory = match idb_factory {
 		Ok(idb_factory) => idb_factory.expect("We can't get a null pointer back; qed"),
-		Err(err) => return future::Either::Right(future::err(Error::NotSupported(format!("{:?}", err)))),
+		Err(err) => {
+			return future::Either::Right(future::err(Error::NotSupported(format!("{:?}", err))))
+		}
 	};
 
 	let open_request = match version {
-		Some(version) => idb_factory.open_with_u32(name, version)
+		Some(version) => idb_factory
+			.open_with_u32(name, version)
 			.expect("TypeError is not possible with Rust; qed"),
-		None => idb_factory.open(name).expect("TypeError is not possible with Rust; qed"),
+		None => idb_factory
+			.open(name)
+			.expect("TypeError is not possible with Rust; qed"),
 	};
 
 	try_create_missing_stores(&open_request, columns, version);
@@ -68,7 +74,9 @@ pub fn open(name: &str, version: Option<u32>, columns: u32) -> impl Future<Outpu
 	let on_success = Closure::once(move |event: &Event| {
 		// Extract database handle from the event
 		let target = event.target().expect("Event should have a target; qed");
-		let req = target.dyn_ref::<IdbRequest>().expect("Event target is IdbRequest; qed");
+		let req = target
+			.dyn_ref::<IdbRequest>()
+			.expect("Event target is IdbRequest; qed");
 
 		let result = req
 			.result()
@@ -90,9 +98,7 @@ pub fn open(name: &str, version: Option<u32>, columns: u32) -> impl Future<Outpu
 	open_request.set_onsuccess(Some(on_success.as_ref().unchecked_ref()));
 	on_success.forget();
 
-	future::Either::Left(
-		rx.then(|r| future::ok(r.expect("Sender isn't dropped; qed")))
-	)
+	future::Either::Left(rx.then(|r| future::ok(r.expect("Sender isn't dropped; qed"))))
 }
 
 fn store_name(num: u32) -> String {
@@ -102,7 +108,6 @@ fn store_name(num: u32) -> String {
 fn column_to_number(column: Column) -> u32 {
 	column.map(|c| c + 1).unwrap_or_default()
 }
-
 
 // Returns js objects representing store names for each column
 fn store_names_js(columns: u32) -> Array {
@@ -118,15 +123,24 @@ fn store_names_js(columns: u32) -> Array {
 
 fn try_create_missing_stores(req: &IdbOpenDbRequest, columns: u32, version: Option<u32>) {
 	let on_upgradeneeded = Closure::once(move |event: &Event| {
-		debug!("Upgrading or creating the database to version {:?}, columns {}", version, columns);
+		debug!(
+			"Upgrading or creating the database to version {:?}, columns {}",
+			version, columns
+		);
 		// Extract database handle from the event
 		let target = event.target().expect("Event should have a target; qed");
-		let req = target.dyn_ref::<IdbRequest>().expect("Event target is IdbRequest; qed");
+		let req = target
+			.dyn_ref::<IdbRequest>()
+			.expect("Event target is IdbRequest; qed");
 		let result = req.result().expect("IdbRequest should have a result; qed");
 		let db: &IdbDatabase = result.unchecked_ref();
 
 		let previous_columns = db.object_store_names().length();
-		debug!("Previous version: {}, columns {}", db.version(), previous_columns);
+		debug!(
+			"Previous version: {}, columns {}",
+			db.version(),
+			previous_columns
+		);
 
 		for name in (previous_columns..=columns).map(store_name) {
 			let res = db.create_object_store(name.as_str());
@@ -150,14 +164,18 @@ pub fn idb_commit_transaction(
 
 	// Create a transaction
 	let mode = IdbTransactionMode::Readwrite;
-	let idb_txn = idb.transaction_with_str_sequence_and_mode(&store_names_js, mode)
+	let idb_txn = idb
+		.transaction_with_str_sequence_and_mode(&store_names_js, mode)
 		.expect("The provided mode and store names are valid; qed");
 
 	// Open object stores (columns)
-	let object_stores = (0..=columns).map(|n| {
-		idb_txn.object_store(store_name(n).as_str())
-			.expect("Object stores were created in try_create_object_stores; qed")
-	}).collect::<Vec<_>>();
+	let object_stores = (0..=columns)
+		.map(|n| {
+			idb_txn
+				.object_store(store_name(n).as_str())
+				.expect("Object stores were created in try_create_object_stores; qed")
+		})
+		.collect::<Vec<_>>();
 
 	for op in &txn.ops {
 		match op {
@@ -173,7 +191,7 @@ pub fn idb_commit_transaction(
 				if let Err(err) = res {
 					warn!("error inserting key/values into col_{}: {:?}", column, err);
 				}
-			},
+			}
 			DBOp::Delete { col, key } => {
 				let column = column_to_number(*col) as usize;
 
@@ -185,7 +203,7 @@ pub fn idb_commit_transaction(
 				if let Err(err) = res {
 					warn!("error deleting key from col_{}: {:?}", column, err);
 				}
-			},
+			}
 		}
 	}
 
@@ -206,24 +224,30 @@ pub fn idb_commit_transaction(
 	rx.map(|_| ())
 }
 
-
 /// Returns a cursor to a database column with the given column number.
 pub fn idb_cursor(idb: &IdbDatabase, col: u32) -> impl Stream<Item = (Vec<u8>, Vec<u8>)> {
 	// TODO: we could read all the columns in one db transaction
 	let store_name = store_name(col);
 	let store_name = store_name.as_str();
-	let txn = idb.transaction_with_str(store_name)
+	let txn = idb
+		.transaction_with_str(store_name)
 		.expect("The stores were created on open: {}; qed");
 
-	let store = txn.object_store(store_name).expect("Opening a store shouldn't fail; qed");
-	let cursor = store.open_cursor().expect("Opening a cursor shouldn't fail; qed");
+	let store = txn
+		.object_store(store_name)
+		.expect("Opening a store shouldn't fail; qed");
+	let cursor = store
+		.open_cursor()
+		.expect("Opening a cursor shouldn't fail; qed");
 
 	let (tx, rx) = channel::mpsc::unbounded();
 
 	let on_cursor = Closure::wrap(Box::new(move |event: &Event| {
 		// Extract the cursor from the event
 		let target = event.target().expect("on_cursor should have a target; qed");
-		let req = target.dyn_ref::<IdbRequest>().expect("target should be IdbRequest; qed");
+		let req = target
+			.dyn_ref::<IdbRequest>()
+			.expect("target should be IdbRequest; qed");
 		let result = req.result().expect("IdbRequest should have a result; qed");
 		let cursor: &IdbCursorWithValue = result.unchecked_ref();
 

@@ -16,16 +16,16 @@
 
 //! Signature based on ECDSA, algorithm's description: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 
-use std::ops::{Deref, DerefMut};
+use super::{public_to_address, Address, Error, Message, Public, Secret, SECP256K1};
+use ethereum_types::{H256, H520};
+use rustc_hex::{FromHex, ToHex};
+use secp256k1::key::{PublicKey, SecretKey};
+use secp256k1::{Error as SecpError, Message as SecpMessage, RecoverableSignature, RecoveryId};
 use std::cmp::PartialEq;
 use std::fmt;
-use std::str::FromStr;
 use std::hash::{Hash, Hasher};
-use secp256k1::{Message as SecpMessage, RecoverableSignature, RecoveryId, Error as SecpError};
-use secp256k1::key::{SecretKey, PublicKey};
-use rustc_hex::{ToHex, FromHex};
-use ethereum_types::{H520, H256};
-use super::{Secret, Public, SECP256K1, Message, public_to_address, Address, Error};
+use std::ops::{Deref, DerefMut};
+use std::str::FromStr;
 
 /// Signature encoded as RSV components
 #[repr(C)]
@@ -81,10 +81,9 @@ impl Signature {
 	/// This condition may be required by some verification algorithms
 	pub fn is_low_s(&self) -> bool {
 		const LOW_SIG_THRESHOLD: H256 = H256([
-			0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-			0x5D, 0x57, 0x6E, 0x73, 0x57, 0xA4, 0x50, 0x1D,
-			0xDF, 0xE9, 0x2F, 0x46, 0x68, 0x1B, 0x20, 0xA0,
+			0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0xFF, 0x5D, 0x57, 0x6E, 0x73, 0x57, 0xA4, 0x50, 0x1D, 0xDF, 0xE9, 0x2F, 0x46,
+			0x68, 0x1B, 0x20, 0xA0,
 		]);
 		H256::from_slice(self.s()) <= LOW_SIG_THRESHOLD
 	}
@@ -97,22 +96,18 @@ impl Signature {
 	/// used here as the upper bound for a valid (r, s, v) tuple
 	pub fn is_valid(&self) -> bool {
 		const UPPER_BOUND: H256 = H256([
-			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
-			0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
-			0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
+			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+			0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b, 0xbf, 0xd2, 0x5e, 0x8c,
+			0xd0, 0x36, 0x41, 0x41,
 		]);
 		const ONE: H256 = H256([
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x01,
 		]);
 		let r = H256::from_slice(self.r());
 		let s = H256::from_slice(self.s());
-		self.v() <= 1 &&
-			r < UPPER_BOUND && r >= ONE &&
-			s < UPPER_BOUND && s >= ONE
+		self.v() <= 1 && r < UPPER_BOUND && r >= ONE && s < UPPER_BOUND && s >= ONE
 	}
 }
 
@@ -125,7 +120,7 @@ impl PartialEq for Signature {
 }
 
 // manual implementation required in Rust 1.13+, see `std::cmp::AssertParamIsEq`.
-impl Eq for Signature { }
+impl Eq for Signature {}
 
 // also manual for the same reason, but the pretty printing might be useful.
 impl fmt::Debug for Signature {
@@ -134,7 +129,7 @@ impl fmt::Debug for Signature {
 			.field("r", &self.0[0..32].to_hex::<String>())
 			.field("s", &self.0[32..64].to_hex::<String>())
 			.field("v", &self.0[64..65].to_hex::<String>())
-		.finish()
+			.finish()
 	}
 }
 
@@ -153,8 +148,8 @@ impl FromStr for Signature {
 				let mut data = [0; 65];
 				data.copy_from_slice(&hex[0..65]);
 				Ok(Signature(data))
-			},
-			_ => Err(Error::InvalidSignature)
+			}
+			_ => Err(Error::InvalidSignature),
 		}
 	}
 }
@@ -231,9 +226,17 @@ pub fn sign(secret: &Secret, message: &Message) -> Result<Signature, Error> {
 }
 
 /// Performs verification of the signature for the given message with corresponding public key
-pub fn verify_public(public: &Public, signature: &Signature, message: &Message) -> Result<bool, Error> {
+pub fn verify_public(
+	public: &Public,
+	signature: &Signature,
+	message: &Message,
+) -> Result<bool, Error> {
 	let context = &SECP256K1;
-	let rsig = RecoverableSignature::from_compact(context, &signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
+	let rsig = RecoverableSignature::from_compact(
+		context,
+		&signature[0..64],
+		RecoveryId::from_i32(signature[64] as i32)?,
+	)?;
 	let sig = rsig.to_standard(context);
 
 	let pdata: [u8; 65] = {
@@ -246,12 +249,16 @@ pub fn verify_public(public: &Public, signature: &Signature, message: &Message) 
 	match context.verify(&SecpMessage::from_slice(&message[..])?, &sig, &publ) {
 		Ok(_) => Ok(true),
 		Err(SecpError::IncorrectSignature) => Ok(false),
-		Err(x) => Err(Error::from(x))
+		Err(x) => Err(Error::from(x)),
 	}
 }
 
 /// Checks if the address corresponds to the public key from the signature for the message
-pub fn verify_address(address: &Address, signature: &Signature, message: &Message) -> Result<bool, Error> {
+pub fn verify_address(
+	address: &Address,
+	signature: &Signature,
+	message: &Message,
+) -> Result<bool, Error> {
 	let public = recover(signature, message)?;
 	let recovered_address = public_to_address(&public);
 	Ok(address == &recovered_address)
@@ -260,7 +267,11 @@ pub fn verify_address(address: &Address, signature: &Signature, message: &Messag
 /// Recovers the public key from the signature for the message
 pub fn recover(signature: &Signature, message: &Message) -> Result<Public, Error> {
 	let context = &SECP256K1;
-	let rsig = RecoverableSignature::from_compact(context, &signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
+	let rsig = RecoverableSignature::from_compact(
+		context,
+		&signature[0..64],
+		RecoveryId::from_i32(signature[64] as i32)?,
+	)?;
 	let pubkey = context.recover(&SecpMessage::from_slice(&message[..])?, &rsig)?;
 	let serialized = pubkey.serialize_vec(context, false);
 
@@ -271,9 +282,9 @@ pub fn recover(signature: &Signature, message: &Message) -> Result<Public, Error
 
 #[cfg(test)]
 mod tests {
+	use super::super::{Generator, Message, Random};
+	use super::{recover, sign, verify_address, verify_public, Signature};
 	use std::str::FromStr;
-	use super::super::{Generator, Random, Message};
-	use super::{sign, verify_public, verify_address, recover, Signature};
 
 	#[test]
 	fn vrs_conversion() {

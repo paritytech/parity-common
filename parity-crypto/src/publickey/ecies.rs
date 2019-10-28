@@ -16,9 +16,9 @@
 
 //! Functions for ECIES scheme encryption and decryption
 
-use ethereum_types::H128;
-use super::{Error, Random, Generator, Public, Secret, ecdh};
+use super::{ecdh, Error, Generator, Public, Random, Secret};
 use crate::{aes, digest, hmac, is_equal};
+use ethereum_types::H128;
 
 const ENC_VERSION: u8 = 0x04;
 
@@ -105,7 +105,12 @@ fn kdf(secret: &Secret, s1: &[u8], dest: &mut [u8]) {
 	let mut written = 0usize;
 	while written < dest.len() {
 		let mut hasher = digest::Hasher::sha256();
-		let ctrs = [(ctr >> 24) as u8, (ctr >> 16) as u8, (ctr >> 8) as u8, ctr as u8];
+		let ctrs = [
+			(ctr >> 24) as u8,
+			(ctr >> 16) as u8,
+			(ctr >> 8) as u8,
+			ctr as u8,
+		];
 		hasher.update(&ctrs);
 		hasher.update(secret.as_bytes());
 		hasher.update(s1);
@@ -118,7 +123,7 @@ fn kdf(secret: &Secret, s1: &[u8], dest: &mut [u8]) {
 
 #[cfg(test)]
 mod tests {
-	use super::super::{ecies, Random, Generator};
+	use super::super::{ecies, Generator, Random};
 
 	#[test]
 	fn ecies_shared() {

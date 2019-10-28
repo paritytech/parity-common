@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::{fmt, result, error::Error as StdError};
+use std::{error::Error as StdError, fmt, result};
 
 #[derive(Debug)]
 pub enum Error {
@@ -74,7 +74,7 @@ impl StdError for SymmError {
 impl fmt::Display for Error {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> result::Result<(), fmt::Error> {
 		match self {
-			Error::Scrypt(err)=> write!(f, "scrypt error: {}", err),
+			Error::Scrypt(err) => write!(f, "scrypt error: {}", err),
 			Error::Symm(err) => write!(f, "symm error: {}", err),
 		}
 	}
@@ -96,14 +96,16 @@ impl fmt::Display for SymmError {
 		match self {
 			SymmError(PrivSymmErr::BlockMode(err)) => write!(f, "block cipher error: {}", err),
 			SymmError(PrivSymmErr::KeyStream(err)) => write!(f, "ctr key stream ended: {}", err),
-			SymmError(PrivSymmErr::InvalidKeyLength(err)) => write!(f, "block cipher key length: {}", err),
+			SymmError(PrivSymmErr::InvalidKeyLength(err)) => {
+				write!(f, "block cipher key length: {}", err)
+			}
 		}
 	}
 }
 
 impl Into<std::io::Error> for Error {
 	fn into(self) -> std::io::Error {
-		std::io::Error::new(std::io::ErrorKind::Other, format!("Crypto error: {}",self))
+		std::io::Error::new(std::io::ErrorKind::Other, format!("Crypto error: {}", self))
 	}
 }
 
@@ -148,4 +150,3 @@ impl From<SymmError> for Error {
 		Error::Symm(e)
 	}
 }
-

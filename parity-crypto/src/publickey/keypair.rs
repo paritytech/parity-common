@@ -16,10 +16,10 @@
 
 //! Key pair (public + secrect) description
 
-use std::fmt;
-use secp256k1::key;
-use super::{Secret, Public, Address, SECP256K1, Error};
+use super::{Address, Error, Public, Secret, SECP256K1};
 use crate::Keccak256;
+use secp256k1::key;
+use std::fmt;
 
 /// Convert public key into the address
 pub fn public_to_address(public: &Public) -> Address {
@@ -76,10 +76,7 @@ impl KeyPair {
 		let mut public = Public::default();
 		public.as_bytes_mut().copy_from_slice(&serialized[1..65]);
 
-		KeyPair {
-			secret,
-			public,
-		}
+		KeyPair { secret, public }
 	}
 
 	/// Returns secret part of the keypair
@@ -100,12 +97,14 @@ impl KeyPair {
 
 #[cfg(test)]
 mod tests {
-	use std::str::FromStr;
 	use super::{KeyPair, Secret};
+	use std::str::FromStr;
 
 	#[test]
 	fn from_secret() {
-		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
+		let secret =
+			Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65")
+				.unwrap();
 		let _ = KeyPair::from_secret(secret).unwrap();
 	}
 
@@ -115,7 +114,9 @@ mod tests {
 "secret:  a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65
 public:  8ce0db0b0359ffc5866ba61903cc2518c3675ef2cf380a7e54bde7ea20e6fa1ab45b7617346cd11b7610001ee6ae5b0155c41cad9527cbcdff44ec67848943a4
 address: 5b073e9233944b5e729e46d618f0d8edf3d9c34a".to_owned();
-		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
+		let secret =
+			Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65")
+				.unwrap();
 		let kp = KeyPair::from_secret(secret).unwrap();
 		assert_eq!(format!("{}", kp), expected);
 	}

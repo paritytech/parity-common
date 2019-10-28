@@ -1,8 +1,8 @@
-construct_fixed_hash!{ struct H32(4); }
-construct_fixed_hash!{ struct H64(8); }
-construct_fixed_hash!{ struct H128(16); }
-construct_fixed_hash!{ struct H160(20); }
-construct_fixed_hash!{ struct H256(32); }
+construct_fixed_hash! { struct H32(4); }
+construct_fixed_hash! { struct H64(8); }
+construct_fixed_hash! { struct H128(16); }
+construct_fixed_hash! { struct H160(20); }
+construct_fixed_hash! { struct H256(32); }
 
 impl_fixed_hash_conversions!(H256, H160);
 
@@ -250,7 +250,7 @@ mod from_low_u64 {
 #[cfg(feature = "rand")]
 mod rand {
 	use super::*;
-	use ::rand::{SeedableRng, rngs::StdRng};
+	use ::rand::{rngs::StdRng, SeedableRng};
 
 	#[test]
 	fn random() {

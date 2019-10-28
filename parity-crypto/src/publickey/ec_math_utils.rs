@@ -16,26 +16,21 @@
 
 //! Multiple primitives for work with public and secret keys and with secp256k1 curve points
 
-use super::{SECP256K1, Public, Secret, Error};
-use secp256k1::key;
-use secp256k1::constants::{CURVE_ORDER as SECP256K1_CURVE_ORDER};
-use ethereum_types::{BigEndianHash as _, U256, H256};
+use super::{Error, Public, Secret, SECP256K1};
+use ethereum_types::{BigEndianHash as _, H256, U256};
 use lazy_static::lazy_static;
+use secp256k1::constants::CURVE_ORDER as SECP256K1_CURVE_ORDER;
+use secp256k1::key;
 
 /// Generation point array combined from X and Y coordinates
 /// Equivalent to uncompressed form, see https://tools.ietf.org/id/draft-jivsov-ecc-compact-05.html#rfc.section.3
 pub const BASE_POINT_BYTES: [u8; 65] = [
-	0x4,
-	// The X coordinate of the generator
-	0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac,
-	0x55, 0xa0, 0x62, 0x95, 0xce, 0x87, 0x0b, 0x07,
-	0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 0xd9,
-	0x59, 0xf2, 0x81, 0x5b, 0x16, 0xf8, 0x17, 0x98,
+	0x4, // The X coordinate of the generator
+	0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac, 0x55, 0xa0, 0x62, 0x95, 0xce, 0x87, 0x0b, 0x07,
+	0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 0xd9, 0x59, 0xf2, 0x81, 0x5b, 0x16, 0xf8, 0x17, 0x98,
 	// The Y coordinate of the generator
-	0x48, 0x3a, 0xda, 0x77, 0x26, 0xa3, 0xc4, 0x65,
-	0x5d, 0xa4, 0xfb, 0xfc, 0x0e, 0x11, 0x08, 0xa8,
-	0xfd, 0x17, 0xb4, 0x48, 0xa6, 0x85, 0x54, 0x19,
-	0x9c, 0x47, 0xd0, 0x8f, 0xfb, 0x10, 0xd4, 0xb8,
+	0x48, 0x3a, 0xda, 0x77, 0x26, 0xa3, 0xc4, 0x65, 0x5d, 0xa4, 0xfb, 0xfc, 0x0e, 0x11, 0x08, 0xa8,
+	0xfd, 0x17, 0xb4, 0x48, 0xa6, 0x85, 0x54, 0x19, 0x9c, 0x47, 0xd0, 0x8f, 0xfb, 0x10, 0xd4, 0xb8,
 ];
 
 lazy_static! {
@@ -44,7 +39,8 @@ lazy_static! {
 
 /// Whether the public key is valid.
 pub fn public_is_valid(public: &Public) -> bool {
-	to_secp256k1_public(public).ok()
+	to_secp256k1_public(public)
+		.ok()
 		.map_or(false, |p| p.is_valid())
 }
 
@@ -106,13 +102,17 @@ fn to_secp256k1_public(public: &Public) -> Result<key::PublicKey, Error> {
 
 fn set_public(public: &mut Public, key_public: &key::PublicKey) {
 	let key_public_serialized = key_public.serialize_vec(&SECP256K1, false);
-	public.as_bytes_mut().copy_from_slice(&key_public_serialized[1..65]);
+	public
+		.as_bytes_mut()
+		.copy_from_slice(&key_public_serialized[1..65]);
 }
 
 #[cfg(test)]
 mod tests {
-	use super::super::{Random, Generator, Secret};
-	use super::{public_add, public_sub, public_negate, public_is_valid, generation_point, public_mul_secret};
+	use super::super::{Generator, Random, Secret};
+	use super::{
+		generation_point, public_add, public_is_valid, public_mul_secret, public_negate, public_sub,
+	};
 	use std::str::FromStr;
 
 	#[test]
@@ -166,7 +166,9 @@ mod tests {
 
 	#[test]
 	fn public_multiplication_verification() {
-		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
+		let secret =
+			Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65")
+				.unwrap();
 		let mut public = generation_point();
 		public_mul_secret(&mut public, &secret).unwrap();
 		assert_eq!(format!("{:x}", public), "8ce0db0b0359ffc5866ba61903cc2518c3675ef2cf380a7e54bde7ea20e6fa1ab45b7617346cd11b7610001ee6ae5b0155c41cad9527cbcdff44ec67848943a4");

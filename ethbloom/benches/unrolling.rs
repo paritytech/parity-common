@@ -48,7 +48,7 @@ fn bench_backwards(c: &mut Criterion) {
 		b.iter(|| {
 			let other_data = random_data();
 			for i in 0..255 {
-				data[255-i] |= other_data[255-i];
+				data[255 - i] |= other_data[255 - i];
 			}
 		});
 	});

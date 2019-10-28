@@ -17,24 +17,26 @@
 //! Submodule of crypto utils for working with public key crypto primitives
 //! If you are looking for git history please refer to the `ethkey` crate in the `parity-ethereum` repository.
 
+mod ecdsa_signature;
+mod extended_keys;
 mod keypair;
 mod keypair_generator;
-mod ecdsa_signature;
 mod secret_key;
-mod extended_keys;
 
+pub mod ec_math_utils;
 pub mod ecdh;
 pub mod ecies;
-pub mod ec_math_utils;
 pub mod error;
 
-pub use self::keypair::{KeyPair, public_to_address};
 pub use self::ec_math_utils::public_is_valid;
-pub use self::keypair_generator::Random;
+pub use self::ecdsa_signature::{recover, sign, verify_address, verify_public, Signature};
 pub use self::error::Error;
-pub use self::ecdsa_signature::{sign, verify_public, verify_address, recover, Signature};
+pub use self::extended_keys::{
+	Derivation, DerivationError, ExtendedKeyPair, ExtendedPublic, ExtendedSecret,
+};
+pub use self::keypair::{public_to_address, KeyPair};
+pub use self::keypair_generator::Random;
 pub use self::secret_key::Secret;
-pub use self::extended_keys::{ExtendedPublic, ExtendedSecret, ExtendedKeyPair, DerivationError, Derivation};
 
 use ethereum_types::H256;
 use lazy_static::lazy_static;

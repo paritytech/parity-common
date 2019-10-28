@@ -18,13 +18,6 @@ Verifiable example].
 When making a feature request, please make it clear what problem you intend to
 solve with the feature, any ideas for how parity-common could support solving that problem, any possible alternatives, and any disadvantages.
 
-## Code style
-
-We don't use rustfmt in parity-common, but rather have [our own code style] and [editorconfig].
-
-[our own code style]: https://wiki.parity.io/Substrate-Style-Guide
-[editorconfig]: https://github.com/paritytech/parity-common/blob/master/.editorconfig
-
 ## Versioning
 
 As many crates in the rust ecosystem, all crates in parity-common follow [semantic versioning]. This means bumping PATCH version on bug fixes that don't break backwards compatibility, MINOR version on new features and MAJOR version otherwise (MAJOR.MINOR.PATCH). Versions < 1.0 are considered to have the format 0.MAJOR.MINOR, which means bumping MINOR version for all non-breaking changes.

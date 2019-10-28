@@ -12,7 +12,6 @@
 //! rustup run cargo bench
 //! ```
 
-
 use criterion::{criterion_group, criterion_main};
 use uint::{construct_uint, uint_full_mul_reg};
 
@@ -107,7 +106,11 @@ fn u128_div(c: &mut Criterion) {
 					black_box(x / u128::from(*z))
 				})
 			},
-			vec![(0u64, u64::max_value(), 100u64), (u64::max_value(), u64::max_value(),  99), (42, 42, 100500)],
+			vec![
+				(0u64, u64::max_value(), 100u64),
+				(u64::max_value(), u64::max_value(), 99),
+				(42, 42, 100500),
+			],
 		),
 	);
 }
@@ -160,7 +163,10 @@ fn u256_mul(c: &mut Criterion) {
 				(U256::max_value(), 1u64),
 				(U256::from(3), u64::max_value()),
 				(
-					U256::from_dec_str("21674844646682989462120101885968193938394323990565507610662749").unwrap(),
+					U256::from_dec_str(
+						"21674844646682989462120101885968193938394323990565507610662749",
+					)
+					.unwrap(),
 					173,
 				),
 			],
@@ -220,7 +226,12 @@ fn u256_mul_full(c: &mut Criterion) {
 				b.iter(|| {
 					let y = *y;
 					let U512(ref u512words) = x.full_mul(U256([y, y, y, y]));
-					black_box(U256([u512words[0], u512words[2], u512words[2], u512words[3]]))
+					black_box(U256([
+						u512words[0],
+						u512words[2],
+						u512words[2],
+						u512words[3],
+					]))
 				})
 			},
 			vec![(U256::from(42), 1u64), (U256::from(3), u64::max_value())],
@@ -229,8 +240,18 @@ fn u256_mul_full(c: &mut Criterion) {
 }
 
 fn u256_div(c: &mut Criterion) {
-	let one = U256([12767554894655550452, 16333049135534778834, 140317443000293558, 598963]);
-	let two = U256([2096410819092764509, 8483673822214032535, 36306297304129857, 3453]);
+	let one = U256([
+		12767554894655550452,
+		16333049135534778834,
+		140317443000293558,
+		598963,
+	]);
+	let two = U256([
+		2096410819092764509,
+		8483673822214032535,
+		36306297304129857,
+		3453,
+	]);
 	c.bench_function("u256_div", move |b| b.iter(|| black_box(one / two)));
 }
 
@@ -242,10 +263,23 @@ fn u256_rem(c: &mut Criterion) {
 			|b, (x, y)| b.iter(|| black_box(x % y)),
 			vec![
 				(U256::max_value(), U256::from(1u64)),
-				(U256::from(u64::max_value()), U256::from(u64::from(u32::max_value()) + 1)),
 				(
-					U256([12767554894655550452, 16333049135534778834, 140317443000293558, 598963]),
-					U256([2096410819092764509, 8483673822214032535, 36306297304129857, 3453]),
+					U256::from(u64::max_value()),
+					U256::from(u64::from(u32::max_value()) + 1),
+				),
+				(
+					U256([
+						12767554894655550452,
+						16333049135534778834,
+						140317443000293558,
+						598963,
+					]),
+					U256([
+						2096410819092764509,
+						8483673822214032535,
+						36306297304129857,
+						3453,
+					]),
 				),
 				(
 					U256::from_str(
@@ -265,7 +299,10 @@ fn u256_rem(c: &mut Criterion) {
 fn u512_pairs() -> Vec<(U512, U512)> {
 	vec![
 		(U512::from(1u64), U512::from(0u64)),
-		(U512::from(u64::max_value()), U512::from(u64::from(u32::max_value()) + 1)),
+		(
+			U512::from(u64::max_value()),
+			U512::from(u64::from(u32::max_value()) + 1),
+		),
 		(
 			U512([
 				12767554894655550452,
@@ -277,7 +314,16 @@ fn u512_pairs() -> Vec<(U512, U512)> {
 				0,
 				0,
 			]),
-			U512([0, 0, 0, 0, 2096410819092764509, 8483673822214032535, 36306297304129857, 3453]),
+			U512([
+				0,
+				0,
+				0,
+				0,
+				2096410819092764509,
+				8483673822214032535,
+				36306297304129857,
+				3453,
+			]),
 		),
 		(
 			U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
@@ -407,17 +453,13 @@ fn u512_mul_u32_vs_u64(c: &mut Criterion) {
 fn bench_u512_mul_u32(b: &mut Bencher, i: u32) {
 	let x =
 		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
-	b.iter(|| {
-		black_box(x * i)
-	});
+	b.iter(|| black_box(x * i));
 }
 
 fn bench_u512_mul_u64(b: &mut Bencher, i: u64) {
 	let x =
 		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
-	b.iter(|| {
-		black_box(x * i)
-	});
+	b.iter(|| black_box(x * i));
 }
 
 fn mulmod_u512_vs_biguint_vs_gmp(c: &mut Criterion) {
@@ -478,8 +520,18 @@ fn u128_mul(c: &mut Criterion) {
 }
 
 fn u256_bit_and(c: &mut Criterion) {
-	let one = U256([12767554894655550452, 16333049135534778834, 140317443000293558, 598963]);
-	let two = U256([2096410819092764509, 8483673822214032535, 36306297304129857, 3453]);
+	let one = U256([
+		12767554894655550452,
+		16333049135534778834,
+		140317443000293558,
+		598963,
+	]);
+	let two = U256([
+		2096410819092764509,
+		8483673822214032535,
+		36306297304129857,
+		3453,
+	]);
 	c.bench_function("u256_bit_and", move |b| b.iter(|| black_box(one & two)));
 }
 
@@ -508,8 +560,18 @@ fn u512_bit_and(c: &mut Criterion) {
 }
 
 fn u256_bit_xor(c: &mut Criterion) {
-	let one = U256([12767554894655550452, 16333049135534778834, 140317443000293558, 598963]);
-	let two = U256([2096410819092764509, 8483673822214032535, 36306297304129857, 3453]);
+	let one = U256([
+		12767554894655550452,
+		16333049135534778834,
+		140317443000293558,
+		598963,
+	]);
+	let two = U256([
+		2096410819092764509,
+		8483673822214032535,
+		36306297304129857,
+		3453,
+	]);
 	c.bench_function("u256_bit_xor", move |b| b.iter(|| black_box(one ^ two)));
 }
 
@@ -538,8 +600,18 @@ fn u512_bit_xor(c: &mut Criterion) {
 }
 
 fn u256_bit_or(c: &mut Criterion) {
-	let one = U256([12767554894655550452, 16333049135534778834, 140317443000293558, 598963]);
-	let two = U256([2096410819092764509, 8483673822214032535, 36306297304129857, 3453]);
+	let one = U256([
+		12767554894655550452,
+		16333049135534778834,
+		140317443000293558,
+		598963,
+	]);
+	let two = U256([
+		2096410819092764509,
+		8483673822214032535,
+		36306297304129857,
+		3453,
+	]);
 	c.bench_function("u256_bit_or", move |b| b.iter(|| black_box(one | two)));
 }
 
@@ -568,7 +640,12 @@ fn u512_bit_or(c: &mut Criterion) {
 }
 
 fn u256_not(c: &mut Criterion) {
-	let one = U256([12767554894655550452, 16333049135534778834, 140317443000293558, 598963]);
+	let one = U256([
+		12767554894655550452,
+		16333049135534778834,
+		140317443000293558,
+		598963,
+	]);
 	c.bench_function("u256_not", move |b| b.iter(|| black_box(!one)));
 }
 
@@ -587,7 +664,12 @@ fn u512_not(c: &mut Criterion) {
 }
 
 fn u256_shl(c: &mut Criterion) {
-	let one = U256([12767554894655550452, 16333049135534778834, 140317443000293558, 598963]);
+	let one = U256([
+		12767554894655550452,
+		16333049135534778834,
+		140317443000293558,
+		598963,
+	]);
 	c.bench_function("u256_shl", move |b| b.iter(|| black_box(one << 128)));
 }
 
@@ -606,7 +688,12 @@ fn u512_shl(c: &mut Criterion) {
 }
 
 fn u256_shr(c: &mut Criterion) {
-	let one = U256([12767554894655550452, 16333049135534778834, 140317443000293558, 598963]);
+	let one = U256([
+		12767554894655550452,
+		16333049135534778834,
+		140317443000293558,
+		598963,
+	]);
 	c.bench_function("u256_shr", move |b| b.iter(|| black_box(one >> 128)));
 }
 
@@ -625,8 +712,18 @@ fn u512_shr(c: &mut Criterion) {
 }
 
 fn u256_ord(c: &mut Criterion) {
-	let one = U256([12767554894655550452, 16333049135534778834, 140317443000293558, 598963]);
-	let two = U256([2096410819092764509, 8483673822214032535, 36306297304129857, 3453]);
+	let one = U256([
+		12767554894655550452,
+		16333049135534778834,
+		140317443000293558,
+		598963,
+	]);
+	let two = U256([
+		2096410819092764509,
+		8483673822214032535,
+		36306297304129857,
+		3453,
+	]);
 	c.bench_function("u256_ord", move |b| b.iter(|| black_box(one < two)));
 }
 

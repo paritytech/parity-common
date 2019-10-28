@@ -338,7 +338,7 @@ macro_rules! construct_fixed_hash {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_byteorder_for_fixed_hash {
-	( $name:ident ) => {}
+	( $name:ident ) => {};
 }
 
 // Implementation for enabled byteorder crate support.
@@ -368,7 +368,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 
 			fn to_low_u64_with_byteorder<B>(&self) -> u64
 			where
-				B: $crate::byteorder::ByteOrder
+				B: $crate::byteorder::ByteOrder,
 			{
 				let mut buf = [0x0; 8];
 				let capped = $crate::core_::cmp::min(Self::len_bytes(), 8);
@@ -411,7 +411,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 
 			fn from_low_u64_with_byteorder<B>(val: u64) -> Self
 			where
-				B: $crate::byteorder::ByteOrder
+				B: $crate::byteorder::ByteOrder,
 			{
 				let mut buf = [0x0; 8];
 				B::write_u64(&mut buf, val);
@@ -457,7 +457,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 				Self::from_low_u64_with_byteorder::<$crate::byteorder::NativeEndian>(val)
 			}
 		}
-	}
+	};
 }
 
 // Implementation for disabled rand crate support.
@@ -471,7 +471,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_rand_for_fixed_hash {
-	( $name:ident ) => {}
+	( $name:ident ) => {};
 }
 
 // Implementation for enabled rand crate support.
@@ -504,7 +504,7 @@ macro_rules! impl_rand_for_fixed_hash {
 			/// given random number generator.
 			pub fn randomize_using<R>(&mut self, rng: &mut R)
 			where
-				R: $crate::rand::Rng + ?Sized
+				R: $crate::rand::Rng + ?Sized,
 			{
 				use $crate::rand::distributions::Distribution;
 				*self = $crate::rand::distributions::Standard.sample(rng);
@@ -520,7 +520,7 @@ macro_rules! impl_rand_for_fixed_hash {
 			/// given random number generator.
 			pub fn random_using<R>(rng: &mut R) -> Self
 			where
-				R: $crate::rand::Rng + ?Sized
+				R: $crate::rand::Rng + ?Sized,
 			{
 				let mut ret = Self::zero();
 				ret.randomize_using(rng);
@@ -534,7 +534,7 @@ macro_rules! impl_rand_for_fixed_hash {
 				hash
 			}
 		}
-	}
+	};
 }
 
 // Implementation for disabled libc crate support.
@@ -562,7 +562,7 @@ macro_rules! impl_libc_for_fixed_hash {
 				self.as_bytes().cmp(other.as_bytes())
 			}
 		}
-	}
+	};
 }
 
 // Implementation for enabled libc crate support.
@@ -608,7 +608,7 @@ macro_rules! impl_libc_for_fixed_hash {
 				$crate::core_::cmp::Ordering::Equal
 			}
 		}
-	}
+	};
 }
 
 // Implementation for disabled rustc-hex crate support.
@@ -622,7 +622,7 @@ macro_rules! impl_libc_for_fixed_hash {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_rustc_hex_for_fixed_hash {
-	( $name:ident ) => {}
+	( $name:ident ) => {};
 }
 
 // Implementation for enabled rustc-hex crate support.
@@ -663,7 +663,7 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 				Ok($name::from_slice(&bytes))
 			}
 		}
-	}
+	};
 }
 
 // Implementation for disabled quickcheck crate support.
@@ -677,7 +677,7 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_for_fixed_hash {
-	( $name:ident ) => {}
+	( $name:ident ) => {};
 }
 
 // Implementation for enabled quickcheck crate support.
@@ -699,7 +699,7 @@ macro_rules! impl_quickcheck_for_fixed_hash {
 				Self::from(res)
 			}
 		}
-	}
+	};
 }
 
 #[macro_export]
@@ -812,9 +812,8 @@ macro_rules! impl_fixed_hash_conversions {
 				);
 
 				let mut ret = $small_ty::zero();
-				ret.as_bytes_mut().copy_from_slice(
-					&value[(large_ty_size - small_ty_size)..large_ty_size],
-				);
+				ret.as_bytes_mut()
+					.copy_from_slice(&value[(large_ty_size - small_ty_size)..large_ty_size]);
 				ret
 			}
 		}
