@@ -35,5 +35,6 @@ pub use static_assertions;
 pub use crunchy::unroll;
 
 #[macro_use]
+#[rustfmt::skip]
 mod uint;
 pub use crate::uint::*;

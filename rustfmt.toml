@@ -1,6 +1,3 @@
 hard_tabs = true
 max_width = 120
 use_small_heuristics = "Max"
-ignore = [
-	   "uint/src/uint.rs",
-]
