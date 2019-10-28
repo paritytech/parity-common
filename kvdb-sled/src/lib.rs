@@ -18,50 +18,71 @@
 
 use kvdb::{KeyValueDB, DBTransaction, DBValue, DBOp};
 use sled::{Tree, Db};
+use std::io;
 
-const KB: usize = 1024;
-const MB: usize = 1024 * KB;
-const DB_DEFAULT_MEMORY_BUDGET_MB: usize = 128;
+const KB: u64 = 1024;
+const MB: u64 = 1024 * KB;
+const DB_DEFAULT_MEMORY_BUDGET_MB: u64 = 128;
 
-struct Database {
-    // sled currently support transactions only on tuples of trees (up to 10), 
-    // not vecs because it might make the trees typed in the future.
-    // see https://github.com/spacejam/sled/issues/382#issuecomment-526548082
-    // sled `Tree` corresponds to a `Column` in the KeyValueDB terminology.
-    columns: (Tree, Tree, Tree, Tree, Tree, Tree, Tree, Tree, Tree, Tree),
-    path: String,
+fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<dyn std::error::Error + Send + Sync>> {
+	io::Error::new(io::ErrorKind::Other, e)
 }
 
-struct DatabaseConfig {
-    pub columns: Option<u8>,
-    pub memory_budget_mb: Option<usize>,
-    pub path: String,
+pub struct Database {
+	// sled currently support transactions only on tuples of trees (up to 10),
+	// not vecs because it might make the trees typed in the future.
+	// see https://github.com/spacejam/sled/issues/382#issuecomment-526548082
+	// sled `Tree` corresponds to a `Column` in the KeyValueDB terminology.
+	columns: Vec<Tree>,
+	path: String,
+	num_columns: u8,
+}
+
+// TODO: docs
+pub struct DatabaseConfig {
+	pub columns: Option<u8>,
+	pub memory_budget_mb: Option<u64>,
+	pub path: String,
 }
 
 impl DatabaseConfig {
-    
-    pub fn memory_budget(&self) -> usize {
-		self.memory_budget.unwrap_or(DB_DEFAULT_MEMORY_BUDGET_MB) * MB
-	}
-
-	pub fn memory_budget_per_col(&self) -> usize {
-		self.memory_budget() / self.columns.unwrap_or(1) as usize
+	pub fn memory_budget(&self) -> u64 {
+		self.memory_budget_mb.unwrap_or(DB_DEFAULT_MEMORY_BUDGET_MB) * MB
 	}
 }
 
 impl Database {
-    fn open(config: &DatabaseConfig) -> sled::Result<Database> {
-        let _config = sled::Config::default()
-            .path(path)
-            .cache_capacity(10_000_000_000)
-            .flush_every_ms(Some(1000))
-            .snapshot_after_ops(100_000);
-    }
+	pub fn open(config: DatabaseConfig) -> sled::Result<Database> {
+		let conf = sled::Config::default()
+			.path(&config.path)
+			.cache_capacity(config.memory_budget() / 2)
+			.flush_every_ms(Some(1_000))
+			.snapshot_after_ops(100_000);
+
+		let db = conf.open()?;
+		let num_columns = config.columns.map_or(0, |c| c + 1);
+		let columns = (0..=num_columns)
+			.map(|i| db.open_tree(format!("col{}", i).as_bytes()))
+			.collect::<sled::Result<Vec<_>>>()?;
+		Ok(Database {
+			columns,
+			path: config.path,
+			num_columns,
+		})
+	}
+
+	fn to_sled_column(col: Option<u32>) -> u8 {
+		col.map_or(0, |c| (c + 1) as u8)
+	}
 }
 
 impl KeyValueDB for Database {
 	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
-		Database::get(self, col, key)
+		let col = Self::to_sled_column(col);
+		self.columns[col as usize]
+			.get(key)
+			.map(|maybe| maybe.map(|ivec| DBValue::from_slice(ivec.as_ref())))
+			.map_err(other_io_err)
 	}
 
 	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
@@ -82,14 +103,14 @@ impl KeyValueDB for Database {
 
 	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
 		let unboxed = Database::iter(self, col);
-		Box::new(unboxed.into_iter().flat_map(|inner| inner))
+		Box::new(unboxed.into_iter())
 	}
 
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
 		-> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
 	{
 		let unboxed = Database::iter_from_prefix(self, col, prefix);
-		Box::new(unboxed.into_iter().flat_map(|inner| inner))
+		Box::new(unboxed.into_iter())
 	}
 
 	fn restore(&self, new_db: &str) -> io::Result<()> {
@@ -107,8 +128,8 @@ impl Drop for Database {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
+	#[test]
+	fn it_works() {
+		assert_eq!(2 + 2, 4);
+	}
 }
