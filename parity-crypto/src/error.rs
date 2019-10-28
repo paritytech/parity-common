@@ -96,9 +96,7 @@ impl fmt::Display for SymmError {
 		match self {
 			SymmError(PrivSymmErr::BlockMode(err)) => write!(f, "block cipher error: {}", err),
 			SymmError(PrivSymmErr::KeyStream(err)) => write!(f, "ctr key stream ended: {}", err),
-			SymmError(PrivSymmErr::InvalidKeyLength(err)) => {
-				write!(f, "block cipher key length: {}", err)
-			}
+			SymmError(PrivSymmErr::InvalidKeyLength(err)) => write!(f, "block cipher key length: {}", err),
 		}
 	}
 }

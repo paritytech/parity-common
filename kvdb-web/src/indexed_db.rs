@@ -18,9 +18,7 @@
 
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
-use web_sys::{
-	Event, IdbCursorWithValue, IdbDatabase, IdbOpenDbRequest, IdbRequest, IdbTransactionMode,
-};
+use web_sys::{Event, IdbCursorWithValue, IdbDatabase, IdbOpenDbRequest, IdbRequest, IdbTransactionMode};
 
 use futures::channel;
 use futures::prelude::*;
@@ -40,11 +38,7 @@ pub struct IndexedDB {
 
 /// Opens the IndexedDB with the given name, version and the specified number of columns
 /// (including the default one).
-pub fn open(
-	name: &str,
-	version: Option<u32>,
-	columns: u32,
-) -> impl Future<Output = Result<IndexedDB, Error>> {
+pub fn open(name: &str, version: Option<u32>, columns: u32) -> impl Future<Output = Result<IndexedDB, Error>> {
 	let (tx, rx) = channel::oneshot::channel::<IndexedDB>();
 
 	let window = match web_sys::window() {
@@ -55,9 +49,7 @@ pub fn open(
 
 	let idb_factory = match idb_factory {
 		Ok(idb_factory) => idb_factory.expect("We can't get a null pointer back; qed"),
-		Err(err) => {
-			return future::Either::Right(future::err(Error::NotSupported(format!("{:?}", err))))
-		}
+		Err(err) => return future::Either::Right(future::err(Error::NotSupported(format!("{:?}", err)))),
 	};
 
 	let open_request = match version {
@@ -74,9 +66,7 @@ pub fn open(
 	let on_success = Closure::once(move |event: &Event| {
 		// Extract database handle from the event
 		let target = event.target().expect("Event should have a target; qed");
-		let req = target
-			.dyn_ref::<IdbRequest>()
-			.expect("Event target is IdbRequest; qed");
+		let req = target.dyn_ref::<IdbRequest>().expect("Event target is IdbRequest; qed");
 
 		let result = req
 			.result()
@@ -129,18 +119,12 @@ fn try_create_missing_stores(req: &IdbOpenDbRequest, columns: u32, version: Opti
 		);
 		// Extract database handle from the event
 		let target = event.target().expect("Event should have a target; qed");
-		let req = target
-			.dyn_ref::<IdbRequest>()
-			.expect("Event target is IdbRequest; qed");
+		let req = target.dyn_ref::<IdbRequest>().expect("Event target is IdbRequest; qed");
 		let result = req.result().expect("IdbRequest should have a result; qed");
 		let db: &IdbDatabase = result.unchecked_ref();
 
 		let previous_columns = db.object_store_names().length();
-		debug!(
-			"Previous version: {}, columns {}",
-			db.version(),
-			previous_columns
-		);
+		debug!("Previous version: {}, columns {}", db.version(), previous_columns);
 
 		for name in (previous_columns..=columns).map(store_name) {
 			let res = db.create_object_store(name.as_str());
@@ -155,11 +139,7 @@ fn try_create_missing_stores(req: &IdbOpenDbRequest, columns: u32, version: Opti
 }
 
 /// Commit a transaction to the IndexedDB.
-pub fn idb_commit_transaction(
-	idb: &IdbDatabase,
-	txn: &DBTransaction,
-	columns: u32,
-) -> impl Future<Output = ()> {
+pub fn idb_commit_transaction(idb: &IdbDatabase, txn: &DBTransaction, columns: u32) -> impl Future<Output = ()> {
 	let store_names_js = store_names_js(columns);
 
 	// Create a transaction
@@ -236,9 +216,7 @@ pub fn idb_cursor(idb: &IdbDatabase, col: u32) -> impl Stream<Item = (Vec<u8>, V
 	let store = txn
 		.object_store(store_name)
 		.expect("Opening a store shouldn't fail; qed");
-	let cursor = store
-		.open_cursor()
-		.expect("Opening a cursor shouldn't fail; qed");
+	let cursor = store.open_cursor().expect("Opening a cursor shouldn't fail; qed");
 
 	let (tx, rx) = channel::mpsc::unbounded();
 

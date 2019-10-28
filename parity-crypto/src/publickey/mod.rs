@@ -31,9 +31,7 @@ pub mod error;
 pub use self::ec_math_utils::public_is_valid;
 pub use self::ecdsa_signature::{recover, sign, verify_address, verify_public, Signature};
 pub use self::error::Error;
-pub use self::extended_keys::{
-	Derivation, DerivationError, ExtendedKeyPair, ExtendedPublic, ExtendedSecret,
-};
+pub use self::extended_keys::{Derivation, DerivationError, ExtendedKeyPair, ExtendedPublic, ExtendedSecret};
 pub use self::keypair::{public_to_address, KeyPair};
 pub use self::keypair_generator::Random;
 pub use self::secret_key::Secret;

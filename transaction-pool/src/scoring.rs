@@ -94,12 +94,7 @@ pub trait Scoring<T>: fmt::Debug {
 	/// Updates the transaction scores given a list of transactions and a change to previous scoring.
 	/// NOTE: you can safely assume that both slices have the same length.
 	/// (i.e. score at index `i` represents transaction at the same index)
-	fn update_scores(
-		&self,
-		txs: &[Transaction<T>],
-		scores: &mut [Self::Score],
-		change: Change<Self::Event>,
-	);
+	fn update_scores(&self, txs: &[Transaction<T>], scores: &mut [Self::Score], change: Change<Self::Event>);
 
 	/// Decides if the transaction should ignore per-sender limit in the pool.
 	///
@@ -137,11 +132,10 @@ impl<T, S: Clone> Clone for ScoreWithRef<T, S> {
 
 impl<S: cmp::Ord, T> Ord for ScoreWithRef<T, S> {
 	fn cmp(&self, other: &Self) -> cmp::Ordering {
-		other.score.cmp(&self.score).then(
-			self.transaction
-				.insertion_id
-				.cmp(&other.transaction.insertion_id),
-		)
+		other
+			.score
+			.cmp(&self.score)
+			.then(self.transaction.insertion_id.cmp(&other.transaction.insertion_id))
 	}
 }
 

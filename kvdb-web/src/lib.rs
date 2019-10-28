@@ -57,10 +57,7 @@ fn number_to_column(col: u32) -> Column {
 impl Database {
 	/// Opens the database with the given name,
 	/// and the specified number of columns (not including the default one).
-	pub fn open(
-		name: String,
-		columns: u32,
-	) -> impl Future<Output = Result<Database, error::Error>> {
+	pub fn open(name: String, columns: u32) -> impl Future<Output = Result<Database, error::Error>> {
 		// let's try to open the latest version of the db first
 		let open_request = indexed_db::open(name.as_str(), None, columns);
 		let name_clone = name.clone();
@@ -79,9 +76,7 @@ impl Database {
 				if columns + 1 > db.columns {
 					let next_version = db.version + 1;
 					drop(db);
-					future::Either::Left(
-						indexed_db::open(name.as_str(), Some(next_version), columns).boxed(),
-					)
+					future::Either::Left(indexed_db::open(name.as_str(), Some(next_version), columns).boxed())
 				} else {
 					future::Either::Left(future::ok(db).boxed())
 				}
@@ -100,17 +95,12 @@ impl Database {
 				future::Either::Left(
 					stream::iter(0..=columns)
 						.map(move |n| {
-							let db = weak
-								.upgrade()
-								.expect("rc should live at least as long; qed");
-							indexed_db::idb_cursor(&db, n).fold(
-								DBTransaction::new(),
-								move |mut txn, (key, value)| {
-									let column = number_to_column(n);
-									txn.put_vec(column, key.as_ref(), value);
-									future::ready(txn)
-								},
-							)
+							let db = weak.upgrade().expect("rc should live at least as long; qed");
+							indexed_db::idb_cursor(&db, n).fold(DBTransaction::new(), move |mut txn, (key, value)| {
+								let column = number_to_column(n);
+								txn.put_vec(column, key.as_ref(), value);
+								future::ready(txn)
+							})
 							// write each column into memory
 						})
 						.fold(in_memory::create(columns), |m, txn| {
@@ -126,8 +116,7 @@ impl Database {
 								columns,
 								in_memory,
 								indexed_db: Mutex::new(SendWrapper::new(
-									Rc::try_unwrap(rc)
-										.expect("should have only 1 ref at this point; qed"),
+									Rc::try_unwrap(rc).expect("should have only 1 ref at this point; qed"),
 								)),
 							})
 						}),
@@ -175,10 +164,7 @@ impl KeyValueDB for Database {
 	}
 
 	// NOTE: clones the whole db
-	fn iter<'a>(
-		&'a self,
-		col: Option<u32>,
-	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
 		self.in_memory.iter(col)
 	}
 

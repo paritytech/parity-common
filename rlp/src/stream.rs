@@ -202,8 +202,7 @@ impl RlpStream {
 				self.buffer.push(0);
 
 				let position = self.buffer.len();
-				self.unfinished_lists
-					.push(ListInfo::new(position, Some(len)));
+				self.unfinished_lists.push(ListInfo::new(position, Some(len)));
 			}
 		}
 
@@ -326,9 +325,7 @@ impl RlpStream {
 			Some(ref mut x) => {
 				x.current += inserted_items;
 				match x.max {
-					Some(ref max) if x.current > *max => {
-						panic!("You cannot append more items then you expect!")
-					}
+					Some(ref max) if x.current > *max => panic!("You cannot append more items then you expect!"),
 					Some(ref max) => x.current == *max,
 					_ => false,
 				}
@@ -384,8 +381,7 @@ impl<'a> BasicEncoder<'a> {
 		let buffer: [u8; 4] = size.to_be_bytes();
 		assert!(position <= self.buffer.len());
 
-		self.buffer
-			.extend_from_slice(&buffer[leading_empty_bytes..]);
+		self.buffer.extend_from_slice(&buffer[leading_empty_bytes..]);
 		self.buffer[position..].rotate_right(size_bytes as usize);
 		size_bytes as u8
 	}

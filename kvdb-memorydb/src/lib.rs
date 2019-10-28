@@ -89,10 +89,7 @@ impl KeyValueDB for InMemory {
 		Ok(())
 	}
 
-	fn iter<'a>(
-		&'a self,
-		col: Option<u32>,
-	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				// TODO: worth optimizing at all?

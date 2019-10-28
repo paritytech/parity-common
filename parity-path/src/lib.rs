@@ -91,24 +91,15 @@ pub mod ethereum {
 
 /// Restricts the permissions of given path only to the owner.
 #[cfg(unix)]
-pub fn restrict_permissions_owner(
-	file_path: &Path,
-	write: bool,
-	executable: bool,
-) -> Result<(), String> {
-	let perms = ::std::os::unix::fs::PermissionsExt::from_mode(
-		0o400 + write as u32 * 0o200 + executable as u32 * 0o100,
-	);
+pub fn restrict_permissions_owner(file_path: &Path, write: bool, executable: bool) -> Result<(), String> {
+	let perms =
+		::std::os::unix::fs::PermissionsExt::from_mode(0o400 + write as u32 * 0o200 + executable as u32 * 0o100);
 	::std::fs::set_permissions(file_path, perms).map_err(|e| format!("{:?}", e))
 }
 
 /// Restricts the permissions of given path only to the owner.
 #[cfg(not(unix))]
-pub fn restrict_permissions_owner(
-	_file_path: &Path,
-	_write: bool,
-	_executable: bool,
-) -> Result<(), String> {
+pub fn restrict_permissions_owner(_file_path: &Path, _write: bool, _executable: bool) -> Result<(), String> {
 	//TODO: implement me
 	Ok(())
 }

@@ -138,11 +138,7 @@ where
 	/// new transaction via the supplied `ShouldReplace` implementation and may be evicted.
 	///
 	/// The `Listener` will be informed on any drops or rejections.
-	pub fn import(
-		&mut self,
-		transaction: T,
-		replace: &dyn ShouldReplace<T>,
-	) -> error::Result<Arc<T>, T::Hash> {
+	pub fn import(&mut self, transaction: T, replace: &dyn ShouldReplace<T>) -> error::Result<Arc<T>, T::Hash> {
 		let mem_usage = transaction.mem_usage();
 
 		if self.by_hash.contains_key(transaction.hash()) {
@@ -158,19 +154,18 @@ where
 		// TODO [ToDr] Most likely move this after the transaction is inserted.
 		// Avoid using should_replace, but rather use scoring for that.
 		{
-			let remove_worst =
-				|s: &mut Self, transaction| match s.remove_worst(transaction, replace) {
-					Err(err) => {
-						s.listener.rejected(transaction, &err);
-						Err(err)
-					}
-					Ok(None) => Ok(false),
-					Ok(Some(removed)) => {
-						s.listener.dropped(&removed, Some(transaction));
-						s.finalize_remove(removed.hash());
-						Ok(true)
-					}
-				};
+			let remove_worst = |s: &mut Self, transaction| match s.remove_worst(transaction, replace) {
+				Err(err) => {
+					s.listener.rejected(transaction, &err);
+					Err(err)
+				}
+				Ok(None) => Ok(false),
+				Ok(Some(removed)) => {
+					s.listener.dropped(&removed, Some(transaction));
+					s.finalize_remove(removed.hash());
+					Ok(true)
+				}
+			};
 
 			while self.by_hash.len() + 1 > self.options.max_count {
 				trace!(
@@ -227,8 +222,7 @@ where
 				return Err(error);
 			}
 			AddResult::TooCheapToEnter(new, score) => {
-				let error =
-					error::Error::TooCheapToEnter(new.hash().clone(), format!("{:#x}", score));
+				let error = error::Error::TooCheapToEnter(new.hash().clone(), format!("{:#x}", score));
 				self.listener.rejected(&new, &error);
 				return Err(error);
 			}
@@ -262,9 +256,8 @@ where
 		let worst_collection = &mut self.worst_transactions;
 		let best_collection = &mut self.best_transactions;
 
-		let is_same = |a: &(S::Score, Transaction<T>), b: &(S::Score, Transaction<T>)| {
-			a.0 == b.0 && a.1.hash() == b.1.hash()
-		};
+		let is_same =
+			|a: &(S::Score, Transaction<T>), b: &(S::Score, Transaction<T>)| a.0 == b.0 && a.1.hash() == b.1.hash();
 
 		let update = |collection: &mut BTreeSet<_>, (score, tx), remove| {
 			if remove {
@@ -321,9 +314,7 @@ where
 			Some(old) => {
 				let txs = &self.transactions;
 				let get_replace_tx = |tx| {
-					let sender_txs = txs
-						.get(transaction.sender())
-						.map(|txs| txs.iter().as_slice());
+					let sender_txs = txs.get(transaction.sender()).map(|txs| txs.iter().as_slice());
 					ReplaceTransaction::new(tx, sender_txs)
 				};
 				let old_replace = get_replace_tx(&old.transaction);
@@ -408,9 +399,7 @@ where
 
 	/// Removes all stalled transactions from given sender.
 	fn remove_stalled<R: Ready<T>>(&mut self, sender: &T::Sender, ready: &mut R) -> usize {
-		let removed_from_set = self.remove_from_set(sender, |transactions, scoring| {
-			transactions.cull(ready, scoring)
-		});
+		let removed_from_set = self.remove_from_set(sender, |transactions, scoring| transactions.cull(ready, scoring));
 
 		match removed_from_set {
 			Some(removed) => {
@@ -465,9 +454,7 @@ where
 
 	/// Returns senders ordered by priority of their transactions.
 	pub fn senders(&self) -> impl Iterator<Item = &T::Sender> {
-		self.best_transactions
-			.iter()
-			.map(|tx| tx.transaction.sender())
+		self.best_transactions.iter().map(|tx| tx.transaction.sender())
 	}
 
 	/// Returns an iterator of pending (ready) transactions.
@@ -480,11 +467,7 @@ where
 	}
 
 	/// Returns pending (ready) transactions from given sender.
-	pub fn pending_from_sender<R: Ready<T>>(
-		&self,
-		ready: R,
-		sender: &T::Sender,
-	) -> PendingIterator<'_, T, R, S, L> {
+	pub fn pending_from_sender<R: Ready<T>>(&self, ready: R, sender: &T::Sender) -> PendingIterator<'_, T, R, S, L> {
 		let best_transactions = self
 			.transactions
 			.get(sender)
@@ -682,11 +665,7 @@ where
 				return Some(best.transaction.transaction);
 			}
 
-			trace!(
-				"[{:?}] Ignoring {:?} transaction.",
-				best.transaction.hash(),
-				tx_state
-			);
+			trace!("[{:?}] Ignoring {:?} transaction.", best.transaction.hash(), tx_state);
 		}
 
 		None

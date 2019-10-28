@@ -21,8 +21,7 @@ fn bench_encode(c: &mut Criterion) {
 	c.bench_function("encode_u256", |b| {
 		b.iter(|| {
 			let mut stream = rlp::RlpStream::new();
-			let uint: primitive_types::U256 =
-				"8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0".into();
+			let uint: primitive_types::U256 = "8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0".into();
 			stream.append(&uint);
 			let _ = stream.out();
 		})
@@ -42,11 +41,7 @@ fn bench_encode(c: &mut Criterion) {
 			let mut stream = rlp::RlpStream::new_list(3);
 			stream.begin_list(0);
 			stream.begin_list(1).begin_list(0);
-			stream
-				.begin_list(2)
-				.begin_list(0)
-				.begin_list(1)
-				.begin_list(0);
+			stream.begin_list(2).begin_list(0).begin_list(1).begin_list(0);
 			let _ = stream.out();
 		})
 	});
@@ -72,9 +67,8 @@ fn bench_decode(c: &mut Criterion) {
 	c.bench_function("decode_u256", |b| {
 		b.iter(|| {
 			let data = vec![
-				0xa0, 0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0, 0x09, 0x10, 0x20, 0x30, 0x40,
-				0x50, 0x60, 0x77, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x12, 0xf0,
+				0xa0, 0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0, 0x09, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x77,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0xf0,
 			];
 			let rlp = rlp::Rlp::new(&data);
 			let _: primitive_types::U256 = rlp.as_val().unwrap();

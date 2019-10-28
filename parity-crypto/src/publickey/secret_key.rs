@@ -73,9 +73,7 @@ impl Secret {
 
 	/// Creates zero key, which is invalid for crypto operations, but valid for math operation.
 	pub fn zero() -> Self {
-		Secret {
-			inner: H256::zero(),
-		}
+		Secret { inner: H256::zero() }
 	}
 
 	/// Imports and validates the key.
@@ -221,9 +219,7 @@ impl Secret {
 impl FromStr for Secret {
 	type Err = Error;
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		Ok(H256::from_str(s)
-			.map_err(|e| Error::Custom(format!("{:?}", e)))?
-			.into())
+		Ok(H256::from_str(s).map_err(|e| Error::Custom(format!("{:?}", e)))?.into())
 	}
 }
 
@@ -277,8 +273,7 @@ mod tests {
 		inversion.mul(&secret).unwrap();
 		assert_eq!(
 			inversion,
-			Secret::from_str("0000000000000000000000000000000000000000000000000000000000000001")
-				.unwrap()
+			Secret::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap()
 		);
 	}
 
@@ -299,8 +294,7 @@ mod tests {
 		pow0.pow(0).unwrap();
 		assert_eq!(
 			pow0,
-			Secret::from_str("0000000000000000000000000000000000000000000000000000000000000001")
-				.unwrap()
+			Secret::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap()
 		);
 
 		let mut pow1 = secret.clone();

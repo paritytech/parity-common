@@ -72,22 +72,10 @@ mod tests {
 	#[test]
 	fn test_serialize_h160() {
 		let tests = vec![
-			(
-				H160::from_low_u64_be(0),
-				"0x0000000000000000000000000000000000000000",
-			),
-			(
-				H160::from_low_u64_be(2),
-				"0x0000000000000000000000000000000000000002",
-			),
-			(
-				H160::from_low_u64_be(15),
-				"0x000000000000000000000000000000000000000f",
-			),
-			(
-				H160::from_low_u64_be(16),
-				"0x0000000000000000000000000000000000000010",
-			),
+			(H160::from_low_u64_be(0), "0x0000000000000000000000000000000000000000"),
+			(H160::from_low_u64_be(2), "0x0000000000000000000000000000000000000002"),
+			(H160::from_low_u64_be(15), "0x000000000000000000000000000000000000000f"),
+			(H160::from_low_u64_be(16), "0x0000000000000000000000000000000000000010"),
 			(
 				H160::from_low_u64_be(1_000),
 				"0x00000000000000000000000000000000000003e8",
@@ -103,10 +91,7 @@ mod tests {
 		];
 
 		for (number, expected) in tests {
-			assert_eq!(
-				format!("{:?}", expected),
-				ser::to_string_pretty(&number).unwrap()
-			);
+			assert_eq!(format!("{:?}", expected), ser::to_string_pretty(&number).unwrap());
 			assert_eq!(number, ser::from_str(&format!("{:?}", expected)).unwrap());
 		}
 	}
@@ -145,31 +130,28 @@ mod tests {
 		];
 
 		for (number, expected) in tests {
-			assert_eq!(
-				format!("{:?}", expected),
-				ser::to_string_pretty(&number).unwrap()
-			);
+			assert_eq!(format!("{:?}", expected), ser::to_string_pretty(&number).unwrap());
 			assert_eq!(number, ser::from_str(&format!("{:?}", expected)).unwrap());
 		}
 	}
 
 	#[test]
 	fn test_serialize_invalid() {
-		assert!(ser::from_str::<H256>(
-			"\"0x000000000000000000000000000000000000000000000000000000000000000\""
-		)
-		.unwrap_err()
-		.is_data());
-		assert!(ser::from_str::<H256>(
-			"\"0x000000000000000000000000000000000000000000000000000000000000000g\""
-		)
-		.unwrap_err()
-		.is_data());
-		assert!(ser::from_str::<H256>(
-			"\"0x00000000000000000000000000000000000000000000000000000000000000000\""
-		)
-		.unwrap_err()
-		.is_data());
+		assert!(
+			ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000\"")
+				.unwrap_err()
+				.is_data()
+		);
+		assert!(
+			ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000g\"")
+				.unwrap_err()
+				.is_data()
+		);
+		assert!(
+			ser::from_str::<H256>("\"0x00000000000000000000000000000000000000000000000000000000000000000\"")
+				.unwrap_err()
+				.is_data()
+		);
 		assert!(ser::from_str::<H256>("\"\"").unwrap_err().is_data());
 		assert!(ser::from_str::<H256>("\"0\"").unwrap_err().is_data());
 		assert!(ser::from_str::<H256>("\"10\"").unwrap_err().is_data());

@@ -93,14 +93,10 @@ mod tests {
 	#[test]
 	fn test_from_sender_salt_and_code_hash() {
 		let sender = Address::zero();
-		let code_hash =
-			H256::from_str("c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470")
-				.unwrap();
-		let expected_address =
-			Address::from_str("e33c0c7f7df4809055c3eba6c09cfe4baf1bd9e0").unwrap();
+		let code_hash = H256::from_str("c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470").unwrap();
+		let expected_address = Address::from_str("e33c0c7f7df4809055c3eba6c09cfe4baf1bd9e0").unwrap();
 
-		let contract_address =
-			ContractAddress::from_sender_salt_and_code(&sender, H256::zero(), code_hash);
+		let contract_address = ContractAddress::from_sender_salt_and_code(&sender, H256::zero(), code_hash);
 
 		assert_eq!(Address::from(contract_address), expected_address);
 	}
@@ -108,11 +104,8 @@ mod tests {
 	#[test]
 	fn test_from_sender_and_code_hash() {
 		let sender = Address::from_str("0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d").unwrap();
-		let code_hash =
-			H256::from_str("d98f2e8134922f73748703c8e7084d42f13d2fa1439936ef5a3abcf5646fe83f")
-				.unwrap();
-		let expected_address =
-			Address::from_str("064417880f5680b141ed7fcac031aad40df080b0").unwrap();
+		let code_hash = H256::from_str("d98f2e8134922f73748703c8e7084d42f13d2fa1439936ef5a3abcf5646fe83f").unwrap();
+		let expected_address = Address::from_str("064417880f5680b141ed7fcac031aad40df080b0").unwrap();
 
 		let contract_address = ContractAddress::from_sender_and_code(&sender, code_hash);
 

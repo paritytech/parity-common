@@ -21,9 +21,8 @@
 
 use super::{MallocSizeOf, MallocSizeOfOps};
 use elastic_array::{
-	ElasticArray1024, ElasticArray128, ElasticArray16, ElasticArray2, ElasticArray2048,
-	ElasticArray256, ElasticArray32, ElasticArray36, ElasticArray4, ElasticArray512,
-	ElasticArray64, ElasticArray8,
+	ElasticArray1024, ElasticArray128, ElasticArray16, ElasticArray2, ElasticArray2048, ElasticArray256,
+	ElasticArray32, ElasticArray36, ElasticArray4, ElasticArray512, ElasticArray64, ElasticArray8,
 };
 use ethereum_types::{Bloom, H128, H160, H256, H264, H32, H512, H520, H64, U128, U256, U512, U64};
 use parking_lot::{Mutex, RwLock};

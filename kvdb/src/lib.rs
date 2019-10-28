@@ -106,10 +106,7 @@ impl DBTransaction {
 	pub fn delete(&mut self, col: Option<u32>, key: &[u8]) {
 		let mut ekey = ElasticArray32::new();
 		ekey.append_slice(key);
-		self.ops.push(DBOp::Delete {
-			col: col,
-			key: ekey,
-		});
+		self.ops.push(DBOp::Delete { col: col, key: ekey });
 	}
 }
 
@@ -156,10 +153,7 @@ pub trait KeyValueDB: Sync + Send {
 	fn flush(&self) -> io::Result<()>;
 
 	/// Iterate over flushed data for a given column.
-	fn iter<'a>(
-		&'a self,
-		col: Option<u32>,
-	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
 
 	/// Iterate over flushed data for a given column, starting from a given prefix.
 	fn iter_from_prefix<'a>(

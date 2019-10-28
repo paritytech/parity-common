@@ -34,14 +34,10 @@ impl<H: fmt::Debug + fmt::LowerHex> fmt::Display for Error<H> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
 			Error::AlreadyImported(h) => write!(f, "[{:?}] already imported", h),
-			Error::TooCheapToEnter(hash, min_score) => write!(
-				f,
-				"[{:x}] too cheap to enter the pool. Min score: {}",
-				hash, min_score
-			),
-			Error::TooCheapToReplace(old_hash, hash) => {
-				write!(f, "[{:x}] too cheap to replace: {:x}", hash, old_hash)
+			Error::TooCheapToEnter(hash, min_score) => {
+				write!(f, "[{:x}] too cheap to enter the pool. Min score: {}", hash, min_score)
 			}
+			Error::TooCheapToReplace(old_hash, hash) => write!(f, "[{:x}] too cheap to replace: {:x}", hash, old_hash),
 		}
 	}
 }
@@ -58,9 +54,7 @@ where
 
 		match (self, other) {
 			(&AlreadyImported(ref h1), &AlreadyImported(ref h2)) => h1 == h2,
-			(&TooCheapToEnter(ref h1, ref s1), &TooCheapToEnter(ref h2, ref s2)) => {
-				h1 == h2 && s1 == s2
-			}
+			(&TooCheapToEnter(ref h1, ref s1), &TooCheapToEnter(ref h2, ref s2)) => h1 == h2 && s1 == s2,
 			(&TooCheapToReplace(ref old1, ref new1), &TooCheapToReplace(ref old2, ref new2)) => {
 				old1 == old2 && new1 == new2
 			}

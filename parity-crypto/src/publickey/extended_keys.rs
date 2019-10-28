@@ -107,8 +107,7 @@ impl ExtendedSecret {
 	where
 		T: Label,
 	{
-		let (derived_key, next_chain_code) =
-			derivation::private(*self.secret, self.chain_code, index);
+		let (derived_key, next_chain_code) = derivation::private(*self.secret, self.chain_code, index);
 
 		let derived_secret = Secret::from(derived_key.0);
 
@@ -150,8 +149,7 @@ impl ExtendedPublic {
 	where
 		T: Label,
 	{
-		let (derived_key, next_chain_code) =
-			derivation::public(self.public, self.chain_code, index)?;
+		let (derived_key, next_chain_code) = derivation::public(self.public, self.chain_code, index)?;
 		Ok(ExtendedPublic::new(derived_key, next_chain_code))
 	}
 
@@ -168,8 +166,8 @@ pub struct ExtendedKeyPair {
 impl ExtendedKeyPair {
 	pub fn new(secret: Secret) -> Self {
 		let extended_secret = ExtendedSecret::new(secret);
-		let extended_public = ExtendedPublic::from_secret(&extended_secret)
-			.expect("Valid `Secret` always produces valid public; qed");
+		let extended_public =
+			ExtendedPublic::from_secret(&extended_secret).expect("Valid `Secret` always produces valid public; qed");
 		ExtendedKeyPair {
 			secret: extended_secret,
 			public: extended_public,
@@ -185,8 +183,8 @@ impl ExtendedKeyPair {
 
 	pub fn with_secret(secret: Secret, chain_code: H256) -> Self {
 		let extended_secret = ExtendedSecret::with_code(secret, chain_code);
-		let extended_public = ExtendedPublic::from_secret(&extended_secret)
-			.expect("Valid `Secret` always produces valid public; qed");
+		let extended_public =
+			ExtendedPublic::from_secret(&extended_secret).expect("Valid `Secret` always produces valid public; qed");
 		ExtendedKeyPair {
 			secret: extended_secret,
 			public: extended_public,
@@ -282,10 +280,10 @@ mod derivation {
 	{
 		let mut data = vec![0u8; 33 + T::len()];
 
-		let sec_private = SecretKey::from_slice(&SECP256K1, private_key.as_bytes())
-			.expect("Caller should provide valid private key");
-		let sec_public = PublicKey::from_secret_key(&SECP256K1, &sec_private)
-			.expect("Caller should provide valid private key");
+		let sec_private =
+			SecretKey::from_slice(&SECP256K1, private_key.as_bytes()).expect("Caller should provide valid private key");
+		let sec_public =
+			PublicKey::from_secret_key(&SECP256K1, &sec_private).expect("Caller should provide valid private key");
 		let public_serialized = sec_public.serialize_vec(&SECP256K1, true);
 
 		// curve point (compressed public key) --  index
@@ -322,15 +320,10 @@ mod derivation {
 	// todo: surely can be optimized
 	fn modulo(u1: U512, u2: U256) -> U256 {
 		let m = u1 % U512::from(u2);
-		m.try_into()
-			.expect("U512 modulo U256 should fit into U256; qed")
+		m.try_into().expect("U512 modulo U256 should fit into U256; qed")
 	}
 
-	pub fn public<T>(
-		public_key: H512,
-		chain_code: H256,
-		derivation: Derivation<T>,
-	) -> Result<(H512, H256), Error>
+	pub fn public<T>(public_key: H512, chain_code: H256, derivation: Derivation<T>) -> Result<(H512, H256), Error>
 	where
 		T: Label,
 	{
@@ -344,8 +337,7 @@ mod derivation {
 		let mut public_sec_raw = [0u8; 65];
 		public_sec_raw[0] = 4;
 		public_sec_raw[1..65].copy_from_slice(public_key.as_bytes());
-		let public_sec =
-			PublicKey::from_slice(&SECP256K1, &public_sec_raw).map_err(|_| Error::InvalidPoint)?;
+		let public_sec = PublicKey::from_slice(&SECP256K1, &public_sec_raw).map_err(|_| Error::InvalidPoint)?;
 		let public_serialized = public_sec.serialize_vec(&SECP256K1, true);
 
 		let mut data = vec![0u8; 33 + T::len()];
@@ -365,8 +357,9 @@ mod derivation {
 		if *CURVE_ORDER <= new_private.into_uint() {
 			return Err(Error::MissingIndex);
 		}
-		let new_private_sec = SecretKey::from_slice(&SECP256K1, new_private.as_bytes())
-			.expect("Private key belongs to the field [0..CURVE_ORDER) (checked above); So initializing can never fail; qed");
+		let new_private_sec = SecretKey::from_slice(&SECP256K1, new_private.as_bytes()).expect(
+			"Private key belongs to the field [0..CURVE_ORDER) (checked above); So initializing can never fail; qed",
+		);
 		let mut new_public = PublicKey::from_secret_key(&SECP256K1, &new_private_sec)
 			.expect("Valid private key produces valid public key");
 
@@ -394,10 +387,8 @@ mod derivation {
 	}
 
 	pub fn point(secret: H256) -> Result<H512, Error> {
-		let sec = SecretKey::from_slice(&SECP256K1, secret.as_bytes())
-			.map_err(|_| Error::InvalidPoint)?;
-		let public_sec =
-			PublicKey::from_secret_key(&SECP256K1, &sec).map_err(|_| Error::InvalidPoint)?;
+		let sec = SecretKey::from_slice(&SECP256K1, secret.as_bytes()).map_err(|_| Error::InvalidPoint)?;
+		let public_sec = PublicKey::from_secret_key(&SECP256K1, &sec).map_err(|_| Error::InvalidPoint)?;
 		let serialized = public_sec.serialize_vec(&SECP256K1, false);
 		Ok(H512::from_slice(&serialized[1..65]))
 	}
@@ -442,43 +433,35 @@ mod tests {
 
 	#[test]
 	fn smoky() {
-		let secret =
-			Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65")
-				.unwrap();
+		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let extended_secret = ExtendedSecret::with_code(secret.clone(), H256::zero());
 
 		// hardened
 		assert_eq!(&**extended_secret.as_raw(), &*secret);
 		assert_eq!(
 			**extended_secret.derive(2147483648.into()).as_raw(),
-			H256::from_str("0927453daed47839608e414a3738dfad10aed17c459bbd9ab53f89b026c834b6")
-				.unwrap(),
+			H256::from_str("0927453daed47839608e414a3738dfad10aed17c459bbd9ab53f89b026c834b6").unwrap(),
 		);
 		assert_eq!(
 			**extended_secret.derive(2147483649.into()).as_raw(),
-			H256::from_str("44238b6a29c6dcbe9b401364141ba11e2198c289a5fed243a1c11af35c19dc0f")
-				.unwrap(),
+			H256::from_str("44238b6a29c6dcbe9b401364141ba11e2198c289a5fed243a1c11af35c19dc0f").unwrap(),
 		);
 
 		// normal
 		assert_eq!(
 			**extended_secret.derive(0.into()).as_raw(),
-			H256::from_str("bf6a74e3f7b36fc4c96a1e12f31abc817f9f5904f5a8fc27713163d1f0b713f6")
-				.unwrap()
+			H256::from_str("bf6a74e3f7b36fc4c96a1e12f31abc817f9f5904f5a8fc27713163d1f0b713f6").unwrap()
 		);
 		assert_eq!(
 			**extended_secret.derive(1.into()).as_raw(),
-			H256::from_str("bd4fca9eb1f9c201e9448c1eecd66e302d68d4d313ce895b8c134f512205c1bc")
-				.unwrap()
+			H256::from_str("bd4fca9eb1f9c201e9448c1eecd66e302d68d4d313ce895b8c134f512205c1bc").unwrap()
 		);
 		assert_eq!(
 			**extended_secret.derive(2.into()).as_raw(),
-			H256::from_str("86932b542d6cab4d9c65490c7ef502d89ecc0e2a5f4852157649e3251e2a3268")
-				.unwrap()
+			H256::from_str("86932b542d6cab4d9c65490c7ef502d89ecc0e2a5f4852157649e3251e2a3268").unwrap()
 		);
 
-		let extended_public = ExtendedPublic::from_secret(&extended_secret)
-			.expect("Extended public should be created");
+		let extended_public = ExtendedPublic::from_secret(&extended_secret).expect("Extended public should be created");
 		let derived_public = extended_public
 			.derive(0.into())
 			.expect("First derivation of public should succeed");
@@ -488,8 +471,7 @@ mod tests {
 		);
 
 		let keypair = ExtendedKeyPair::with_secret(
-			Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65")
-				.unwrap(),
+			Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap(),
 			H256::from_low_u64_be(64),
 		);
 		assert_eq!(
@@ -498,70 +480,56 @@ mod tests {
 				.expect("Derivation of keypair should succeed")
 				.secret()
 				.as_raw(),
-			H256::from_str("edef54414c03196557cf73774bc97a645c9a1df2164ed34f0c2a78d1375a930c")
-				.unwrap(),
+			H256::from_str("edef54414c03196557cf73774bc97a645c9a1df2164ed34f0c2a78d1375a930c").unwrap(),
 		);
 	}
 
 	#[test]
 	fn h256_soft_match() {
-		let secret =
-			Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65")
-				.unwrap();
+		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let derivation_secret =
-			H256::from_str("51eaf04f9dbbc1417dc97e789edd0c37ecda88bac490434e367ea81b71b7b015")
-				.unwrap();
+			H256::from_str("51eaf04f9dbbc1417dc97e789edd0c37ecda88bac490434e367ea81b71b7b015").unwrap();
 
 		let extended_secret = ExtendedSecret::with_code(secret.clone(), H256::zero());
-		let extended_public = ExtendedPublic::from_secret(&extended_secret)
-			.expect("Extended public should be created");
+		let extended_public = ExtendedPublic::from_secret(&extended_secret).expect("Extended public should be created");
 
 		let derived_secret0 = extended_secret.derive(Derivation::Soft(derivation_secret));
 		let derived_public0 = extended_public
 			.derive(Derivation::Soft(derivation_secret))
 			.expect("First derivation of public should succeed");
 
-		let public_from_secret0 = ExtendedPublic::from_secret(&derived_secret0)
-			.expect("Extended public should be created");
+		let public_from_secret0 =
+			ExtendedPublic::from_secret(&derived_secret0).expect("Extended public should be created");
 
 		assert_eq!(public_from_secret0.public(), derived_public0.public());
 	}
 
 	#[test]
 	fn h256_hard() {
-		let secret =
-			Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65")
-				.unwrap();
+		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let derivation_secret =
-			H256::from_str("51eaf04f9dbbc1417dc97e789edd0c37ecda88bac490434e367ea81b71b7b015")
-				.unwrap();
+			H256::from_str("51eaf04f9dbbc1417dc97e789edd0c37ecda88bac490434e367ea81b71b7b015").unwrap();
 		let extended_secret = ExtendedSecret::with_code(secret.clone(), H256::from_low_u64_be(1));
 
 		assert_eq!(
-			**extended_secret
-				.derive(Derivation::Hard(derivation_secret))
-				.as_raw(),
-			H256::from_str("2bc2d696fb744d77ff813b4a1ef0ad64e1e5188b622c54ba917acc5ebc7c5486")
-				.unwrap(),
+			**extended_secret.derive(Derivation::Hard(derivation_secret)).as_raw(),
+			H256::from_str("2bc2d696fb744d77ff813b4a1ef0ad64e1e5188b622c54ba917acc5ebc7c5486").unwrap(),
 		);
 	}
 
 	#[test]
 	fn match_() {
-		let secret =
-			Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65")
-				.unwrap();
+		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let extended_secret = ExtendedSecret::with_code(secret.clone(), H256::from_low_u64_be(1));
-		let extended_public = ExtendedPublic::from_secret(&extended_secret)
-			.expect("Extended public should be created");
+		let extended_public = ExtendedPublic::from_secret(&extended_secret).expect("Extended public should be created");
 
 		let derived_secret0 = extended_secret.derive(0.into());
 		let derived_public0 = extended_public
 			.derive(0.into())
 			.expect("First derivation of public should succeed");
 
-		let public_from_secret0 = ExtendedPublic::from_secret(&derived_secret0)
-			.expect("Extended public should be created");
+		let public_from_secret0 =
+			ExtendedPublic::from_secret(&derived_secret0).expect("Extended public should be created");
 
 		assert_eq!(public_from_secret0.public(), derived_public0.public());
 	}
@@ -575,9 +543,8 @@ mod tests {
 
 		// private key from bitcoin test vector
 		// xprv9wTYmMFdV23N2TdNG573QoEsfRrWKQgWeibmLntzniatZvR9BmLnvSxqu53Kw1UmYPxLgboyZQaXwTCg8MSY3H2EU4pWcQDnRnrVA1xe8fs
-		let test_private =
-			H256::from_str("e8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35")
-				.expect("Private should be decoded ok");
+		let test_private = H256::from_str("e8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35")
+			.expect("Private should be decoded ok");
 
 		let (private_seed, _) = derivation::seed_pair(&*seed);
 

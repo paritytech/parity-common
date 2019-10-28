@@ -58,12 +58,7 @@ where
 
 pub fn derive_key_iterations(password: &[u8], salt: &[u8], c: u32) -> (Vec<u8>, Vec<u8>) {
 	let mut derived_key = [0u8; KEY_LENGTH];
-	pbkdf2::sha256(
-		c,
-		pbkdf2::Salt(salt),
-		pbkdf2::Secret(password),
-		&mut derived_key,
-	);
+	pbkdf2::sha256(c, pbkdf2::Salt(salt), pbkdf2::Secret(password), &mut derived_key);
 	let derived_right_bits = &derived_key[0..KEY_LENGTH_AES];
 	let derived_left_bits = &derived_key[KEY_LENGTH_AES..KEY_LENGTH];
 	(derived_right_bits.to_vec(), derived_left_bits.to_vec())

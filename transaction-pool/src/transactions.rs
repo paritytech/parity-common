@@ -65,9 +65,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		self.transactions.iter()
 	}
 
-	pub fn worst_and_best(
-		&self,
-	) -> Option<((S::Score, Transaction<T>), (S::Score, Transaction<T>))> {
+	pub fn worst_and_best(&self) -> Option<((S::Score, Transaction<T>), (S::Score, Transaction<T>))> {
 		let len = self.scores.len();
 		self.scores.get(0).cloned().map(|best| {
 			let worst = self.scores[len - 1].clone();
@@ -105,34 +103,18 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		} else {
 			self.transactions.push(tx.clone());
 			self.scores.push(Default::default());
-			scoring.update_scores(
-				&self.transactions,
-				&mut self.scores,
-				scoring::Change::InsertedAt(index),
-			);
+			scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::InsertedAt(index));
 
 			AddResult::Ok(tx)
 		}
 	}
 
 	pub fn update_scores(&mut self, scoring: &S, event: S::Event) {
-		scoring.update_scores(
-			&self.transactions,
-			&mut self.scores,
-			scoring::Change::Event(event),
-		);
+		scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::Event(event));
 	}
 
-	pub fn add(
-		&mut self,
-		new: Transaction<T>,
-		scoring: &S,
-		max_count: usize,
-	) -> AddResult<Transaction<T>, S::Score> {
-		let index = match self
-			.transactions
-			.binary_search_by(|old| scoring.compare(old, &new))
-		{
+	pub fn add(&mut self, new: Transaction<T>, scoring: &S, max_count: usize) -> AddResult<Transaction<T>, S::Score> {
+		let index = match self.transactions.binary_search_by(|old| scoring.compare(old, &new)) {
 			Ok(index) => index,
 			Err(index) => index,
 		};
@@ -153,11 +135,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 			scoring::Choice::InsertNew => {
 				self.transactions.insert(index, new.clone());
 				self.scores.insert(index, Default::default());
-				scoring.update_scores(
-					&self.transactions,
-					&mut self.scores,
-					scoring::Change::InsertedAt(index),
-				);
+				scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::InsertedAt(index));
 
 				if self.transactions.len() > max_count {
 					let old = self.transactions.pop().expect("len is non-zero");
@@ -176,11 +154,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 			// New transaction is replacing some other transaction already in the queue.
 			scoring::Choice::ReplaceOld => {
 				let old = mem::replace(&mut self.transactions[index], new.clone());
-				scoring.update_scores(
-					&self.transactions,
-					&mut self.scores,
-					scoring::Change::ReplacedAt(index),
-				);
+				scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::ReplacedAt(index));
 
 				AddResult::Replaced { old, new }
 			}
@@ -188,10 +162,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 	}
 
 	pub fn remove(&mut self, tx: &T, scoring: &S) -> bool {
-		let index = match self
-			.transactions
-			.binary_search_by(|old| scoring.compare(old, tx))
-		{
+		let index = match self.transactions.binary_search_by(|old| scoring.compare(old, tx)) {
 			Ok(index) => index,
 			Err(_) => {
 				warn!("Attempting to remove non-existent transaction {:?}", tx);
@@ -202,19 +173,11 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		self.transactions.remove(index);
 		self.scores.remove(index);
 		// Update scoring
-		scoring.update_scores(
-			&self.transactions,
-			&mut self.scores,
-			scoring::Change::RemovedAt(index),
-		);
+		scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::RemovedAt(index));
 		return true;
 	}
 
-	pub fn cull<R: Ready<T>>(
-		&mut self,
-		ready: &mut R,
-		scoring: &S,
-	) -> SmallVec<[Transaction<T>; PER_SENDER]> {
+	pub fn cull<R: Ready<T>>(&mut self, ready: &mut R, scoring: &S) -> SmallVec<[Transaction<T>; PER_SENDER]> {
 		let mut result = SmallVec::new();
 		if self.is_empty() {
 			return result;

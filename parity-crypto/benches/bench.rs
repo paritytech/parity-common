@@ -44,11 +44,9 @@ fn input_len(c: &mut Criterion) {
 			let iv = [0; 16];
 
 			b.iter(|| {
-				parity_crypto::aes::encrypt_128_ctr(&k[..], &iv[..], &data[..], &mut dest[..])
-					.unwrap();
+				parity_crypto::aes::encrypt_128_ctr(&k[..], &iv[..], &data[..], &mut dest[..]).unwrap();
 				// same as encrypt but add it just in case
-				parity_crypto::aes::decrypt_128_ctr(&k[..], &iv[..], &data[..], &mut dest[..])
-					.unwrap();
+				parity_crypto::aes::decrypt_128_ctr(&k[..], &iv[..], &data[..], &mut dest[..]).unwrap();
 			});
 		},
 		vec![100, 500, 1_000, 10_000, 100_000],

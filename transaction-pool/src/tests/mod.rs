@@ -651,11 +651,8 @@ fn should_import_even_if_limit_is_reached_and_should_replace_returns_insert_new(
 			..Default::default()
 		},
 	);
-	txq.import(
-		b.tx().nonce(0).gas_price(5).new(),
-		&mut DummyScoring::always_insert(),
-	)
-	.unwrap();
+	txq.import(b.tx().nonce(0).gas_price(5).new(), &mut DummyScoring::always_insert())
+		.unwrap();
 	assert_eq!(
 		txq.light_status(),
 		LightStatus {
@@ -666,11 +663,8 @@ fn should_import_even_if_limit_is_reached_and_should_replace_returns_insert_new(
 	);
 
 	// when
-	txq.import(
-		b.tx().nonce(1).gas_price(5).new(),
-		&mut DummyScoring::always_insert(),
-	)
-	.unwrap();
+	txq.import(b.tx().nonce(1).gas_price(5).new(), &mut DummyScoring::always_insert())
+		.unwrap();
 
 	// then
 	assert_eq!(
@@ -713,8 +707,7 @@ fn should_not_import_even_if_limit_is_reached_and_should_replace_returns_false()
 	assert_eq!(
 		err,
 		error::Error::TooCheapToEnter(
-			H256::from_str("00000000000000000000000000000000000000000000000000000000000001f5")
-				.unwrap(),
+			H256::from_str("00000000000000000000000000000000000000000000000000000000000001f5").unwrap(),
 			"0x5".into()
 		)
 	);
@@ -740,11 +733,8 @@ fn should_import_even_if_sender_limit_is_reached() {
 			..Default::default()
 		},
 	);
-	txq.import(
-		b.tx().nonce(0).gas_price(5).new(),
-		&mut DummyScoring::always_insert(),
-	)
-	.unwrap();
+	txq.import(b.tx().nonce(0).gas_price(5).new(), &mut DummyScoring::always_insert())
+		.unwrap();
 	assert_eq!(
 		txq.light_status(),
 		LightStatus {
@@ -755,11 +745,8 @@ fn should_import_even_if_sender_limit_is_reached() {
 	);
 
 	// when
-	txq.import(
-		b.tx().nonce(1).gas_price(5).new(),
-		&mut DummyScoring::always_insert(),
-	)
-	.unwrap();
+	txq.import(b.tx().nonce(1).gas_price(5).new(), &mut DummyScoring::always_insert())
+		.unwrap();
 
 	// then
 	assert_eq!(
@@ -789,11 +776,7 @@ mod listener {
 				.push(if old.is_some() { "replaced" } else { "added" });
 		}
 
-		fn rejected<H: fmt::Debug + fmt::LowerHex>(
-			&mut self,
-			_tx: &SharedTransaction,
-			_reason: &error::Error<H>,
-		) {
+		fn rejected<H: fmt::Debug + fmt::LowerHex>(&mut self, _tx: &SharedTransaction, _reason: &error::Error<H>) {
 			self.0.borrow_mut().push("rejected".into());
 		}
 
@@ -851,10 +834,7 @@ mod listener {
 		assert_eq!(*results.borrow(), &["added", "dropped", "added"]);
 		// Reject (too cheap)
 		import(&mut txq, b.tx().sender(2).nonce(1).gas_price(2).new()).unwrap_err();
-		assert_eq!(
-			*results.borrow(),
-			&["added", "dropped", "added", "rejected"]
-		);
+		assert_eq!(*results.borrow(), &["added", "dropped", "added", "rejected"]);
 
 		assert_eq!(txq.light_status().transaction_count, 2);
 	}
@@ -874,10 +854,7 @@ mod listener {
 		txq.remove(&tx1.hash(), false);
 		assert_eq!(*results.borrow(), &["added", "added", "canceled"]);
 		txq.remove(&tx2.hash(), true);
-		assert_eq!(
-			*results.borrow(),
-			&["added", "added", "canceled", "invalid"]
-		);
+		assert_eq!(*results.borrow(), &["added", "added", "canceled", "invalid"]);
 		assert_eq!(txq.light_status().transaction_count, 0);
 	}
 

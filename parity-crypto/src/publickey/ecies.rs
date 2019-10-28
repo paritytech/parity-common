@@ -105,12 +105,7 @@ fn kdf(secret: &Secret, s1: &[u8], dest: &mut [u8]) {
 	let mut written = 0usize;
 	while written < dest.len() {
 		let mut hasher = digest::Hasher::sha256();
-		let ctrs = [
-			(ctr >> 24) as u8,
-			(ctr >> 16) as u8,
-			(ctr >> 8) as u8,
-			ctr as u8,
-		];
+		let ctrs = [(ctr >> 24) as u8, (ctr >> 16) as u8, (ctr >> 8) as u8, ctr as u8];
 		hasher.update(&ctrs);
 		hasher.update(secret.as_bytes());
 		hasher.update(s1);

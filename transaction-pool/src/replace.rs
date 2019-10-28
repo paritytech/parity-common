@@ -28,10 +28,7 @@ pub struct ReplaceTransaction<'a, T> {
 
 impl<'a, T> ReplaceTransaction<'a, T> {
 	/// Creates a new `ReplaceTransaction`
-	pub fn new(
-		transaction: &'a Transaction<T>,
-		pooled_by_sender: Option<&'a [Transaction<T>]>,
-	) -> Self {
+	pub fn new(transaction: &'a Transaction<T>, pooled_by_sender: Option<&'a [Transaction<T>]>) -> Self {
 		ReplaceTransaction {
 			transaction,
 			pooled_by_sender,
@@ -51,9 +48,5 @@ pub trait ShouldReplace<T> {
 	/// Decides if `new` should push out `old` transaction from the pool.
 	///
 	/// NOTE returning `InsertNew` here can lead to some transactions being accepted above pool limits.
-	fn should_replace(
-		&self,
-		old: &ReplaceTransaction<'_, T>,
-		new: &ReplaceTransaction<'_, T>,
-	) -> Choice;
+	fn should_replace(&self, old: &ReplaceTransaction<'_, T>, new: &ReplaceTransaction<'_, T>) -> Choice;
 }

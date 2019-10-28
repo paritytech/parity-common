@@ -40,10 +40,7 @@ mod tests {
 				];
 
 				for (number, expected) in tests {
-					assert_eq!(
-						format!("{:?}", expected),
-						ser::to_string_pretty(&number).unwrap()
-					);
+					assert_eq!(format!("{:?}", expected), ser::to_string_pretty(&number).unwrap());
 					assert_eq!(number, ser::from_str(&format!("{:?}", expected)).unwrap());
 				}
 
@@ -66,11 +63,11 @@ mod tests {
 			ser::to_string_pretty(&!U256::zero()).unwrap(),
 			"\"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\""
 		);
-		assert!(ser::from_str::<U256>(
-			"\"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\""
-		)
-		.unwrap_err()
-		.is_data());
+		assert!(
+			ser::from_str::<U256>("\"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"")
+				.unwrap_err()
+				.is_data()
+		);
 	}
 
 	#[test]

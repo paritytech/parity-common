@@ -94,10 +94,7 @@ impl Hasher<Sha512> {
 
 impl Hasher<Ripemd160> {
 	pub fn ripemd160() -> Hasher<Ripemd160> {
-		Hasher(
-			Inner::Ripemd160(ripemd160::Ripemd160::default()),
-			PhantomData,
-		)
+		Hasher(Inner::Ripemd160(ripemd160::Ripemd160::default()), PhantomData)
 	}
 }
 

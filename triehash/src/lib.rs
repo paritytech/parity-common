@@ -57,12 +57,7 @@ where
 	H: Hasher,
 	<H as hash_db::Hasher>::Out: cmp::Ord,
 {
-	trie_root::<H, _, _, _>(
-		input
-			.into_iter()
-			.enumerate()
-			.map(|(i, v)| (rlp::encode(&i), v)),
-	)
+	trie_root::<H, _, _, _>(input.into_iter().enumerate().map(|(i, v)| (rlp::encode(&i), v)))
 }
 
 /// Generates a trie root hash for a vector of key-value tuples
@@ -184,11 +179,7 @@ fn hex_prefix_encode<'a>(nibbles: &'a [u8], leaf: bool) -> impl Iterator<Item = 
 		}
 		bits
 	};
-	once(first_byte).chain(
-		nibbles[oddness_factor..]
-			.chunks(2)
-			.map(|ch| ch[0] << 4 | ch[1]),
-	)
+	once(first_byte).chain(nibbles[oddness_factor..].chunks(2).map(|ch| ch[0] << 4 | ch[1]))
 }
 
 fn hash256rlp<H, A, B>(input: &[(A, B)], pre_len: usize, stream: &mut RlpStream)
@@ -335,10 +326,7 @@ mod tests {
 				b"A",
 				b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as &[u8]
 			)]),
-			H256::from(hex!(
-				"d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab"
-			))
-			.as_ref(),
+			H256::from(hex!("d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab")).as_ref(),
 		);
 	}
 

@@ -82,9 +82,7 @@ impl<'a> fmt::Display for ExpectedLen<'a> {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
 			ExpectedLen::Exact(ref v) => write!(fmt, "length of {}", v.len() * 2),
-			ExpectedLen::Between(min, ref v) => {
-				write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2)
-			}
+			ExpectedLen::Between(min, ref v) => write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
 		}
 	}
 }
@@ -127,10 +125,7 @@ where
 					}
 					b => {
 						let ch = char::from(b);
-						return Err(E::custom(&format!(
-							"invalid hex character: {}, at {}",
-							ch, idx
-						)));
+						return Err(E::custom(&format!("invalid hex character: {}, at {}", ch, idx)));
 					}
 				}
 
@@ -155,10 +150,7 @@ where
 
 /// Deserialize into vector of bytes with additional size check.
 /// Returns number of bytes written.
-pub fn deserialize_check_len<'a, 'de, D>(
-	deserializer: D,
-	len: ExpectedLen<'a>,
-) -> Result<usize, D::Error>
+pub fn deserialize_check_len<'a, 'de, D>(deserializer: D, len: ExpectedLen<'a>) -> Result<usize, D::Error>
 where
 	D: Deserializer<'de>,
 {
@@ -180,9 +172,7 @@ where
 
 			let is_len_valid = match self.len {
 				ExpectedLen::Exact(ref slice) => v.len() == 2 * slice.len() + 2,
-				ExpectedLen::Between(min, ref slice) => {
-					v.len() <= 2 * slice.len() + 2 && v.len() > 2 * min + 2
-				}
+				ExpectedLen::Between(min, ref slice) => v.len() <= 2 * slice.len() + 2 && v.len() > 2 * min + 2,
 			};
 
 			if !is_len_valid {
@@ -210,10 +200,7 @@ where
 					}
 					b => {
 						let ch = char::from(b);
-						return Err(E::custom(&format!(
-							"invalid hex character: {}, at {}",
-							ch, idx
-						)));
+						return Err(E::custom(&format!("invalid hex character: {}, at {}", ch, idx)));
 					}
 				}
 
@@ -264,18 +251,12 @@ mod tests {
 
 	#[test]
 	fn should_not_fail_on_other_strings() {
-		let a: Bytes = serde_json::from_str(
-			"\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587\"",
-		)
-		.unwrap();
-		let b: Bytes = serde_json::from_str(
-			"\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587b\"",
-		)
-		.unwrap();
-		let c: Bytes = serde_json::from_str(
-			"\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587b4\"",
-		)
-		.unwrap();
+		let a: Bytes =
+			serde_json::from_str("\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587\"").unwrap();
+		let b: Bytes =
+			serde_json::from_str("\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587b\"").unwrap();
+		let c: Bytes =
+			serde_json::from_str("\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587b4\"").unwrap();
 
 		assert_eq!(a.0.len(), 31);
 		assert_eq!(b.0.len(), 32);

@@ -28,9 +28,7 @@ pub struct DummyScoring {
 
 impl DummyScoring {
 	pub fn always_insert() -> Self {
-		DummyScoring {
-			always_insert: true,
-		}
+		DummyScoring { always_insert: true }
 	}
 }
 

@@ -18,8 +18,8 @@ use std::{cmp, collections::HashMap, error, fs, io, marker::PhantomData, mem, pa
 
 use interleaved_ordered::{interleave_ordered, InterleaveOrdered};
 use parity_rocksdb::{
-	BlockBasedOptions, Cache, Column, DBIterator, Direction, IteratorMode, Options, ReadOptions,
-	Writable, WriteBatch, WriteOptions, DB,
+	BlockBasedOptions, Cache, Column, DBIterator, Direction, IteratorMode, Options, ReadOptions, Writable, WriteBatch,
+	WriteOptions, DB,
 };
 use parking_lot::{Mutex, MutexGuard, RwLock};
 
@@ -257,16 +257,10 @@ pub struct Database {
 }
 
 #[inline]
-fn check_for_corruption<T, P: AsRef<Path>>(
-	path: P,
-	res: result::Result<T, String>,
-) -> io::Result<T> {
+fn check_for_corruption<T, P: AsRef<Path>>(path: P, res: result::Result<T, String>) -> io::Result<T> {
 	if let Err(ref s) = res {
 		if s.starts_with("Corruption:") {
-			warn!(
-				"DB corrupted: {}. Repair will be triggered on next restart",
-				s
-			);
+			warn!("DB corrupted: {}. Repair will be triggered on next restart", s);
 			let _ = fs::File::create(path.as_ref().join(Database::CORRUPTION_FILE_NAME));
 		}
 	}
@@ -275,8 +269,7 @@ fn check_for_corruption<T, P: AsRef<Path>>(
 }
 
 fn is_corrupted(s: &str) -> bool {
-	s.starts_with("Corruption:")
-		|| s.starts_with("Invalid argument: You have to open all column families")
+	s.starts_with("Corruption:") || s.starts_with("Invalid argument: You have to open all column families")
 }
 
 impl Database {
@@ -298,8 +291,7 @@ impl Database {
 		opts.set_use_fsync(false);
 		opts.create_if_missing(true);
 		opts.set_max_open_files(config.max_open_files);
-		opts.set_parsed_options("keep_log_file_num=1")
-			.map_err(other_io_err)?;
+		opts.set_parsed_options("keep_log_file_num=1").map_err(other_io_err)?;
 		opts.set_parsed_options("bytes_per_sync=1048576")
 			.map_err(other_io_err)?;
 		opts.set_db_write_buffer_size(config.memory_budget_per_col() / 2);
@@ -345,10 +337,7 @@ impl Database {
 					Ok(db) => {
 						cfs = cfnames
 							.iter()
-							.map(|n| {
-								db.cf_handle(n)
-									.expect("rocksdb opens a cf_handle for each cfname; qed")
-							})
+							.map(|n| db.cf_handle(n).expect("rocksdb opens a cf_handle for each cfname; qed"))
 							.collect();
 						Ok(db)
 					}
@@ -381,14 +370,10 @@ impl Database {
 				match cfnames.is_empty() {
 					true => DB::open(&opts, path).map_err(other_io_err)?,
 					false => {
-						let db = DB::open_cf(&opts, path, &cfnames, &cf_options)
-							.map_err(other_io_err)?;
+						let db = DB::open_cf(&opts, path, &cfnames, &cf_options).map_err(other_io_err)?;
 						cfs = cfnames
 							.iter()
-							.map(|n| {
-								db.cf_handle(n)
-									.expect("rocksdb opens a cf_handle for each cfname; qed")
-							})
+							.map(|n| db.cf_handle(n).expect("rocksdb opens a cf_handle for each cfname; qed"))
 							.collect();
 						db
 					}
@@ -456,9 +441,7 @@ impl Database {
 								}
 								KeyState::Insert(ref value) => {
 									if c > 0 {
-										batch
-											.put_cf(cfs[c - 1], key, value)
-											.map_err(other_io_err)?;
+										batch.put_cf(cfs[c - 1], key, value).map_err(other_io_err)?;
 									} else {
 										batch.put(key, value).map_err(other_io_err)?;
 									}
@@ -487,9 +470,7 @@ impl Database {
 		// The value inside the lock is used to detect that.
 		if *lock {
 			// This can only happen if another flushing thread is terminated unexpectedly.
-			return Err(other_io_err(
-				"Database write failure. Running low on memory perhaps?",
-			));
+			return Err(other_io_err("Database write failure. Running low on memory perhaps?"));
 		}
 		*lock = true;
 		let result = self.write_flushing_with_lock(&mut lock);
@@ -510,15 +491,11 @@ impl Database {
 					match op {
 						DBOp::Insert { col, key, value } => match col {
 							None => batch.put(&key, &value).map_err(other_io_err)?,
-							Some(c) => batch
-								.put_cf(cfs[c as usize], &key, &value)
-								.map_err(other_io_err)?,
+							Some(c) => batch.put_cf(cfs[c as usize], &key, &value).map_err(other_io_err)?,
 						},
 						DBOp::Delete { col, key } => match col {
 							None => batch.delete(&key).map_err(other_io_err)?,
-							Some(c) => batch
-								.delete_cf(cfs[c as usize], &key)
-								.map_err(other_io_err)?,
+							Some(c) => batch.delete_cf(cfs[c as usize], &key).map_err(other_io_err)?,
 						},
 					}
 				}
@@ -618,12 +595,7 @@ impl Database {
 		match *self.db.read() {
 			Some(DBAndColumns { ref db, ref cfs }) => {
 				let iter = col.map_or_else(
-					|| {
-						db.iterator_opt(
-							IteratorMode::From(prefix, Direction::Forward),
-							&self.read_opts,
-						)
-					},
+					|| db.iterator_opt(IteratorMode::From(prefix, Direction::Forward), &self.read_opts),
 					|c| {
 						db.iterator_cf_opt(
 							cfs[c as usize],
@@ -691,13 +663,7 @@ impl Database {
 		self.db
 			.read()
 			.as_ref()
-			.and_then(|db| {
-				if db.cfs.is_empty() {
-					None
-				} else {
-					Some(db.cfs.len())
-				}
-			})
+			.and_then(|db| if db.cfs.is_empty() { None } else { Some(db.cfs.len()) })
 			.map(|n| n as u32)
 			.unwrap_or(0)
 	}
@@ -763,10 +729,7 @@ impl KeyValueDB for Database {
 		Database::flush(self)
 	}
 
-	fn iter<'a>(
-		&'a self,
-		col: Option<u32>,
-	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
 		let unboxed = Database::iter(self, col);
 		Box::new(unboxed.into_iter().flat_map(|inner| inner))
 	}
@@ -802,15 +765,9 @@ mod tests {
 	fn test_db(config: &DatabaseConfig) {
 		let tempdir = TempDir::new("").unwrap();
 		let db = Database::open(config, tempdir.path().to_str().unwrap()).unwrap();
-		let key1 =
-			H256::from_str("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc")
-				.unwrap();
-		let key2 =
-			H256::from_str("03c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc")
-				.unwrap();
-		let key3 =
-			H256::from_str("01c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc")
-				.unwrap();
+		let key1 = H256::from_str("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
+		let key2 = H256::from_str("03c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
+		let key3 = H256::from_str("01c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
 
 		let mut batch = db.transaction();
 		batch.put(None, key1.as_bytes(), b"cat");
@@ -841,15 +798,9 @@ mod tests {
 		transaction.delete(None, key1.as_bytes());
 		db.write(transaction).unwrap();
 		assert!(db.get(None, key1.as_bytes()).unwrap().is_none());
-		assert_eq!(
-			&*db.get(None, key3.as_bytes()).unwrap().unwrap(),
-			b"elephant"
-		);
+		assert_eq!(&*db.get(None, key3.as_bytes()).unwrap().unwrap(), b"elephant");
 
-		assert_eq!(
-			&*db.get_by_prefix(None, key3.as_bytes()).unwrap(),
-			b"elephant"
-		);
+		assert_eq!(&*db.get_by_prefix(None, key3.as_bytes()).unwrap(), b"elephant");
 		assert_eq!(&*db.get_by_prefix(None, key2.as_bytes()).unwrap(), b"dog");
 
 		let mut transaction = db.transaction();
@@ -877,12 +828,11 @@ mod tests {
 		use std::path::PathBuf;
 		// Example df output.
 		let example_df = vec![
-			70, 105, 108, 101, 115, 121, 115, 116, 101, 109, 32, 32, 32, 32, 32, 49, 75, 45, 98,
-			108, 111, 99, 107, 115, 32, 32, 32, 32, 32, 85, 115, 101, 100, 32, 65, 118, 97, 105,
-			108, 97, 98, 108, 101, 32, 85, 115, 101, 37, 32, 77, 111, 117, 110, 116, 101, 100, 32,
-			111, 110, 10, 47, 100, 101, 118, 47, 115, 100, 97, 49, 32, 32, 32, 32, 32, 32, 32, 54,
-			49, 52, 48, 57, 51, 48, 48, 32, 51, 56, 56, 50, 50, 50, 51, 54, 32, 32, 49, 57, 52, 52,
-			52, 54, 49, 54, 32, 32, 54, 55, 37, 32, 47, 10,
+			70, 105, 108, 101, 115, 121, 115, 116, 101, 109, 32, 32, 32, 32, 32, 49, 75, 45, 98, 108, 111, 99, 107,
+			115, 32, 32, 32, 32, 32, 85, 115, 101, 100, 32, 65, 118, 97, 105, 108, 97, 98, 108, 101, 32, 85, 115, 101,
+			37, 32, 77, 111, 117, 110, 116, 101, 100, 32, 111, 110, 10, 47, 100, 101, 118, 47, 115, 100, 97, 49, 32,
+			32, 32, 32, 32, 32, 32, 54, 49, 52, 48, 57, 51, 48, 48, 32, 51, 56, 56, 50, 50, 50, 51, 54, 32, 32, 49, 57,
+			52, 52, 52, 54, 49, 54, 32, 32, 54, 55, 37, 32, 47, 10,
 		];
 		let expected_output = Some(PathBuf::from("/sys/block/sda/queue/rotational"));
 		assert_eq!(rotational_from_df_output(example_df), expected_output);

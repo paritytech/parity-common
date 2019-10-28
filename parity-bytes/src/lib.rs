@@ -86,12 +86,7 @@ impl<'a> BytesRef<'a> {
 		match *self {
 			BytesRef::Flexible(ref mut data) => {
 				let data_len = data.len();
-				let wrote = input.len()
-					+ if data_len > offset {
-						0
-					} else {
-						offset - data_len
-					};
+				let wrote = input.len() + if data_len > offset { 0 } else { offset - data_len };
 
 				data.resize(offset, 0);
 				data.extend_from_slice(input);

@@ -50,10 +50,7 @@ pub struct PayloadInfo {
 	pub value_len: usize,
 }
 
-fn calculate_payload_info(
-	header_bytes: &[u8],
-	len_of_len: usize,
-) -> Result<PayloadInfo, DecoderError> {
+fn calculate_payload_info(header_bytes: &[u8], len_of_len: usize) -> Result<PayloadInfo, DecoderError> {
 	let header_len = 1 + len_of_len;
 	match header_bytes.get(1) {
 		Some(&0) => return Err(DecoderError::RlpDataLenWithZeroPrefix),
@@ -72,10 +69,7 @@ fn calculate_payload_info(
 
 impl PayloadInfo {
 	fn new(header_len: usize, value_len: usize) -> PayloadInfo {
-		PayloadInfo {
-			header_len,
-			value_len,
-		}
+		PayloadInfo { header_len, value_len }
 	}
 
 	/// Total size of the RLP.
@@ -85,9 +79,7 @@ impl PayloadInfo {
 
 	/// Create a new object from the given bytes RLP. The bytes
 	pub fn from(header_bytes: &[u8]) -> Result<PayloadInfo, DecoderError> {
-		let l = *header_bytes
-			.first()
-			.ok_or_else(|| DecoderError::RlpIsTooShort)?;
+		let l = *header_bytes.first().ok_or_else(|| DecoderError::RlpIsTooShort)?;
 		if l <= 0x7f {
 			Ok(PayloadInfo::new(0, 1))
 		} else if l <= 0xb7 {
@@ -121,9 +113,7 @@ impl<'a> fmt::Display for Rlp<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
 		match self.prototype() {
 			Ok(Prototype::Null) => write!(f, "null"),
-			Ok(Prototype::Data(_)) => {
-				write!(f, "\"0x{}\"", self.data().unwrap().to_hex::<String>())
-			}
+			Ok(Prototype::Data(_)) => write!(f, "\"0x{}\"", self.data().unwrap().to_hex::<String>()),
 			Ok(Prototype::List(len)) => {
 				write!(f, "[")?;
 				for i in 0..len - 1 {
@@ -194,9 +184,7 @@ impl<'a> Rlp<'a> {
 	pub fn size(&self) -> usize {
 		if self.is_data() {
 			// TODO: No panic on malformed data, but ideally would Err on no PayloadInfo.
-			BasicDecoder::payload_info(self.bytes)
-				.map(|b| b.value_len)
-				.unwrap_or(0)
+			BasicDecoder::payload_info(self.bytes).map(|b| b.value_len).unwrap_or(0)
 		} else {
 			0
 		}
@@ -360,10 +348,7 @@ where
 	type IntoIter = RlpIterator<'a, 'view>;
 
 	fn into_iter(self) -> Self::IntoIter {
-		RlpIterator {
-			rlp: self,
-			index: 0,
-		}
+		RlpIterator { rlp: self, index: 0 }
 	}
 }
 
@@ -424,9 +409,7 @@ impl<'a> BasicDecoder<'a> {
 			}
 			let len = decode_usize(&bytes[1..begin_of_value])?;
 
-			let last_index_of_value = begin_of_value
-				.checked_add(len)
-				.ok_or(DecoderError::RlpInvalidLength)?;
+			let last_index_of_value = begin_of_value.checked_add(len).ok_or(DecoderError::RlpInvalidLength)?;
 			if bytes.len() < last_index_of_value {
 				return Err(DecoderError::RlpInconsistentLengthAndData);
 			}

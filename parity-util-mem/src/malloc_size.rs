@@ -149,10 +149,7 @@ impl MallocSizeOfOps {
 
 	/// Call `have_seen_ptr_op` on `ptr`.
 	pub fn have_seen_ptr<T>(&mut self, ptr: *const T) -> bool {
-		let have_seen_ptr_op = self
-			.have_seen_ptr_op
-			.as_mut()
-			.expect("missing have_seen_ptr_op");
+		let have_seen_ptr_op = self.have_seen_ptr_op.as_mut().expect("missing have_seen_ptr_op");
 		have_seen_ptr_op(ptr as *const c_void)
 	}
 }
