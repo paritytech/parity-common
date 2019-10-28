@@ -29,8 +29,6 @@
 //! implementations for even more speed, hidden behind the `x64_arithmetic`
 //! feature flag.
 
-#![rustfmt::skip]
-
 /// Conversion from decimal string error
 #[derive(Debug, PartialEq)]
 pub enum FromDecStrErr {
