@@ -231,10 +231,10 @@ where
 mod tests {
 	extern crate serde_derive;
 
-	use self::serde_derive::{Serialize, Deserialize};
+	use self::serde_derive::{Deserialize, Serialize};
 
 	#[derive(Serialize, Deserialize)]
-	struct Bytes(#[serde(with="super")] Vec<u8>);
+	struct Bytes(#[serde(with = "super")] Vec<u8>);
 
 	#[test]
 	fn should_not_fail_on_short_string() {
