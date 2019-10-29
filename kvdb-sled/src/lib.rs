@@ -17,7 +17,7 @@
 //! KeyValueDB implementation for sled database.
 
 use kvdb::{KeyValueDB, DBTransaction, DBValue, DBOp};
-use sled::{Tree, Db};
+use sled::{Tree, Db, Iter};
 use std::io;
 
 const KB: u64 = 1024;
@@ -113,19 +113,39 @@ impl KeyValueDB for Database {
 	}
 
 	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
-		let unboxed = Database::iter(self, col);
-		Box::new(unboxed.into_iter())
+		let col = Self::to_sled_column(col);
+		let iter = DatabaseIter {
+			inner: self.columns[col as usize].iter(),
+		};
+		Box::new(iter.into_iter())
 	}
 
 	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
 		-> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
 	{
-		let unboxed = Database::iter_from_prefix(self, col, prefix);
-		Box::new(unboxed.into_iter())
+		let col = Self::to_sled_column(col);
+		let iter = DatabaseIter {
+			inner: self.columns[col as usize].scan_prefix(prefix),
+		};
+		Box::new(iter.into_iter())
 	}
 
 	fn restore(&self, new_db: &str) -> io::Result<()> {
 		Database::restore(self, new_db)
+	}
+}
+
+struct DatabaseIter {
+	inner: Iter,
+}
+
+impl std::iter::Iterator for DatabaseIter {
+	type Item = (Box<[u8]>, Box<[u8]>);
+	fn next(&mut self) -> Option<Self::Item> {
+		self.inner.next().and_then(|result| {
+			let (k, v) = result.ok()?;
+			Some((Box::from(k.as_ref()), Box::from(v.as_ref())))
+		})
 	}
 }
 
