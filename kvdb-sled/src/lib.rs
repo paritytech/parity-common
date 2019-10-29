@@ -56,14 +56,15 @@ impl Database {
 		let conf = sled::Config::default()
 			.path(&config.path)
 			.cache_capacity(config.memory_budget() / 2)
-			.flush_every_ms(Some(1_000))
-			.snapshot_after_ops(100_000);
+			.flush_every_ms(Some(1_000));
+			// .snapshot_after_ops(100_000);
 
 		let db = conf.open()?;
 		let num_columns = config.columns.map_or(0, |c| c + 1);
 		let columns = (0..=num_columns)
 			.map(|i| db.open_tree(format!("col{}", i).as_bytes()))
 			.collect::<sled::Result<Vec<_>>>()?;
+
 		Ok(Database {
 			columns,
 			path: config.path,
@@ -86,7 +87,17 @@ impl KeyValueDB for Database {
 	}
 
 	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
-		Database::get_by_prefix(self, col, prefix)
+		let col = Self::to_sled_column(col);
+		self.columns[col as usize]
+			.get_gt(prefix)
+			.ok() // ignore errors
+			.and_then(|maybe| maybe.and_then(|(k, v)| {
+				if k.as_ref().starts_with(prefix) {
+					Some(Box::from(v.as_ref()))
+				} else {
+					None
+				}
+			}))
 	}
 
 	fn write_buffered(&self, transaction: DBTransaction) {
