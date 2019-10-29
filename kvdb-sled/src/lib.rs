@@ -17,8 +17,9 @@
 //! KeyValueDB implementation for sled database.
 
 use kvdb::{KeyValueDB, DBTransaction, DBValue, DBOp};
-use sled::{Tree, Db, Iter};
 use std::io;
+use sled::Transactional as _;
+use log::warn;
 
 const KB: u64 = 1024;
 const MB: u64 = 1024 * KB;
@@ -32,8 +33,8 @@ pub struct Database {
 	// sled currently support transactions only on tuples of trees (up to 10),
 	// not vecs because it might make the trees typed in the future.
 	// see https://github.com/spacejam/sled/issues/382#issuecomment-526548082
-	// sled `Tree` corresponds to a `Column` in the KeyValueDB terminology.
-	columns: Vec<Tree>,
+	// `sled::Tree` corresponds to a `Column` in the KeyValueDB terminology.
+	columns: Vec<sled::Tree>,
 	path: String,
 	num_columns: u8,
 }
@@ -56,7 +57,7 @@ impl Database {
 		let conf = sled::Config::default()
 			.path(&config.path)
 			.cache_capacity(config.memory_budget() / 2)
-			.flush_every_ms(Some(1_000));
+			.flush_every_ms(Some(2_000)); // TODO: a random constant
 			// .snapshot_after_ops(100_000);
 
 		let db = conf.open()?;
@@ -88,6 +89,9 @@ impl KeyValueDB for Database {
 
 	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
 		self.iter_from_prefix(col, prefix).next().map(|(_, v)| v)
+		// TODO: an optimized version below works only
+		// in the case of prefix.len() < key.len()
+		//
 		// let col = Self::to_sled_column(col);
 		// self.columns[col as usize]
 		// 	.get_gt(prefix)
@@ -101,8 +105,48 @@ impl KeyValueDB for Database {
 		// 	}))
 	}
 
-	fn write_buffered(&self, transaction: DBTransaction) {
-		Database::write_buffered(self, transaction)
+	fn write_buffered(&self, tr: DBTransaction) {
+		// TODO: implement for more sizes via macro
+		let result = match &self.columns[..] {
+			[c1] => c1.transaction(|c1| {
+				let columns = [c1];
+				for op in &tr.ops {
+					match op {
+						DBOp::Insert { col, key, value } => {
+							let col = Self::to_sled_column(*col);
+							columns[col as usize].insert(key.as_ref(), value.as_ref())?;
+						},
+						DBOp::Delete { col, key } => {
+							let col = Self::to_sled_column(*col);
+							columns[col as usize].remove(key.as_ref())?;
+						}
+					}
+				}
+				Ok(())
+			}),
+			[c1, c2, c3, c4, c5, c6, c7, c8, c9] => {
+				(c1, c2, c3, c4, c5, c6, c7, c8, c9).transaction(|(c1, c2, c3, c4, c5, c6, c7, c8, c9)| {
+					let columns = [c1, c2, c3, c4, c5, c6, c7, c8, c9];
+					for op in &tr.ops {
+						match op {
+							DBOp::Insert { col, key, value } => {
+								let col = Self::to_sled_column(*col);
+								columns[col as usize].insert(key.as_ref(), value.as_ref())?;
+							},
+							DBOp::Delete { col, key } => {
+								let col = Self::to_sled_column(*col);
+								columns[col as usize].remove(key.as_ref())?;
+							}
+						}
+					}
+					Ok(())
+				})
+			},
+			_ => panic!("only up to 9 columns are supported ATM"),
+		};
+		if let Err(err) = result {
+			warn!(target: "kvdb-sled", "transaction has failed {:?}", err)
+		}
 	}
 
 	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
@@ -140,14 +184,14 @@ impl KeyValueDB for Database {
 }
 
 struct DatabaseIter {
-	inner: Iter,
+	inner: sled::Iter,
 }
 
 impl std::iter::Iterator for DatabaseIter {
 	type Item = (Box<[u8]>, Box<[u8]>);
 	fn next(&mut self) -> Option<Self::Item> {
 		self.inner.next().and_then(|result| {
-			let (k, v) = result.ok()?;
+			let (k, v) = result.ok()?; // ignore the error
 			Some((Box::from(k.as_ref()), Box::from(v.as_ref())))
 		})
 	}
