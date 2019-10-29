@@ -5,7 +5,7 @@
 mod hash;
 mod uint;
 
-pub use uint::{U64, U128, U256, U512};
+pub use uint::{U64, U128, U256, U512, FromDecStrErr};
 pub use hash::{BigEndianHash, H32, H64, H128, H160, H256, H264, H512, H520};
 pub use ethbloom::{Bloom, BloomRef, Input as BloomInput};
 

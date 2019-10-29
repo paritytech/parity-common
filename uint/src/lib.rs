@@ -23,7 +23,11 @@ pub use rustc_hex;
 
 #[cfg(feature="quickcheck")]
 #[doc(hidden)]
-pub use quickcheck;
+pub use qc;
+
+#[cfg(feature="quickcheck")]
+#[doc(hidden)]
+pub use rand;
 
 #[doc(hidden)]
 pub use static_assertions;

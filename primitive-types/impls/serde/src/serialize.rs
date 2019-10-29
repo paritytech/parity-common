@@ -40,7 +40,11 @@ fn to_hex<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a str
 pub fn serialize_raw<S>(slice: &mut [u8], bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where
 	S: Serializer,
 {
-	serializer.serialize_str(to_hex(slice, bytes, false))
+	if bytes.is_empty() {
+		serializer.serialize_str("0x")
+	} else {
+		serializer.serialize_str(to_hex(slice, bytes, false))
+	}
 }
 
 /// Serializes a slice of bytes.
@@ -48,7 +52,7 @@ pub fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> wher
 	S: Serializer,
 {
 	let mut slice = vec![0u8; (bytes.len() + 1) * 2];
-	serializer.serialize_str(to_hex(&mut *slice, bytes, false))
+	serialize_raw(&mut slice, bytes, serializer)
 }
 
 /// Serialize a slice of bytes as uint.
@@ -60,10 +64,10 @@ pub fn serialize_uint<S>(slice: &mut [u8], bytes: &[u8], serializer: S) -> Resul
 	let non_zero = bytes.iter().take_while(|b| **b == 0).count();
 	let bytes = &bytes[non_zero..];
 	if bytes.is_empty() {
-		return serializer.serialize_str("0x0");
+		serializer.serialize_str("0x0")
+	} else {
+		serializer.serialize_str(to_hex(slice, bytes, true))
 	}
-
-	serializer.serialize_str(to_hex(slice, bytes, true))
 }
 
 /// Expected length of bytes vector.
@@ -222,9 +226,9 @@ pub fn deserialize_check_len<'a, 'de, D>(deserializer: D, len: ExpectedLen<'a>) 
 mod tests {
 	extern crate serde_derive;
 
-	use self::serde_derive::Deserialize;
+	use self::serde_derive::{Serialize, Deserialize};
 
-	#[derive(Deserialize)]
+	#[derive(Serialize, Deserialize)]
 	struct Bytes(#[serde(with="super")] Vec<u8>);
 
 	#[test]
@@ -254,5 +258,17 @@ mod tests {
 		assert_eq!(a.0.len(), 31);
 		assert_eq!(b.0.len(), 32);
 		assert_eq!(c.0.len(), 32);
+	}
+
+	#[test]
+	fn should_serialize_and_deserialize_empty_bytes() {
+		let bytes = Bytes(Vec::new());
+
+		let data = serde_json::to_string(&bytes).unwrap();
+
+		assert_eq!("\"0x\"", &data);
+
+		let deserialized: Bytes = serde_json::from_str(&data).unwrap();
+		assert!(deserialized.0.is_empty())
 	}
 }
