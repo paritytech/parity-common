@@ -134,7 +134,7 @@ impl KeyValueDB for Database {
 	}
 
 	fn restore(&self, new_db: &str) -> io::Result<()> {
-		Database::restore(self, new_db)
+		unimplemented!("TODO")
 	}
 }
 
