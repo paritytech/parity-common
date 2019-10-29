@@ -37,17 +37,16 @@ pub struct Database {
 }
 
 // TODO: docs
+#[derive(Default)]
 pub struct DatabaseConfig {
 	pub columns: Option<u8>,
-	pub path: String,
 	pub memory_budget_mb: Option<u64>,
 }
 
 impl DatabaseConfig {
-	pub fn new(path: String, columns: Option<u8>) -> Self {
+	pub fn with_columns(columns: u8) -> Self {
 		Self {
-			columns,
-			path,
+			columns: Some(columns),
 			memory_budget_mb: None,
 		}
 	}
@@ -56,9 +55,9 @@ impl DatabaseConfig {
 	}
 }
 
-fn to_sled_config(config: &DatabaseConfig) -> sled::Config {
+fn to_sled_config(config: &DatabaseConfig, path: &str) -> sled::Config {
 	let conf = sled::Config::default()
-		.path(&config.path)
+		.path(path)
 		.cache_capacity(config.memory_budget() / 2)
 		.flush_every_ms(Some(2_000)); // TODO: a random constant
 	// .snapshot_after_ops(100_000);
@@ -70,8 +69,8 @@ fn col_name(col: u8) -> String {
 }
 
 impl Database {
-	pub fn open(config: &DatabaseConfig) -> sled::Result<Database> {
-		let conf = to_sled_config(config);
+	pub fn open(config: &DatabaseConfig, path: &str) -> sled::Result<Database> {
+		let conf = to_sled_config(config, path);
 
 		let db = conf.open()?;
 		let num_columns = config.columns.map_or(1, |c| c + 1);
@@ -82,7 +81,7 @@ impl Database {
 		Ok(Database {
 			db,
 			columns,
-			path: config.path.clone(),
+			path: path.to_string(),
 		})
 	}
 
@@ -258,8 +257,8 @@ mod tests {
 
 		// open empty, add 5.
 		{
-			let config = DatabaseConfig::new(tempdir.clone(), None);
-			let mut db = Database::open(&config).unwrap();
+			let config = DatabaseConfig::default();
+			let mut db = Database::open(&config, &tempdir).unwrap();
 			assert_eq!(db.num_columns(), 0);
 
 			for i in 0..5 {
@@ -270,8 +269,8 @@ mod tests {
 
 		// reopen as 5.
 		{
-			let config_5 = DatabaseConfig::new(tempdir.to_owned(), Some(5));
-			let db = Database::open(&config_5).unwrap();
+			let config_5 = DatabaseConfig::with_columns(5);
+			let db = Database::open(&config_5, &tempdir).unwrap();
 			assert_eq!(db.num_columns(), 5);
 		}
 	}
@@ -282,8 +281,8 @@ mod tests {
 
 		// open 5, remove all.
 		{
-			let config_5 = DatabaseConfig::new(tempdir.clone(), Some(5));
-			let mut db = Database::open(&config_5).unwrap();
+			let config_5 = DatabaseConfig::with_columns(5);
+			let mut db = Database::open(&config_5, &tempdir).unwrap();
 			assert_eq!(db.num_columns(), 5);
 
 			for i in (0..5).rev() {
@@ -294,8 +293,8 @@ mod tests {
 
 		// reopen as 0.
 		{
-			let config = DatabaseConfig::new(tempdir, None);
-			let db = Database::open(&config).unwrap();
+			let config = DatabaseConfig::default();
+			let db = Database::open(&config, &tempdir).unwrap();
 			assert_eq!(db.num_columns(), 0);
 		}
 	}
@@ -303,8 +302,8 @@ mod tests {
 	#[test]
 	fn write_clears_buffered_ops() {
 		let tempdir = TempDir::new("sled-test-write_clears_buffered_ops").unwrap().path().to_str().unwrap().to_owned();
-		let config = DatabaseConfig::new(tempdir, None);
-		let db = Database::open(&config).unwrap();
+		let config = DatabaseConfig::default();
+		let db = Database::open(&config, &tempdir).unwrap();
 
 		let mut batch = db.transaction();
 		batch.put(None, b"foo", b"bar");
@@ -320,8 +319,8 @@ mod tests {
 	#[test]
 	fn test_db() {
 		let tempdir = TempDir::new("sled-test-write_clears_buffered_ops").unwrap().path().to_str().unwrap().to_owned();
-		let config = DatabaseConfig::new(tempdir, None);
-		let db = Database::open(&config).unwrap();
+		let config = DatabaseConfig::default();
+		let db = Database::open(&config, &tempdir).unwrap();
 		let key1 = b"02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc";
 		let key2 = b"03c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc";
 		let key3 = b"01c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc";
