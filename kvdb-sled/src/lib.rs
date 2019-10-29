@@ -30,8 +30,7 @@ fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<dyn std::error::Error + 
 }
 
 pub struct Database {
-	// sled currently support transactions only on tuples of trees (up to 10),
-	// not vecs because it might make the trees typed in the future.
+	// FIXME: sled currently support transactions only on tuples of trees,
 	// see https://github.com/spacejam/sled/issues/382#issuecomment-526548082
 	// `sled::Tree` corresponds to a `Column` in the KeyValueDB terminology.
 	columns: Vec<sled::Tree>,
@@ -106,6 +105,15 @@ impl KeyValueDB for Database {
 	}
 
 	fn write_buffered(&self, tr: DBTransaction) {
+		// REVIEW: not sure if it's correct semantically
+		//         to apply an ACID transaction here
+		let result = self.write(tr);
+		if result.is_err() {
+			warn!(target: "kvdb-sled", "transaction has failed")
+		}
+	}
+
+	fn write(&self, tr: DBTransaction) -> io::Result<()> {
 		// TODO: implement for more sizes via macro
 		let result = match &self.columns[..] {
 			[c1] => c1.transaction(|c1| {
@@ -144,13 +152,7 @@ impl KeyValueDB for Database {
 			},
 			_ => panic!("only up to 9 columns are supported ATM"),
 		};
-		if let Err(err) = result {
-			warn!(target: "kvdb-sled", "transaction has failed {:?}", err)
-		}
-	}
-
-	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
-		Database::write(self, transaction)
+		result.map_err(|_| other_io_err("transaction has failed"))
 	}
 
 	fn flush(&self) -> io::Result<()> {
