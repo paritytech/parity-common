@@ -87,17 +87,18 @@ impl KeyValueDB for Database {
 	}
 
 	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
-		let col = Self::to_sled_column(col);
-		self.columns[col as usize]
-			.get_gt(prefix)
-			.ok() // ignore errors
-			.and_then(|maybe| maybe.and_then(|(k, v)| {
-				if k.as_ref().starts_with(prefix) {
-					Some(Box::from(v.as_ref()))
-				} else {
-					None
-				}
-			}))
+		self.iter_from_prefix(col, prefix).next().map(|(_, v)| v)
+		// let col = Self::to_sled_column(col);
+		// self.columns[col as usize]
+		// 	.get_gt(prefix)
+		// 	.ok() // ignore errors
+		// 	.and_then(|maybe| maybe.and_then(|(k, v)| {
+		// 		if k.as_ref().starts_with(prefix) {
+		// 			Some(Box::from(v.as_ref()))
+		// 		} else {
+		// 			None
+		// 		}
+		// 	}))
 	}
 
 	fn write_buffered(&self, transaction: DBTransaction) {
