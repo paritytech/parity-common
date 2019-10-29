@@ -109,7 +109,10 @@ impl KeyValueDB for Database {
 	}
 
 	fn flush(&self) -> io::Result<()> {
-		Database::flush(self)
+		for tree in &self.columns {
+			tree.flush().map_err(other_io_err)?;
+		}
+		Ok(())
 	}
 
 	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
