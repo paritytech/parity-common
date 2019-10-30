@@ -19,27 +19,13 @@
 //! - elastic_array arrays
 //! - parking_lot mutex structures
 
-use ethereum_types::{
-	U64, U128, U256, U512, H32, H64,
-	H128, H160, H256, H264, H512, H520,
-	Bloom
-};
-use elastic_array::{
-	ElasticArray2,
-	ElasticArray4,
-	ElasticArray8,
-	ElasticArray16,
-	ElasticArray32,
-	ElasticArray36,
-	ElasticArray64,
-	ElasticArray128,
-	ElasticArray256,
-	ElasticArray512,
-	ElasticArray1024,
-	ElasticArray2048,
-};
-use parking_lot::{Mutex, RwLock};
 use super::{MallocSizeOf, MallocSizeOfOps};
+use elastic_array::{
+	ElasticArray1024, ElasticArray128, ElasticArray16, ElasticArray2, ElasticArray2048, ElasticArray256,
+	ElasticArray32, ElasticArray36, ElasticArray4, ElasticArray512, ElasticArray64, ElasticArray8,
+};
+use ethereum_types::{Bloom, H128, H160, H256, H264, H32, H512, H520, H64, U128, U256, U512, U64};
+use parking_lot::{Mutex, RwLock};
 
 #[cfg(not(feature = "std"))]
 use core as std;
@@ -48,21 +34,19 @@ use core as std;
 malloc_size_of_is_0!(std::time::Instant);
 malloc_size_of_is_0!(std::time::Duration);
 
-malloc_size_of_is_0!(
-	U64, U128, U256, U512, H32, H64,
-	H128, H160, H256, H264, H512, H520,
-	Bloom
-);
+malloc_size_of_is_0!(U64, U128, U256, U512, H32, H64, H128, H160, H256, H264, H512, H520, Bloom);
 
 macro_rules! impl_elastic_array {
-	($name: ident, $dummy: ident, $size: expr) => (
+	($name: ident, $dummy: ident, $size: expr) => {
 		impl<T> MallocSizeOf for $name<T>
-		where T: MallocSizeOf {
+		where
+			T: MallocSizeOf,
+		{
 			fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 				self[..].size_of(ops)
 			}
 		}
-	)
+	};
 }
 
 impl_elastic_array!(ElasticArray2, ElasticArray2Dummy, 2);
@@ -77,7 +61,6 @@ impl_elastic_array!(ElasticArray256, ElasticArray256Dummy, 256);
 impl_elastic_array!(ElasticArray512, ElasticArray512Dummy, 512);
 impl_elastic_array!(ElasticArray1024, ElasticArray1024Dummy, 1024);
 impl_elastic_array!(ElasticArray2048, ElasticArray2048Dummy, 2048);
-
 
 impl<T: MallocSizeOf> MallocSizeOf for Mutex<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {

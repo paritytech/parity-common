@@ -16,8 +16,8 @@
 
 //! Module specific errors
 
-use std::{fmt, result, error::Error as StdError};
 use crate::error::SymmError;
+use std::{error::Error as StdError, fmt, result};
 
 /// Module specific errors
 #[derive(Debug)]

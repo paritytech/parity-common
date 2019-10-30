@@ -28,14 +28,11 @@ macro_rules! impl_uint_codec {
 		impl $crate::codec::EncodeLike for $name {}
 
 		impl $crate::codec::Decode for $name {
-			fn decode<I: $crate::codec::Input>(input: &mut I)
-				-> core::result::Result<Self, $crate::codec::Error>
-			{
-				<[u8; $len * 8] as $crate::codec::Decode>::decode(input)
-					.map(|b| $name::from_little_endian(&b))
+			fn decode<I: $crate::codec::Input>(input: &mut I) -> core::result::Result<Self, $crate::codec::Error> {
+				<[u8; $len * 8] as $crate::codec::Decode>::decode(input).map(|b| $name::from_little_endian(&b))
 			}
 		}
-	}
+	};
 }
 
 /// Add Parity Codec serialization support to a fixed-sized hash type created by `construct_fixed_hash!`.
@@ -51,11 +48,9 @@ macro_rules! impl_fixed_hash_codec {
 		impl $crate::codec::EncodeLike for $name {}
 
 		impl $crate::codec::Decode for $name {
-			fn decode<I: $crate::codec::Input>(input: &mut I)
-				-> core::result::Result<Self, $crate::codec::Error>
-			{
+			fn decode<I: $crate::codec::Input>(input: &mut I) -> core::result::Result<Self, $crate::codec::Error> {
 				<[u8; $len] as $crate::codec::Decode>::decode(input).map($name)
 			}
 		}
-	}
+	};
 }

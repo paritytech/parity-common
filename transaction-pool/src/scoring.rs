@@ -16,8 +16,8 @@
 
 //! A transactions ordering abstraction.
 
-use std::{cmp, fmt};
 use crate::pool::Transaction;
+use std::{cmp, fmt};
 
 /// Represents a decision what to do with
 /// a new transaction that tries to enter the pool.
@@ -100,7 +100,9 @@ pub trait Scoring<T>: fmt::Debug {
 	///
 	/// If you return `true` for given transaction it's going to be accepted even though
 	/// the per-sender limit is exceeded.
-	fn should_ignore_sender_limit(&self, _new: &T) -> bool { false }
+	fn should_ignore_sender_limit(&self, _new: &T) -> bool {
+		false
+	}
 }
 
 /// A score with a reference to the transaction.
@@ -121,17 +123,13 @@ impl<T, S> ScoreWithRef<T, S> {
 
 impl<T, S: Clone> Clone for ScoreWithRef<T, S> {
 	fn clone(&self) -> Self {
-		ScoreWithRef {
-			score: self.score.clone(),
-			transaction: self.transaction.clone(),
-		}
+		ScoreWithRef { score: self.score.clone(), transaction: self.transaction.clone() }
 	}
 }
 
 impl<S: cmp::Ord, T> Ord for ScoreWithRef<T, S> {
 	fn cmp(&self, other: &Self) -> cmp::Ordering {
-		other.score.cmp(&self.score)
-			.then(self.transaction.insertion_id.cmp(&other.transaction.insertion_id))
+		other.score.cmp(&self.score).then(self.transaction.insertion_id.cmp(&other.transaction.insertion_id))
 	}
 }
 
@@ -141,7 +139,7 @@ impl<S: cmp::Ord, T> PartialOrd for ScoreWithRef<T, S> {
 	}
 }
 
-impl<S: cmp::Ord, T>  PartialEq for ScoreWithRef<T, S> {
+impl<S: cmp::Ord, T> PartialEq for ScoreWithRef<T, S> {
 	fn eq(&self, other: &Self) -> bool {
 		self.score == other.score && self.transaction.insertion_id == other.transaction.insertion_id
 	}
@@ -149,19 +147,12 @@ impl<S: cmp::Ord, T>  PartialEq for ScoreWithRef<T, S> {
 
 impl<S: cmp::Ord, T> Eq for ScoreWithRef<T, S> {}
 
-
 #[cfg(test)]
 mod tests {
 	use super::*;
 
 	fn score(score: u64, insertion_id: u64) -> ScoreWithRef<(), u64> {
-		ScoreWithRef {
-			score,
-			transaction: Transaction {
-				insertion_id,
-				transaction: Default::default(),
-			},
-		}
+		ScoreWithRef { score, transaction: Transaction { insertion_id, transaction: Default::default() } }
 	}
 
 	#[test]

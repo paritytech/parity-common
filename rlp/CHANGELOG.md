@@ -1,0 +1,15 @@
+# Changelog
+
+The format is based on [Keep a Changelog]. 
+
+[Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
+
+## [Unreleased]
+
+## [0.4.3] - 2019-10-24
+### Dependencies
+- Updated dependencies (https://github.com/paritytech/parity-common/pull/239)
+### Fixed
+- Fixed nested unbounded lists (https://github.com/paritytech/parity-common/pull/203)
+### Added
+- Added no-std support (https://github.com/paritytech/parity-common/pull/206)

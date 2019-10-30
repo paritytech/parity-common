@@ -42,7 +42,7 @@ macro_rules! impl_uint_rlp {
 				})
 			}
 		}
-	}
+	};
 }
 
 /// Add RLP serialization support to a fixed-sized hash type created by `construct_fixed_hash!`.
@@ -68,5 +68,5 @@ macro_rules! impl_fixed_hash_rlp {
 				})
 			}
 		}
-	}
+	};
 }

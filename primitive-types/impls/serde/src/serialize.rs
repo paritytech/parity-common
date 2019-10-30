@@ -6,8 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use serde::{de, Deserializer, Serializer};
 use std::fmt;
-use serde::{de, Serializer, Deserializer};
 
 static CHARS: &[u8] = b"0123456789abcdef";
 
@@ -37,7 +37,8 @@ fn to_hex<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a str
 }
 
 /// Serializes a slice of bytes.
-pub fn serialize_raw<S>(slice: &mut [u8], bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where
+pub fn serialize_raw<S>(slice: &mut [u8], bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
+where
 	S: Serializer,
 {
 	if bytes.is_empty() {
@@ -48,7 +49,8 @@ pub fn serialize_raw<S>(slice: &mut [u8], bytes: &[u8], serializer: S) -> Result
 }
 
 /// Serializes a slice of bytes.
-pub fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where
+pub fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
+where
 	S: Serializer,
 {
 	let mut slice = vec![0u8; (bytes.len() + 1) * 2];
@@ -58,7 +60,8 @@ pub fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> wher
 /// Serialize a slice of bytes as uint.
 ///
 /// The representation will have all leading zeros trimmed.
-pub fn serialize_uint<S>(slice: &mut [u8], bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where
+pub fn serialize_uint<S>(slice: &mut [u8], bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
+where
 	S: Serializer,
 {
 	let non_zero = bytes.iter().take_while(|b| **b == 0).count();
@@ -90,7 +93,8 @@ impl<'a> fmt::Display for ExpectedLen<'a> {
 
 /// Deserialize into vector of bytes.  This will allocate an O(n) intermediate
 /// string.
-pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error> where
+pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+where
 	D: Deserializer<'de>,
 {
 	struct Visitor;
@@ -104,7 +108,7 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error> where
 
 		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
 			if !v.starts_with("0x") {
-				return Err(E::custom("prefix is missing"))
+				return Err(E::custom("prefix is missing"));
 			}
 
 			let bytes_len = v.len() - 2;
@@ -119,13 +123,13 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error> where
 					b'A'..=b'F' => buf |= byte - b'A' + 10,
 					b'a'..=b'f' => buf |= byte - b'a' + 10,
 					b'0'..=b'9' => buf |= byte - b'0',
-					b' '|b'\r'|b'\n'|b'\t' => {
+					b' ' | b'\r' | b'\n' | b'\t' => {
 						buf >>= 4;
-						continue
+						continue;
 					}
 					b => {
 						let ch = char::from(b);
-						return Err(E::custom(&format!("invalid hex character: {}, at {}", ch, idx)))
+						return Err(E::custom(&format!("invalid hex character: {}, at {}", ch, idx)));
 					}
 				}
 
@@ -150,7 +154,8 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error> where
 
 /// Deserialize into vector of bytes with additional size check.
 /// Returns number of bytes written.
-pub fn deserialize_check_len<'a, 'de, D>(deserializer: D, len: ExpectedLen<'a>) -> Result<usize, D::Error> where
+pub fn deserialize_check_len<'a, 'de, D>(deserializer: D, len: ExpectedLen<'a>) -> Result<usize, D::Error>
+where
 	D: Deserializer<'de>,
 {
 	struct Visitor<'a> {
@@ -166,7 +171,7 @@ pub fn deserialize_check_len<'a, 'de, D>(deserializer: D, len: ExpectedLen<'a>) 
 
 		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
 			if !v.starts_with("0x") {
-				return Err(E::custom("prefix is missing"))
+				return Err(E::custom("prefix is missing"));
 			}
 
 			let is_len_valid = match self.len {
@@ -175,7 +180,7 @@ pub fn deserialize_check_len<'a, 'de, D>(deserializer: D, len: ExpectedLen<'a>) 
 			};
 
 			if !is_len_valid {
-				return Err(E::invalid_length(v.len() - 2, &self))
+				return Err(E::invalid_length(v.len() - 2, &self));
 			}
 
 			let bytes = match self.len {
@@ -193,13 +198,13 @@ pub fn deserialize_check_len<'a, 'de, D>(deserializer: D, len: ExpectedLen<'a>) 
 					b'A'..=b'F' => buf |= byte - b'A' + 10,
 					b'a'..=b'f' => buf |= byte - b'a' + 10,
 					b'0'..=b'9' => buf |= byte - b'0',
-					b' '|b'\r'|b'\n'|b'\t' => {
+					b' ' | b'\r' | b'\n' | b'\t' => {
 						buf >>= 4;
-						continue
+						continue;
 					}
 					b => {
 						let ch = char::from(b);
-						return Err(E::custom(&format!("invalid hex character: {}, at {}", ch, idx)))
+						return Err(E::custom(&format!("invalid hex character: {}, at {}", ch, idx)));
 					}
 				}
 
@@ -226,10 +231,10 @@ pub fn deserialize_check_len<'a, 'de, D>(deserializer: D, len: ExpectedLen<'a>) 
 mod tests {
 	extern crate serde_derive;
 
-	use self::serde_derive::{Serialize, Deserialize};
+	use self::serde_derive::{Deserialize, Serialize};
 
 	#[derive(Serialize, Deserialize)]
-	struct Bytes(#[serde(with="super")] Vec<u8>);
+	struct Bytes(#[serde(with = "super")] Vec<u8>);
 
 	#[test]
 	fn should_not_fail_on_short_string() {
@@ -248,12 +253,14 @@ mod tests {
 		assert_eq!(f.0, vec![0x1, 0x23, 0x45]);
 	}
 
-
 	#[test]
 	fn should_not_fail_on_other_strings() {
-		let a: Bytes = serde_json::from_str("\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587\"").unwrap();
-		let b: Bytes = serde_json::from_str("\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587b\"").unwrap();
-		let c: Bytes = serde_json::from_str("\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587b4\"").unwrap();
+		let a: Bytes =
+			serde_json::from_str("\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587\"").unwrap();
+		let b: Bytes =
+			serde_json::from_str("\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587b\"").unwrap();
+		let c: Bytes =
+			serde_json::from_str("\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587b4\"").unwrap();
 
 		assert_eq!(a.0.len(), 31);
 		assert_eq!(b.0.len(), 32);

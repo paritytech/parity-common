@@ -16,10 +16,10 @@
 
 //! Key pair (public + secrect) description
 
-use std::fmt;
-use secp256k1::key;
-use super::{Secret, Public, Address, SECP256K1, Error};
+use super::{Address, Error, Public, Secret, SECP256K1};
 use crate::Keccak256;
+use secp256k1::key;
+use std::fmt;
 
 /// Convert public key into the address
 pub fn public_to_address(public: &Public) -> Address {
@@ -55,10 +55,7 @@ impl KeyPair {
 		let mut public = Public::default();
 		public.as_bytes_mut().copy_from_slice(&serialized[1..65]);
 
-		let keypair = KeyPair {
-			secret: secret,
-			public: public,
-		};
+		let keypair = KeyPair { secret: secret, public: public };
 
 		Ok(keypair)
 	}
@@ -76,10 +73,7 @@ impl KeyPair {
 		let mut public = Public::default();
 		public.as_bytes_mut().copy_from_slice(&serialized[1..65]);
 
-		KeyPair {
-			secret,
-			public,
-		}
+		KeyPair { secret, public }
 	}
 
 	/// Returns secret part of the keypair
@@ -100,8 +94,8 @@ impl KeyPair {
 
 #[cfg(test)]
 mod tests {
-	use std::str::FromStr;
 	use super::{KeyPair, Secret};
+	use std::str::FromStr;
 
 	#[test]
 	fn from_secret() {

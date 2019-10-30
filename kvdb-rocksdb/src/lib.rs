@@ -14,33 +14,33 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::{
-	cmp, fs, io, mem, result, error,
-	collections::HashMap, marker::PhantomData, path::Path
-};
+use std::{cmp, collections::HashMap, error, fs, io, marker::PhantomData, mem, path::Path, result};
 
-use parking_lot::{Mutex, MutexGuard, RwLock};
-use parity_rocksdb::{
-	DB, Writable, WriteBatch, WriteOptions, IteratorMode, DBIterator,
-	Options, BlockBasedOptions, Direction, Cache, Column, ReadOptions
-};
 use interleaved_ordered::{interleave_ordered, InterleaveOrdered};
+use parity_rocksdb::{
+	BlockBasedOptions, Cache, Column, DBIterator, Direction, IteratorMode, Options, ReadOptions, Writable, WriteBatch,
+	WriteOptions, DB,
+};
+use parking_lot::{Mutex, MutexGuard, RwLock};
 
-use log::{debug, warn};
 use elastic_array::ElasticArray32;
 use fs_swap::{swap, swap_nonatomic};
-use kvdb::{KeyValueDB, DBTransaction, DBValue, DBOp};
+use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
+use log::{debug, warn};
 
 #[cfg(target_os = "linux")]
 use regex::Regex;
 #[cfg(target_os = "linux")]
-use std::process::Command;
-#[cfg(target_os = "linux")]
 use std::fs::File;
 #[cfg(target_os = "linux")]
 use std::path::PathBuf;
+#[cfg(target_os = "linux")]
+use std::process::Command;
 
-fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<dyn error::Error + Send + Sync>> {
+fn other_io_err<E>(e: E) -> io::Error
+where
+	E: Into<Box<dyn error::Error + Send + Sync>>,
+{
 	io::Error::new(io::ErrorKind::Other, e)
 }
 
@@ -78,10 +78,12 @@ pub fn rotational_from_df_output(df_out: Vec<u8>) -> Option<PathBuf> {
 	str::from_utf8(df_out.as_slice())
 		.ok()
 		// Get the drive name.
-		.and_then(|df_str| Regex::new(r"/dev/(sd[:alpha:]{1,2})")
-			.ok()
-			.and_then(|re| re.captures(df_str))
-			.and_then(|captures| captures.get(1)))
+		.and_then(|df_str| {
+			Regex::new(r"/dev/(sd[:alpha:]{1,2})")
+				.ok()
+				.and_then(|re| re.captures(df_str))
+				.and_then(|captures| captures.get(1))
+		})
 		// Generate path e.g. /sys/block/sda/queue/rotational
 		.map(|drive_path| {
 			let mut p = PathBuf::from("/sys/block");
@@ -110,9 +112,13 @@ impl CompactionProfile {
 				let mut buffer = [0; 1];
 				if file.read_exact(&mut buffer).is_ok() {
 					// 0 means not rotational.
-					if buffer == [48] { return Self::ssd(); }
+					if buffer == [48] {
+						return Self::ssd();
+					}
 					// 1 means rotational.
-					if buffer == [49] { return Self::hdd(); }
+					if buffer == [49] {
+						return Self::hdd();
+					}
 				}
 			}
 		}
@@ -128,11 +134,7 @@ impl CompactionProfile {
 
 	/// Default profile suitable for SSD storage
 	pub fn ssd() -> CompactionProfile {
-		CompactionProfile {
-			initial_file_size: 64 * MB as u64,
-			block_size: 16 * KB,
-			write_rate_limit: None,
-		}
+		CompactionProfile { initial_file_size: 64 * MB as u64, block_size: 16 * KB, write_rate_limit: None }
 	}
 
 	/// Slow HDD compaction profile
@@ -217,10 +219,11 @@ fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions) -> io::Re
 
 	opts.set_block_based_table_factory(block_opts);
 
-	opts.set_parsed_options(
-		&format!("block_based_table_factory={{{};{}}}",
-				 "cache_index_and_filter_blocks=true",
-				 "pin_l0_filter_and_index_blocks_in_cache=true")).map_err(other_io_err)?;
+	opts.set_parsed_options(&format!(
+		"block_based_table_factory={{{};{}}}",
+		"cache_index_and_filter_blocks=true", "pin_l0_filter_and_index_blocks_in_cache=true"
+	))
+	.map_err(other_io_err)?;
 
 	opts.optimize_level_style_compaction(config.memory_budget_per_col() as i32);
 	opts.set_target_file_size_base(config.compaction.initial_file_size);
@@ -311,7 +314,7 @@ impl Database {
 		let cfnames: Vec<_> = (0..columns).map(|c| format!("col{}", c)).collect();
 		let cfnames: Vec<&str> = cfnames.iter().map(|n| n as &str).collect();
 
-		for _ in 0 .. config.columns.unwrap_or(0) {
+		for _ in 0..config.columns.unwrap_or(0) {
 			cf_options.push(col_config(&config, &block_opts)?);
 		}
 
@@ -324,27 +327,30 @@ impl Database {
 			Some(_) => {
 				match DB::open_cf(&opts, path, &cfnames, &cf_options) {
 					Ok(db) => {
-						cfs = cfnames.iter().map(|n| db.cf_handle(n)
-							.expect("rocksdb opens a cf_handle for each cfname; qed")).collect();
+						cfs = cfnames
+							.iter()
+							.map(|n| db.cf_handle(n).expect("rocksdb opens a cf_handle for each cfname; qed"))
+							.collect();
 						Ok(db)
 					}
 					Err(_) => {
 						// retry and create CFs
 						match DB::open_cf(&opts, path, &[], &[]) {
 							Ok(mut db) => {
-								cfs = cfnames.iter()
+								cfs = cfnames
+									.iter()
 									.enumerate()
 									.map(|(i, n)| db.create_cf(n, &cf_options[i]))
 									.collect::<::std::result::Result<_, _>>()
 									.map_err(other_io_err)?;
 								Ok(db)
-							},
+							}
 							err => err,
 						}
 					}
 				}
-			},
-			None => DB::open(&opts, path)
+			}
+			None => DB::open(&opts, path),
 		};
 
 		let db = match db {
@@ -357,19 +363,19 @@ impl Database {
 					true => DB::open(&opts, path).map_err(other_io_err)?,
 					false => {
 						let db = DB::open_cf(&opts, path, &cfnames, &cf_options).map_err(other_io_err)?;
-						cfs = cfnames.iter().map(|n| db.cf_handle(n)
-							.expect("rocksdb opens a cf_handle for each cfname; qed")).collect();
+						cfs = cfnames
+							.iter()
+							.map(|n| db.cf_handle(n).expect("rocksdb opens a cf_handle for each cfname; qed"))
+							.collect();
 						db
-					},
+					}
 				}
-			},
-			Err(s) => {
-				return Err(other_io_err(s))
 			}
+			Err(s) => return Err(other_io_err(s)),
 		};
 		let num_cols = cfs.len();
 		Ok(Database {
-			db: RwLock::new(Some(DBAndColumns{ db: db, cfs: cfs })),
+			db: RwLock::new(Some(DBAndColumns { db: db, cfs: cfs })),
 			config: config.clone(),
 			write_opts: write_opts,
 			overlay: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
@@ -399,13 +405,13 @@ impl Database {
 				DBOp::Insert { col, key, value } => {
 					let c = Self::to_overlay_column(col);
 					overlay[c].insert(key, KeyState::Insert(value));
-				},
+				}
 				DBOp::Delete { col, key } => {
 					let c = Self::to_overlay_column(col);
 					overlay[c].insert(key, KeyState::Delete);
-				},
+				}
 			}
-		};
+		}
 	}
 
 	/// Commit buffered changes to database. Must be called under `flush_lock`
@@ -424,30 +430,28 @@ impl Database {
 									} else {
 										batch.delete(key).map_err(other_io_err)?;
 									}
-								},
+								}
 								KeyState::Insert(ref value) => {
 									if c > 0 {
 										batch.put_cf(cfs[c - 1], key, value).map_err(other_io_err)?;
 									} else {
 										batch.put(key, value).map_err(other_io_err)?;
 									}
-								},
+								}
 							}
 						}
 					}
 				}
 
-				check_for_corruption(
-					&self.path,
-					db.write_opt(batch, &self.write_opts))?;
+				check_for_corruption(&self.path, db.write_opt(batch, &self.write_opts))?;
 
 				for column in self.flushing.write().iter_mut() {
 					column.clear();
 					column.shrink_to_fit();
 				}
 				Ok(())
-			},
-			None => Err(other_io_err("Database is closed"))
+			}
+			None => Err(other_io_err("Database is closed")),
 		}
 	}
 
@@ -458,7 +462,7 @@ impl Database {
 		// The value inside the lock is used to detect that.
 		if *lock {
 			// This can only happen if another flushing thread is terminated unexpectedly.
-			return Err(other_io_err("Database write failure. Running low on memory perhaps?"))
+			return Err(other_io_err("Database write failure. Running low on memory perhaps?"));
 		}
 		*lock = true;
 		let result = self.write_flushing_with_lock(&mut lock);
@@ -484,12 +488,12 @@ impl Database {
 						DBOp::Delete { col, key } => match col {
 							None => batch.delete(&key).map_err(other_io_err)?,
 							Some(c) => batch.delete_cf(cfs[c as usize], &key).map_err(other_io_err)?,
-						}
+						},
 					}
 				}
 
 				check_for_corruption(&self.path, db.write_opt(batch, &self.write_opts))
-			},
+			}
 			None => Err(other_io_err("Database is closed")),
 		}
 	}
@@ -507,16 +511,19 @@ impl Database {
 						match flushing.get(key) {
 							Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
 							Some(&KeyState::Delete) => Ok(None),
-							None => {
-								col.map_or_else(
+							None => col
+								.map_or_else(
 									|| db.get_opt(key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))),
-									|c| db.get_cf_opt(cfs[c as usize], key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))))
-									.map_err(other_io_err)
-							},
+									|c| {
+										db.get_cf_opt(cfs[c as usize], key, &self.read_opts)
+											.map(|r| r.map(|v| DBValue::from_slice(&v)))
+									},
+								)
+								.map_err(other_io_err),
 						}
-					},
+					}
 				}
-			},
+			}
 			None => Ok(None),
 		}
 	}
@@ -527,8 +534,14 @@ impl Database {
 		self.iter_from_prefix(col, prefix).and_then(|mut iter| {
 			match iter.next() {
 				// TODO: use prefix_same_as_start read option (not available in C API currently)
-				Some((k, v)) => if k[0 .. prefix.len()] == prefix[..] { Some(v) } else { None },
-				_ => None
+				Some((k, v)) => {
+					if k[0..prefix.len()] == prefix[..] {
+						Some(v)
+					} else {
+						None
+					}
+				}
+				_ => None,
 			}
 		})
 	}
@@ -538,25 +551,27 @@ impl Database {
 		match *self.db.read() {
 			Some(DBAndColumns { ref db, ref cfs }) => {
 				let overlay = &self.overlay.read()[Self::to_overlay_column(col)];
-				let mut overlay_data = overlay.iter()
+				let mut overlay_data = overlay
+					.iter()
 					.filter_map(|(k, v)| match *v {
-						KeyState::Insert(ref value) =>
-							Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_vec().into_boxed_slice())),
+						KeyState::Insert(ref value) => {
+							Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_vec().into_boxed_slice()))
+						}
 						KeyState::Delete => None,
-					}).collect::<Vec<_>>();
+					})
+					.collect::<Vec<_>>();
 				overlay_data.sort();
 
 				let iter = col.map_or_else(
 					|| db.iterator_opt(IteratorMode::Start, &self.read_opts),
-					|c| db.iterator_cf_opt(cfs[c as usize], IteratorMode::Start, &self.read_opts)
-						.expect("iterator params are valid; qed")
+					|c| {
+						db.iterator_cf_opt(cfs[c as usize], IteratorMode::Start, &self.read_opts)
+							.expect("iterator params are valid; qed")
+					},
 				);
 
-				Some(DatabaseIterator {
-					iter: interleave_ordered(overlay_data, iter),
-					_marker: PhantomData,
-				})
-			},
+				Some(DatabaseIterator { iter: interleave_ordered(overlay_data, iter), _marker: PhantomData })
+			}
 			None => None,
 		}
 	}
@@ -564,15 +579,20 @@ impl Database {
 	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<DatabaseIterator<'_>> {
 		match *self.db.read() {
 			Some(DBAndColumns { ref db, ref cfs }) => {
-				let iter = col.map_or_else(|| db.iterator_opt(IteratorMode::From(prefix, Direction::Forward), &self.read_opts),
-					|c| db.iterator_cf_opt(cfs[c as usize], IteratorMode::From(prefix, Direction::Forward), &self.read_opts)
-						.expect("iterator params are valid; qed"));
+				let iter = col.map_or_else(
+					|| db.iterator_opt(IteratorMode::From(prefix, Direction::Forward), &self.read_opts),
+					|c| {
+						db.iterator_cf_opt(
+							cfs[c as usize],
+							IteratorMode::From(prefix, Direction::Forward),
+							&self.read_opts,
+						)
+						.expect("iterator params are valid; qed")
+					},
+				);
 
-				Some(DatabaseIterator {
-					iter: interleave_ordered(Vec::new(), iter),
-					_marker: PhantomData,
-				})
-			},
+				Some(DatabaseIterator { iter: interleave_ordered(Vec::new(), iter), _marker: PhantomData })
+			}
 			None => None,
 		}
 	}
@@ -593,17 +613,20 @@ impl Database {
 			Ok(_) => {
 				// ignore errors
 				let _ = fs::remove_dir_all(new_db);
-			},
+			}
 			Err(err) => {
 				debug!("DB atomic swap failed: {}", err);
 				match swap_nonatomic(new_db, &self.path) {
 					Ok(_) => {
 						// ignore errors
 						let _ = fs::remove_dir_all(new_db);
-					},
+					}
 					Err(err) => {
 						warn!("Failed to swap DB directories: {:?}", err);
-						return Err(io::Error::new(io::ErrorKind::Other, "DB restoration failed: could not swap DB directories"));
+						return Err(io::Error::new(
+							io::ErrorKind::Other,
+							"DB restoration failed: could not swap DB directories",
+						));
 					}
 				}
 			}
@@ -619,8 +642,10 @@ impl Database {
 
 	/// The number of non-default column families.
 	pub fn num_columns(&self) -> u32 {
-		self.db.read().as_ref()
-			.and_then(|db| if db.cfs.is_empty() { None } else { Some(db.cfs.len()) } )
+		self.db
+			.read()
+			.as_ref()
+			.and_then(|db| if db.cfs.is_empty() { None } else { Some(db.cfs.len()) })
 			.map(|n| n as u32)
 			.unwrap_or(0)
 	}
@@ -635,7 +660,7 @@ impl Database {
 					db.drop_cf(&name).map_err(other_io_err)?;
 				}
 				Ok(())
-			},
+			}
 			None => Ok(()),
 		}
 	}
@@ -648,7 +673,7 @@ impl Database {
 				let name = format!("col{}", col);
 				cfs.push(db.create_cf(&name, &col_config(&self.config, &self.block_opts)?).map_err(other_io_err)?);
 				Ok(())
-			},
+			}
 			None => Ok(()),
 		}
 	}
@@ -677,14 +702,16 @@ impl KeyValueDB for Database {
 		Database::flush(self)
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
 		let unboxed = Database::iter(self, col);
 		Box::new(unboxed.into_iter().flat_map(|inner| inner))
 	}
 
-	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-		-> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
-	{
+	fn iter_from_prefix<'a>(
+		&'a self,
+		col: Option<u32>,
+		prefix: &'a [u8],
+	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
 		let unboxed = Database::iter_from_prefix(self, col, prefix);
 		Box::new(unboxed.into_iter().flat_map(|inner| inner))
 	}
@@ -703,10 +730,10 @@ impl Drop for Database {
 
 #[cfg(test)]
 mod tests {
+	use super::*;
+	use ethereum_types::H256;
 	use std::str::FromStr;
 	use tempdir::TempDir;
-	use ethereum_types::H256;
-	use super::*;
 
 	fn test_db(config: &DatabaseConfig) {
 		let tempdir = TempDir::new("").unwrap();
@@ -773,7 +800,13 @@ mod tests {
 	fn df_to_rotational() {
 		use std::path::PathBuf;
 		// Example df output.
-		let example_df = vec![70, 105, 108, 101, 115, 121, 115, 116, 101, 109, 32, 32, 32, 32, 32, 49, 75, 45, 98, 108, 111, 99, 107, 115, 32, 32, 32, 32, 32, 85, 115, 101, 100, 32, 65, 118, 97, 105, 108, 97, 98, 108, 101, 32, 85, 115, 101, 37, 32, 77, 111, 117, 110, 116, 101, 100, 32, 111, 110, 10, 47, 100, 101, 118, 47, 115, 100, 97, 49, 32, 32, 32, 32, 32, 32, 32, 54, 49, 52, 48, 57, 51, 48, 48, 32, 51, 56, 56, 50, 50, 50, 51, 54, 32, 32, 49, 57, 52, 52, 52, 54, 49, 54, 32, 32, 54, 55, 37, 32, 47, 10];
+		let example_df = vec![
+			70, 105, 108, 101, 115, 121, 115, 116, 101, 109, 32, 32, 32, 32, 32, 49, 75, 45, 98, 108, 111, 99, 107,
+			115, 32, 32, 32, 32, 32, 85, 115, 101, 100, 32, 65, 118, 97, 105, 108, 97, 98, 108, 101, 32, 85, 115, 101,
+			37, 32, 77, 111, 117, 110, 116, 101, 100, 32, 111, 110, 10, 47, 100, 101, 118, 47, 115, 100, 97, 49, 32,
+			32, 32, 32, 32, 32, 32, 54, 49, 52, 48, 57, 51, 48, 48, 32, 51, 56, 56, 50, 50, 50, 51, 54, 32, 32, 49, 57,
+			52, 52, 52, 54, 49, 54, 32, 32, 54, 55, 37, 32, 47, 10,
+		];
 		let expected_output = Some(PathBuf::from("/sys/block/sda/queue/rotational"));
 		assert_eq!(rotational_from_df_output(example_df), expected_output);
 	}

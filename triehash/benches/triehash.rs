@@ -42,7 +42,7 @@ fn random_bytes(min_count: usize, diff_count: usize, seed: &mut H256) -> Vec<u8>
 fn random_value(seed: &mut H256) -> Vec<u8> {
 	*seed = H256(keccak256(seed.as_bytes()));
 	match seed[0] % 2 {
-		1 => vec![seed[31];1],
+		1 => vec![seed[31]; 1],
 		_ => seed.as_bytes().to_vec(),
 	}
 }

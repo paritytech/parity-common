@@ -16,11 +16,11 @@
 
 //! Key-Value store abstraction with `RocksDB` backend.
 
+use bytes::Bytes;
+use elastic_array::{ElasticArray128, ElasticArray32};
 use std::io;
 use std::path::Path;
 use std::sync::Arc;
-use elastic_array::{ElasticArray128, ElasticArray32};
-use bytes::Bytes;
 
 /// Required length of prefixes.
 pub const PREFIX_LEN: usize = 12;
@@ -38,15 +38,8 @@ pub struct DBTransaction {
 /// Database operation.
 #[derive(Clone, PartialEq)]
 pub enum DBOp {
-	Insert {
-		col: Option<u32>,
-		key: ElasticArray32<u8>,
-		value: DBValue,
-	},
-	Delete {
-		col: Option<u32>,
-		key: ElasticArray32<u8>,
-	}
+	Insert { col: Option<u32>, key: ElasticArray32<u8>, value: DBValue },
+	Delete { col: Option<u32>, key: ElasticArray32<u8> },
 }
 
 impl DBOp {
@@ -75,41 +68,28 @@ impl DBTransaction {
 
 	/// Create new transaction with capacity.
 	pub fn with_capacity(cap: usize) -> DBTransaction {
-		DBTransaction {
-			ops: Vec::with_capacity(cap)
-		}
+		DBTransaction { ops: Vec::with_capacity(cap) }
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
 	pub fn put(&mut self, col: Option<u32>, key: &[u8], value: &[u8]) {
 		let mut ekey = ElasticArray32::new();
 		ekey.append_slice(key);
-		self.ops.push(DBOp::Insert {
-			col: col,
-			key: ekey,
-			value: DBValue::from_slice(value),
-		});
+		self.ops.push(DBOp::Insert { col: col, key: ekey, value: DBValue::from_slice(value) });
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
 	pub fn put_vec(&mut self, col: Option<u32>, key: &[u8], value: Bytes) {
 		let mut ekey = ElasticArray32::new();
 		ekey.append_slice(key);
-		self.ops.push(DBOp::Insert {
-			col: col,
-			key: ekey,
-			value: DBValue::from_vec(value),
-		});
+		self.ops.push(DBOp::Insert { col: col, key: ekey, value: DBValue::from_vec(value) });
 	}
 
 	/// Delete value by key.
 	pub fn delete(&mut self, col: Option<u32>, key: &[u8]) {
 		let mut ekey = ElasticArray32::new();
 		ekey.append_slice(key);
-		self.ops.push(DBOp::Delete {
-			col: col,
-			key: ekey,
-		});
+		self.ops.push(DBOp::Delete { col: col, key: ekey });
 	}
 }
 
@@ -133,7 +113,9 @@ impl DBTransaction {
 /// implementation.
 pub trait KeyValueDB: Sync + Send {
 	/// Helper to create a new transaction.
-	fn transaction(&self) -> DBTransaction { DBTransaction::new() }
+	fn transaction(&self) -> DBTransaction {
+		DBTransaction::new()
+	}
 
 	/// Get a value by key.
 	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>>;
@@ -154,12 +136,14 @@ pub trait KeyValueDB: Sync + Send {
 	fn flush(&self) -> io::Result<()>;
 
 	/// Iterate over flushed data for a given column.
-	fn iter<'a>(&'a self, col: Option<u32>)
-		-> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>;
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
 
 	/// Iterate over flushed data for a given column, starting from a given prefix.
-	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
-		-> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>;
+	fn iter_from_prefix<'a>(
+		&'a self,
+		col: Option<u32>,
+		prefix: &'a [u8],
+	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
 
 	/// Attempt to replace this database with a new one located at the given path.
 	fn restore(&self, new_db: &str) -> io::Result<()>;
