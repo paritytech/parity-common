@@ -16,14 +16,14 @@
 
 use std::{
 	cmp, fs, io, mem, result, error,
-	collections::HashMap, marker::PhantomData, path::Path
+	collections::HashMap, path::Path,
 };
 
 use parking_lot::{Mutex, MutexGuard, RwLock};
 use rocksdb::{
 	DB, WriteBatch, WriteOptions, IteratorMode, DBIterator,
 	Options, BlockBasedOptions, Direction, ReadOptions, ColumnFamily,
-	Error
+	Error,
 };
 use interleaved_ordered::{interleave_ordered, InterleaveOrdered};
 
@@ -47,7 +47,7 @@ fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<dyn error::Error + Send 
 
 const KB: usize = 1024;
 const MB: usize = 1024 * KB;
-const DB_DEFAULT_MEMORY_BUDGET_MB: usize = 128;
+const DB_DEFAULT_MEMORY_BUDGET_MB: usize = 1024;
 
 enum KeyState {
 	Insert(DBValue),
@@ -206,7 +206,15 @@ impl<'a> Iterator for DatabaseIterator<'a> {
 
 struct DBAndColumns {
 	db: DB,
-	cfs: Vec<MakeSendSync<ColumnFamily>>,
+	column_names: Vec<String>,
+}
+
+impl DBAndColumns {
+	fn get_cf(&self, i: usize) -> &ColumnFamily {
+		self.db
+			.cf_handle(&self.column_names[i])
+			.expect("the specified column name is correct; qed")
+	}
 }
 
 // get column family configuration from database config.
@@ -221,35 +229,14 @@ fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions) -> io::Re
 	Ok(opts)
 }
 
-/// Utility structure that makes the given type implement `Send + Sync`.
-/// YOU NEED TO BE SURE WHAT YOU ARE DOING!
-struct MakeSendSync<T>(T);
-
-unsafe impl<T> Send for MakeSendSync<T> {}
-unsafe impl<T> Sync for MakeSendSync<T> {}
-
-impl<T> ::std::ops::Deref for MakeSendSync<T> {
-	type Target = T;
-
-	fn deref(&self) -> &T {
-		&self.0
-	}
-}
-
-impl<T> From<T> for MakeSendSync<T> {
-	fn from(data: T) -> MakeSendSync<T> {
-		MakeSendSync(data)
-	}
-}
-
 /// Key-Value database.
 pub struct Database {
 	db: RwLock<Option<DBAndColumns>>,
 	config: DatabaseConfig,
 	path: String,
-	write_opts: MakeSendSync<WriteOptions>,
-	read_opts: MakeSendSync<ReadOptions>,
-	block_opts: MakeSendSync<BlockBasedOptions>,
+	write_opts: WriteOptions,
+	read_opts: ReadOptions,
+	block_opts: BlockBasedOptions,
 	// Dirty values added with `write_buffered`. Cleaned on `flush`.
 	overlay: RwLock<Vec<HashMap<ElasticArray32<u8>, KeyState>>>,
 	// Values currently being flushed. Cleared when `flush` completes.
@@ -288,10 +275,10 @@ fn generate_options(config: &DatabaseConfig) -> Options {
 	opts.set_use_fsync(false);
 	opts.create_if_missing(true);
 	opts.set_max_open_files(config.max_open_files);
-	opts.set_bytes_per_sync(1048576);
-	//TODO: keep_log_file_num=1 was removed
+	opts.set_bytes_per_sync(1 * MB as u64);
+	opts.set_keep_log_file_num(1);
 	opts.set_write_buffer_size(config.memory_budget_per_col() / 2);
-	opts.increase_parallelism(cmp::max(1, ::num_cpus::get() as i32 / 2));
+	opts.increase_parallelism(cmp::max(1, num_cpus::get() as i32 / 2));
 
 	opts
 }
@@ -324,36 +311,37 @@ impl Database {
 		let columns = config.columns.unwrap_or(0) as usize;
 
 		let mut cf_options = Vec::with_capacity(columns);
-		let cfnames: Vec<_> = (0..columns).map(|c| format!("col{}", c)).collect();
-		let cfnames: Vec<&str> = cfnames.iter().map(|n| n as &str).collect();
+		let column_names: Vec<_> = (0..columns).map(|c| format!("col{}", c)).collect();
+		let cfnames: Vec<&str> = column_names.iter().map(|n| n as &str).collect();
 
 		for _ in 0 .. config.columns.unwrap_or(0) {
 			cf_options.push(col_config(&config, &block_opts)?);
 		}
 
 		let write_opts = WriteOptions::new();
-		let read_opts = ReadOptions::default();
+		let mut read_opts = ReadOptions::default();
+		read_opts.set_prefix_same_as_start(true);
 		//TODO: removed read_opts.set_verify_checksums(false);
 
 		let opts = generate_options(config);
-		let mut cfs: Vec<ColumnFamily> = Vec::new();
 		let db = match config.columns {
 			Some(_) => {
 				match DB::open_cf(&opts, path, &cfnames) {
 					Ok(db) => {
-						cfs = cfnames.iter().map(|n| db.cf_handle(n)
-							.expect("rocksdb opens a cf_handle for each cfname; qed")).collect();
+						for name in &cfnames {
+							let _ = db.cf_handle(name)
+								.expect("rocksdb opens a cf_handle for each cfname; qed");
+						}
 						Ok(db)
 					}
 					Err(_) => {
 						// retry and create CFs
-						match DB::open_cf(&opts, path, &[]) {
+						match DB::open_cf(&opts, path, &[] as &[&str]) {
 							Ok(mut db) => {
-								cfs = cfnames.iter()
-									.enumerate()
-									.map(|(i, n)| db.create_cf(n, &cf_options[i]))
-									.collect::<::std::result::Result<_, _>>()
-									.map_err(other_io_err)?;
+								for (i, name) in cfnames.iter().enumerate() {
+									let _ = db.create_cf(name, &cf_options[i])
+										.map_err(other_io_err)?;
+								}
 								Ok(db)
 							},
 							err => err,
@@ -374,8 +362,10 @@ impl Database {
 					DB::open(&opts, path).map_err(other_io_err)?
 				} else {
 					let db = DB::open_cf(&opts, path, &cfnames).map_err(other_io_err)?;
-					cfs = cfnames.iter().map(|n| db.cf_handle(n)
-						.expect("rocksdb opens a cf_handle for each cfname; qed")).collect();
+					for name in cfnames {
+						let _ = db.cf_handle(name)
+							.expect("rocksdb opens a cf_handle for each cfname; qed");
+					}
 					db
 				}
 			}
@@ -383,12 +373,12 @@ impl Database {
 				return Err(other_io_err(s))
 			}
 		};
-		let num_cols = cfs.len();
+		let num_cols = column_names.len();
 		Ok(Database {
-			db: RwLock::new(Some(DBAndColumns{ db, cfs: cfs.into_iter().map(Into::into).collect() })),
+			db: RwLock::new(Some(DBAndColumns { db, column_names })),
 			config: config.clone(),
-			overlay: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
-			flushing: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
+			overlay: RwLock::new((0..=num_cols).map(|_| HashMap::new()).collect()),
+			flushing: RwLock::new((0..=num_cols).map(|_| HashMap::new()).collect()),
 			flushing_lock: Mutex::new(false),
 			path: path.to_owned(),
 			read_opts: read_opts.into(),
@@ -427,7 +417,7 @@ impl Database {
 	/// Commit buffered changes to database. Must be called under `flush_lock`
 	fn write_flushing_with_lock(&self, _lock: &mut MutexGuard<'_, bool>) -> io::Result<()> {
 		match *self.db.read() {
-			Some(DBAndColumns { ref db, ref cfs }) => {
+			Some(ref cfs) => {
 				let mut batch = WriteBatch::default();
 				mem::swap(&mut *self.overlay.write(), &mut *self.flushing.write());
 				{
@@ -436,14 +426,16 @@ impl Database {
 							match *state {
 								KeyState::Delete => {
 									if c > 0 {
-										batch.delete_cf(*cfs[c - 1], key).map_err(other_io_err)?;
+										let cf = cfs.get_cf(c - 1);
+										batch.delete_cf(cf, key).map_err(other_io_err)?;
 									} else {
 										batch.delete(key).map_err(other_io_err)?;
 									}
 								},
 								KeyState::Insert(ref value) => {
 									if c > 0 {
-										batch.put_cf(*cfs[c - 1], key, value).map_err(other_io_err)?;
+										let cf = cfs.get_cf(c - 1);
+										batch.put_cf(cf, key, value).map_err(other_io_err)?;
 									} else {
 										batch.put(key, value).map_err(other_io_err)?;
 									}
@@ -453,7 +445,7 @@ impl Database {
 					}
 				}
 
-				check_for_corruption(&self.path, db.write_opt(batch, &self.write_opts))?;
+				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))?;
 
 				for column in self.flushing.write().iter_mut() {
 					column.clear();
@@ -483,7 +475,7 @@ impl Database {
 	/// Commit transaction to database.
 	pub fn write(&self, tr: DBTransaction) -> io::Result<()> {
 		match *self.db.read() {
-			Some(DBAndColumns { ref db, ref cfs }) => {
+			Some(ref cfs) => {
 				let mut batch = WriteBatch::default();
 				let ops = tr.ops;
 				for op in ops {
@@ -493,16 +485,16 @@ impl Database {
 					match op {
 						DBOp::Insert { col, key, value } => match col {
 							None => batch.put(&key, &value).map_err(other_io_err)?,
-							Some(c) => batch.put_cf(*cfs[c as usize], &key, &value).map_err(other_io_err)?,
+							Some(c) => batch.put_cf(cfs.get_cf(c as usize), &key, &value).map_err(other_io_err)?,
 						},
 						DBOp::Delete { col, key } => match col {
 							None => batch.delete(&key).map_err(other_io_err)?,
-							Some(c) => batch.delete_cf(*cfs[c as usize], &key).map_err(other_io_err)?,
+							Some(c) => batch.delete_cf(cfs.get_cf(c as usize), &key).map_err(other_io_err)?,
 						}
 					}
 				}
 
-				check_for_corruption(&self.path, db.write_opt(batch, &self.write_opts))
+				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))
 			},
 			None => Err(other_io_err("Database is closed")),
 		}
@@ -511,7 +503,7 @@ impl Database {
 	/// Get value by key.
 	pub fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
 		match *self.db.read() {
-			Some(DBAndColumns { ref db, ref cfs }) => {
+			Some(ref cfs) => {
 				let overlay = &self.overlay.read()[Self::to_overlay_column(col)];
 				match overlay.get(key) {
 					Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
@@ -523,11 +515,11 @@ impl Database {
 							Some(&KeyState::Delete) => Ok(None),
 							None => {
 								col.map_or_else(
-										|| db
+										|| cfs.db
 											.get_opt(key, &self.read_opts)
 											.map(|r| r.map(|v| DBValue::from_slice(&v))),
-										|c| db
-											.get_cf_opt(*cfs[c as usize], key, &self.read_opts)
+										|c| cfs.db
+											.get_cf_opt(cfs.get_cf(c as usize), key, &self.read_opts)
 											.map(|r| r.map(|v| DBValue::from_slice(&v)))
 									)
 									.map_err(other_io_err)
@@ -544,18 +536,14 @@ impl Database {
 	// TODO: support prefix seek for unflushed data
 	pub fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
 		self.iter_from_prefix(col, prefix).and_then(|mut iter| {
-			match iter.next() {
-				// TODO: use prefix_same_as_start read option (not available in C API currently)
-				Some((k, v)) => if k[0 .. prefix.len()] == prefix[..] { Some(v) } else { None },
-				_ => None
-			}
+			iter.next().map(|(_, v)| v)
 		})
 	}
 
 	/// Get database iterator for flushed data.
 	pub fn iter(&self, col: Option<u32>) -> Option<DatabaseIterator<'_>> {
 		match *self.db.read() {
-			Some(DBAndColumns { ref db, ref cfs }) => {
+			Some(ref cfs) => {
 				let overlay = &self.overlay.read()[Self::to_overlay_column(col)];
 				let mut overlay_data = overlay.iter()
 					.filter_map(|(k, v)| match *v {
@@ -571,8 +559,8 @@ impl Database {
 				overlay_data.sort();
 
 				let iter = col.map_or_else(
-					|| db.iterator(IteratorMode::Start),
-					|c| db.iterator_cf(*cfs[c as usize], IteratorMode::Start)
+					|| cfs.db.iterator(IteratorMode::Start),
+					|c| cfs.db.iterator_cf(cfs.get_cf(c as usize), IteratorMode::Start)
 						.expect("iterator params are valid; qed")
 				);
 
@@ -586,9 +574,9 @@ impl Database {
 
 	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<DatabaseIterator<'_>> {
 		match *self.db.read() {
-			Some(DBAndColumns { ref db, ref cfs }) => {
-				let iter = col.map_or_else(|| db.iterator(IteratorMode::From(prefix, Direction::Forward)),
-					|c| db.iterator_cf(*cfs[c as usize], IteratorMode::From(prefix, Direction::Forward))
+			Some(ref cfs) => {
+				let iter = col.map_or_else(|| cfs.db.iterator(IteratorMode::From(prefix, Direction::Forward)),
+					|c| cfs.db.iterator_cf(cfs.get_cf(c as usize), IteratorMode::From(prefix, Direction::Forward))
 						.expect("iterator params are valid; qed"));
 
 				Some(DatabaseIterator {
@@ -642,7 +630,7 @@ impl Database {
 	/// The number of non-default column families.
 	pub fn num_columns(&self) -> u32 {
 		self.db.read().as_ref()
-			.and_then(|db| if db.cfs.is_empty() { None } else { Some(db.cfs.len()) } )
+			.and_then(|db| if db.column_names.is_empty() { None } else { Some(db.column_names.len()) } )
 			.map(|n| n as u32)
 			.unwrap_or(0)
 	}
@@ -650,10 +638,8 @@ impl Database {
 	/// Drop a column family.
 	pub fn drop_column(&self) -> io::Result<()> {
 		match *self.db.write() {
-			Some(DBAndColumns { ref mut db, ref mut cfs }) => {
-				if let Some(col) = cfs.pop() {
-					let name = format!("col{}", cfs.len());
-					drop(col);
+			Some(DBAndColumns { ref mut db, ref mut column_names }) => {
+				if let Some(name) = column_names.pop() {
 					db.drop_cf(&name).map_err(other_io_err)?;
 				}
 				Ok(())
@@ -665,10 +651,11 @@ impl Database {
 	/// Add a column family.
 	pub fn add_column(&self) -> io::Result<()> {
 		match *self.db.write() {
-			Some(DBAndColumns { ref mut db, ref mut cfs }) => {
-				let col = cfs.len() as u32;
+			Some(DBAndColumns { ref mut db, ref mut column_names }) => {
+				let col = column_names.len() as u32;
 				let name = format!("col{}", col);
-				cfs.push(db.create_cf(&name, &col_config(&self.config, &self.block_opts)?).map_err(other_io_err)?.into());
+				let _ = db.create_cf(&name, &col_config(&self.config, &self.block_opts)?).map_err(other_io_err)?;
+				column_names.push(name);
 				Ok(())
 			},
 			None => Ok(()),
