@@ -39,6 +39,7 @@ pub struct Database {
 // TODO: docs
 #[derive(Default)]
 pub struct DatabaseConfig {
+	// Number of columns including the default column.
 	pub columns: Option<u8>,
 	pub memory_budget_mb: Option<u64>,
 }
@@ -73,7 +74,7 @@ impl Database {
 		let conf = to_sled_config(config, path);
 
 		let db = conf.open()?;
-		let num_columns = config.columns.map_or(1, |c| c + 1);
+		let num_columns = config.columns.unwrap_or(1);
 		let columns = (0..num_columns)
 			.map(|i| db.open_tree(col_name(i).as_bytes()))
 			.collect::<sled::Result<Vec<_>>>()?;
@@ -189,7 +190,7 @@ impl KeyValueDB for Database {
 					Ok(())
 				})
 			},
-			_ => panic!("only up to 9 columns are supported ATM"),
+			_ => panic!("only up to 9 columns are supported ATM, given {}", self.columns.len()),
 		};
 		result.map_err(|_| other_io_err("transaction has failed"))
 	}

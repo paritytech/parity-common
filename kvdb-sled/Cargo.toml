@@ -10,7 +10,7 @@ edition = "2018"
 
 [dependencies]
 sled = "0.29.1"
-kvdb = { version = "0.1", path = "../kvdb" }
+kvdb = { version = "0.1" }
 log = "0.4.8"
 
 [dev-dependencies]
