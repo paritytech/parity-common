@@ -20,7 +20,14 @@ use super::{public_to_address, Address, Error, Message, Public, Secret, SECP256K
 use ethereum_types::{H256, H520};
 use rustc_hex::{FromHex, ToHex};
 use secp256k1::key::{PublicKey, SecretKey};
-use secp256k1::{Error as SecpError, Message as SecpMessage, RecoverableSignature, RecoveryId};
+use secp256k1::{
+	Error as SecpError,
+	Message as SecpMessage,
+	recovery::{
+		RecoverableSignature,
+		RecoveryId
+	},
+};
 use std::cmp::PartialEq;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -211,9 +218,9 @@ impl DerefMut for Signature {
 /// Returns the corresponding signature
 pub fn sign(secret: &Secret, message: &Message) -> Result<Signature, Error> {
 	let context = &SECP256K1;
-	let sec = SecretKey::from_slice(context, secret.as_ref())?;
-	let s = context.sign_recoverable(&SecpMessage::from_slice(&message[..])?, &sec)?;
-	let (rec_id, data) = s.serialize_compact(context);
+	let sec = SecretKey::from_slice(secret.as_ref())?;
+	let s = context.sign_recoverable(&SecpMessage::from_slice(&message[..])?, &sec);
+	let (rec_id, data) = s.serialize_compact();
 	let mut data_arr = [0; 65];
 
 	// no need to check if s is low, it always is
@@ -226,8 +233,8 @@ pub fn sign(secret: &Secret, message: &Message) -> Result<Signature, Error> {
 pub fn verify_public(public: &Public, signature: &Signature, message: &Message) -> Result<bool, Error> {
 	let context = &SECP256K1;
 	let rsig =
-		RecoverableSignature::from_compact(context, &signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
-	let sig = rsig.to_standard(context);
+		RecoverableSignature::from_compact(&signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
+	let sig = rsig.to_standard();
 
 	let pdata: [u8; 65] = {
 		let mut temp = [4u8; 65];
@@ -235,7 +242,7 @@ pub fn verify_public(public: &Public, signature: &Signature, message: &Message) 
 		temp
 	};
 
-	let publ = PublicKey::from_slice(context, &pdata)?;
+	let publ = PublicKey::from_slice(&pdata)?;
 	match context.verify(&SecpMessage::from_slice(&message[..])?, &sig, &publ) {
 		Ok(_) => Ok(true),
 		Err(SecpError::IncorrectSignature) => Ok(false),
@@ -254,9 +261,9 @@ pub fn verify_address(address: &Address, signature: &Signature, message: &Messag
 pub fn recover(signature: &Signature, message: &Message) -> Result<Public, Error> {
 	let context = &SECP256K1;
 	let rsig =
-		RecoverableSignature::from_compact(context, &signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
+		RecoverableSignature::from_compact(&signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
 	let pubkey = context.recover(&SecpMessage::from_slice(&message[..])?, &rsig)?;
-	let serialized = pubkey.serialize_vec(context, false);
+	let serialized = pubkey.serialize_uncompressed();
 
 	let mut public = Public::default();
 	public.as_bytes_mut().copy_from_slice(&serialized[1..65]);

@@ -22,6 +22,8 @@ use lazy_static::lazy_static;
 use secp256k1::constants::CURVE_ORDER as SECP256K1_CURVE_ORDER;
 use secp256k1::key;
 
+use crate::publickey::MINUS_ONE_KEY;
+
 /// Generation point array combined from X and Y coordinates
 /// Equivalent to uncompressed form, see https://tools.ietf.org/id/draft-jivsov-ecc-compact-05.html#rfc.section.3
 pub const BASE_POINT_BYTES: [u8; 65] = [
@@ -39,14 +41,18 @@ lazy_static! {
 
 /// Whether the public key is valid.
 pub fn public_is_valid(public: &Public) -> bool {
-	to_secp256k1_public(public).ok().map_or(false, |p| p.is_valid())
+	// todo[dvdplm] the `secp256k1` CHANGELOG says:
+	//   "* [Remove `PublicKey::new()` and `PublicKey::is_valid()`](https://github.com/rust-bitcoin/rust-secp256k1/pull/37) since `new` was unsafe and it should now be impossible to create invalid `PublicKey` objects through the API"
+	//  …so if that is correct we do not need this method at all.
+	true
+//	to_secp256k1_public(public).ok().map_or(false, |p| p.is_valid())
 }
 
 /// In-place multiply public key by secret key (EC point * scalar)
 pub fn public_mul_secret(public: &mut Public, secret: &Secret) -> Result<(), Error> {
 	let key_secret = secret.to_secp256k1_secret()?;
 	let mut key_public = to_secp256k1_public(public)?;
-	key_public.mul_assign(&SECP256K1, &key_secret)?;
+	key_public.mul_assign(&SECP256K1, &key_secret[..])?;
 	set_public(public, &key_public);
 	Ok(())
 }
@@ -55,7 +61,7 @@ pub fn public_mul_secret(public: &mut Public, secret: &Secret) -> Result<(), Err
 pub fn public_add(public: &mut Public, other: &Public) -> Result<(), Error> {
 	let mut key_public = to_secp256k1_public(public)?;
 	let other_public = to_secp256k1_public(other)?;
-	key_public.add_assign(&SECP256K1, &other_public)?;
+	key_public.combine(&other_public)?;
 	set_public(public, &key_public);
 	Ok(())
 }
@@ -63,10 +69,10 @@ pub fn public_add(public: &mut Public, other: &Public) -> Result<(), Error> {
 /// In-place sub one public key from another (EC point - EC point)
 pub fn public_sub(public: &mut Public, other: &Public) -> Result<(), Error> {
 	let mut key_neg_other = to_secp256k1_public(other)?;
-	key_neg_other.mul_assign(&SECP256K1, &key::MINUS_ONE_KEY)?;
+	key_neg_other.mul_assign(&SECP256K1, &MINUS_ONE_KEY[..])?;
 
 	let mut key_public = to_secp256k1_public(public)?;
-	key_public.add_assign(&SECP256K1, &key_neg_other)?;
+	key_public.combine(&key_neg_other)?;
 	set_public(public, &key_public);
 	Ok(())
 }
@@ -74,7 +80,7 @@ pub fn public_sub(public: &mut Public, other: &Public) -> Result<(), Error> {
 /// Replace a public key with its additive inverse (EC point = - EC point)
 pub fn public_negate(public: &mut Public) -> Result<(), Error> {
 	let mut key_public = to_secp256k1_public(public)?;
-	key_public.mul_assign(&SECP256K1, &key::MINUS_ONE_KEY)?;
+	key_public.mul_assign(&SECP256K1, &MINUS_ONE_KEY[..])?;
 	set_public(public, &key_public);
 	Ok(())
 }
@@ -82,7 +88,7 @@ pub fn public_negate(public: &mut Public) -> Result<(), Error> {
 /// Return the generation point (aka base point) of secp256k1
 pub fn generation_point() -> Public {
 	let public_key =
-		key::PublicKey::from_slice(&SECP256K1, &BASE_POINT_BYTES).expect("constructed using constants; qed");
+		key::PublicKey::from_slice(&BASE_POINT_BYTES).expect("constructed using constants; qed");
 	let mut public = Public::default();
 	set_public(&mut public, &public_key);
 	public
@@ -95,11 +101,11 @@ fn to_secp256k1_public(public: &Public) -> Result<key::PublicKey, Error> {
 		temp
 	};
 
-	Ok(key::PublicKey::from_slice(&SECP256K1, &public_data)?)
+	Ok(key::PublicKey::from_slice(&public_data)?)
 }
 
 fn set_public(public: &mut Public, key_public: &key::PublicKey) {
-	let key_public_serialized = key_public.serialize_vec(&SECP256K1, false);
+	let key_public_serialized = key_public.serialize_uncompressed();
 	public.as_bytes_mut().copy_from_slice(&key_public_serialized[1..65]);
 }
 

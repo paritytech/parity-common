@@ -16,7 +16,7 @@ required-features = ["publickey"]
 [dependencies]
 tiny-keccak = "1.5.0"
 scrypt = { version = "0.2.0", default-features = false }
-parity-secp256k1 = { version = "0.7.0", optional = true }
+secp256k1 = { version = "0.15", optional = true, features = ["recovery"] }
 ethereum-types = { version = "0.8.0", optional = true }
 lazy_static = { version = "1.0", optional = true }
 ripemd160 = "0.8.0"
@@ -40,4 +40,4 @@ hex-literal = "0.2.1"
 default = []
 # public key crypto utils
 # moved from ethkey module in parity ethereum repository
-publickey = ["parity-secp256k1", "lazy_static", "ethereum-types"]
+publickey = ["secp256k1", "lazy_static", "ethereum-types"]

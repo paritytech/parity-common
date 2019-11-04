@@ -28,8 +28,8 @@ pub fn agree(secret: &Secret, public: &Public) -> Result<Secret, Error> {
 		temp
 	};
 
-	let publ = key::PublicKey::from_slice(context, &pdata)?;
-	let sec = key::SecretKey::from_slice(context, secret.as_bytes())?;
+	let publ = key::PublicKey::from_slice(&pdata)?;
+	let sec = key::SecretKey::from_slice(secret.as_bytes())?;
 	let shared = ecdh::SharedSecret::new_raw(context, &publ, &sec);
 
 	Secret::import_key(&shared[0..32]).map_err(|_| Error::Secp(secp256k1::Error::InvalidSecretKey))
