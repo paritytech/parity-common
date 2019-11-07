@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
+// Copyright 2015-2019 Parity Technologies (UK) Ltd.
 // This file is part of Parity.
 
 // Parity is free software: you can redistribute it and/or modify
@@ -152,12 +152,11 @@ impl CompactionProfile {
 pub struct DatabaseConfig {
 	/// Max number of open files.
 	pub max_open_files: i32,
-	/// Memory budget (in MiB) used for setting block cache size, write buffer size.
-	pub memory_budget: Option<usize>,
+	/// Memory budget (in MiB) used for setting block cache size, 
+	/// write buffer size for each column.
+	pub memory_budget: Vec<Option<usize>>,
 	/// Compaction profile
 	pub compaction: CompactionProfile,
-	/// Set number of columns
-	pub columns: Option<u32>,
 }
 
 impl DatabaseConfig {
@@ -165,16 +164,25 @@ impl DatabaseConfig {
 	/// Note that cache sizes must be explicitly set.
 	pub fn with_columns(columns: Option<u32>) -> Self {
 		let mut config = Self::default();
-		config.columns = columns;
+		config.memory_budget.resize(columns.unwrap_or(0) as usize, None);
 		config
 	}
 
 	pub fn memory_budget(&self) -> usize {
-		self.memory_budget.unwrap_or(DB_DEFAULT_MEMORY_BUDGET_MB) * MB
+		if self.memory_budget.is_empty() {
+			return DB_DEFAULT_MEMORY_BUDGET_MB * MB;
+		}
+		self.memory_budget
+			.iter()
+			.map(|b| b.unwrap_or(DB_DEFAULT_MEMORY_BUDGET_MB) * MB)
+			.sum()
 	}
 
-	pub fn memory_budget_per_col(&self) -> usize {
-		self.memory_budget() / self.columns.unwrap_or(1) as usize
+	/// # Panics
+	///
+	/// If `col` is out of bounds.
+	pub fn memory_budget_per_col(&self, col: usize) -> usize {
+		self.memory_budget[col].unwrap_or(DB_DEFAULT_MEMORY_BUDGET_MB) * MB
 	}
 }
 
@@ -182,9 +190,8 @@ impl Default for DatabaseConfig {
 	fn default() -> DatabaseConfig {
 		DatabaseConfig {
 			max_open_files: 512,
-			memory_budget: None,
+			memory_budget: vec![],
 			compaction: CompactionProfile::default(),
-			columns: None,
 		}
 	}
 }
@@ -192,7 +199,6 @@ impl Default for DatabaseConfig {
 /// Database iterator (for flushed data only)
 // The compromise of holding only a virtual borrow vs. holding a lock on the
 // inner DB (to prevent closing via restoration) may be re-evaluated in the future.
-//
 pub struct DatabaseIterator<'a> {
 	iter: InterleaveOrdered<::std::vec::IntoIter<(Box<[u8]>, Box<[u8]>)>, DBIterator>,
 	_marker: PhantomData<&'a Database>,
@@ -212,7 +218,7 @@ struct DBAndColumns {
 }
 
 // get column family configuration from database config.
-fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions) -> io::Result<Options> {
+fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions, memory_budget_per_col: usize) -> io::Result<Options> {
 	let mut opts = Options::new();
 
 	opts.set_parsed_options("level_compaction_dynamic_level_bytes=true").map_err(other_io_err)?;
@@ -225,7 +231,7 @@ fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions) -> io::Re
 	))
 	.map_err(other_io_err)?;
 
-	opts.optimize_level_style_compaction(config.memory_budget_per_col() as i32);
+	opts.optimize_level_style_compaction(memory_budget_per_col as i32);
 	opts.set_target_file_size_base(config.compaction.initial_file_size);
 
 	opts.set_parsed_options("compression_per_level=").map_err(other_io_err)?;
@@ -286,8 +292,16 @@ impl Database {
 		opts.set_max_open_files(config.max_open_files);
 		opts.set_parsed_options("keep_log_file_num=1").map_err(other_io_err)?;
 		opts.set_parsed_options("bytes_per_sync=1048576").map_err(other_io_err)?;
-		opts.set_db_write_buffer_size(config.memory_budget_per_col() / 2);
-		opts.increase_parallelism(cmp::max(1, ::num_cpus::get() as i32 / 2));
+		if config.memory_budget.is_empty() {
+			let budget = config.memory_budget();
+			opts.set_db_write_buffer_size(budget / 2);
+			// from https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#memtable
+			// Memtable size is controlled by the option `write_buffer_size`.
+			// If you increase your memtable size, be sure to also increase your L1 size! 
+			// L1 size is controlled by the option `max_bytes_for_level_base`.
+			opts.set_parsed_options(&format!("max_bytes_for_level_base={}", budget)).map_err(other_io_err)?;
+		}
+		opts.increase_parallelism(cmp::max(1, num_cpus::get() as i32 / 2));
 
 		let mut block_opts = BlockBasedOptions::new();
 
@@ -308,14 +322,14 @@ impl Database {
 			fs::remove_file(db_corrupted)?;
 		}
 
-		let columns = config.columns.unwrap_or(0) as usize;
+		let columns = config.memory_budget.len();
 
 		let mut cf_options = Vec::with_capacity(columns);
 		let cfnames: Vec<_> = (0..columns).map(|c| format!("col{}", c)).collect();
 		let cfnames: Vec<&str> = cfnames.iter().map(|n| n as &str).collect();
 
-		for _ in 0..config.columns.unwrap_or(0) {
-			cf_options.push(col_config(&config, &block_opts)?);
+		for i in 0..config.memory_budget.len() {
+			cf_options.push(col_config(&config, &block_opts, config.memory_budget_per_col(i))?);
 		}
 
 		let write_opts = WriteOptions::new();
@@ -323,8 +337,8 @@ impl Database {
 		read_opts.set_verify_checksums(false);
 
 		let mut cfs: Vec<Column> = Vec::new();
-		let db = match config.columns {
-			Some(_) => {
+		let db = match config.memory_budget.is_empty() {
+			false => {
 				match DB::open_cf(&opts, path, &cfnames, &cf_options) {
 					Ok(db) => {
 						cfs = cfnames
@@ -350,7 +364,7 @@ impl Database {
 					}
 				}
 			}
-			None => DB::open(&opts, path),
+			true => DB::open(&opts, path),
 		};
 
 		let db = match db {
@@ -377,13 +391,13 @@ impl Database {
 		Ok(Database {
 			db: RwLock::new(Some(DBAndColumns { db: db, cfs: cfs })),
 			config: config.clone(),
-			write_opts: write_opts,
+			write_opts,
 			overlay: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
 			flushing: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
 			flushing_lock: Mutex::new(false),
 			path: path.to_owned(),
-			read_opts: read_opts,
-			block_opts: block_opts,
+			read_opts,
+			block_opts,
 		})
 	}
 
@@ -642,21 +656,17 @@ impl Database {
 
 	/// The number of non-default column families.
 	pub fn num_columns(&self) -> u32 {
-		self.db
-			.read()
-			.as_ref()
-			.and_then(|db| if db.cfs.is_empty() { None } else { Some(db.cfs.len()) })
-			.map(|n| n as u32)
-			.unwrap_or(0)
+		self.config.memory_budget.len() as u32
 	}
 
 	/// Drop a column family.
-	pub fn drop_column(&self) -> io::Result<()> {
+	pub fn drop_column(&mut self) -> io::Result<()> {
 		match *self.db.write() {
 			Some(DBAndColumns { ref mut db, ref mut cfs }) => {
 				if let Some(col) = cfs.pop() {
 					let name = format!("col{}", cfs.len());
 					drop(col);
+					self.config.memory_budget.resize(cfs.len(), None);
 					db.drop_cf(&name).map_err(other_io_err)?;
 				}
 				Ok(())
@@ -666,12 +676,17 @@ impl Database {
 	}
 
 	/// Add a column family.
-	pub fn add_column(&self) -> io::Result<()> {
+	pub fn add_column(&mut self) -> io::Result<()> {
 		match *self.db.write() {
 			Some(DBAndColumns { ref mut db, ref mut cfs }) => {
-				let col = cfs.len() as u32;
+				let col = cfs.len();
 				let name = format!("col{}", col);
-				cfs.push(db.create_cf(&name, &col_config(&self.config, &self.block_opts)?).map_err(other_io_err)?);
+				if self.config.memory_budget.len() < col + 1 {
+					self.config.memory_budget.resize(col + 1, None);
+				}
+				let memory_budget_per_col = self.config.memory_budget_per_col(col);
+				let col_config = col_config(&self.config, &self.block_opts, memory_budget_per_col)?;
+				cfs.push(db.create_cf(&name, &col_config).map_err(other_io_err)?);
 				Ok(())
 			}
 			None => Ok(()),
@@ -820,7 +835,7 @@ mod tests {
 
 		// open empty, add 5.
 		{
-			let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
+			let mut db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
 			assert_eq!(db.num_columns(), 0);
 
 			for i in 0..5 {
@@ -845,7 +860,7 @@ mod tests {
 
 		// open 5, remove all.
 		{
-			let db = Database::open(&config_5, tempdir.path().to_str().unwrap()).unwrap();
+			let mut db = Database::open(&config_5, tempdir.path().to_str().unwrap()).unwrap();
 			assert_eq!(db.num_columns(), 5);
 
 			for i in (0..5).rev() {
