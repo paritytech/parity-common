@@ -14,21 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::{
-	cmp, fs, io, mem, result, error,
-	collections::HashMap, path::Path,
-};
+mod iter;
 
-use rocksdb::{
-	DB, WriteBatch, WriteOptions, IteratorMode, DBIterator,
-	Options, BlockBasedOptions, Direction, ReadOptions, ColumnFamily,
-	Error,
-};
-use parking_lot::{Mutex, MutexGuard, RwLock, MappedRwLockReadGuard};
+use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, path::Path, result};
 
-use interleaved_ordered::{interleave_ordered, InterleaveOrdered};
+use parking_lot::{Mutex, MutexGuard, RwLock};
+use rocksdb::{BlockBasedOptions, ColumnFamily, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB};
+
+use crate::iter::KeyValuePair;
 use elastic_array::ElasticArray32;
 use fs_swap::{swap, swap_nonatomic};
+use interleaved_ordered::interleave_ordered;
 use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
 use log::{debug, warn};
 
@@ -193,35 +189,23 @@ impl Default for DatabaseConfig {
 	}
 }
 
-/// Database iterator (for flushed data only).
-/// Will hold a lock until the iterator is dropped
-/// preventing the database from being closed.
-pub struct DatabaseIterator<'a> {
-	iter: InterleaveOrdered<
-		std::vec::IntoIter<(Box<[u8]>, Box<[u8]>)>, 
-		ReadGuardedIterator<'a, DBIterator<'a>>,
-	>,
-}
+// /// Database iterator (for flushed data only).
+// /// Will hold a lock until the iterator is dropped
+// /// preventing the database from being closed.
+// pub struct DatabaseIterator<'a> {
+// 	iter: InterleaveOrdered<
+// 		std::vec::IntoIter<KeyValuePair>,
+// 		ReadGuardedIterator<'a, DBIterator<'a>>,
+// 	>,
+// }
 
-impl<'a> Iterator for DatabaseIterator<'a> {
-	type Item = (Box<[u8]>, Box<[u8]>);
+// impl<'a> Iterator for DatabaseIterator<'a> {
+// 	type Item = (Box<[u8]>, Box<[u8]>);
 
-	fn next(&mut self) -> Option<Self::Item> {
-		self.iter.next()
-	}
-}
-
-pub struct ReadGuardedIterator<'a, I> {
-	inner: MappedRwLockReadGuard<'a, I>,
-}
-
-impl<'a, I: Iterator> Iterator for ReadGuardedIterator<'a, I> {
-	type Item = I::Item;
-
-	fn next(&mut self) -> Option<Self::Item> {
-		self.inner.deref_mut().next()
-	}
-}
+// 	fn next(&mut self) -> Option<Self::Item> {
+// 		self.iter.next()
+// 	}
+// }
 
 struct DBAndColumns {
 	db: DB,
@@ -230,9 +214,7 @@ struct DBAndColumns {
 
 impl DBAndColumns {
 	fn get_cf(&self, i: usize) -> &ColumnFamily {
-		self.db
-			.cf_handle(&self.column_names[i])
-			.expect("the specified column name is correct; qed")
+		self.db.cf_handle(&self.column_names[i]).expect("the specified column name is correct; qed")
 	}
 }
 
@@ -272,10 +254,7 @@ pub struct Database {
 }
 
 #[inline]
-fn check_for_corruption<T, P: AsRef<Path>>(
-	path: P,
-	res: result::Result<T, Error>
-) -> io::Result<T> {
+fn check_for_corruption<T, P: AsRef<Path>>(path: P, res: result::Result<T, Error>) -> io::Result<T> {
 	if let Err(ref s) = res {
 		if is_corrupted(s) {
 			warn!("DB corrupted: {}. Repair will be triggered on next restart", s);
@@ -354,8 +333,7 @@ impl Database {
 				match DB::open_cf(&opts, path, &cfnames) {
 					Ok(db) => {
 						for name in &cfnames {
-							let _ = db.cf_handle(name)
-								.expect("rocksdb opens a cf_handle for each cfname; qed");
+							let _ = db.cf_handle(name).expect("rocksdb opens a cf_handle for each cfname; qed");
 						}
 						Ok(db)
 					}
@@ -364,8 +342,7 @@ impl Database {
 						match DB::open_cf(&opts, path, &[] as &[&str]) {
 							Ok(mut db) => {
 								for (i, name) in cfnames.iter().enumerate() {
-									let _ = db.create_cf(name, &cf_options[i])
-										.map_err(other_io_err)?;
+									let _ = db.create_cf(name, &cf_options[i]).map_err(other_io_err)?;
 								}
 								Ok(db)
 							}
@@ -388,8 +365,7 @@ impl Database {
 				} else {
 					let db = DB::open_cf(&opts, path, &cfnames).map_err(other_io_err)?;
 					for name in cfnames {
-						let _ = db.cf_handle(name)
-							.expect("rocksdb opens a cf_handle for each cfname; qed");
+						let _ = db.cf_handle(name).expect("rocksdb opens a cf_handle for each cfname; qed");
 					}
 					db
 				}
@@ -513,12 +489,12 @@ impl Database {
 						DBOp::Delete { col, key } => match col {
 							None => batch.delete(&key).map_err(other_io_err)?,
 							Some(c) => batch.delete_cf(cfs.get_cf(c as usize), &key).map_err(other_io_err)?,
-						}
+						},
 					}
 				}
 
 				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))
-			},
+			}
 			None => Err(other_io_err("Database is closed")),
 		}
 	}
@@ -536,17 +512,16 @@ impl Database {
 						match flushing.get(key) {
 							Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
 							Some(&KeyState::Delete) => Ok(None),
-							None => {
-								col.map_or_else(
-										|| cfs.db
-											.get_opt(key, &self.read_opts)
-											.map(|r| r.map(|v| DBValue::from_slice(&v))),
-										|c| cfs.db
+							None => col
+								.map_or_else(
+									|| cfs.db.get_opt(key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))),
+									|c| {
+										cfs.db
 											.get_cf_opt(cfs.get_cf(c as usize), key, &self.read_opts)
 											.map(|r| r.map(|v| DBValue::from_slice(&v)))
-									)
-									.map_err(other_io_err)
-							},
+									},
+								)
+								.map_err(other_io_err),
 						}
 					}
 				}
@@ -558,58 +533,50 @@ impl Database {
 	/// Get value by partial key. Prefix size should match configured prefix size. Only searches flushed values.
 	// TODO: support prefix seek for unflushed data
 	pub fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
-		self.iter_from_prefix(col, prefix).and_then(|mut iter| {
-			iter.next().map(|(_, v)| v)
-		})
+		self.iter_from_prefix(col, prefix).next().map(|(_, v)| v)
 	}
 
 	/// Get database iterator for flushed data.
-	pub fn iter(&self, col: Option<u32>) -> Option<DatabaseIterator<'_>> {
-		match *self.db.read() {
-			Some(ref cfs) => {
-				let overlay = &self.overlay.read()[Self::to_overlay_column(col)];
+	pub fn iter<'a>(&'a self, col: Option<u32>) -> impl Iterator<Item = KeyValuePair> + 'a {
+		let read_lock = self.db.read();
+		let optional = if read_lock.is_some() {
+			let c = Self::to_overlay_column(col);
+			let overlay_data = {
+				let overlay = &self.overlay.read()[c];
 				let mut overlay_data = overlay
 					.iter()
 					.filter_map(|(k, v)| match *v {
-						KeyState::Insert(ref value) =>
-							Some(
-								(
-									k.clone().into_vec().into_boxed_slice(),
-									value.clone().into_vec().into_boxed_slice()
-								)
-							),
+						KeyState::Insert(ref value) => {
+							Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_vec().into_boxed_slice()))
+						}
 						KeyState::Delete => None,
 					})
 					.collect::<Vec<_>>();
 				overlay_data.sort();
+				overlay_data
+			};
 
-				let iter = col.map_or_else(
-					|| cfs.db.iterator(IteratorMode::Start),
-					|c| cfs.db.iterator_cf(cfs.get_cf(c as usize), IteratorMode::Start)
-						.expect("iterator params are valid; qed")
-				);
-
-				Some(DatabaseIterator {
-					iter: interleave_ordered(overlay_data, iter),
-				})
-			},
-			None => None,
-		}
+			let guarded = iter::ReadGuardedIterator::new(read_lock, col);
+			Some(interleave_ordered(overlay_data, guarded))
+		} else {
+			None
+		};
+		optional.into_iter().flat_map(identity)
 	}
-
-	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<DatabaseIterator<'_>> {
-		match *self.db.read() {
-			Some(ref cfs) => {
-				let iter = col.map_or_else(|| cfs.db.iterator(IteratorMode::From(prefix, Direction::Forward)),
-					|c| cfs.db.iterator_cf(cfs.get_cf(c as usize), IteratorMode::From(prefix, Direction::Forward))
-						.expect("iterator params are valid; qed"));
-
-				Some(DatabaseIterator {
-					iter: interleave_ordered(Vec::new(), iter),
-				})
-			},
-			None => None,
-		}
+	/// Get database iterator from prefix for flushed data.
+	fn iter_from_prefix<'a>(
+		&'a self,
+		col: Option<u32>,
+		prefix: &[u8],
+	) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
+		let read_lock = self.db.read();
+		let optional = if read_lock.is_some() {
+			let guarded = iter::ReadGuardedIterator::new_from_prefix(read_lock, col, prefix);
+			Some(interleave_ordered(Vec::new(), guarded))
+		} else {
+			None
+		};
+		optional.into_iter().flat_map(identity)
 	}
 
 	/// Close the database
@@ -657,8 +624,10 @@ impl Database {
 
 	/// The number of non-default column families.
 	pub fn num_columns(&self) -> u32 {
-		self.db.read().as_ref()
-			.and_then(|db| if db.column_names.is_empty() { None } else { Some(db.column_names.len()) } )
+		self.db
+			.read()
+			.as_ref()
+			.and_then(|db| if db.column_names.is_empty() { None } else { Some(db.column_names.len()) })
 			.map(|n| n as u32)
 			.unwrap_or(0)
 	}
@@ -714,18 +683,18 @@ impl KeyValueDB for Database {
 		Database::flush(self)
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item = KeyValuePair> + 'a> {
 		let unboxed = Database::iter(self, col);
-		Box::new(unboxed.into_iter().flat_map(|inner| inner))
+		Box::new(unboxed.into_iter())
 	}
 
 	fn iter_from_prefix<'a>(
 		&'a self,
 		col: Option<u32>,
 		prefix: &'a [u8],
-	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
+	) -> Box<dyn Iterator<Item = KeyValuePair> + 'a> {
 		let unboxed = Database::iter_from_prefix(self, col, prefix);
-		Box::new(unboxed.into_iter().flat_map(|inner| inner))
+		Box::new(unboxed.into_iter())
 	}
 
 	fn restore(&self, new_db: &str) -> io::Result<()> {
@@ -761,7 +730,7 @@ mod tests {
 
 		assert_eq!(&*db.get(None, key1.as_bytes()).unwrap().unwrap(), b"cat");
 
-		let contents: Vec<_> = db.iter(None).into_iter().flat_map(|inner| inner).collect();
+		let contents: Vec<_> = db.iter(None).into_iter().collect();
 		assert_eq!(contents.len(), 2);
 		assert_eq!(&*contents[0].0, key1.as_bytes());
 		assert_eq!(&*contents[0].1, b"cat");
