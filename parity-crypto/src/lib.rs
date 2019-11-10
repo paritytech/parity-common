@@ -17,18 +17,18 @@
 //! Crypto utils used by ethstore and network.
 
 pub mod aes;
-pub mod error;
-pub mod scrypt;
 pub mod digest;
+pub mod error;
 pub mod hmac;
 pub mod pbkdf2;
 #[cfg(feature = "publickey")]
 pub mod publickey;
+pub mod scrypt;
 
 pub use crate::error::Error;
 
-use tiny_keccak::Keccak;
 use subtle::ConstantTimeEq;
+use tiny_keccak::Keccak;
 
 pub const KEY_LENGTH: usize = 32;
 pub const KEY_ITERATIONS: usize = 10240;
@@ -38,10 +38,15 @@ pub const KEY_LENGTH_AES: usize = KEY_LENGTH / 2;
 pub const DEFAULT_MAC: [u8; 2] = [0, 0];
 
 pub trait Keccak256<T> {
-	fn keccak256(&self) -> T where T: Sized;
+	fn keccak256(&self) -> T
+	where
+		T: Sized;
 }
 
-impl<T> Keccak256<[u8; 32]> for T where T: AsRef<[u8]> {
+impl<T> Keccak256<[u8; 32]> for T
+where
+	T: AsRef<[u8]>,
+{
 	fn keccak256(&self) -> [u8; 32] {
 		let mut keccak = Keccak::new_keccak256();
 		let mut result = [0u8; 32];

@@ -18,7 +18,6 @@
 
 use std::fmt;
 
-
 /// An error that occurred when working with IndexedDB.
 #[derive(Clone, PartialEq, Debug)]
 pub enum Error {
@@ -48,11 +47,7 @@ impl fmt::Display for Error {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match *self {
 			Error::WindowNotAvailable => write!(f, "Accessing a Window has failed"),
-			Error::NotSupported(ref err) => write!(
-				f,
-				"IndexedDB is not supported by your browser: {}",
-				err,
-			),
+			Error::NotSupported(ref err) => write!(f, "IndexedDB is not supported by your browser: {}", err,),
 			Error::__Nonexhaustive => unreachable!(),
 		}
 	}

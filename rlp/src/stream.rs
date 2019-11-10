@@ -21,11 +21,7 @@ struct ListInfo {
 
 impl ListInfo {
 	fn new(position: usize, max: Option<usize>) -> ListInfo {
-		ListInfo {
-			position,
-			current: 0,
-			max,
-		}
+		ListInfo { position, current: 0, max }
 	}
 }
 
@@ -45,11 +41,7 @@ impl Default for RlpStream {
 impl RlpStream {
 	/// Initializes instance of empty `Stream`.
 	pub fn new() -> Self {
-		RlpStream {
-			unfinished_lists: Vec::with_capacity(16),
-			buffer: Vec::with_capacity(1024),
-			finished_list: false,
-		}
+		RlpStream { unfinished_lists: Vec::with_capacity(16), buffer: Vec::with_capacity(1024), finished_list: false }
 	}
 
 	/// Initializes the `Stream` as a list.
@@ -113,7 +105,10 @@ impl RlpStream {
 	/// 	assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// }
 	/// ```
-	pub fn append<E>(&mut self, value: &E) -> &mut Self where E: Encodable {
+	pub fn append<E>(&mut self, value: &E) -> &mut Self
+	where
+		E: Encodable,
+	{
 		self.finished_list = false;
 		value.rlp_append(self);
 		if !self.finished_list {
@@ -136,7 +131,8 @@ impl RlpStream {
 	/// }
 	/// ```
 	pub fn append_iter<I>(&mut self, value: I) -> &mut Self
-	where I: IntoIterator<Item = u8>,
+	where
+		I: IntoIterator<Item = u8>,
 	{
 		self.finished_list = false;
 		self.encoder().encode_iter(value);
@@ -147,7 +143,11 @@ impl RlpStream {
 	}
 
 	/// Appends list of values to the end of stream, chainable.
-	pub fn append_list<E, K>(&mut self, values: &[K]) -> &mut Self where E: Encodable, K: Borrow<E> {
+	pub fn append_list<E, K>(&mut self, values: &[K]) -> &mut Self
+	where
+		E: Encodable,
+		K: Borrow<E>,
+	{
 		self.begin_list(values.len());
 		for value in values {
 			self.append(value.borrow());
@@ -157,7 +157,10 @@ impl RlpStream {
 
 	/// Appends value to the end of stream, but do not count it as an appended item.
 	/// It's useful for wrapper types
-	pub fn append_internal<E>(&mut self, value: &E) -> &mut Self where E: Encodable {
+	pub fn append_internal<E>(&mut self, value: &E) -> &mut Self
+	where
+		E: Encodable,
+	{
 		value.rlp_append(self);
 		self
 	}
@@ -184,7 +187,7 @@ impl RlpStream {
 				self.buffer.push(0xc0u8);
 				self.note_appended(1);
 				self.finished_list = true;
-			},
+			}
 			_ => {
 				// payload is longer than 1 byte only for lists > 55 bytes
 				// by pushing always this 1 byte we may avoid unnecessary shift of data
@@ -192,7 +195,7 @@ impl RlpStream {
 
 				let position = self.buffer.len();
 				self.unfinished_lists.push(ListInfo::new(position, Some(len)));
-			},
+			}
 		}
 
 		// return chainable self
@@ -350,7 +353,6 @@ impl RlpStream {
 	pub fn complete_unbounded_list(&mut self) {
 		self.finalize_unbounded_list();
 	}
-
 }
 
 pub struct BasicEncoder<'a> {
@@ -359,9 +361,7 @@ pub struct BasicEncoder<'a> {
 
 impl<'a> BasicEncoder<'a> {
 	fn new(stream: &'a mut RlpStream) -> Self {
-		BasicEncoder {
-			buffer: &mut stream.buffer
-		}
+		BasicEncoder { buffer: &mut stream.buffer }
 	}
 
 	fn insert_size(&mut self, size: usize, position: usize) -> u8 {
@@ -382,7 +382,7 @@ impl<'a> BasicEncoder<'a> {
 		match len {
 			0..=55 => {
 				self.buffer[pos - 1] = 0xc0u8 + len as u8;
-			},
+			}
 			_ => {
 				let inserted_bytes = self.insert_size(len, pos);
 				self.buffer[pos - 1] = 0xf7u8 + inserted_bytes;
@@ -396,7 +396,8 @@ impl<'a> BasicEncoder<'a> {
 
 	/// Pushes encoded value to the end of buffer
 	pub fn encode_iter<I>(&mut self, value: I)
-	where I: IntoIterator<Item=u8>,
+	where
+		I: IntoIterator<Item = u8>,
 	{
 		let mut value = value.into_iter();
 		let len = match value.size_hint() {

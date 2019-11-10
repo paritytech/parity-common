@@ -21,11 +21,11 @@ pub use core as core_;
 #[doc(hidden)]
 pub use rustc_hex;
 
-#[cfg(feature="quickcheck")]
+#[cfg(feature = "quickcheck")]
 #[doc(hidden)]
 pub use qc;
 
-#[cfg(feature="quickcheck")]
+#[cfg(feature = "quickcheck")]
 #[doc(hidden)]
 pub use rand;
 
@@ -35,5 +35,6 @@ pub use static_assertions;
 pub use crunchy::unroll;
 
 #[macro_use]
+#[rustfmt::skip]
 mod uint;
 pub use crate::uint::*;

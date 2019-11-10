@@ -35,13 +35,17 @@ pub trait Ready<T> {
 	fn is_ready(&mut self, tx: &T) -> Readiness;
 }
 
-impl<T, F> Ready<T> for F where F: FnMut(&T) -> Readiness {
+impl<T, F> Ready<T> for F
+where
+	F: FnMut(&T) -> Readiness,
+{
 	fn is_ready(&mut self, tx: &T) -> Readiness {
 		(*self)(tx)
 	}
 }
 
-impl<T, A, B> Ready<T> for (A, B) where
+impl<T, A, B> Ready<T> for (A, B)
+where
 	A: Ready<T>,
 	B: Ready<T>,
 {

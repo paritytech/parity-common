@@ -45,20 +45,20 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use core::{ops, mem};
+use core::{mem, ops};
 
 use crunchy::unroll;
 use fixed_hash::*;
+use impl_rlp::impl_fixed_hash_rlp;
 #[cfg(feature = "serialize")]
 use impl_serde::impl_fixed_hash_serde;
-use impl_rlp::impl_fixed_hash_rlp;
 use tiny_keccak::keccak256;
 
 // 3 according to yellowpaper
 const BLOOM_BITS: u32 = 3;
 const BLOOM_SIZE: usize = 256;
 
-construct_fixed_hash!{
+construct_fixed_hash! {
 	/// Bloom hash type with 256 bytes (2048 bits) size.
 	pub struct Bloom(BLOOM_SIZE);
 }
@@ -139,7 +139,10 @@ impl Bloom {
 		self.contains_bloom(&bloom)
 	}
 
-	pub fn contains_bloom<'a, B>(&self, bloom: B) -> bool where BloomRef<'a>: From<B> {
+	pub fn contains_bloom<'a, B>(&self, bloom: B) -> bool
+	where
+		BloomRef<'a>: From<B>,
+	{
 		let bloom_ref: BloomRef<'_> = bloom.into();
 		// workaround for https://github.com/rust-lang/rust/issues/43644
 		self.contains_bloom_ref(bloom_ref)
@@ -182,7 +185,10 @@ impl Bloom {
 		}
 	}
 
-	pub fn accrue_bloom<'a, B>(&mut self, bloom: B) where BloomRef<'a>: From<B> {
+	pub fn accrue_bloom<'a, B>(&mut self, bloom: B)
+	where
+		BloomRef<'a>: From<B>,
+	{
 		let bloom_ref: BloomRef<'_> = bloom.into();
 		assert_eq!(self.0.len(), BLOOM_SIZE);
 		assert_eq!(bloom_ref.0.len(), BLOOM_SIZE);
@@ -212,7 +218,10 @@ impl<'a> BloomRef<'a> {
 	}
 
 	#[allow(clippy::trivially_copy_pass_by_ref)]
-	pub fn contains_bloom<'b, B>(&self, bloom: B) -> bool where BloomRef<'b>: From<B> {
+	pub fn contains_bloom<'b, B>(&self, bloom: B) -> bool
+	where
+		BloomRef<'b>: From<B>,
+	{
 		let bloom_ref: BloomRef<'_> = bloom.into();
 		assert_eq!(self.0.len(), BLOOM_SIZE);
 		assert_eq!(bloom_ref.0.len(), BLOOM_SIZE);
@@ -249,11 +258,12 @@ impl_fixed_hash_serde!(Bloom, BLOOM_SIZE);
 
 #[cfg(test)]
 mod tests {
+	use super::{Bloom, Input};
 	use core::str::FromStr;
 	use hex_literal::hex;
-	use super::{Bloom, Input};
 
 	#[test]
+	#[rustfmt::skip]
 	fn it_works() {
 		let bloom = Bloom::from_str(
 			"00000000000000000000000000000000\
@@ -271,7 +281,7 @@ mod tests {
 			 00000000000000000000000000000000\
 			 00000000000000000000000000000000\
 			 00000000000000000000000000000000\
-			 00000000000000000000000000000000"
+			 00000000000000000000000000000000",
 		).unwrap();
 		let address = hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106");
 		let topic = hex!("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc");

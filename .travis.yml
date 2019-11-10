@@ -6,6 +6,10 @@ matrix:
   include:
     - os: linux
       rust: stable
+      before_script:
+        - rustup component add rustfmt
+      after_script:
+        - cargo fmt -- --check
     - os: linux
       rust: beta
     - os: linux

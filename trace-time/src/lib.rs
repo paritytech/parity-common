@@ -36,10 +36,7 @@ pub struct PerfTimer {
 impl PerfTimer {
 	/// Create an instance with given name.
 	pub fn new(name: &'static str) -> PerfTimer {
-		PerfTimer {
-			name,
-			start: Instant::now(),
-		}
+		PerfTimer { name, start: Instant::now() }
 	}
 }
 

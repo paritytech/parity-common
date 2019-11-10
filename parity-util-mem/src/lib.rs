@@ -25,7 +25,6 @@ extern crate alloc;
 
 use malloc_size_of_derive as malloc_size_derive;
 
-
 cfg_if::cfg_if! {
 	if #[cfg(all(
 		feature = "jemalloc-global",
@@ -57,13 +56,7 @@ cfg_if::cfg_if! {
 
 pub mod allocators;
 
-#[cfg(any(
-	all(
-		target_os = "macos",
-		not(feature = "jemalloc-global"),
-	),
-	feature = "estimate-heapsize"
-))]
+#[cfg(any(all(target_os = "macos", not(feature = "jemalloc-global"),), feature = "estimate-heapsize"))]
 pub mod sizeof;
 
 /// This is a copy of patched crate `malloc_size_of` as a module.
@@ -71,23 +64,21 @@ pub mod sizeof;
 /// if at some point the trait become standard enough we could use the right way of doing it
 /// by implementing it in our type traits crates. At this time moving this trait to the primitive
 /// types level would impact too much of the dependencies to be easily manageable.
-#[macro_use] mod malloc_size;
+#[macro_use]
+mod malloc_size;
 
 #[cfg(feature = "ethereum-impls")]
 pub mod impls;
 
-pub use malloc_size_derive::*;
-pub use malloc_size::{
- 	MallocSizeOfOps,
-	MallocSizeOf,
-};
 pub use allocators::MallocSizeOfExt;
+pub use malloc_size::{MallocSizeOf, MallocSizeOfOps};
+pub use malloc_size_derive::*;
 
 #[cfg(feature = "std")]
 #[cfg(test)]
 mod test {
-	use std::sync::Arc;
 	use super::MallocSizeOfExt;
+	use std::sync::Arc;
 
 	#[test]
 	fn test_arc() {

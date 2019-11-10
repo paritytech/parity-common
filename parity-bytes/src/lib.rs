@@ -75,7 +75,7 @@ pub enum BytesRef<'a> {
 	/// This is a reference to a vector
 	Flexible(&'a mut Bytes),
 	/// This is a reference to a slice
-	Fixed(&'a mut [u8])
+	Fixed(&'a mut [u8]),
 }
 
 impl<'a> BytesRef<'a> {
@@ -91,13 +91,13 @@ impl<'a> BytesRef<'a> {
 				data.resize(offset, 0);
 				data.extend_from_slice(input);
 				wrote
-			},
+			}
 			BytesRef::Fixed(ref mut data) if offset < data.len() => {
 				let max = min(data.len() - offset, input.len());
 				data[offset..(max + offset)].copy_from_slice(&input[..max]);
 				max
-			},
-			_ => 0
+			}
+			_ => 0,
 		}
 	}
 }
@@ -127,9 +127,9 @@ pub type Bytes = Vec<u8>;
 
 #[cfg(test)]
 mod tests {
+	use super::BytesRef;
 	#[cfg(not(feature = "std"))]
 	use alloc::vec;
-	use super::BytesRef;
 
 	#[test]
 	fn should_write_bytes_to_fixed_bytesref() {
