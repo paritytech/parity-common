@@ -192,20 +192,6 @@ impl Default for DatabaseConfig {
 // /// Database iterator (for flushed data only).
 // /// Will hold a lock until the iterator is dropped
 // /// preventing the database from being closed.
-// pub struct DatabaseIterator<'a> {
-// 	iter: InterleaveOrdered<
-// 		std::vec::IntoIter<KeyValuePair>,
-// 		ReadGuardedIterator<'a, DBIterator<'a>>,
-// 	>,
-// }
-
-// impl<'a> Iterator for DatabaseIterator<'a> {
-// 	type Item = (Box<[u8]>, Box<[u8]>);
-
-// 	fn next(&mut self) -> Option<Self::Item> {
-// 		self.iter.next()
-// 	}
-// }
 
 struct DBAndColumns {
 	db: DB,
@@ -537,6 +523,8 @@ impl Database {
 	}
 
 	/// Get database iterator for flushed data.
+	/// Will hold a lock until the iterator is dropped
+	/// preventing the database from being closed.
 	pub fn iter<'a>(&'a self, col: Option<u32>) -> impl Iterator<Item = KeyValuePair> + 'a {
 		let read_lock = self.db.read();
 		let optional = if read_lock.is_some() {
@@ -564,6 +552,8 @@ impl Database {
 		optional.into_iter().flat_map(identity)
 	}
 	/// Get database iterator from prefix for flushed data.
+	/// Will hold a lock until the iterator is dropped
+	/// preventing the database from being closed.
 	fn iter_from_prefix<'a>(
 		&'a self,
 		col: Option<u32>,
