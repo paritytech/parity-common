@@ -46,7 +46,7 @@ where
 
 const KB: usize = 1024;
 const MB: usize = 1024 * KB;
-const DB_DEFAULT_MEMORY_BUDGET_MB: usize = 1024;
+const DB_DEFAULT_MEMORY_BUDGET_MB: usize = 128;
 
 enum KeyState {
 	Insert(DBValue),
@@ -188,10 +188,6 @@ impl Default for DatabaseConfig {
 		}
 	}
 }
-
-// /// Database iterator (for flushed data only).
-// /// Will hold a lock until the iterator is dropped
-// /// preventing the database from being closed.
 
 struct DBAndColumns {
 	db: DB,
