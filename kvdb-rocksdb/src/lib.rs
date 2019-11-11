@@ -155,8 +155,10 @@ pub struct DatabaseConfig {
 	/// Memory budget (in MiB) used for setting block cache size,
 	/// write buffer size for each column.
 	pub memory_budget: Vec<Option<usize>>,
-	/// Compaction profile
+	/// Compaction profile.
 	pub compaction: CompactionProfile,
+	/// Specify the maximal number of info log files to be kept.
+	pub keep_log_file_num: i32,
 }
 
 impl DatabaseConfig {
@@ -192,6 +194,7 @@ impl Default for DatabaseConfig {
 			max_open_files: 512,
 			memory_budget: vec![],
 			compaction: CompactionProfile::default(),
+			keep_log_file_num: 1,
 		}
 	}
 }
@@ -290,7 +293,7 @@ impl Database {
 		opts.set_use_fsync(false);
 		opts.create_if_missing(true);
 		opts.set_max_open_files(config.max_open_files);
-		opts.set_parsed_options("keep_log_file_num=1").map_err(other_io_err)?;
+		opts.set_parsed_options(&format!("keep_log_file_num={}", config.keep_log_file_num)).map_err(other_io_err)?;
 		opts.set_parsed_options("bytes_per_sync=1048576").map_err(other_io_err)?;
 		if config.memory_budget.is_empty() {
 			let budget = config.memory_budget();
