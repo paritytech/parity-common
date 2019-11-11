@@ -80,19 +80,13 @@ impl Database {
 			let column = number_to_column(n);
 			let mut txn = DBTransaction::new();
 			let mut stream = indexed_db::idb_cursor(&*inner, n);
-			while let Some((key, value)) = stream.next().await { 
+			while let Some((key, value)) = stream.next().await {
 				txn.put_vec(column, key.as_ref(), value);
 			}
 			// write each column into memory
 			in_memory.write_buffered(txn);
 		}
-		Ok(Database {
-			name: name_clone,
-			version,
-			columns,
-			in_memory,
-			indexed_db: inner,
-		})
+		Ok(Database { name: name_clone, version, columns, in_memory, indexed_db: inner })
 	}
 
 	/// Get the database name.

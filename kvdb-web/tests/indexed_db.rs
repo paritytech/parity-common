@@ -29,13 +29,11 @@ async fn reopen_the_database_with_more_columns() {
 	let _ = console_log::init_with_level(log::Level::Trace);
 
 	async fn open_db(col: u32) -> Database {
-		Database::open("MyAsyncTest".into(), col)
-			.unwrap_or_else(|err| panic!("{}", err))
-			.await
+		Database::open("MyAsyncTest".into(), col).unwrap_or_else(|err| panic!("{}", err)).await
 	}
 
 	let db = open_db(1).await;
-	
+
 	// Write a value into the database
 	let mut batch = db.transaction();
 	batch.put(None, b"hello", b"world");
