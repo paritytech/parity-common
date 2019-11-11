@@ -16,52 +16,46 @@
 
 //! IndexedDB tests.
 
-use futures::compat;
-use futures::future::{self, FutureExt as _, TryFutureExt as _};
+use futures::future::TryFutureExt as _;
 
 use kvdb_web::{Database, KeyValueDB as _};
 
-use wasm_bindgen::JsValue;
 use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
-#[wasm_bindgen_test(async)]
-fn reopen_the_database_with_more_columns() -> impl futures01::Future<Item = (), Error = JsValue> {
+#[wasm_bindgen_test]
+async fn reopen_the_database_with_more_columns() {
 	let _ = console_log::init_with_level(log::Level::Trace);
 
-	fn open_db(col: u32) -> impl future::Future<Output = Database> {
-		Database::open("MyAsyncTest".into(), col).unwrap_or_else(|err| panic!("{}", err))
+	async fn open_db(col: u32) -> Database {
+		Database::open("MyAsyncTest".into(), col)
+			.unwrap_or_else(|err| panic!("{}", err))
+			.await
 	}
 
-	let fut = open_db(1)
-		.then(|db| {
-			// Write a value into the database
-			let mut batch = db.transaction();
-			batch.put(None, b"hello", b"world");
-			db.write_buffered(batch);
+	let db = open_db(1).await;
+	
+	// Write a value into the database
+	let mut batch = db.transaction();
+	batch.put(None, b"hello", b"world");
+	db.write_buffered(batch);
 
-			assert_eq!(db.get(None, b"hello").unwrap().unwrap().as_ref(), b"world");
+	assert_eq!(db.get(None, b"hello").unwrap().unwrap().as_ref(), b"world");
 
-			// Check the database version
-			assert_eq!(db.version(), 1);
+	// Check the database version
+	assert_eq!(db.version(), 1);
 
-			// Close the database
-			drop(db);
+	// Close the database
+	drop(db);
 
-			// Reopen it again with 3 columns
-			open_db(3)
-		})
-		.map(|db| {
-			// The value should still be present
-			assert_eq!(db.get(None, b"hello").unwrap().unwrap().as_ref(), b"world");
-			assert!(db.get(None, b"trash").unwrap().is_none());
+	// Reopen it again with 3 columns
+	let db = open_db(3).await;
 
-			// The version should be bumped
-			assert_eq!(db.version(), 2);
+	// The value should still be present
+	assert_eq!(db.get(None, b"hello").unwrap().unwrap().as_ref(), b"world");
+	assert!(db.get(None, b"trash").unwrap().is_none());
 
-			Ok(())
-		});
-
-	compat::Compat::new(fut)
+	// The version should be bumped
+	assert_eq!(db.version(), 2);
 }
