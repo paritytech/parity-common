@@ -280,6 +280,7 @@ impl Database {
 		block_opts.set_lru_cache(cache_size);
 		block_opts.set_cache_index_and_filter_blocks(true);
 		block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
+		block_opts.set_bloom_filter(10, true);
 		
 		// attempt database repair if it has been previously marked as corrupted
 		let db_corrupted = Path::new(path).join(Database::CORRUPTION_FILE_NAME);
