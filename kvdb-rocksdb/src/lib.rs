@@ -204,6 +204,7 @@ impl DBAndColumns {
 fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions) -> io::Result<Options> {
 	let mut opts = Options::default();
 
+	opts.set_level_compaction_dynamic_level_bytes(true);
 	opts.set_block_based_table_factory(block_opts);
 	opts.optimize_level_style_compaction(config.memory_budget_per_col());
 	opts.set_target_file_size_base(config.compaction.initial_file_size);
