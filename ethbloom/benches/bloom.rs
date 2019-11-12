@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use ethbloom::{Bloom, Input};
 use hex_literal::hex;
-use tiny_keccak::keccak256;
+use tiny_keccak::Keccak;
 
 fn test_bloom() -> Bloom {
 	use std::str::FromStr;
@@ -54,8 +54,8 @@ fn bench_accrue(c: &mut Criterion) {
 	});
 	c.bench_function("accrue_hash", |b| {
 		let mut bloom = Bloom::default();
-		let topic = keccak256(&test_topic());
-		let address = keccak256(&test_address());
+		let topic = Keccak::v256(&test_topic());
+		let address = Keccak::v256(&test_address());
 		b.iter(|| {
 			bloom.accrue(Input::Hash(&topic));
 			bloom.accrue(Input::Hash(&address));
@@ -75,8 +75,8 @@ fn bench_contains(c: &mut Criterion) {
 	});
 	c.bench_function("contains_input_hash", |b| {
 		let bloom = test_bloom();
-		let topic = keccak256(&test_topic());
-		let address = keccak256(&test_address());
+		let topic = Keccak::v256(&test_topic());
+		let address = Keccak::v256(&test_address());
 		b.iter(|| {
 			assert!(bloom.contains_input(Input::Hash(&topic)));
 			assert!(bloom.contains_input(Input::Hash(&address)));
@@ -96,8 +96,8 @@ fn bench_not_contains(c: &mut Criterion) {
 	});
 	c.bench_function("does_not_contain_hash", |b| {
 		let bloom = test_bloom();
-		let dummy = keccak256(&test_dummy());
-		let dummy2 = keccak256(&test_dummy2());
+		let dummy = Keccak::v256(&test_dummy());
+		let dummy2 = Keccak::v256(&test_dummy2());
 		b.iter(|| {
 			assert!(!bloom.contains_input(Input::Hash(&dummy)));
 			assert!(!bloom.contains_input(Input::Hash(&dummy2)));
@@ -105,7 +105,7 @@ fn bench_not_contains(c: &mut Criterion) {
 	});
 	c.bench_function("does_not_contain_random_hash", |b| {
 		let bloom = test_bloom();
-		let dummy: Vec<_> = (0..255u8).map(|i| keccak256(&[i])).collect();
+		let dummy: Vec<_> = (0..255u8).map(|i| Keccak::v256(&[i])).collect();
 		b.iter(|| {
 			for d in &dummy {
 				assert!(!bloom.contains_input(Input::Hash(d)));

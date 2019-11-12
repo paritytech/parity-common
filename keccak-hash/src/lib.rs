@@ -21,7 +21,7 @@ use core::slice;
 use std::io;
 
 pub use primitive_types::H256;
-use tiny_keccak::Keccak;
+use tiny_keccak::{Hasher, Keccak};
 
 /// Get the KECCAK (i.e. Keccak) hash of the empty bytes string.
 pub const KECCAK_EMPTY: H256 = H256([
@@ -50,32 +50,40 @@ pub fn keccak<T: AsRef<[u8]>>(s: T) -> H256 {
 pub unsafe fn keccak_256_unchecked(out: *mut u8, outlen: usize, input: *const u8, inputlen: usize) {
 	// This is safe since `keccak_*` uses an internal buffer and copies the result to the output. This
 	// means that we can reuse the input buffer for both input and output.
-	Keccak::keccak256(slice::from_raw_parts(input, inputlen), slice::from_raw_parts_mut(out, outlen));
+	let input = slice::from_raw_parts(input, inputlen);
+	let output = slice::from_raw_parts_mut(out, outlen);
+	keccak_256(input, output);
 }
 
 pub unsafe fn keccak_512_unchecked(out: *mut u8, outlen: usize, input: *const u8, inputlen: usize) {
 	// This is safe since `keccak_*` uses an internal buffer and copies the result to the output. This
 	// means that we can reuse the input buffer for both input and output.
-	Keccak::keccak512(slice::from_raw_parts(input, inputlen), slice::from_raw_parts_mut(out, outlen));
+	let input = slice::from_raw_parts(input, inputlen);
+	let output = slice::from_raw_parts_mut(out, outlen);
+	keccak_512(input, output);
 }
 
-pub fn keccak_256(input: &[u8], mut output: &mut [u8]) {
-	Keccak::keccak256(input, &mut output);
+pub fn keccak_256(input: &[u8], output: &mut [u8]) {
+	write_keccak(input, output);
 }
 
-pub fn keccak_512(input: &[u8], mut output: &mut [u8]) {
-	Keccak::keccak512(input, &mut output);
+pub fn keccak_512(input: &[u8], output: &mut [u8]) {
+	let mut keccak512 = Keccak::v512();
+	keccak512.update(input);
+	keccak512.finalize(output);
 }
 
 pub fn write_keccak<T: AsRef<[u8]>>(s: T, dest: &mut [u8]) {
-	Keccak::keccak256(s.as_ref(), dest);
+	let mut keccak256 = Keccak::v256();
+	keccak256.update(s.as_ref());
+	keccak256.finalize(dest);
 }
 
 #[cfg(feature = "std")]
 pub fn keccak_pipe(r: &mut dyn io::BufRead, w: &mut dyn io::Write) -> Result<H256, io::Error> {
 	let mut output = [0u8; 32];
 	let mut input = [0u8; 1024];
-	let mut keccak = Keccak::new_keccak256();
+	let mut keccak256 = Keccak::v256();
 
 	// read file
 	loop {
@@ -83,11 +91,11 @@ pub fn keccak_pipe(r: &mut dyn io::BufRead, w: &mut dyn io::Write) -> Result<H25
 		if some == 0 {
 			break;
 		}
-		keccak.update(&input[0..some]);
+		keccak256.update(&input[0..some]);
 		w.write_all(&input[0..some])?;
 	}
 
-	keccak.finalize(&mut output);
+	keccak256.finalize(&mut output);
 	Ok(output.into())
 }
 
