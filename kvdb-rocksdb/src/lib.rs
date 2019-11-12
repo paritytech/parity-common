@@ -282,11 +282,13 @@ impl Database {
 		block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
 		block_opts.set_bloom_filter(10, true);
 		
+		let opts = generate_options(config);
+		
 		// attempt database repair if it has been previously marked as corrupted
 		let db_corrupted = Path::new(path).join(Database::CORRUPTION_FILE_NAME);
 		if db_corrupted.exists() {
 			warn!("DB has been previously marked as corrupted, attempting repair");
-			DB::repair(generate_options(config), path).map_err(other_io_err)?;
+			DB::repair(&opts, path).map_err(other_io_err)?;
 			fs::remove_file(db_corrupted)?;
 		}
 
@@ -305,7 +307,6 @@ impl Database {
 		read_opts.set_prefix_same_as_start(true);
 		read_opts.set_verify_checksums(false);
 
-		let opts = generate_options(config);
 		let db = match config.columns {
 			Some(_) => {
 				match DB::open_cf(&opts, path, &cfnames) {
