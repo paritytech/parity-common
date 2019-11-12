@@ -205,14 +205,7 @@ fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions) -> io::Re
 	let mut opts = Options::default();
 
 	opts.set_block_based_table_factory(block_opts);
-
 	opts.optimize_level_style_compaction(config.memory_budget_per_col());
-	// opts.set_parsed_options(&format!(
-	// 	"block_based_table_factory={{{};{}}}",
-	// 	"cache_index_and_filter_blocks=true", "pin_l0_filter_and_index_blocks_in_cache=true"
-	// ))
-	// .map_err(other_io_err)?;
-
 	opts.set_target_file_size_base(config.compaction.initial_file_size);
 
 	Ok(opts)
@@ -285,7 +278,9 @@ impl Database {
 		// https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
 		let cache_size = config.memory_budget() / 3;
 		block_opts.set_lru_cache(cache_size);
-
+		block_opts.set_cache_index_and_filter_blocks(true);
+		block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
+		
 		// attempt database repair if it has been previously marked as corrupted
 		let db_corrupted = Path::new(path).join(Database::CORRUPTION_FILE_NAME);
 		if db_corrupted.exists() {
@@ -307,7 +302,7 @@ impl Database {
 		let write_opts = WriteOptions::new();
 		let mut read_opts = ReadOptions::default();
 		read_opts.set_prefix_same_as_start(true);
-		//TODO: removed read_opts.set_verify_checksums(false);
+		read_opts.set_verify_checksums(false);
 
 		let opts = generate_options(config);
 		let db = match config.columns {
@@ -340,7 +335,7 @@ impl Database {
 			Ok(db) => db,
 			Err(ref s) if is_corrupted(s) => {
 				warn!("DB corrupted: {}, attempting repair", s);
-				DB::repair(generate_options(config), path).map_err(other_io_err)?;
+				DB::repair(&opts, path).map_err(other_io_err)?;
 
 				if cfnames.is_empty() {
 					DB::open(&opts, path).map_err(other_io_err)?
