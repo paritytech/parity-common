@@ -44,9 +44,17 @@ where
 	io::Error::new(io::ErrorKind::Other, e)
 }
 
+// Used for memory budget.
+type MiB = usize;
+
 const KB: usize = 1024;
 const MB: usize = 1024 * KB;
-const DB_DEFAULT_MEMORY_BUDGET_MB: usize = 128;
+
+/// The default column memory budget in MiB.
+pub const DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB: MiB = 128;
+
+/// The default memory budget in MiB.
+pub const DB_DEFAULT_MEMORY_BUDGET_MB: MiB = 512;
 
 enum KeyState {
 	Insert(DBValue),
@@ -147,44 +155,51 @@ impl CompactionProfile {
 	}
 }
 
+
 /// Database configuration
 #[derive(Clone)]
 pub struct DatabaseConfig {
 	/// Max number of open files.
 	pub max_open_files: i32,
-	/// Memory budget (in MiB) used for setting block cache size,
-	/// write buffer size for each column.
-	pub memory_budget: Vec<Option<usize>>,
+	/// Memory budget (in MiB) used for setting block cache size and
+	/// write buffer size for each column including with the default one.
+	/// If the memory budget of a column is not specified,
+	/// `DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB` is used for that column.
+	pub memory_budget: HashMap<Option<u32>, MiB>,
 	/// Compaction profile.
 	pub compaction: CompactionProfile,
-	/// Specify the maximal number of info log files to be kept.
+	/// Set number of columns.
+	pub columns: Option<u32>,
+	/// Specify the maximum number of info/debug log files to be kept.
 	pub keep_log_file_num: i32,
 }
 
 impl DatabaseConfig {
-	/// Create new `DatabaseConfig` with default parameters and specified set of columns.
-	/// Note that cache sizes must be explicitly set.
+	/// Create new `DatabaseConfig` with default parameters and specified columns.
 	pub fn with_columns(columns: Option<u32>) -> Self {
-		let mut config = Self::default();
-		config.memory_budget.resize(columns.unwrap_or(0) as usize, None);
-		config
+		Self {
+			columns,
+			..Default::default()
+		}
 	}
 
+	/// Returns the total memory budget in bytes.
 	pub fn memory_budget(&self) -> usize {
-		if self.memory_budget.is_empty() {
+		if self.memory_budget.is_empty() && self.columns.is_none() {
 			return DB_DEFAULT_MEMORY_BUDGET_MB * MB;
 		}
-		self.memory_budget
-			.iter()
-			.map(|b| b.unwrap_or(DB_DEFAULT_MEMORY_BUDGET_MB) * MB)
+		(0..=self.columns.unwrap_or(0))
+			.map(|i| {
+				self.memory_budget
+					.get(&i.checked_sub(1))
+					.unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
+			})
 			.sum()
 	}
 
-	/// # Panics
-	///
-	/// If `col` is out of bounds.
-	pub fn memory_budget_per_col(&self, col: usize) -> usize {
-		self.memory_budget[col].unwrap_or(DB_DEFAULT_MEMORY_BUDGET_MB) * MB
+	/// Returns the memory budget of the specified column in bytes.
+	pub fn memory_budget_per_col(&self, col: Option<u32>) -> MiB {
+		self.memory_budget.get(&col).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
 	}
 }
 
@@ -192,8 +207,9 @@ impl Default for DatabaseConfig {
 	fn default() -> DatabaseConfig {
 		DatabaseConfig {
 			max_open_files: 512,
-			memory_budget: vec![],
+			memory_budget: HashMap::new(),
 			compaction: CompactionProfile::default(),
+			columns: None,
 			keep_log_file_num: 1,
 		}
 	}
@@ -295,9 +311,12 @@ impl Database {
 		opts.set_max_open_files(config.max_open_files);
 		opts.set_parsed_options(&format!("keep_log_file_num={}", config.keep_log_file_num)).map_err(other_io_err)?;
 		opts.set_parsed_options("bytes_per_sync=1048576").map_err(other_io_err)?;
-		if config.memory_budget.is_empty() {
-			let budget = config.memory_budget();
-			opts.set_db_write_buffer_size(budget / 2);
+
+		let columns = config.columns.unwrap_or(0);
+
+		if columns == 0 {
+			let budget = config.memory_budget() / 2;
+			opts.set_db_write_buffer_size(budget);
 			// from https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#memtable
 			// Memtable size is controlled by the option `write_buffer_size`.
 			// If you increase your memtable size, be sure to also increase your L1 size!
@@ -325,14 +344,12 @@ impl Database {
 			fs::remove_file(db_corrupted)?;
 		}
 
-		let columns = config.memory_budget.len();
-
-		let mut cf_options = Vec::with_capacity(columns);
+		let mut cf_options = Vec::with_capacity(columns as usize);
 		let cfnames: Vec<_> = (0..columns).map(|c| format!("col{}", c)).collect();
 		let cfnames: Vec<&str> = cfnames.iter().map(|n| n as &str).collect();
 
-		for i in 0..config.memory_budget.len() {
-			cf_options.push(col_config(&config, &block_opts, config.memory_budget_per_col(i))?);
+		for i in 0..columns {
+			cf_options.push(col_config(&config, &block_opts, config.memory_budget_per_col(Some(i)))?);
 		}
 
 		let write_opts = WriteOptions::new();
@@ -340,7 +357,7 @@ impl Database {
 		read_opts.set_verify_checksums(false);
 
 		let mut cfs: Vec<Column> = Vec::new();
-		let db = match config.memory_budget.is_empty() {
+		let db = match config.columns.is_none() {
 			false => {
 				match DB::open_cf(&opts, path, &cfnames, &cf_options) {
 					Ok(db) => {
@@ -659,17 +676,21 @@ impl Database {
 
 	/// The number of non-default column families.
 	pub fn num_columns(&self) -> u32 {
-		self.config.memory_budget.len() as u32
+		self.db
+			.read()
+			.as_ref()
+			.and_then(|db| if db.cfs.is_empty() { None } else { Some(db.cfs.len()) })
+			.map(|n| n as u32)
+			.unwrap_or(0)
 	}
 
 	/// Drop a column family.
-	pub fn drop_column(&mut self) -> io::Result<()> {
+	pub fn drop_column(&self) -> io::Result<()> {
 		match *self.db.write() {
 			Some(DBAndColumns { ref mut db, ref mut cfs }) => {
 				if let Some(col) = cfs.pop() {
 					let name = format!("col{}", cfs.len());
 					drop(col);
-					self.config.memory_budget.resize(cfs.len(), None);
 					db.drop_cf(&name).map_err(other_io_err)?;
 				}
 				Ok(())
@@ -679,15 +700,12 @@ impl Database {
 	}
 
 	/// Add a column family.
-	pub fn add_column(&mut self) -> io::Result<()> {
+	pub fn add_column(&self) -> io::Result<()> {
 		match *self.db.write() {
 			Some(DBAndColumns { ref mut db, ref mut cfs }) => {
 				let col = cfs.len();
 				let name = format!("col{}", col);
-				if self.config.memory_budget.len() < col + 1 {
-					self.config.memory_budget.resize(col + 1, None);
-				}
-				let memory_budget_per_col = self.config.memory_budget_per_col(col);
+				let memory_budget_per_col = self.config.memory_budget_per_col(Some(col as u32));
 				let col_config = col_config(&self.config, &self.block_opts, memory_budget_per_col)?;
 				cfs.push(db.create_cf(&name, &col_config).map_err(other_io_err)?);
 				Ok(())
@@ -838,12 +856,12 @@ mod tests {
 
 		// open empty, add 5.
 		{
-			let mut db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
+			let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
 			assert_eq!(db.num_columns(), 0);
 
-			for i in 0..5 {
+			for i in 1..=5 {
 				db.add_column().unwrap();
-				assert_eq!(db.num_columns(), i + 1);
+				assert_eq!(db.num_columns(), i);
 			}
 		}
 
@@ -863,7 +881,7 @@ mod tests {
 
 		// open 5, remove all.
 		{
-			let mut db = Database::open(&config_5, tempdir.path().to_str().unwrap()).unwrap();
+			let db = Database::open(&config_5, tempdir.path().to_str().unwrap()).unwrap();
 			assert_eq!(db.num_columns(), 5);
 
 			for i in (0..5).rev() {
