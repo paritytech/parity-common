@@ -17,9 +17,17 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use ethereum_types::H256;
 use keccak_hasher::KeccakHasher;
-use tiny_keccak::keccak256;
+use tiny_keccak::{Hasher, Keccak};
 use trie_standardmap::{Alphabet, StandardMap, ValueMode};
 use triehash::trie_root;
+
+fn keccak256(input: &[u8]) -> [u8; 32] {
+	let mut keccak256 = Keccak::v256();
+	let mut out = [0u8; 32];
+	keccak256.update(input);
+	keccak256.finalize(&mut out);
+	out
+}
 
 fn random_word(alphabet: &[u8], min_count: usize, diff_count: usize, seed: &mut H256) -> Vec<u8> {
 	assert!(min_count + diff_count <= 32);
