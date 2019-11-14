@@ -208,6 +208,7 @@ fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions) -> io::Re
 	opts.set_block_based_table_factory(block_opts);
 	opts.optimize_level_style_compaction(config.memory_budget_per_col());
 	opts.set_target_file_size_base(config.compaction.initial_file_size);
+	opts.set_compression_per_level(&[]);
 
 	Ok(opts)
 }
