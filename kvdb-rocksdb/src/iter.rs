@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
+//! This module contains an implementation of a RocksDB iterator
+//! wrapped inside a `RwLock`. Since `RwLock` "owns" the inner data,
+//! we're using `owning_ref` to work around the borrowing rules of Rust.
+
 use crate::DBAndColumns;
 use owning_ref::{OwningHandle, StableAddress};
 use parking_lot::RwLockReadGuard;
