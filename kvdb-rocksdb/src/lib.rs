@@ -202,6 +202,29 @@ impl DatabaseConfig {
 	fn memory_budget_per_col(&self, col: Option<u32>) -> MiB {
 		self.memory_budget.get(&col).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
 	}
+
+	// Get column family configuration with the given block based options.
+	fn column_config(&self, block_opts: &BlockBasedOptions, col: Option<u32>) -> io::Result<Options> {
+		let memory_budget_per_col = self.memory_budget_per_col(col);
+		let mut opts = Options::new();
+
+		opts.set_parsed_options("level_compaction_dynamic_level_bytes=true").map_err(other_io_err)?;
+
+		opts.set_block_based_table_factory(block_opts);
+
+		opts.set_parsed_options(&format!(
+			"block_based_table_factory={{{};{}}}",
+			"cache_index_and_filter_blocks=true", "pin_l0_filter_and_index_blocks_in_cache=true"
+		))
+		.map_err(other_io_err)?;
+
+		opts.optimize_level_style_compaction(memory_budget_per_col as i32);
+		opts.set_target_file_size_base(self.compaction.initial_file_size);
+
+		opts.set_parsed_options("compression_per_level=").map_err(other_io_err)?;
+
+		Ok(opts)
+	}
 }
 
 impl Default for DatabaseConfig {
@@ -235,28 +258,6 @@ impl<'a> Iterator for DatabaseIterator<'a> {
 struct DBAndColumns {
 	db: DB,
 	cfs: Vec<Column>,
-}
-
-// get column family configuration from database config.
-fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions, memory_budget_per_col: MiB) -> io::Result<Options> {
-	let mut opts = Options::new();
-
-	opts.set_parsed_options("level_compaction_dynamic_level_bytes=true").map_err(other_io_err)?;
-
-	opts.set_block_based_table_factory(block_opts);
-
-	opts.set_parsed_options(&format!(
-		"block_based_table_factory={{{};{}}}",
-		"cache_index_and_filter_blocks=true", "pin_l0_filter_and_index_blocks_in_cache=true"
-	))
-	.map_err(other_io_err)?;
-
-	opts.optimize_level_style_compaction(memory_budget_per_col as i32);
-	opts.set_target_file_size_base(config.compaction.initial_file_size);
-
-	opts.set_parsed_options("compression_per_level=").map_err(other_io_err)?;
-
-	Ok(opts)
 }
 
 /// Key-Value database.
@@ -350,7 +351,7 @@ impl Database {
 		let cfnames: Vec<&str> = cfnames.iter().map(|n| n as &str).collect();
 
 		for i in 0..columns {
-			cf_options.push(col_config(&config, &block_opts, config.memory_budget_per_col(Some(i)))?);
+			cf_options.push(config.column_config(&block_opts, Some(i))?);
 		}
 
 		let write_opts = WriteOptions::new();
@@ -706,8 +707,7 @@ impl Database {
 			Some(DBAndColumns { ref mut db, ref mut cfs }) => {
 				let col = cfs.len();
 				let name = format!("col{}", col);
-				let memory_budget_per_col = self.config.memory_budget_per_col(Some(col as u32));
-				let col_config = col_config(&self.config, &self.block_opts, memory_budget_per_col)?;
+				let col_config = self.config.column_config(&self.block_opts, Some(col as u32))?;
 				cfs.push(db.create_cf(&name, &col_config).map_err(other_io_err)?);
 				Ok(())
 			}
