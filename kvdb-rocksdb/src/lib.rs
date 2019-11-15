@@ -199,7 +199,7 @@ impl DatabaseConfig {
 	}
 
 	/// Returns the memory budget of the specified column in bytes.
-	pub fn memory_budget_per_col(&self, col: Option<u32>) -> MiB {
+	fn memory_budget_per_col(&self, col: Option<u32>) -> MiB {
 		self.memory_budget.get(&col).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
 	}
 }
