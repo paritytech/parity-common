@@ -109,9 +109,10 @@ impl CompactionProfile {
 		let hdd_check_file = db_path
 			.to_str()
 			.and_then(|path_str| Command::new("df").arg(path_str).output().ok())
-			.and_then(|df_res| match df_res.status.success() {
-				true => Some(df_res.stdout),
-				false => None,
+			.and_then(|df_res| if df_res.status.success() {
+				Some(df_res.stdout)
+			} else {
+				None
 			})
 			.and_then(rotational_from_df_output);
 		// Read out the file and match compaction profile.
@@ -155,7 +156,6 @@ impl CompactionProfile {
 	}
 }
 
-
 /// Database configuration
 #[derive(Clone)]
 pub struct DatabaseConfig {
@@ -178,10 +178,7 @@ impl DatabaseConfig {
 	/// Create new `DatabaseConfig` with default parameters and specified set of columns.
 	/// Note that cache sizes must be explicitly set.
 	pub fn with_columns(columns: Option<u32>) -> Self {
-		Self {
-			columns,
-			..Default::default()
-		}
+		Self { columns, ..Default::default() }
 	}
 
 	/// Returns the total memory budget in bytes.
@@ -190,11 +187,7 @@ impl DatabaseConfig {
 			return DB_DEFAULT_MEMORY_BUDGET_MB * MB;
 		}
 		(0..=self.columns.unwrap_or(0))
-			.map(|i| { 
-				self.memory_budget
-					.get(&i.checked_sub(1))
-					.unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
-			})
+			.map(|i| self.memory_budget.get(&i.checked_sub(1)).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
 			.sum()
 	}
 
@@ -321,7 +314,7 @@ impl Database {
 			opts.set_db_write_buffer_size(budget);
 			// from https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#memtable
 			// Memtable size is controlled by the option `write_buffer_size`.
-			// If you increase your memtable size, be sure to also increase your L1 size! 
+			// If you increase your memtable size, be sure to also increase your L1 size!
 			// L1 size is controlled by the option `max_bytes_for_level_base`.
 			opts.set_parsed_options(&format!("max_bytes_for_level_base={}", budget)).map_err(other_io_err)?;
 		}
@@ -359,8 +352,8 @@ impl Database {
 		read_opts.set_verify_checksums(false);
 
 		let mut cfs: Vec<Column> = Vec::new();
-		let db = match config.columns.is_none() {
-			false => {
+		let db = match config.columns {
+			Some(_) => {
 				match DB::open_cf(&opts, path, &cfnames, &cf_options) {
 					Ok(db) => {
 						cfs = cfnames
@@ -386,7 +379,7 @@ impl Database {
 					}
 				}
 			}
-			true => DB::open(&opts, path),
+			None => DB::open(&opts, path),
 		};
 
 		let db = match db {
@@ -395,23 +388,22 @@ impl Database {
 				warn!("DB corrupted: {}, attempting repair", s);
 				DB::repair(&opts, path).map_err(other_io_err)?;
 
-				match cfnames.is_empty() {
-					true => DB::open(&opts, path).map_err(other_io_err)?,
-					false => {
-						let db = DB::open_cf(&opts, path, &cfnames, &cf_options).map_err(other_io_err)?;
-						cfs = cfnames
-							.iter()
-							.map(|n| db.cf_handle(n).expect("rocksdb opens a cf_handle for each cfname; qed"))
-							.collect();
-						db
-					}
+				if cfnames.is_empty() {
+					DB::open(&opts, path).map_err(other_io_err)?
+				} else {
+					let db = DB::open_cf(&opts, path, &cfnames, &cf_options).map_err(other_io_err)?;
+					cfs = cfnames
+						.iter()
+						.map(|n| db.cf_handle(n).expect("rocksdb opens a cf_handle for each cfname; qed"))
+						.collect();
+					db
 				}
 			}
 			Err(s) => return Err(other_io_err(s)),
 		};
 		let num_cols = cfs.len();
 		Ok(Database {
-			db: RwLock::new(Some(DBAndColumns { db: db, cfs: cfs })),
+			db: RwLock::new(Some(DBAndColumns { db, cfs })),
 			config: config.clone(),
 			write_opts,
 			overlay: RwLock::new((0..(num_cols + 1)).map(|_| HashMap::new()).collect()),
@@ -690,9 +682,8 @@ impl Database {
 	pub fn drop_column(&self) -> io::Result<()> {
 		match *self.db.write() {
 			Some(DBAndColumns { ref mut db, ref mut cfs }) => {
-				if let Some(col) = cfs.pop() {
+				if let Some(_col) = cfs.pop() {
 					let name = format!("col{}", cfs.len());
-					drop(col);
 					db.drop_cf(&name).map_err(other_io_err)?;
 				}
 				Ok(())
