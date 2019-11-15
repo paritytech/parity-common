@@ -175,7 +175,8 @@ pub struct DatabaseConfig {
 }
 
 impl DatabaseConfig {
-	/// Create new `DatabaseConfig` with default parameters and specified columns.
+	/// Create new `DatabaseConfig` with default parameters and specified set of columns.
+	/// Note that cache sizes must be explicitly set.
 	pub fn with_columns(columns: Option<u32>) -> Self {
 		Self {
 			columns,
@@ -184,7 +185,7 @@ impl DatabaseConfig {
 	}
 
 	/// Returns the total memory budget in bytes.
-	pub fn memory_budget(&self) -> usize {
+	pub fn memory_budget(&self) -> MiB {
 		if self.memory_budget.is_empty() && self.columns.is_none() {
 			return DB_DEFAULT_MEMORY_BUDGET_MB * MB;
 		}
@@ -237,7 +238,7 @@ struct DBAndColumns {
 }
 
 // get column family configuration from database config.
-fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions, memory_budget_per_col: usize) -> io::Result<Options> {
+fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions, memory_budget_per_col: MiB) -> io::Result<Options> {
 	let mut opts = Options::new();
 
 	opts.set_parsed_options("level_compaction_dynamic_level_bytes=true").map_err(other_io_err)?;
@@ -681,7 +682,7 @@ impl Database {
 			.as_ref()
 			.and_then(|db| if db.cfs.is_empty() { None } else { Some(db.cfs.len()) })
 			.map(|n| n as u32)
-			.unwrap_or(0)	
+			.unwrap_or(0)
 	}
 
 	/// Drop a column family.
