@@ -162,7 +162,7 @@ pub struct DatabaseConfig {
 	/// Max number of open files.
 	pub max_open_files: i32,
 	/// Memory budget (in MiB) used for setting block cache size and
-	/// write buffer size for each column including with the default one.
+	/// write buffer size for each column including the default one.
 	/// If the memory budget of a column is not specified,
 	/// `DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB` is used for that column.
 	pub memory_budget: HashMap<Option<u32>, MiB>,
