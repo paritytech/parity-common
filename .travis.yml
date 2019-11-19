@@ -16,6 +16,12 @@ matrix:
       rust: nightly
     - os: osx
       osx_image: xcode11
+      install:
+        - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.1/install.sh | sh
+        - source ~/.nvm/nvm.sh
+        - nvm install v10.5
+        - npm install -g chromedriver
       rust: stable
   allow_failures:
     - rust: nightly
@@ -40,6 +46,5 @@ script:
   - cd parity-util-mem/ && cargo test --no-default-features --features=dlmalloc-global && cd ..
   - cd rlp/ && cargo test --no-default-features && cargo check --benches && cd ..
   - cd triehash/ && cargo check --benches && cd ..
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
-    cd kvdb-web/ && wasm-pack test --headless --chrome --firefox && cd ..;
-    fi
+  - cd kvdb-web/ && wasm-pack test --headless --chrome --firefox && cd ..;
+   
