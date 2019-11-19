@@ -16,6 +16,9 @@ matrix:
       rust: nightly
     - os: osx
       osx_image: xcode11.2
+      addons:
+        chrome: stable
+        firefox: latest
       install:
         - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.1/install.sh | sh
         - source ~/.nvm/nvm.sh
@@ -48,4 +51,4 @@ script:
   - cd rlp/ && cargo test --no-default-features && cargo check --benches && cd ..
   - cd triehash/ && cargo check --benches && cd ..
   - cd kvdb-web/ && wasm-pack test --headless --chrome --firefox && cd ..;
-   
+
