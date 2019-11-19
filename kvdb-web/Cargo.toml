@@ -13,7 +13,7 @@ wasm-bindgen = "0.2.54"
 js-sys = "0.3.31"
 kvdb = { version = "0.1", path = "../kvdb" }
 kvdb-memorydb = { version = "0.1", path = "../kvdb-memorydb" }
-futures-preview = "0.3.0-alpha.19"
+futures = "0.3"
 log = "0.4.8"
 send_wrapper = "0.3.0"
 
