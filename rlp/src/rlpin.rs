@@ -190,6 +190,15 @@ impl<'a> Rlp<'a> {
 	where
 		'a: 'view,
 	{
+		let (rlp, _offset) = self.at_with_offset(index)?;
+		Ok(rlp)
+	}
+
+	pub fn at_with_offset<'view>(&'view self, index: usize)
+		-> Result<(Rlp<'a>, usize), DecoderError>
+		where
+			'a: 'view,
+	{
 		if !self.is_list() {
 			return Err(DecoderError::RlpExpectedToBeList);
 		}
@@ -211,11 +220,12 @@ impl<'a> Rlp<'a> {
 		let (bytes, consumed) = Rlp::consume_items(bytes, indexes_to_skip)?;
 
 		// update the cache
-		self.offset_cache.set(Some(OffsetCache::new(index, bytes_consumed + consumed)));
+		let offset = bytes_consumed + consumed;
+		self.offset_cache.set(Some(OffsetCache::new(index, offset)));
 
 		// construct new rlp
 		let found = BasicDecoder::payload_info(bytes)?;
-		Ok(Rlp::new(&bytes[0..found.header_len + found.value_len]))
+		Ok((Rlp::new(&bytes[0..found.header_len + found.value_len]), offset))
 	}
 
 	pub fn is_null(&self) -> bool {
