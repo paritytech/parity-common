@@ -15,13 +15,14 @@ matrix:
     - os: linux
       rust: nightly
     - os: osx
-      osx_image: xcode11
+      osx_image: xcode11.2
       install:
-        - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
         - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.1/install.sh | sh
         - source ~/.nvm/nvm.sh
         - nvm install v10.5
         - npm install -g chromedriver
+        - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        - which chromedriver
       rust: stable
   allow_failures:
     - rust: nightly
