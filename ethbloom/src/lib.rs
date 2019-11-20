@@ -93,7 +93,7 @@ impl<'a> From<Input<'a>> for Hash<'a> {
 				keccak256.update(raw);
 				keccak256.finalize(&mut out);
 				Hash::Owned(out)
-			},
+			}
 			Input::Hash(hash) => Hash::Ref(hash),
 		}
 	}
