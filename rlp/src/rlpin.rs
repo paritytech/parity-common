@@ -186,6 +186,9 @@ impl<'a> Rlp<'a> {
 		}
 	}
 
+	/// Returns an Rlp item in a list at the given index.
+	///
+	/// Returns an error if this Rlp is not a list or if the index is out of range.
 	pub fn at<'view>(&'view self, index: usize) -> Result<Rlp<'a>, DecoderError>
 	where
 		'a: 'view,
@@ -194,6 +197,10 @@ impl<'a> Rlp<'a> {
 		Ok(rlp)
 	}
 
+	/// Returns an Rlp item in a list at the given index along with the byte offset into the
+	/// raw data slice.
+	///
+	/// Returns an error if this Rlp is not a list or if the index is out of range.
 	pub fn at_with_offset<'view>(&'view self, index: usize)
 		-> Result<(Rlp<'a>, usize), DecoderError>
 		where
