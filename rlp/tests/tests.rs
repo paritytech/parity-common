@@ -54,6 +54,35 @@ fn rlp_at() {
 }
 
 #[test]
+fn rlp_at_with_offset() {
+	let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
+	{
+		let rlp = Rlp::new(&data);
+		assert!(rlp.is_list());
+		let animals: Vec<String> = rlp.as_list().unwrap();
+		assert_eq!(animals, vec!["cat".to_owned(), "dog".to_owned()]);
+
+		let (cat, cat_offset) = rlp.at_with_offset(0).unwrap();
+		assert!(cat.is_data());
+		assert_eq!(cat_offset, 1);
+		assert_eq!(cat.as_raw(), &[0x83, b'c', b'a', b't']);
+		assert_eq!(cat.as_val::<String>().unwrap(), "cat".to_owned());
+
+		let (dog, dog_offset) = rlp.at_with_offset(1).unwrap();
+		assert!(dog.is_data());
+		assert_eq!(dog_offset, 5);
+		assert_eq!(dog.as_raw(), &[0x83, b'd', b'o', b'g']);
+		assert_eq!(dog.as_val::<String>().unwrap(), "dog".to_owned());
+
+		let (cat_again, cat_offset) = rlp.at_with_offset(0).unwrap();
+		assert!(cat_again.is_data());
+		assert_eq!(cat_offset, 1);
+		assert_eq!(cat_again.as_raw(), &[0x83, b'c', b'a', b't']);
+		assert_eq!(cat_again.as_val::<String>().unwrap(), "cat".to_owned());
+	}
+}
+
+#[test]
 fn rlp_at_err() {
 	let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o'];
 	{
