@@ -68,8 +68,6 @@ pub struct CompactionProfile {
 	pub initial_file_size: u64,
 	/// block size
 	pub block_size: usize,
-	/// rate limiter for background flushes and compactions, bytes/sec, if any
-	pub write_rate_limit: Option<u64>,
 }
 
 impl Default for CompactionProfile {
@@ -143,7 +141,7 @@ impl CompactionProfile {
 
 	/// Default profile suitable for SSD storage
 	pub fn ssd() -> CompactionProfile {
-		CompactionProfile { initial_file_size: 64 * MB as u64, block_size: 16 * KB, write_rate_limit: None }
+		CompactionProfile { initial_file_size: 64 * MB as u64, block_size: 8 * MB }
 	}
 
 	/// Slow HDD compaction profile
@@ -151,7 +149,6 @@ impl CompactionProfile {
 		CompactionProfile {
 			initial_file_size: 256 * MB as u64,
 			block_size: 64 * KB,
-			write_rate_limit: Some(16 * MB as u64),
 		}
 	}
 }
@@ -298,9 +295,6 @@ impl Database {
 	pub fn open(config: &DatabaseConfig, path: &str) -> io::Result<Database> {
 		let mut opts = Options::new();
 
-		if let Some(rate_limit) = config.compaction.write_rate_limit {
-			opts.set_parsed_options(&format!("rate_limiter_bytes_per_sec={}", rate_limit)).map_err(other_io_err)?;
-		}
 		opts.set_use_fsync(false);
 		opts.create_if_missing(true);
 		opts.set_max_open_files(config.max_open_files);
