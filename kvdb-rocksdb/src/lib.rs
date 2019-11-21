@@ -62,9 +62,14 @@ enum KeyState {
 }
 
 /// Compaction profile for the database settings
+/// Note, that changing these parameters may trigger
+/// the compaction process of RocksDB on startup.
+/// https://github.com/facebook/rocksdb/wiki/Leveled-Compaction#level_compaction_dynamic_level_bytes-is-true
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct CompactionProfile {
 	/// L0-L1 target file size
+	/// The mimimum size should be calculated in accordance with the
+	/// number of levels and the expected size of the database.
 	pub initial_file_size: u64,
 	/// block size
 	pub block_size: usize,
