@@ -33,7 +33,7 @@ pub struct ReadGuardedIterator<'a, I, T> {
 // We can't implement `StableAddress` for a `RwLockReadGuard`
 // directly due to orphan rules.
 #[repr(transparent)]
-struct UnsafeStableAddress<T>(T);
+struct UnsafeStableAddress<'a, T>(RwLockReadGuard<'a, T>);
 
 impl<T: Deref> Deref for UnsafeStableAddress<T> {
 	type Target = T::Target;
@@ -43,7 +43,7 @@ impl<T: Deref> Deref for UnsafeStableAddress<T> {
 }
 
 // RwLockReadGuard dereferences to a stable address; qed
-unsafe impl<T: Deref> StableAddress for UnsafeStableAddress<T> {}
+unsafe impl<T> StableAddress for UnsafeStableAddress<T> {}
 
 struct DerefWrapper<T>(T);
 

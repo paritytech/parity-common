@@ -201,7 +201,7 @@ impl DBAndColumns {
 }
 
 // get column family configuration from database config.
-fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions) -> io::Result<Options> {
+fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions) -> Options {
 	let mut opts = Options::default();
 
 	opts.set_level_compaction_dynamic_level_bytes(true);
