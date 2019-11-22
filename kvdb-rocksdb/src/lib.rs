@@ -210,7 +210,7 @@ fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions) -> Option
 	opts.set_target_file_size_base(config.compaction.initial_file_size);
 	opts.set_compression_per_level(&[]);
 
-	Ok(opts)
+	opts
 }
 
 /// Key-Value database.
@@ -301,7 +301,7 @@ impl Database {
 		let cfnames: Vec<&str> = column_names.iter().map(|n| n as &str).collect();
 
 		for _ in 0..config.columns.unwrap_or(0) {
-			cf_options.push(col_config(&config, &block_opts)?);
+			cf_options.push(col_config(&config, &block_opts));
 		}
 
 		let write_opts = WriteOptions::new();
@@ -636,7 +636,7 @@ impl Database {
 			Some(DBAndColumns { ref mut db, ref mut column_names }) => {
 				let col = column_names.len() as u32;
 				let name = format!("col{}", col);
-				let _ = db.create_cf(&name, &col_config(&self.config, &self.block_opts)?).map_err(other_io_err)?;
+				let _ = db.create_cf(&name, &col_config(&self.config, &self.block_opts)).map_err(other_io_err)?;
 				column_names.push(name);
 				Ok(())
 			}

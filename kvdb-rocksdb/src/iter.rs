@@ -27,7 +27,7 @@ use std::ops::{Deref, DerefMut};
 pub type KeyValuePair = (Box<[u8]>, Box<[u8]>);
 
 pub struct ReadGuardedIterator<'a, I, T> {
-	inner: OwningHandle<UnsafeStableAddress<RwLockReadGuard<'a, Option<T>>>, DerefWrapper<Option<I>>>,
+	inner: OwningHandle<UnsafeStableAddress<'a, Option<T>>, DerefWrapper<Option<I>>>,
 }
 
 // We can't implement `StableAddress` for a `RwLockReadGuard`
@@ -35,15 +35,15 @@ pub struct ReadGuardedIterator<'a, I, T> {
 #[repr(transparent)]
 struct UnsafeStableAddress<'a, T>(RwLockReadGuard<'a, T>);
 
-impl<T: Deref> Deref for UnsafeStableAddress<T> {
-	type Target = T::Target;
+impl<'a, T> Deref for UnsafeStableAddress<'a, T> {
+	type Target = T;
 	fn deref(&self) -> &Self::Target {
 		self.0.deref()
 	}
 }
 
 // RwLockReadGuard dereferences to a stable address; qed
-unsafe impl<T> StableAddress for UnsafeStableAddress<T> {}
+unsafe impl<'a, T> StableAddress for UnsafeStableAddress<'a, T> {}
 
 struct DerefWrapper<T>(T);
 
