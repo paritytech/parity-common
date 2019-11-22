@@ -14,28 +14,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "std")]
-extern crate core;
-
-#[macro_use]
-extern crate uint;
-
-#[macro_use]
-extern crate fixed_hash;
-
-#[cfg(feature = "impl-serde")]
-#[macro_use]
-extern crate impl_serde;
-
-#[cfg(feature = "impl-codec")]
-#[macro_use]
-extern crate impl_codec;
-
-#[cfg(feature = "impl-rlp")]
-#[macro_use]
-extern crate impl_rlp;
-
 use core::convert::TryFrom;
+use fixed_hash::{construct_fixed_hash, impl_fixed_hash_conversions};
+use uint::{construct_uint, uint_full_mul_reg};
 
 /// Error type for conversion.
 #[derive(Debug, PartialEq, Eq)]
@@ -73,6 +54,7 @@ construct_fixed_hash! {
 #[cfg(feature = "impl-serde")]
 mod serde {
 	use super::*;
+	use impl_serde::{impl_fixed_hash_serde, impl_uint_serde};
 
 	impl_uint_serde!(U128, 2);
 	impl_uint_serde!(U256, 4);
@@ -86,6 +68,7 @@ mod serde {
 #[cfg(feature = "impl-codec")]
 mod codec {
 	use super::*;
+	use impl_codec::{impl_fixed_hash_codec, impl_uint_codec};
 
 	impl_uint_codec!(U128, 2);
 	impl_uint_codec!(U256, 4);
@@ -99,6 +82,7 @@ mod codec {
 #[cfg(feature = "impl-rlp")]
 mod rlp {
 	use super::*;
+	use impl_rlp::{impl_fixed_hash_rlp, impl_uint_rlp};
 
 	impl_uint_rlp!(U128, 2);
 	impl_uint_rlp!(U256, 4);

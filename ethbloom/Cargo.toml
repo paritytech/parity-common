@@ -10,7 +10,7 @@ repository = "https://github.com/paritytech/parity-common"
 edition = "2018"
 
 [dependencies]
-tiny-keccak = "1.5.0"
+tiny-keccak = { version = "2.0", features = ["keccak"] }
 crunchy = { version = "0.2.2", default-features = false, features = ["limit_256"] }
 fixed-hash = { path = "../fixed-hash", version = "0.5", default-features = false }
 impl-serde = { path = "../primitive-types/impls/serde", version = "0.2", default-features = false, optional = true }

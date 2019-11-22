@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use ethbloom::{Bloom, Input};
 use hex_literal::hex;
-use tiny_keccak::keccak256;
+use tiny_keccak::{Hasher, Keccak};
 
 fn test_bloom() -> Bloom {
 	use std::str::FromStr;
@@ -24,6 +24,14 @@ fn test_bloom() -> Bloom {
 		 00000000000000000000000000000000",
 	)
 	.unwrap()
+}
+
+fn keccak256(input: &[u8]) -> [u8; 32] {
+	let mut out = [0u8; 32];
+	let mut keccak256 = Keccak::v256();
+	keccak256.update(input);
+	keccak256.finalize(&mut out);
+	out
 }
 
 fn test_topic() -> Vec<u8> {
