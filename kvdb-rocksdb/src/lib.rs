@@ -390,9 +390,9 @@ impl Database {
 			flushing: RwLock::new((0..=columns).map(|_| HashMap::new()).collect()),
 			flushing_lock: Mutex::new(false),
 			path: path.to_owned(),
-			read_opts: read_opts.into(),
-			write_opts: write_opts.into(),
-			block_opts: block_opts.into(),
+			read_opts,
+			write_opts,
+			block_opts,
 		})
 	}
 
