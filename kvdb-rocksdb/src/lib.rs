@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
+// Copyright 2015-2019 Parity Technologies (UK) Ltd.
 // This file is part of Parity.
 
 // Parity is free software: you can redistribute it and/or modify
@@ -44,9 +44,17 @@ where
 	io::Error::new(io::ErrorKind::Other, e)
 }
 
+// Used for memory budget.
+type MiB = usize;
+
 const KB: usize = 1024;
 const MB: usize = 1024 * KB;
-const DB_DEFAULT_MEMORY_BUDGET_MB: usize = 128;
+
+/// The default column memory budget in MiB.
+pub const DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB: MiB = 128;
+
+/// The default memory budget in MiB.
+pub const DB_DEFAULT_MEMORY_BUDGET_MB: MiB = 512;
 
 enum KeyState {
 	Insert(DBValue),
@@ -54,14 +62,17 @@ enum KeyState {
 }
 
 /// Compaction profile for the database settings
+/// Note, that changing these parameters may trigger
+/// the compaction process of RocksDB on startup.
+/// https://github.com/facebook/rocksdb/wiki/Leveled-Compaction#level_compaction_dynamic_level_bytes-is-true
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct CompactionProfile {
 	/// L0-L1 target file size
+	/// The mimimum size should be calculated in accordance with the
+	/// number of levels and the expected size of the database.
 	pub initial_file_size: u64,
 	/// block size
 	pub block_size: usize,
-	/// rate limiter for background flushes and compactions, bytes/sec, if any
-	pub write_rate_limit: Option<u64>,
 }
 
 impl Default for CompactionProfile {
@@ -101,9 +112,10 @@ impl CompactionProfile {
 		let hdd_check_file = db_path
 			.to_str()
 			.and_then(|path_str| Command::new("df").arg(path_str).output().ok())
-			.and_then(|df_res| match df_res.status.success() {
-				true => Some(df_res.stdout),
-				false => None,
+			.and_then(|df_res| if df_res.status.success() {
+				Some(df_res.stdout)
+			} else {
+				None
 			})
 			.and_then(rotational_from_df_output);
 		// Read out the file and match compaction profile.
@@ -134,7 +146,7 @@ impl CompactionProfile {
 
 	/// Default profile suitable for SSD storage
 	pub fn ssd() -> CompactionProfile {
-		CompactionProfile { initial_file_size: 64 * MB as u64, block_size: 16 * KB, write_rate_limit: None }
+		CompactionProfile { initial_file_size: 64 * MB as u64, block_size: 8 * MB }
 	}
 
 	/// Slow HDD compaction profile
@@ -142,7 +154,6 @@ impl CompactionProfile {
 		CompactionProfile {
 			initial_file_size: 256 * MB as u64,
 			block_size: 64 * KB,
-			write_rate_limit: Some(16 * MB as u64),
 		}
 	}
 }
@@ -152,29 +163,53 @@ impl CompactionProfile {
 pub struct DatabaseConfig {
 	/// Max number of open files.
 	pub max_open_files: i32,
-	/// Memory budget (in MiB) used for setting block cache size, write buffer size.
-	pub memory_budget: Option<usize>,
-	/// Compaction profile
+	/// Memory budget (in MiB) used for setting block cache size and
+	/// write buffer size for each column including the default one.
+	/// If the memory budget of a column is not specified,
+	/// `DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB` is used for that column.
+	pub memory_budget: HashMap<Option<u32>, MiB>,
+	/// Compaction profile.
 	pub compaction: CompactionProfile,
-	/// Set number of columns
+	/// Set number of columns.
 	pub columns: Option<u32>,
+	/// Specify the maximum number of info/debug log files to be kept.
+	pub keep_log_file_num: i32,
 }
 
 impl DatabaseConfig {
 	/// Create new `DatabaseConfig` with default parameters and specified set of columns.
 	/// Note that cache sizes must be explicitly set.
 	pub fn with_columns(columns: Option<u32>) -> Self {
-		let mut config = Self::default();
-		config.columns = columns;
-		config
+		Self { columns, ..Default::default() }
 	}
 
-	pub fn memory_budget(&self) -> usize {
-		self.memory_budget.unwrap_or(DB_DEFAULT_MEMORY_BUDGET_MB) * MB
+	/// Returns the total memory budget in bytes.
+	pub fn memory_budget(&self) -> MiB {
+		if self.memory_budget.is_empty() && self.columns.is_none() {
+			return DB_DEFAULT_MEMORY_BUDGET_MB * MB;
+		}
+		(0..=self.columns.unwrap_or(0))
+			.map(|i| self.memory_budget.get(&i.checked_sub(1)).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
+			.sum()
 	}
 
-	pub fn memory_budget_per_col(&self) -> usize {
-		self.memory_budget() / self.columns.unwrap_or(1) as usize
+	/// Returns the memory budget of the specified column in bytes.
+	fn memory_budget_per_col(&self, col: Option<u32>) -> MiB {
+		self.memory_budget.get(&col).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
+	}
+
+	// Get column family configuration with the given block based options.
+	fn column_config(&self, block_opts: &BlockBasedOptions, col: Option<u32>) -> Options {
+		let memory_budget_per_col = self.memory_budget_per_col(col);
+		let mut opts = Options::default();
+
+		opts.set_level_compaction_dynamic_level_bytes(true);
+		opts.set_block_based_table_factory(block_opts);
+		opts.optimize_level_style_compaction(memory_budget_per_col);
+		opts.set_target_file_size_base(self.compaction.initial_file_size);
+		opts.set_compression_per_level(&[]);
+	
+		opts
 	}
 }
 
@@ -182,9 +217,10 @@ impl Default for DatabaseConfig {
 	fn default() -> DatabaseConfig {
 		DatabaseConfig {
 			max_open_files: 512,
-			memory_budget: None,
+			memory_budget: HashMap::new(),
 			compaction: CompactionProfile::default(),
 			columns: None,
+			keep_log_file_num: 1,
 		}
 	}
 }
@@ -198,19 +234,6 @@ impl DBAndColumns {
 	fn get_cf(&self, i: usize) -> &ColumnFamily {
 		self.db.cf_handle(&self.column_names[i]).expect("the specified column name is correct; qed")
 	}
-}
-
-// get column family configuration from database config.
-fn col_config(config: &DatabaseConfig, block_opts: &BlockBasedOptions) -> Options {
-	let mut opts = Options::default();
-
-	opts.set_level_compaction_dynamic_level_bytes(true);
-	opts.set_block_based_table_factory(block_opts);
-	opts.optimize_level_style_compaction(config.memory_budget_per_col());
-	opts.set_target_file_size_base(config.compaction.initial_file_size);
-	opts.set_compression_per_level(&[]);
-
-	opts
 }
 
 /// Key-Value database.
@@ -250,18 +273,41 @@ fn is_corrupted(err: &Error) -> bool {
 /// Generate the options for RocksDB, based on the given `DatabaseConfig`.
 fn generate_options(config: &DatabaseConfig) -> Options {
 	let mut opts = Options::default();
+	let columns = config.columns.unwrap_or(0);
 
-	//TODO: rate_limiter_bytes_per_sec={} was removed
+	if columns == 0 {
+		let budget = config.memory_budget() / 2;
+		opts.set_db_write_buffer_size(budget);
+		// from https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#memtable
+		// Memtable size is controlled by the option `write_buffer_size`.
+		// If you increase your memtable size, be sure to also increase your L1 size!
+		// L1 size is controlled by the option `max_bytes_for_level_base`.
+		opts.set_max_bytes_for_level_base(budget as u64);
+	}
 
 	opts.set_use_fsync(false);
 	opts.create_if_missing(true);
 	opts.set_max_open_files(config.max_open_files);
 	opts.set_bytes_per_sync(1 * MB as u64);
 	opts.set_keep_log_file_num(1);
-	opts.set_write_buffer_size(config.memory_budget_per_col() / 2);
 	opts.increase_parallelism(cmp::max(1, num_cpus::get() as i32 / 2));
 
 	opts
+}
+
+/// Generate the block based options for RocksDB, based on the given `DatabaseConfig`.
+fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
+	let mut block_opts = BlockBasedOptions::default();
+	block_opts.set_block_size(config.compaction.block_size);
+	// Set cache size as recommended by
+	// https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
+	let cache_size = config.memory_budget() / 3;
+	block_opts.set_lru_cache(cache_size);
+	block_opts.set_cache_index_and_filter_blocks(true);
+	block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
+	block_opts.set_bloom_filter(10, true);
+	
+	block_opts
 }
 
 impl Database {
@@ -274,18 +320,10 @@ impl Database {
 
 	/// Open database file. Creates if it does not exist.
 	pub fn open(config: &DatabaseConfig, path: &str) -> io::Result<Database> {
-		let mut block_opts = BlockBasedOptions::default();
-		block_opts.set_block_size(config.compaction.block_size);
-		// Set cache size as recommended by
-		// https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
-		let cache_size = config.memory_budget() / 3;
-		block_opts.set_lru_cache(cache_size);
-		block_opts.set_cache_index_and_filter_blocks(true);
-		block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
-		block_opts.set_bloom_filter(10, true);
-		
 		let opts = generate_options(config);
-		
+		let block_opts = generate_block_based_options(config);
+		let columns = config.columns.unwrap_or(0);
+
 		// attempt database repair if it has been previously marked as corrupted
 		let db_corrupted = Path::new(path).join(Database::CORRUPTION_FILE_NAME);
 		if db_corrupted.exists() {
@@ -294,14 +332,12 @@ impl Database {
 			fs::remove_file(db_corrupted)?;
 		}
 
-		let columns = config.columns.unwrap_or(0) as usize;
-
-		let mut cf_options = Vec::with_capacity(columns);
+		let mut cf_options = Vec::with_capacity(columns as usize);
 		let column_names: Vec<_> = (0..columns).map(|c| format!("col{}", c)).collect();
 		let cfnames: Vec<&str> = column_names.iter().map(|n| n as &str).collect();
 
-		for _ in 0..config.columns.unwrap_or(0) {
-			cf_options.push(col_config(&config, &block_opts));
+		for i in 0..columns {
+			cf_options.push(config.column_config(&block_opts, Some(i)));
 		}
 
 		let write_opts = WriteOptions::new();
@@ -344,10 +380,8 @@ impl Database {
 				if cfnames.is_empty() {
 					DB::open(&opts, path).map_err(other_io_err)?
 				} else {
+					// TODO: open_cf_descriptors
 					let db = DB::open_cf(&opts, path, &cfnames).map_err(other_io_err)?;
-					for name in cfnames {
-						let _ = db.cf_handle(name).expect("rocksdb opens a cf_handle for each cfname; qed");
-					}
 					db
 				}
 			}
@@ -636,7 +670,8 @@ impl Database {
 			Some(DBAndColumns { ref mut db, ref mut column_names }) => {
 				let col = column_names.len() as u32;
 				let name = format!("col{}", col);
-				let _ = db.create_cf(&name, &col_config(&self.config, &self.block_opts)).map_err(other_io_err)?;
+				let col_config = self.config.column_config(&self.block_opts, Some(col as u32));
+				let _ = db.create_cf(&name, &col_config).map_err(other_io_err)?;
 				column_names.push(name);
 				Ok(())
 			}
@@ -789,9 +824,9 @@ mod tests {
 			let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
 			assert_eq!(db.num_columns(), 0);
 
-			for i in 0..5 {
+			for i in 1..=5 {
 				db.add_column().unwrap();
-				assert_eq!(db.num_columns(), i + 1);
+				assert_eq!(db.num_columns(), i);
 			}
 		}
 
