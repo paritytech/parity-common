@@ -19,7 +19,9 @@ mod iter;
 use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, path::Path, result};
 
 use parking_lot::{Mutex, MutexGuard, RwLock};
-use rocksdb::{BlockBasedOptions, ColumnFamily, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB};
+use rocksdb::{
+	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB,
+};
 
 use crate::iter::KeyValuePair;
 use elastic_array::ElasticArray32;
@@ -112,11 +114,7 @@ impl CompactionProfile {
 		let hdd_check_file = db_path
 			.to_str()
 			.and_then(|path_str| Command::new("df").arg(path_str).output().ok())
-			.and_then(|df_res| if df_res.status.success() {
-				Some(df_res.stdout)
-			} else {
-				None
-			})
+			.and_then(|df_res| if df_res.status.success() { Some(df_res.stdout) } else { None })
 			.and_then(rotational_from_df_output);
 		// Read out the file and match compaction profile.
 		if let Some(hdd_check) = hdd_check_file {
@@ -151,10 +149,7 @@ impl CompactionProfile {
 
 	/// Slow HDD compaction profile
 	pub fn hdd() -> CompactionProfile {
-		CompactionProfile {
-			initial_file_size: 256 * MB as u64,
-			block_size: 64 * KB,
-		}
+		CompactionProfile { initial_file_size: 256 * MB as u64, block_size: 64 * KB }
 	}
 }
 
@@ -208,7 +203,7 @@ impl DatabaseConfig {
 		opts.optimize_level_style_compaction(memory_budget_per_col);
 		opts.set_target_file_size_base(self.compaction.initial_file_size);
 		opts.set_compression_per_level(&[]);
-	
+
 		opts
 	}
 }
@@ -306,7 +301,7 @@ fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
 	block_opts.set_cache_index_and_filter_blocks(true);
 	block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
 	block_opts.set_bloom_filter(10, true);
-	
+
 	block_opts
 }
 
@@ -332,43 +327,37 @@ impl Database {
 			fs::remove_file(db_corrupted)?;
 		}
 
-		let mut cf_options = Vec::with_capacity(columns as usize);
 		let column_names: Vec<_> = (0..columns).map(|c| format!("col{}", c)).collect();
-		let cfnames: Vec<&str> = column_names.iter().map(|n| n as &str).collect();
 
-		for i in 0..columns {
-			cf_options.push(config.column_config(&block_opts, Some(i)));
-		}
-
-		let write_opts = WriteOptions::new();
+		let write_opts = WriteOptions::default();
 		let mut read_opts = ReadOptions::default();
 		read_opts.set_prefix_same_as_start(true);
 		read_opts.set_verify_checksums(false);
 
-		let db = match config.columns {
-			Some(_) => {
-				match DB::open_cf(&opts, path, &cfnames) {
-					Ok(db) => {
-						for name in &cfnames {
-							let _ = db.cf_handle(name).expect("rocksdb opens a cf_handle for each cfname; qed");
-						}
-						Ok(db)
-					}
-					Err(_) => {
-						// retry and create CFs
-						match DB::open_cf(&opts, path, &[] as &[&str]) {
-							Ok(mut db) => {
-								for (i, name) in cfnames.iter().enumerate() {
-									let _ = db.create_cf(name, &cf_options[i]).map_err(other_io_err)?;
-								}
-								Ok(db)
+		let db = if config.columns.is_some() {
+			let cf_descriptors: Vec<_> = (0..columns)
+				.map(|i| {
+					ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, Some(i)))
+				})
+				.collect();
+
+			match DB::open_cf_descriptors(&opts, path, cf_descriptors) {
+				Err(_) => {
+					// retry and create CFs
+					match DB::open_cf(&opts, path, &[] as &[&str]) {
+						Ok(mut db) => {
+							for (i, name) in column_names.iter().enumerate() {
+								let _ = db.create_cf(name, &config.column_config(&block_opts, Some(i as u32))).map_err(other_io_err)?;
 							}
-							err => err,
+							Ok(db)
 						}
+						err => err,
 					}
 				}
+				ok => ok,
 			}
-			None => DB::open(&opts, path),
+		} else {
+			DB::open(&opts, path)
 		};
 
 		let db = match db {
@@ -377,22 +366,28 @@ impl Database {
 				warn!("DB corrupted: {}, attempting repair", s);
 				DB::repair(&opts, path).map_err(other_io_err)?;
 
-				if cfnames.is_empty() {
-					DB::open(&opts, path).map_err(other_io_err)?
+				if config.columns.is_some() {
+					let cf_descriptors: Vec<_> = (0..columns)
+						.map(|i| {
+							ColumnFamilyDescriptor::new(
+								&column_names[i as usize],
+								config.column_config(&block_opts, Some(i)),
+							)
+						})
+						.collect();
+
+					DB::open_cf_descriptors(&opts, path, cf_descriptors).map_err(other_io_err)?
 				} else {
-					// TODO: open_cf_descriptors
-					let db = DB::open_cf(&opts, path, &cfnames).map_err(other_io_err)?;
-					db
+					DB::open(&opts, path).map_err(other_io_err)?
 				}
 			}
 			Err(s) => return Err(other_io_err(s)),
 		};
-		let num_cols = column_names.len();
 		Ok(Database {
 			db: RwLock::new(Some(DBAndColumns { db, column_names })),
 			config: config.clone(),
-			overlay: RwLock::new((0..=num_cols).map(|_| HashMap::new()).collect()),
-			flushing: RwLock::new((0..=num_cols).map(|_| HashMap::new()).collect()),
+			overlay: RwLock::new((0..=columns).map(|_| HashMap::new()).collect()),
+			flushing: RwLock::new((0..=columns).map(|_| HashMap::new()).collect()),
 			flushing_lock: Mutex::new(false),
 			path: path.to_owned(),
 			read_opts: read_opts.into(),
@@ -842,11 +837,11 @@ mod tests {
 		let config = DatabaseConfig::default();
 		let config_5 = DatabaseConfig::with_columns(Some(5));
 
-		let tempdir = TempDir::new("").unwrap();
+		let tempdir = TempDir::new("drop_columns").unwrap();
 
 		// open 5, remove all.
 		{
-			let db = Database::open(&config_5, tempdir.path().to_str().unwrap()).unwrap();
+			let db = Database::open(&config_5, tempdir.path().to_str().unwrap()).expect("open with 5 columns");
 			assert_eq!(db.num_columns(), 5);
 
 			for i in (0..5).rev() {
