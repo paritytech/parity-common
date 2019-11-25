@@ -9,7 +9,6 @@ license = "GPL-3.0"
 readme = "README.md"
 homepage = "https://www.parity.io/"
 keywords = ["parity", "runtime", "tokio"]
-categories = ["embedded"]
 include = ["Cargo.toml", "src/**/*.rs", "README.md", "CHANGELOG.md"]
 
 [dependencies]
