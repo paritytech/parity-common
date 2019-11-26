@@ -201,10 +201,9 @@ impl<'a> Rlp<'a> {
 	/// raw data slice.
 	///
 	/// Returns an error if this Rlp is not a list or if the index is out of range.
-	pub fn at_with_offset<'view>(&'view self, index: usize)
-		-> Result<(Rlp<'a>, usize), DecoderError>
-		where
-			'a: 'view,
+	pub fn at_with_offset<'view>(&'view self, index: usize) -> Result<(Rlp<'a>, usize), DecoderError>
+	where
+		'a: 'view,
 	{
 		if !self.is_list() {
 			return Err(DecoderError::RlpExpectedToBeList);
