@@ -347,7 +347,9 @@ impl Database {
 					match DB::open_cf(&opts, path, &[] as &[&str]) {
 						Ok(mut db) => {
 							for (i, name) in column_names.iter().enumerate() {
-								let _ = db.create_cf(name, &config.column_config(&block_opts, Some(i as u32))).map_err(other_io_err)?;
+								let _ = db
+									.create_cf(name, &config.column_config(&block_opts, Some(i as u32)))
+									.map_err(other_io_err)?;
 							}
 							Ok(db)
 						}
