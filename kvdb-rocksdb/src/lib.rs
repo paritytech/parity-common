@@ -189,13 +189,13 @@ impl DatabaseConfig {
 	}
 
 	/// Returns the memory budget of the specified column in bytes.
-	fn memory_budget_per_col(&self, col: Option<u32>) -> MiB {
+	fn memory_budget_for_col(&self, col: Option<u32>) -> MiB {
 		self.memory_budget.get(&col).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
 	}
 
 	// Get column family configuration with the given block based options.
 	fn column_config(&self, block_opts: &BlockBasedOptions, col: Option<u32>) -> Options {
-		let memory_budget_per_col = self.memory_budget_per_col(col);
+		let memory_budget_per_col = self.memory_budget_for_col(col);
 		let mut opts = Options::default();
 
 		opts.set_level_compaction_dynamic_level_bytes(true);
@@ -874,5 +874,37 @@ mod tests {
 		db.write(batch).unwrap();
 
 		assert_eq!(db.get(None, b"foo").unwrap().unwrap().as_ref(), b"baz");
+	}
+
+	#[test]
+	fn default_memory_budget() {
+		let c = DatabaseConfig::default();
+		assert_eq!(c.columns, None);
+		assert_eq!(
+			c.memory_budget(),
+			DB_DEFAULT_MEMORY_BUDGET_MB * MB,
+			"total memory budget is default"
+		);
+		assert_eq!(
+			c.memory_budget_for_col(Some(0)),
+			DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB,
+			"total memory budget for column 0 is the default"
+		);
+		assert_eq!(
+			c.memory_budget_for_col(Some(999)),
+			DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB,
+			"total memory budget for any column is the default"
+		);
+	}
+
+	#[test]
+	fn memory_budget() {
+		let mut c = DatabaseConfig::with_columns(Some(3));
+		c.memory_budget = [
+			(0, 10),
+			(1, 15),
+			(2, 20),
+		].iter().cloned().map(|(c, b)| (Some(c), b)).collect();
+		assert_eq!(c.memory_budget(), 45 * MB, "total budget is the sum of the column budget");
 	}
 }
