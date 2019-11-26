@@ -112,11 +112,7 @@ impl CompactionProfile {
 		let hdd_check_file = db_path
 			.to_str()
 			.and_then(|path_str| Command::new("df").arg(path_str).output().ok())
-			.and_then(|df_res| if df_res.status.success() {
-				Some(df_res.stdout)
-			} else {
-				None
-			})
+			.and_then(|df_res| if df_res.status.success() { Some(df_res.stdout) } else { None })
 			.and_then(rotational_from_df_output);
 		// Read out the file and match compaction profile.
 		if let Some(hdd_check) = hdd_check_file {
@@ -151,10 +147,7 @@ impl CompactionProfile {
 
 	/// Slow HDD compaction profile
 	pub fn hdd() -> CompactionProfile {
-		CompactionProfile {
-			initial_file_size: 256 * MB as u64,
-			block_size: 64 * KB,
-		}
+		CompactionProfile { initial_file_size: 256 * MB as u64, block_size: 64 * KB }
 	}
 }
 
