@@ -238,7 +238,7 @@ impl<F: Future<Item = (), Error = ()> + Send + 'static> future::Executor<F> for 
 
 /// A handle to a runtime. Dropping the handle will cause runtime to shutdown.
 pub struct RuntimeHandle {
-	close: Option<futures::Complete<()>>,
+	close: Option<futures::sync::oneshot::Sender<()>>,
 	handle: Option<thread::JoinHandle<()>>
 }
 
