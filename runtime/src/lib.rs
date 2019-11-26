@@ -68,6 +68,7 @@ impl Runtime {
 	/// Spawns a new tokio runtime with a the specified thread count on a
 	/// background thread and returns a `Runtime` which can be used to spawn
 	/// tasks via its executor.
+	#[cfg(test)]
 	pub fn with_thread_count(thread_count: usize) -> Self {
 		let mut runtime_bldr = TokioRuntimeBuilder::new();
 		runtime_bldr.core_threads(thread_count);
@@ -76,7 +77,7 @@ impl Runtime {
 	}
 
 	/// Returns this runtime raw executor.
-	#[deprecated(note="Exists only to connect with current JSONRPC implementation")]
+	#[cfg(test)]
 	pub fn raw_executor(&self) -> TaskExecutor {
 		if let Mode::Tokio(ref executor) = self.executor.inner {
 			executor.clone()
