@@ -144,7 +144,7 @@ impl CompactionProfile {
 
 	/// Default profile suitable for SSD storage
 	pub fn ssd() -> CompactionProfile {
-		CompactionProfile { initial_file_size: 64 * MB as u64, block_size: 8 * MB }
+		CompactionProfile { initial_file_size: 64 * MB as u64, block_size: 64 * KB }
 	}
 
 	/// Slow HDD compaction profile
