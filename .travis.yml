@@ -22,7 +22,7 @@ matrix:
       install:
         - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.1/install.sh | sh
         - source ~/.nvm/nvm.sh
-        - nvm install v10.5
+        - nvm install --lts
         - npm install -g chromedriver
         - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
         - which chromedriver
