@@ -16,9 +16,6 @@
 
 //! Tokio Runtime wrapper.
 
-pub extern crate futures;
-pub extern crate tokio;
-
 use std::{fmt, thread};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
@@ -79,8 +76,7 @@ impl Runtime {
 	}
 
 	/// Returns this runtime raw executor.
-	///
-	/// Deprecated: Exists only to connect with current JSONRPC implementation.
+	#[deprecated(note="Exists only to connect with current JSONRPC implementation")]
 	pub fn raw_executor(&self) -> TaskExecutor {
 		if let Mode::Tokio(ref executor) = self.executor.inner {
 			executor.clone()
@@ -140,8 +136,7 @@ pub struct Executor {
 
 impl Executor {
 	/// Executor for existing runtime.
-	///
-	/// Deprecated: Exists only to connect with current JSONRPC implementation.
+	#[deprecated(note="Exists only to connect with current JSONRPC implementation")]
 	pub fn new(executor: TaskExecutor) -> Self {
 		Executor {
 			inner: Mode::Tokio(executor),
@@ -162,7 +157,7 @@ impl Executor {
 		}
 	}
 
-	/// Spawn a future to this runtime
+	/// Spawn a future on this runtime
 	pub fn spawn<R>(&self, r: R) where
 		R: IntoFuture<Item=(), Error=()> + Send + 'static,
 		R::Future: Send + 'static,
@@ -180,7 +175,7 @@ impl Executor {
 		}
 	}
 
-	/// Spawn a new future returned by given closure.
+	/// Spawn a new future returned by the given closure.
 	pub fn spawn_fn<F, R>(&self, f: F) where
 		F: FnOnce() -> R + Send + 'static,
 		R: IntoFuture<Item=(), Error=()> + Send + 'static,

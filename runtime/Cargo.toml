@@ -1,5 +1,5 @@
 [package]
-name = "parity-ethereum-runtime"
+name = "parity-runtime"
 version = "0.1.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
