@@ -70,7 +70,7 @@ enum KeyState {
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct CompactionProfile {
 	/// L0-L1 target file size
-	/// The mimimum size should be calculated in accordance with the
+	/// The minimum size should be calculated in accordance with the
 	/// number of levels and the expected size of the database.
 	pub initial_file_size: u64,
 	/// block size
@@ -195,12 +195,12 @@ impl DatabaseConfig {
 
 	// Get column family configuration with the given block based options.
 	fn column_config(&self, block_opts: &BlockBasedOptions, col: Option<u32>) -> Options {
-		let memory_budget_per_col = self.memory_budget_for_col(col);
+		let column_mem_budget = self.memory_budget_for_col(col);
 		let mut opts = Options::default();
 
 		opts.set_level_compaction_dynamic_level_bytes(true);
 		opts.set_block_based_table_factory(block_opts);
-		opts.optimize_level_style_compaction(memory_budget_per_col);
+		opts.optimize_level_style_compaction(column_mem_budget);
 		opts.set_target_file_size_base(self.compaction.initial_file_size);
 		opts.set_compression_per_level(&[]);
 
@@ -298,7 +298,10 @@ fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
 	// https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
 	let cache_size = config.memory_budget() / 3;
 	block_opts.set_lru_cache(cache_size);
+	// "index and filter blocks will be stored in block cache, together with all other data blocks."
+	// See: https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#indexes-and-filter-blocks
 	block_opts.set_cache_index_and_filter_blocks(true);
+	// Don't evict L0 filter/index blocks from the cache
 	block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
 	block_opts.set_bloom_filter(10, true);
 
@@ -730,6 +733,7 @@ impl Drop for Database {
 mod tests {
 	use super::*;
 	use ethereum_types::H256;
+	use std::io::Read;
 	use std::str::FromStr;
 	use tempdir::TempDir;
 
@@ -880,11 +884,7 @@ mod tests {
 	fn default_memory_budget() {
 		let c = DatabaseConfig::default();
 		assert_eq!(c.columns, None);
-		assert_eq!(
-			c.memory_budget(),
-			DB_DEFAULT_MEMORY_BUDGET_MB * MB,
-			"total memory budget is default"
-		);
+		assert_eq!(c.memory_budget(), DB_DEFAULT_MEMORY_BUDGET_MB * MB, "total memory budget is default");
 		assert_eq!(
 			c.memory_budget_for_col(Some(0)),
 			DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB,
@@ -900,11 +900,77 @@ mod tests {
 	#[test]
 	fn memory_budget() {
 		let mut c = DatabaseConfig::with_columns(Some(3));
-		c.memory_budget = [
-			(0, 10),
-			(1, 15),
-			(2, 20),
-		].iter().cloned().map(|(c, b)| (Some(c), b)).collect();
-		assert_eq!(c.memory_budget(), 45 * MB, "total budget is the sum of the column budget");
+		c.memory_budget = [(0, 10), (1, 15), (2, 20)].iter().cloned().map(|(c, b)| (Some(c), b)).collect();
+		assert_eq!(
+			c.memory_budget(),
+			45 * MB + DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB,
+			"total budget is the sum of the column budget plus the default mem budget for the default column"
+		);
+	}
+
+	#[test]
+	fn rocksdb_settings() {
+		const NUM_COLS: usize = 2;
+		let mut cfg = DatabaseConfig::with_columns(Some(NUM_COLS as u32));
+		cfg.max_open_files = 12345;
+		cfg.compaction.block_size = 323232;
+		cfg.compaction.initial_file_size = 102030;
+		cfg.memory_budget = [(0, 30), (1, 300)].iter().cloned().map(|(c, b)| (Some(c), b)).collect();
+
+		let db_path = TempDir::new("config_test").expect("the OS can create tmp dirs");
+		let _db = Database::open(&cfg, db_path.path().to_str().unwrap()).expect("can open a db");
+		let mut rocksdb_log = std::fs::File::open(format!("{}/LOG", db_path.path().to_str().unwrap()))
+			.expect("rocksdb creates a LOG file");
+		let mut settings = String::new();
+		rocksdb_log.read_to_string(&mut settings).unwrap();
+		// Check column count
+		assert!(settings.contains("Options for column family [default]"), "no default col");
+		assert!(settings.contains("Options for column family [col0]"), "no col0");
+		assert!(settings.contains("Options for column family [col1]"), "no col1");
+
+		// Check max_open_files
+		assert!(settings.contains("max_open_files: 12345"));
+
+		// Check block size
+		assert!(settings.contains(" block_size: 323232"));
+
+		// LRU cache (default column)
+		assert!(settings.contains("block_cache_options:\n    capacity : 8388608"));
+		// LRU cache for non-default columns is ⅓ of memory budget (including default column)
+		let lru_size = (330 * MB + DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB) / 3;
+		let needle = format!("block_cache_options:\n    capacity : {}", lru_size);
+		let lru = settings.match_indices(&needle).collect::<Vec<_>>().len();
+		assert_eq!(lru, NUM_COLS);
+
+		// Index/filters share cache
+		let include_indexes = settings.matches("cache_index_and_filter_blocks: 1").collect::<Vec<_>>().len();
+		assert_eq!(include_indexes, NUM_COLS);
+		// Pin index/filters on L0
+		let pins = settings.matches("pin_l0_filter_and_index_blocks_in_cache: 1").collect::<Vec<_>>().len();
+		assert_eq!(pins, NUM_COLS);
+
+		// Check target file size, aka initial file size
+		let l0_sizes = settings.matches("target_file_size_base: 102030").collect::<Vec<_>>().len();
+		assert_eq!(l0_sizes, NUM_COLS);
+		// The default column uses the default of 64Mb regardless of the setting.
+		assert!(settings.contains("target_file_size_base: 67108864"));
+
+		// Check compression settings
+		let snappy_compression = settings.matches("Options.compression: Snappy").collect::<Vec<_>>().len();
+		// All columns use Snappy
+		assert_eq!(snappy_compression, NUM_COLS + 1);
+		// …even for L7
+		let snappy_bottommost = settings.matches("Options.bottommost_compression: Disabled").collect::<Vec<_>>().len();
+		assert_eq!(snappy_bottommost, NUM_COLS + 1);
+
+		// 7 levels
+		let levels = settings.matches("Options.num_levels: 7").collect::<Vec<_>>().len();
+		assert_eq!(levels, NUM_COLS + 1);
+
+		// Don't fsync every store
+		assert!(settings.contains("Options.use_fsync: 0"));
+
+		// We're using the old format
+		assert!(settings.contains("format_version: 2"));
 	}
 }
