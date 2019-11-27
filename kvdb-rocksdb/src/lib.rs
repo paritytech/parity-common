@@ -180,21 +180,23 @@ impl DatabaseConfig {
 
 	/// Returns the total memory budget in bytes.
 	pub fn memory_budget(&self) -> MiB {
-		if self.memory_budget.is_empty() && self.columns.is_none() {
-			return DB_DEFAULT_MEMORY_BUDGET_MB * MB;
+		match self.columns {
+			None => self.memory_budget.get(&None).unwrap_or(&DB_DEFAULT_MEMORY_BUDGET_MB) * MB,
+			Some(columns) => {
+				(0..columns)
+					.map(|i| self.memory_budget.get(&Some(i)).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
+					.sum()
+			}
 		}
-		(0..=self.columns.unwrap_or(0))
-			.map(|i| self.memory_budget.get(&i.checked_sub(1)).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
-			.sum()
 	}
 
 	/// Returns the memory budget of the specified column in bytes.
-	fn memory_budget_for_col(&self, col: Option<u32>) -> MiB {
-		self.memory_budget.get(&col).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
+	fn memory_budget_for_col(&self, col: u32) -> MiB {
+		self.memory_budget.get(&Some(col)).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
 	}
 
 	// Get column family configuration with the given block based options.
-	fn column_config(&self, block_opts: &BlockBasedOptions, col: Option<u32>) -> Options {
+	fn column_config(&self, block_opts: &BlockBasedOptions, col: u32) -> Options {
 		let column_mem_budget = self.memory_budget_for_col(col);
 		let mut opts = Options::default();
 
@@ -322,6 +324,10 @@ impl Database {
 		let block_opts = generate_block_based_options(config);
 		let columns = config.columns.unwrap_or(0);
 
+		if config.columns.is_some() && config.memory_budget.contains_key(&None) {
+			warn!("Memory budget for the default column (None) is ignored if columns.is_some()");
+		}
+
 		// attempt database repair if it has been previously marked as corrupted
 		let db_corrupted = Path::new(path).join(Database::CORRUPTION_FILE_NAME);
 		if db_corrupted.exists() {
@@ -340,7 +346,7 @@ impl Database {
 		let db = if config.columns.is_some() {
 			let cf_descriptors: Vec<_> = (0..columns)
 				.map(|i| {
-					ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, Some(i)))
+					ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, i))
 				})
 				.collect();
 
@@ -351,7 +357,7 @@ impl Database {
 						Ok(mut db) => {
 							for (i, name) in column_names.iter().enumerate() {
 								let _ = db
-									.create_cf(name, &config.column_config(&block_opts, Some(i as u32)))
+									.create_cf(name, &config.column_config(&block_opts, i as u32))
 									.map_err(other_io_err)?;
 							}
 							Ok(db)
@@ -376,7 +382,7 @@ impl Database {
 						.map(|i| {
 							ColumnFamilyDescriptor::new(
 								&column_names[i as usize],
-								config.column_config(&block_opts, Some(i)),
+								config.column_config(&block_opts, i),
 							)
 						})
 						.collect();
@@ -670,7 +676,7 @@ impl Database {
 			Some(DBAndColumns { ref mut db, ref mut column_names }) => {
 				let col = column_names.len() as u32;
 				let name = format!("col{}", col);
-				let col_config = self.config.column_config(&self.block_opts, Some(col as u32));
+				let col_config = self.config.column_config(&self.block_opts, col as u32);
 				let _ = db.create_cf(&name, &col_config).map_err(other_io_err)?;
 				column_names.push(name);
 				Ok(())
@@ -886,12 +892,12 @@ mod tests {
 		assert_eq!(c.columns, None);
 		assert_eq!(c.memory_budget(), DB_DEFAULT_MEMORY_BUDGET_MB * MB, "total memory budget is default");
 		assert_eq!(
-			c.memory_budget_for_col(Some(0)),
+			c.memory_budget_for_col(0),
 			DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB,
 			"total memory budget for column 0 is the default"
 		);
 		assert_eq!(
-			c.memory_budget_for_col(Some(999)),
+			c.memory_budget_for_col(999),
 			DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB,
 			"total memory budget for any column is the default"
 		);
@@ -900,19 +906,19 @@ mod tests {
 	#[test]
 	fn memory_budget() {
 		let mut c = DatabaseConfig::with_columns(Some(3));
-		c.memory_budget = [(0, 10), (1, 15), (2, 20)].iter().cloned().map(|(c, b)| (Some(c), b)).collect();
-		assert_eq!(
-			c.memory_budget(),
-			45 * MB + DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB,
-			"total budget is the sum of the column budget plus the default mem budget for the default column"
-		);
+		c.memory_budget = [
+			(0, 10),
+			(1, 15),
+			(2, 20),
+		].iter().cloned().map(|(c, b)| (Some(c), b)).collect();
+		assert_eq!(c.memory_budget(), 45 * MB, "total budget is the sum of the column budget");
 	}
 
 	#[test]
 	fn rocksdb_settings() {
 		const NUM_COLS: usize = 2;
 		let mut cfg = DatabaseConfig::with_columns(Some(NUM_COLS as u32));
-		cfg.max_open_files = 12345;
+		cfg.max_open_files = 999; // is capped OS fd limit (typically 1024)
 		cfg.compaction.block_size = 323232;
 		cfg.compaction.initial_file_size = 102030;
 		cfg.memory_budget = [(0, 30), (1, 300)].iter().cloned().map(|(c, b)| (Some(c), b)).collect();
@@ -929,7 +935,7 @@ mod tests {
 		assert!(settings.contains("Options for column family [col1]"), "no col1");
 
 		// Check max_open_files
-		assert!(settings.contains("max_open_files: 12345"));
+		assert!(settings.contains("max_open_files: 999"));
 
 		// Check block size
 		assert!(settings.contains(" block_size: 323232"));
@@ -937,7 +943,7 @@ mod tests {
 		// LRU cache (default column)
 		assert!(settings.contains("block_cache_options:\n    capacity : 8388608"));
 		// LRU cache for non-default columns is ⅓ of memory budget (including default column)
-		let lru_size = (330 * MB + DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB) / 3;
+		let lru_size = (330 * MB) / 3;
 		let needle = format!("block_cache_options:\n    capacity : {}", lru_size);
 		let lru = settings.match_indices(&needle).collect::<Vec<_>>().len();
 		assert_eq!(lru, NUM_COLS);
