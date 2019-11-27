@@ -182,11 +182,9 @@ impl DatabaseConfig {
 	pub fn memory_budget(&self) -> MiB {
 		match self.columns {
 			None => self.memory_budget.get(&None).unwrap_or(&DB_DEFAULT_MEMORY_BUDGET_MB) * MB,
-			Some(columns) => {
-				(0..columns)
-					.map(|i| self.memory_budget.get(&Some(i)).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
-					.sum()
-			}
+			Some(columns) => (0..columns)
+				.map(|i| self.memory_budget.get(&Some(i)).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
+				.sum(),
 		}
 	}
 
@@ -345,9 +343,7 @@ impl Database {
 
 		let db = if config.columns.is_some() {
 			let cf_descriptors: Vec<_> = (0..columns)
-				.map(|i| {
-					ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, i))
-				})
+				.map(|i| ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, i)))
 				.collect();
 
 			match DB::open_cf_descriptors(&opts, path, cf_descriptors) {
@@ -380,10 +376,7 @@ impl Database {
 				if config.columns.is_some() {
 					let cf_descriptors: Vec<_> = (0..columns)
 						.map(|i| {
-							ColumnFamilyDescriptor::new(
-								&column_names[i as usize],
-								config.column_config(&block_opts, i),
-							)
+							ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, i))
 						})
 						.collect();
 
@@ -906,11 +899,7 @@ mod tests {
 	#[test]
 	fn memory_budget() {
 		let mut c = DatabaseConfig::with_columns(Some(3));
-		c.memory_budget = [
-			(0, 10),
-			(1, 15),
-			(2, 20),
-		].iter().cloned().map(|(c, b)| (Some(c), b)).collect();
+		c.memory_budget = [(0, 10), (1, 15), (2, 20)].iter().cloned().map(|(c, b)| (Some(c), b)).collect();
 		assert_eq!(c.memory_budget(), 45 * MB, "total budget is the sum of the column budget");
 	}
 
@@ -918,7 +907,7 @@ mod tests {
 	fn rocksdb_settings() {
 		const NUM_COLS: usize = 2;
 		let mut cfg = DatabaseConfig::with_columns(Some(NUM_COLS as u32));
-		cfg.max_open_files = 999; // is capped OS fd limit (typically 1024)
+		cfg.max_open_files = 123; // is capped by the OS fd limit (typically 1024)
 		cfg.compaction.block_size = 323232;
 		cfg.compaction.initial_file_size = 102030;
 		cfg.memory_budget = [(0, 30), (1, 300)].iter().cloned().map(|(c, b)| (Some(c), b)).collect();
@@ -935,7 +924,7 @@ mod tests {
 		assert!(settings.contains("Options for column family [col1]"), "no col1");
 
 		// Check max_open_files
-		assert!(settings.contains("max_open_files: 999"));
+		assert!(settings.contains("max_open_files: 123"));
 
 		// Check block size
 		assert!(settings.contains(" block_size: 323232"));
