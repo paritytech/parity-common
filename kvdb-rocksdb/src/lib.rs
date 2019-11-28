@@ -762,7 +762,7 @@ mod tests {
 		assert_eq!(&*contents[1].0, key2.as_bytes());
 		assert_eq!(&*contents[1].1, b"dog");
 
-		let mut prefix_iter = db.iter_from_prefix(None, &[0x04,0xc0]);
+		let mut prefix_iter = db.iter_from_prefix(None, &[0x04, 0xc0]);
 		assert_eq!(*prefix_iter.next().unwrap().1, b"caterpillar"[..]);
 		assert_eq!(*prefix_iter.next().unwrap().1, b"beef"[..]);
 		assert_eq!(*prefix_iter.next().unwrap().1, b"fish"[..]);
