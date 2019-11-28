@@ -28,8 +28,6 @@ use kvdb::{DBTransaction, DBValue};
 use kvdb_memorydb::{self as in_memory, InMemory};
 use send_wrapper::SendWrapper;
 use std::io;
-use std::rc::Rc;
-use std::sync::Mutex;
 
 pub use error::Error;
 pub use kvdb::KeyValueDB;
@@ -44,7 +42,7 @@ pub struct Database {
 	version: u32,
 	columns: u32,
 	in_memory: InMemory,
-	indexed_db: Mutex<SendWrapper<IdbDatabase>>,
+	indexed_db: SendWrapper<IdbDatabase>,
 }
 
 // The default column is represented as `None`.
@@ -57,71 +55,38 @@ fn number_to_column(col: u32) -> Column {
 impl Database {
 	/// Opens the database with the given name,
 	/// and the specified number of columns (not including the default one).
-	pub fn open(name: String, columns: u32) -> impl Future<Output = Result<Database, error::Error>> {
-		// let's try to open the latest version of the db first
-		let open_request = indexed_db::open(name.as_str(), None, columns);
+	pub async fn open(name: String, columns: u32) -> Result<Database, error::Error> {
 		let name_clone = name.clone();
-		open_request
-			.then(move |db| {
-				let db = match db {
-					Ok(db) => db,
-					Err(err) => return future::Either::Right(future::err(err)),
-				};
+		// let's try to open the latest version of the db first
+		let db = indexed_db::open(name.as_str(), None, columns).await?;
 
-				// If we need more column than the latest version has,
-				// then bump the version (+ 1 for the default column).
-				// In order to bump the version, we close the database
-				// and reopen it with a higher version than it was opened with previously.
-				// cf. https://github.com/paritytech/parity-common/pull/202#discussion_r321221751
-				if columns + 1 > db.columns {
-					let next_version = db.version + 1;
-					drop(db);
-					future::Either::Left(indexed_db::open(name.as_str(), Some(next_version), columns).boxed())
-				} else {
-					future::Either::Left(future::ok(db).boxed())
-				}
-				// populate the in_memory db from the IndexedDB
-			})
-			.then(move |db| {
-				let db = match db {
-					Ok(db) => db,
-					Err(err) => return future::Either::Right(future::err(err)),
-				};
-
-				let indexed_db::IndexedDB { version, inner, .. } = db;
-				let rc = Rc::new(inner.take());
-				let weak = Rc::downgrade(&rc);
-				// read the columns from the IndexedDB
-				future::Either::Left(
-					stream::iter(0..=columns)
-						.map(move |n| {
-							let db = weak.upgrade().expect("rc should live at least as long; qed");
-							indexed_db::idb_cursor(&db, n).fold(DBTransaction::new(), move |mut txn, (key, value)| {
-								let column = number_to_column(n);
-								txn.put_vec(column, key.as_ref(), value);
-								future::ready(txn)
-							})
-							// write each column into memory
-						})
-						.fold(in_memory::create(columns), |m, txn| {
-							txn.then(|txn| {
-								m.write_buffered(txn);
-								future::ready(m)
-							})
-						})
-						.then(move |in_memory| {
-							future::ok(Database {
-								name: name_clone,
-								version,
-								columns,
-								in_memory,
-								indexed_db: Mutex::new(SendWrapper::new(
-									Rc::try_unwrap(rc).expect("should have only 1 ref at this point; qed"),
-								)),
-							})
-						}),
-				)
-			})
+		// If we need more column than the latest version has,
+		// then bump the version (+ 1 for the default column).
+		// In order to bump the version, we close the database
+		// and reopen it with a higher version than it was opened with previously.
+		// cf. https://github.com/paritytech/parity-common/pull/202#discussion_r321221751
+		let db = if columns + 1 > db.columns {
+			let next_version = db.version + 1;
+			drop(db);
+			indexed_db::open(name.as_str(), Some(next_version), columns).await?
+		} else {
+			db
+		};
+		// populate the in_memory db from the IndexedDB
+		let indexed_db::IndexedDB { version, inner, .. } = db;
+		let in_memory = in_memory::create(columns);
+		// read the columns from the IndexedDB
+		for n in 0..=columns {
+			let column = number_to_column(n);
+			let mut txn = DBTransaction::new();
+			let mut stream = indexed_db::idb_cursor(&*inner, n);
+			while let Some((key, value)) = stream.next().await {
+				txn.put_vec(column, key.as_ref(), value);
+			}
+			// write each column into memory
+			in_memory.write_buffered(txn);
+		}
+		Ok(Database { name: name_clone, version, columns, in_memory, indexed_db: inner })
 	}
 
 	/// Get the database name.
@@ -137,9 +102,7 @@ impl Database {
 
 impl Drop for Database {
 	fn drop(&mut self) {
-		if let Ok(db) = self.indexed_db.lock() {
-			db.close();
-		}
+		self.indexed_db.close();
 	}
 }
 
@@ -153,9 +116,7 @@ impl KeyValueDB for Database {
 	}
 
 	fn write_buffered(&self, transaction: DBTransaction) {
-		if let Ok(guard) = self.indexed_db.lock() {
-			let _ = indexed_db::idb_commit_transaction(&*guard, &transaction, self.columns);
-		}
+		let _ = indexed_db::idb_commit_transaction(&*self.indexed_db, &transaction, self.columns);
 		self.in_memory.write_buffered(transaction);
 	}
 
