@@ -24,8 +24,10 @@ use parking_lot::RwLockReadGuard;
 use rocksdb::{DBIterator, Direction, IteratorMode};
 use std::ops::{Deref, DerefMut};
 
+/// A tuple holding key and value data, used as the iterator item type.
 pub type KeyValuePair = (Box<[u8]>, Box<[u8]>);
 
+/// Iterator with built-in synchronization.
 pub struct ReadGuardedIterator<'a, I, T> {
 	inner: OwningHandle<UnsafeStableAddress<'a, Option<T>>, DerefWrapper<Option<I>>>,
 }
@@ -68,10 +70,15 @@ impl<'a, I: Iterator, T> Iterator for ReadGuardedIterator<'a, I, T> {
 	}
 }
 
+/// Instantiate iterators yielding `KeyValuePair`s.
 pub trait IterationHandler {
 	type Iterator: Iterator<Item = KeyValuePair>;
 
+	/// Create an `Iterator` over the default DB column or over a `ColumnFamily` if a column number
+	/// is passed.
 	fn iter(&self, col: Option<u32>) -> Self::Iterator;
+	/// Create an `Iterator` over the default DB column or over a `ColumnFamily` if a column number
+	/// is passed. The iterator starts from the first key having the provided `prefix`.
 	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Self::Iterator;
 }
 
@@ -80,21 +87,21 @@ where
 	&'a T: IterationHandler,
 {
 	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: Option<u32>) -> Self {
-		Self {
-			inner: OwningHandle::new_with_fn(UnsafeStableAddress(read_lock), move |rlock| {
-				let rlock = unsafe { rlock.as_ref().expect("initialized as non-null; qed") };
-				DerefWrapper(rlock.as_ref().map(|db| db.iter(col)))
-			}),
-		}
+		Self { inner: Self::new_inner(read_lock, |db| db.iter(col)) }
 	}
 
 	pub fn new_from_prefix(read_lock: RwLockReadGuard<'a, Option<T>>, col: Option<u32>, prefix: &[u8]) -> Self {
-		Self {
-			inner: OwningHandle::new_with_fn(UnsafeStableAddress(read_lock), move |rlock| {
-				let rlock = unsafe { rlock.as_ref().expect("initialized as non-null; qed") };
-				DerefWrapper(rlock.as_ref().map(|db| db.iter_from_prefix(col, prefix)))
-			}),
-		}
+		Self { inner: Self::new_inner(read_lock, |db| db.iter_from_prefix(col, prefix)) }
+	}
+
+	fn new_inner(
+		rlock: RwLockReadGuard<'a, Option<T>>,
+		f: impl FnOnce(&'a T) -> <&'a T as IterationHandler>::Iterator,
+	) -> OwningHandle<UnsafeStableAddress<'a, Option<T>>, DerefWrapper<Option<<&'a T as IterationHandler>::Iterator>>> {
+		OwningHandle::new_with_fn(UnsafeStableAddress(rlock), move |rlock| {
+			let rlock = unsafe { rlock.as_ref().expect("initialized as non-null; qed") };
+			DerefWrapper(rlock.as_ref().map(f))
+		})
 	}
 }
 
