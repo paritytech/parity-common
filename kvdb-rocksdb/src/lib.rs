@@ -741,9 +741,9 @@ mod tests {
 		let db = Database::open(config, tempdir.path().to_str().unwrap()).unwrap();
 		let key1 = H256::from_str("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
 		let key2 = H256::from_str("03c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
-		let key3 = H256::from_str("04c60000000b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
-		let key4 = H256::from_str("04c71111110b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
-		let key5 = H256::from_str("04c82222220b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
+		let key3 = H256::from_str("04c00000000b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
+		let key4 = H256::from_str("04c01111110b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
+		let key5 = H256::from_str("04c02222220b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
 
 		let mut batch = db.transaction();
 		batch.put(None, key1.as_bytes(), b"cat");
@@ -762,7 +762,7 @@ mod tests {
 		assert_eq!(&*contents[1].0, key2.as_bytes());
 		assert_eq!(&*contents[1].1, b"dog");
 
-		let mut prefix_iter = db.iter_from_prefix(None, &key3.as_bytes()[..2]);
+		let mut prefix_iter = db.iter_from_prefix(None, &[0x04,0xc0]);
 		assert_eq!(*prefix_iter.next().unwrap().1, b"caterpillar"[..]);
 		assert_eq!(*prefix_iter.next().unwrap().1, b"beef"[..]);
 		assert_eq!(*prefix_iter.next().unwrap().1, b"fish"[..]);
