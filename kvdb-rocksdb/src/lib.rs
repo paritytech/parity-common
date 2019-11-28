@@ -338,7 +338,6 @@ impl Database {
 
 		let write_opts = WriteOptions::default();
 		let mut read_opts = ReadOptions::default();
-		read_opts.set_prefix_same_as_start(true);
 		read_opts.set_verify_checksums(false);
 
 		let db = if config.columns.is_some() {
@@ -585,7 +584,7 @@ impl Database {
 	fn iter_from_prefix<'a>(
 		&'a self,
 		col: Option<u32>,
-		prefix: &[u8],
+		prefix: &'a [u8],
 	) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
 		let read_lock = self.db.read();
 		let optional = if read_lock.is_some() {
@@ -594,7 +593,8 @@ impl Database {
 		} else {
 			None
 		};
-		optional.into_iter().flat_map(identity)
+		// workaround for https://github.com/facebook/rocksdb/issues/2343
+		optional.into_iter().flat_map(identity).filter(move |(k, _)| k.starts_with(prefix))
 	}
 
 	/// Close the database
@@ -906,11 +906,9 @@ mod tests {
 		assert_eq!(contents.len(), 0);
 
 		// prefix 0
-		// let contents: Vec<_> = db.iter_from_prefix(None, b"0").into_iter().collect();
-		// assert_eq!(contents.len(), 1);
-		// TODO: this fails:         ^^
-		
-		// assert_eq!(&*contents[0].0, key1);
+		let contents: Vec<_> = db.iter_from_prefix(None, b"0").into_iter().collect();
+		assert_eq!(contents.len(), 1);
+		assert_eq!(&*contents[0].0, key1);
 	}
 
 	#[test]
