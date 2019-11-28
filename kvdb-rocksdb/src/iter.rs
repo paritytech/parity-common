@@ -21,7 +21,7 @@
 use crate::DBAndColumns;
 use owning_ref::{OwningHandle, StableAddress};
 use parking_lot::RwLockReadGuard;
-use rocksdb::{DBIterator, Direction, IteratorMode};
+use rocksdb::{DBIterator, IteratorMode};
 use std::ops::{Deref, DerefMut};
 
 /// A tuple holding key and value data, used as the iterator item type.
@@ -121,12 +121,8 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 
 	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Self::Iterator {
 		col.map_or_else(
-			|| self.db.iterator(IteratorMode::From(prefix, Direction::Forward)),
-			|c| {
-				self.db
-					.iterator_cf(self.get_cf(c as usize), IteratorMode::From(prefix, Direction::Forward))
-					.expect("iterator params are valid; qed")
-			},
+			|| self.db.prefix_iterator(prefix),
+			|c| self.db.prefix_iterator_cf(self.get_cf(c as usize), prefix).expect("iterator params are valid; qed"),
 		)
 	}
 }
