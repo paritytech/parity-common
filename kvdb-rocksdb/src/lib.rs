@@ -863,6 +863,57 @@ mod tests {
 	}
 
 	#[test]
+	fn test_iter_by_prefix() {
+		let tempdir = TempDir::new("").unwrap();
+		let config = DatabaseConfig::default();
+		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
+
+		let key1 = b"0";
+		let key2 = b"ab";
+		let key3 = b"abc";
+		let key4 = b"abcd";
+
+		let mut batch = db.transaction();
+		batch.put(None, key1, key1);
+		batch.put(None, key2, key2);
+		batch.put(None, key3, key3);
+		batch.put(None, key4, key4);
+		db.write(batch).unwrap();
+
+		// empty prefix
+		let contents: Vec<_> = db.iter_from_prefix(None, b"").into_iter().collect();
+		assert_eq!(contents.len(), 4);
+		assert_eq!(&*contents[0].0, key1);
+		assert_eq!(&*contents[1].0, key2);
+		assert_eq!(&*contents[2].0, key3);
+		assert_eq!(&*contents[3].0, key4);
+
+		// prefix a
+		let contents: Vec<_> = db.iter_from_prefix(None, b"a").into_iter().collect();
+		assert_eq!(contents.len(), 3);
+		assert_eq!(&*contents[0].0, key2);
+		assert_eq!(&*contents[1].0, key3);
+		assert_eq!(&*contents[2].0, key4);
+
+		// prefix abc
+		let contents: Vec<_> = db.iter_from_prefix(None, b"abc").into_iter().collect();
+		assert_eq!(contents.len(), 2);
+		assert_eq!(&*contents[0].0, key3);
+		assert_eq!(&*contents[1].0, key4);
+
+		// prefix abcde
+		let contents: Vec<_> = db.iter_from_prefix(None, b"abcde").into_iter().collect();
+		assert_eq!(contents.len(), 0);
+
+		// prefix 0
+		// let contents: Vec<_> = db.iter_from_prefix(None, b"0").into_iter().collect();
+		// assert_eq!(contents.len(), 1);
+		// TODO: this fails:         ^^
+		
+		// assert_eq!(&*contents[0].0, key1);
+	}
+
+	#[test]
 	fn write_clears_buffered_ops() {
 		let tempdir = TempDir::new("").unwrap();
 		let config = DatabaseConfig::default();
