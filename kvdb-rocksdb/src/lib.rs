@@ -850,7 +850,7 @@ mod tests {
 	}
 
 	#[test]
-	fn drop_columns() {
+	fn remove_columns() {
 		let config = DatabaseConfig::default();
 		let config_5 = DatabaseConfig::with_columns(Some(5));
 
@@ -862,7 +862,7 @@ mod tests {
 			assert_eq!(db.num_columns(), 5);
 
 			for i in (0..5).rev() {
-				db.drop_column().unwrap();
+				db.remove_last_column().unwrap();
 				assert_eq!(db.num_columns(), i);
 			}
 		}
