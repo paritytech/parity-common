@@ -113,7 +113,7 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 			|| self.db.iterator(IteratorMode::Start),
 			|c| {
 				self.db
-					.iterator_cf(self.get_colf(c as usize), IteratorMode::Start)
+					.iterator_cf(self.cf(c as usize), IteratorMode::Start)
 					.expect("iterator params are valid; qed")
 			},
 		)
@@ -122,7 +122,7 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Self::Iterator {
 		col.map_or_else(
 			|| self.db.prefix_iterator(prefix),
-			|c| self.db.prefix_iterator_cf(self.get_colf(c as usize), prefix).expect("iterator params are valid; qed"),
+			|c| self.db.prefix_iterator_cf(self.cf(c as usize), prefix).expect("iterator params are valid; qed"),
 		)
 	}
 }

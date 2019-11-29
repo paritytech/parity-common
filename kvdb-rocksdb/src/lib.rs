@@ -226,8 +226,8 @@ struct DBAndColumns {
 }
 
 impl DBAndColumns {
-	#[inline]
-	fn get_colf(&self, i: usize) -> &ColumnFamily {
+	#[inline] // todo[dvdplm] measure
+	fn cf(&self, i: usize) -> &ColumnFamily {
 		self.db.cf_handle(&self.column_names[i]).expect("the specified column name is correct; qed")
 	}
 }
@@ -249,7 +249,7 @@ pub struct Database {
 	flushing_lock: Mutex<bool>,
 }
 
-#[inline]
+#[inline] // todo[dvdplm] measure
 fn check_for_corruption<T, P: AsRef<Path>>(path: P, res: result::Result<T, Error>) -> io::Result<T> {
 	if let Err(ref s) = res {
 		if is_corrupted(s) {
@@ -405,7 +405,7 @@ impl Database {
 		DBTransaction::new()
 	}
 
-	#[inline]
+	#[inline] // todo[dvdplm] measure
 	fn to_overlay_column(col: Option<u32>) -> usize {
 		col.map_or(0, |c| (c + 1) as usize)
 	}
@@ -440,7 +440,7 @@ impl Database {
 							match *state {
 								KeyState::Delete => {
 									if c > 0 {
-										let cf = cfs.get_colf(c - 1);
+										let cf = cfs.cf(c - 1);
 										batch.delete_cf(cf, key).map_err(other_io_err)?;
 									} else {
 										batch.delete(key).map_err(other_io_err)?;
@@ -448,7 +448,7 @@ impl Database {
 								}
 								KeyState::Insert(ref value) => {
 									if c > 0 {
-										let cf = cfs.get_colf(c - 1);
+										let cf = cfs.cf(c - 1);
 										batch.put_cf(cf, key, value).map_err(other_io_err)?;
 									} else {
 										batch.put(key, value).map_err(other_io_err)?;
@@ -499,11 +499,11 @@ impl Database {
 					match op {
 						DBOp::Insert { col, key, value } => match col {
 							None => batch.put(&key, &value).map_err(other_io_err)?,
-							Some(c) => batch.put_cf(cfs.get_colf(c as usize), &key, &value).map_err(other_io_err)?,
+							Some(c) => batch.put_cf(cfs.cf(c as usize), &key, &value).map_err(other_io_err)?,
 						},
 						DBOp::Delete { col, key } => match col {
 							None => batch.delete(&key).map_err(other_io_err)?,
-							Some(c) => batch.delete_cf(cfs.get_colf(c as usize), &key).map_err(other_io_err)?,
+							Some(c) => batch.delete_cf(cfs.cf(c as usize), &key).map_err(other_io_err)?,
 						},
 					}
 				}
@@ -532,7 +532,7 @@ impl Database {
 									|| cfs.db.get_pinned_opt(key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))),
 									|c| {
 										cfs.db
-											.get_pinned_cf_opt(cfs.get_colf(c as usize), key, &self.read_opts)
+											.get_pinned_cf_opt(cfs.cf(c as usize), key, &self.read_opts)
 											.map(|r| r.map(|v| DBValue::from_slice(&v)))
 									},
 								)
