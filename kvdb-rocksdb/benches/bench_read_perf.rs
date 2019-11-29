@@ -19,7 +19,7 @@
 //! keys with random values 150 +/- 30 bytes long. With 10 000 keys and a ratio of 100 we get 1
 //! million keys; ideally the db should be deleted for each benchmark run but in practice it has
 //! little impact on the performance numbers for these small database sizes.
-//! Allocations on the Rust side are counted and printed.
+//! Allocations (on the Rust side) are counted and printed.
 
 const NEEDLES: usize = 10_000;
 const NEEDLES_TO_HAYSTACK_RATIO: usize = 100;
@@ -102,7 +102,7 @@ fn get(c: &mut Criterion) {
 				for _ in 0..iterations {
 					// This has no measurable impact on performance (~30ns)
 					let needle = needles.choose(&mut rand::thread_rng()).expect("needles is not empty");
-					let _ = db.get(black_box(Some(0)), black_box(needle.as_bytes())).unwrap();
+					black_box(db.get(Some(0), needle.as_bytes()).unwrap());
 				}
 				elapsed = start.elapsed();
 			});
@@ -112,7 +112,35 @@ fn get(c: &mut Criterion) {
 	});
 	if total_iterations > 0 {
 		println!(
-			"[get key] total: iterations={}, allocations={}; allocations per iter={:.2}",
+			"[get key] total: iterations={}, allocations={}; allocations per iter={:.2}\n",
+			total_iterations,
+			total_allocs,
+			total_allocs as f64 / total_iterations as f64
+		);
+	}
+
+	total_iterations = 0;
+	total_allocs = 0;
+	c.bench_function("get key by prefix", |b| {
+		b.iter_custom(|iterations| {
+			total_iterations += iterations;
+			let mut elapsed = Duration::new(0, 0);
+			let (alloc_stats, _) = count_alloc(|| {
+				let start = Instant::now();
+				for _ in 0..iterations {
+					// This has no measurable impact on performance (~30ns)
+					let needle = needles.choose(&mut rand::thread_rng()).expect("needles is not empty");
+					black_box(db.get_by_prefix(Some(0), &needle.as_bytes()[..8]).unwrap());
+				}
+				elapsed = start.elapsed();
+			});
+			total_allocs += alloc_stats.0;
+			elapsed
+		});
+	});
+	if total_iterations > 0 {
+		println!(
+			"[get key by prefix] total: iterations={}, allocations={}; allocations per iter={:.2}\n",
 			total_iterations,
 			total_allocs,
 			total_allocs as f64 / total_iterations as f64
@@ -142,10 +170,36 @@ fn iter(c: &mut Criterion) {
 	});
 	if total_iterations > 0 {
 		println!(
-			"[iterate over 1k keys] total: iterations={}, allocations={}; allocations per iter={:.2}",
+			"[iterate over 1k keys] total: iterations={}, allocations={}; allocations per iter={:.2}\n",
 			total_iterations,
 			total_allocs,
 			total_allocs as f64 / total_iterations as f64 / 1000.0
+		);
+	}
+
+	total_allocs = 0;
+	total_iterations = 0;
+	c.bench_function("single key from iterator", |b| {
+		b.iter_custom(|iterations| {
+			total_iterations += iterations;
+			let mut elapsed = Duration::new(0, 0);
+			let (alloc_stats, _) = count_alloc(|| {
+				let start = Instant::now();
+				for _ in 0..iterations {
+					black_box(db.iter(Some(0)).next().unwrap());
+				}
+				elapsed = start.elapsed();
+			});
+			total_allocs += alloc_stats.0;
+			elapsed
+		});
+	});
+	if total_iterations > 0 {
+		println!(
+			"[single key from iterator] total: iterations={}, allocations={}; allocations per iter={:.2}\n",
+			total_iterations,
+			total_allocs,
+			total_allocs as f64 / total_iterations as f64
 		);
 	}
 }
