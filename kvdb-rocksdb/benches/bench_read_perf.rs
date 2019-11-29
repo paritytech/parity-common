@@ -1,0 +1,114 @@
+// Copyright 2015-2019 Parity Technologies (UK) Ltd.
+// This file is part of Parity Ethereum.
+
+// Parity Ethereum is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Parity Ethereum is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
+
+//! Benchmark RocksDB read performance.
+//! The benchmark setup consists in writing `NEEDLES * NEEDLES_TO_HAYSTACK_RATIO` 32-bytes random
+//! keys with random values 150 +/- 30 bytes long. With 10 000 keys and a ratio of 100 we get 1
+//! million keys; ideally the db should be deleted for each benchmark run but in practice it has
+//! little impact on the performance numbers for these small database sizes.
+//! Allocations on the Rust side are counted and printed.
+
+const NEEDLES: usize = 10_000;
+const NEEDLES_TO_HAYSTACK_RATIO: usize = 100;
+
+use std::io;
+use std::time::Instant;
+
+use alloc_counter::{AllocCounterSystem, count_alloc};
+use criterion::{Criterion, criterion_group, criterion_main, black_box};
+use elastic_array::core_::time::Duration;
+use ethereum_types::H256;
+use rand::{distributions::Uniform, Rng, seq::SliceRandom};
+
+use kvdb_rocksdb::{Database, DatabaseConfig};
+
+#[global_allocator]
+static A: AllocCounterSystem = AllocCounterSystem;
+
+criterion_group!(benches, get);
+criterion_main!(benches);
+
+/// Opens (or creates) a RocksDB database in the `benches/` folder of the crate with one column
+/// family and default options. Needs manual cleanup.
+fn open_db() -> Database {
+	let tempdir_str = "./benches/_rocksdb_bench_get";
+	let cfg = DatabaseConfig::with_columns(Some(1));
+	let db = Database::open(&cfg, tempdir_str).expect("rocksdb works");
+	db
+}
+
+/// Generate `n` random bytes +/- 20%.
+fn n_random_bytes(n: usize) -> Vec<u8> {
+	let mut rng = rand::thread_rng();
+	let variability: i64 = rng.gen_range(0, (n as f64 * 0.2) as i64);
+	let plus_or_minus: i64 = if variability % 2 == 0 { 1 } else { -1 };
+	let range = Uniform::from(0..u8::max_value());
+	rng.sample_iter(&range).take((n as i64 + plus_or_minus * variability) as usize).collect()
+}
+
+/// Writes `NEEDLES * NEEDLES_TO_HAYSTACK_RATIO` keys to the DB. Keys are random, 32 bytes
+/// long and values are random, 120-180 bytes long. Every `NEEDLES_TO_HAYSTACK_RATIO` keys are kept
+/// and returned in a `Vec` for use to benchmark point lookup performance. As keys are sorted
+/// lexicographically in the DB, and random bytes are used, the needles are effectively random
+/// points in the key set.
+fn populate(db: &Database) -> io::Result<Vec<H256>> {
+	let mut needles = Vec::with_capacity(NEEDLES);
+	let mut batch = db.transaction();
+	for i in 0..NEEDLES * NEEDLES_TO_HAYSTACK_RATIO {
+		let key = H256::random();
+		if i % NEEDLES_TO_HAYSTACK_RATIO == 0 {
+			needles.push(key.clone());
+			if i % 100_000 == 0 && i > 0{
+				println!("[populate] {} keys", i);
+			}
+		}
+		// In ethereum keys are mostly 32 bytes and payloads ~140bytes.
+		batch.put(Some(0), &key.as_bytes(), &n_random_bytes(150));
+	}
+	db.write(batch)?;
+	// Clear the overlay
+	db.flush()?;
+	Ok(needles)
+}
+
+fn get(c: &mut Criterion) {
+	let db = open_db();
+	let needles = populate(&db).expect("rocksdb works");
+
+	let mut total_iterations = 0;
+	let mut total_allocs = 0;
+
+	c.bench_function("get key (pinned)", |b| {
+		b.iter_custom(|iterations| {
+			total_iterations += iterations;
+			let mut elapsed = Duration::new(0, 0);
+			let (alloc_stats, _) = count_alloc(|| {
+				let start = Instant::now();
+				for _ in 0..iterations {
+					// This has no measurable impact on performance (~30ns)
+					let needle = needles.choose(&mut rand::thread_rng()).expect("needles is not empty");
+					let _ = db.get(black_box(Some(0)), black_box(needle.as_bytes())).unwrap();
+				}
+				elapsed = start.elapsed();
+			});
+			total_allocs += alloc_stats.0;
+			elapsed
+		})
+	});
+	println!("[get key (pinned)] total: iters={}, allocs={}; allocs per iter={:.2}",
+		total_iterations, total_allocs, total_allocs as f64 / total_iterations as f64
+	);
+}
