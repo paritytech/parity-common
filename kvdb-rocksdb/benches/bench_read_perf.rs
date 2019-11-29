@@ -27,18 +27,18 @@ const NEEDLES_TO_HAYSTACK_RATIO: usize = 100;
 use std::io;
 use std::time::Instant;
 
-use alloc_counter::{AllocCounterSystem, count_alloc};
-use criterion::{Criterion, criterion_group, criterion_main, black_box};
+use alloc_counter::{count_alloc, AllocCounterSystem};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use elastic_array::core_::time::Duration;
 use ethereum_types::H256;
-use rand::{distributions::Uniform, Rng, seq::SliceRandom};
+use rand::{distributions::Uniform, seq::SliceRandom, Rng};
 
 use kvdb_rocksdb::{Database, DatabaseConfig};
 
 #[global_allocator]
 static A: AllocCounterSystem = AllocCounterSystem;
 
-criterion_group!(benches, get);
+criterion_group!(benches, get, iter);
 criterion_main!(benches);
 
 /// Opens (or creates) a RocksDB database in the `benches/` folder of the crate with one column
@@ -51,6 +51,8 @@ fn open_db() -> Database {
 }
 
 /// Generate `n` random bytes +/- 20%.
+/// The variability in the payload size lets us simulate payload allocation patterns: `DBValue` is
+/// an `ElasticArray128` so sometimes we save on allocations.
 fn n_random_bytes(n: usize) -> Vec<u8> {
 	let mut rng = rand::thread_rng();
 	let variability: i64 = rng.gen_range(0, (n as f64 * 0.2) as i64);
@@ -71,12 +73,12 @@ fn populate(db: &Database) -> io::Result<Vec<H256>> {
 		let key = H256::random();
 		if i % NEEDLES_TO_HAYSTACK_RATIO == 0 {
 			needles.push(key.clone());
-			if i % 100_000 == 0 && i > 0{
+			if i % 100_000 == 0 && i > 0 {
 				println!("[populate] {} keys", i);
 			}
 		}
 		// In ethereum keys are mostly 32 bytes and payloads ~140bytes.
-		batch.put(Some(0), &key.as_bytes(), &n_random_bytes(150));
+		batch.put(Some(0), &key.as_bytes(), &n_random_bytes(140));
 	}
 	db.write(batch)?;
 	// Clear the overlay
@@ -91,7 +93,7 @@ fn get(c: &mut Criterion) {
 	let mut total_iterations = 0;
 	let mut total_allocs = 0;
 
-	c.bench_function("get key (pinned)", |b| {
+	c.bench_function("get key", |b| {
 		b.iter_custom(|iterations| {
 			total_iterations += iterations;
 			let mut elapsed = Duration::new(0, 0);
@@ -106,9 +108,44 @@ fn get(c: &mut Criterion) {
 			});
 			total_allocs += alloc_stats.0;
 			elapsed
-		})
+		});
 	});
-	println!("[get key (pinned)] total: iters={}, allocs={}; allocs per iter={:.2}",
-		total_iterations, total_allocs, total_allocs as f64 / total_iterations as f64
-	);
+	if total_iterations > 0 {
+		println!(
+			"[get key] total: iterations={}, allocations={}; allocations per iter={:.2}",
+			total_iterations,
+			total_allocs,
+			total_allocs as f64 / total_iterations as f64
+		);
+	}
+}
+
+fn iter(c: &mut Criterion) {
+	let db = open_db();
+	let mut total_iterations = 0;
+	let mut total_allocs = 0;
+
+	c.bench_function("iterate over 1k keys", |b| {
+		b.iter_custom(|iterations| {
+			total_iterations += iterations;
+			let mut elapsed = Duration::new(0, 0);
+			let (alloc_stats, _) = count_alloc(|| {
+				let start = Instant::now();
+				for _ in 0..iterations {
+					black_box(db.iter(Some(0)).take(1000).collect::<Vec<_>>());
+				}
+				elapsed = start.elapsed();
+			});
+			total_allocs += alloc_stats.0;
+			elapsed
+		});
+	});
+	if total_iterations > 0 {
+		println!(
+			"[iterate over 1k keys] total: iterations={}, allocations={}; allocations per iter={:.2}",
+			total_iterations,
+			total_allocs,
+			total_allocs as f64 / total_iterations as f64 / 1000.0
+		);
+	}
 }
