@@ -77,7 +77,7 @@ macro_rules! uint_overflowing_binop {
 		let $name(ref me) = $self_expr;
 		let $name(ref you) = $other;
 
-		let mut ret = unsafe { $crate::core_::mem::uninitialized() };
+		let mut ret = unsafe { $crate::core_::mem::MaybeUninit::uninit().assume_init() };
 		let ret_ptr = &mut ret as *mut [u64; $n_words] as *mut u64;
 		let mut carry = 0u64;
 
