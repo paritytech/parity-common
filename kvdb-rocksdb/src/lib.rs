@@ -571,7 +571,7 @@ impl Database {
 				overlay_data
 			};
 
-			let guarded = iter::ReadGuardedIterator::new(read_lock, col);
+			let guarded = iter::ReadGuardedIterator::new(read_lock, col, &self.read_opts);
 			Some(interleave_ordered(overlay_data, guarded))
 		} else {
 			None
@@ -588,12 +588,14 @@ impl Database {
 	) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
 		let read_lock = self.db.read();
 		let optional = if read_lock.is_some() {
-			let guarded = iter::ReadGuardedIterator::new_from_prefix(read_lock, col, prefix);
+			let guarded = iter::ReadGuardedIterator::new_from_prefix(read_lock, col, prefix, &self.read_opts);
 			Some(interleave_ordered(Vec::new(), guarded))
 		} else {
 			None
 		};
-		// workaround for https://github.com/facebook/rocksdb/issues/2343
+		// We're not using "Prefix Seek" mode, so the iterator will return
+		// keys not starting with the given prefix as well,
+		// see https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes
 		optional.into_iter().flat_map(identity).filter(move |(k, _)| k.starts_with(prefix))
 	}
 

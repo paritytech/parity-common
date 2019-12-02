@@ -21,7 +21,7 @@
 use crate::DBAndColumns;
 use owning_ref::{OwningHandle, StableAddress};
 use parking_lot::RwLockReadGuard;
-use rocksdb::{DBIterator, IteratorMode};
+use rocksdb::{DBIterator, Direction, IteratorMode, ReadOptions};
 use std::ops::{Deref, DerefMut};
 
 /// A tuple holding key and value data, used as the iterator item type.
@@ -76,22 +76,27 @@ pub trait IterationHandler {
 
 	/// Create an `Iterator` over the default DB column or over a `ColumnFamily` if a column number
 	/// is passed.
-	fn iter(&self, col: Option<u32>) -> Self::Iterator;
+	fn iter(&self, col: Option<u32>, read_opts: &ReadOptions) -> Self::Iterator;
 	/// Create an `Iterator` over the default DB column or over a `ColumnFamily` if a column number
 	/// is passed. The iterator starts from the first key having the provided `prefix`.
-	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Self::Iterator;
+	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8], read_opts: &ReadOptions) -> Self::Iterator;
 }
 
 impl<'a, T> ReadGuardedIterator<'a, <&'a T as IterationHandler>::Iterator, T>
 where
 	&'a T: IterationHandler,
 {
-	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: Option<u32>) -> Self {
-		Self { inner: Self::new_inner(read_lock, |db| db.iter(col)) }
+	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: Option<u32>, read_opts: &ReadOptions) -> Self {
+		Self { inner: Self::new_inner(read_lock, |db| db.iter(col, read_opts)) }
 	}
 
-	pub fn new_from_prefix(read_lock: RwLockReadGuard<'a, Option<T>>, col: Option<u32>, prefix: &[u8]) -> Self {
-		Self { inner: Self::new_inner(read_lock, |db| db.iter_from_prefix(col, prefix)) }
+	pub fn new_from_prefix(
+		read_lock: RwLockReadGuard<'a, Option<T>>,
+		col: Option<u32>,
+		prefix: &[u8],
+		read_opts: &ReadOptions,
+	) -> Self {
+		Self { inner: Self::new_inner(read_lock, |db| db.iter_from_prefix(col, prefix, read_opts)) }
 	}
 
 	fn new_inner(
@@ -108,21 +113,25 @@ where
 impl<'a> IterationHandler for &'a DBAndColumns {
 	type Iterator = DBIterator<'a>;
 
-	fn iter(&self, col: Option<u32>) -> Self::Iterator {
+	fn iter(&self, col: Option<u32>, read_opts: &ReadOptions) -> Self::Iterator {
 		col.map_or_else(
-			|| self.db.iterator(IteratorMode::Start),
+			|| self.db.iterator_opt(IteratorMode::Start, read_opts),
 			|c| {
 				self.db
-					.iterator_cf(self.get_cf(c as usize), IteratorMode::Start)
+					.iterator_cf_opt(self.get_cf(c as usize), read_opts, IteratorMode::Start)
 					.expect("iterator params are valid; qed")
 			},
 		)
 	}
 
-	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Self::Iterator {
+	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8], read_opts: &ReadOptions) -> Self::Iterator {
 		col.map_or_else(
-			|| self.db.prefix_iterator(prefix),
-			|c| self.db.prefix_iterator_cf(self.get_cf(c as usize), prefix).expect("iterator params are valid; qed"),
+			|| self.db.iterator_opt(IteratorMode::From(prefix, Direction::Forward), read_opts),
+			|c| {
+				self.db
+					.iterator_cf_opt(self.get_cf(c as usize), read_opts, IteratorMode::From(prefix, Direction::Forward))
+					.expect("iterator params are valid; qed")
+			},
 		)
 	}
 }
