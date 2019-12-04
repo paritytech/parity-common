@@ -215,7 +215,7 @@ impl Default for DatabaseConfig {
 			max_open_files: 512,
 			memory_budget: HashMap::new(),
 			compaction: CompactionProfile::default(),
-			columns: unsafe { NonZeroU32::new_unchecked(1) },
+			columns: NonZeroU32::new(1).expect("1 is not a zero; qed"),
 			keep_log_file_num: 1,
 		}
 	}
