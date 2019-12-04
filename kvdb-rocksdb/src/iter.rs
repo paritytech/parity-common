@@ -17,6 +17,10 @@
 //! This module contains an implementation of a RocksDB iterator
 //! wrapped inside a `RwLock`. Since `RwLock` "owns" the inner data,
 //! we're using `owning_ref` to work around the borrowing rules of Rust.
+//!
+//! Note, that we're not using "Prefix Seek" mode, so that the prefix iterator will return
+//! keys not starting with the given prefix as well, and we need to filter them
+//! out manually. See https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes
 
 use crate::DBAndColumns;
 use owning_ref::{OwningHandle, StableAddress};
@@ -86,10 +90,14 @@ impl<'a, T> ReadGuardedIterator<'a, <&'a T as IterationHandler>::Iterator, T>
 where
 	&'a T: IterationHandler,
 {
+	/// Maps `RwLock<RocksDB>` to `RwLock<DBIterator>`, where
+	/// `DBIterator` iterates over all keys.
 	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: Option<u32>, read_opts: &ReadOptions) -> Self {
 		Self { inner: Self::new_inner(read_lock, |db| db.iter(col, read_opts)) }
 	}
 
+	/// Maps `RwLock<RocksDB>` to `RwLock<DBIterator>`, where
+	/// `DBIterator` iterates over keys >= prefix.
 	pub fn new_from_prefix(
 		read_lock: RwLockReadGuard<'a, Option<T>>,
 		col: Option<u32>,
