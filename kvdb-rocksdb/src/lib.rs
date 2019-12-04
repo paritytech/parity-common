@@ -270,16 +270,6 @@ fn is_corrupted(err: &Error) -> bool {
 fn generate_options(config: &DatabaseConfig) -> Options {
 	let mut opts = Options::default();
 
-	if config.columns.get() == 1 {
-		let budget = config.memory_budget() / 2;
-		opts.set_db_write_buffer_size(budget);
-		// from https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#memtable
-		// Memtable size is controlled by the option `write_buffer_size`.
-		// If you increase your memtable size, be sure to also increase your L1 size!
-		// L1 size is controlled by the option `max_bytes_for_level_base`.
-		opts.set_max_bytes_for_level_base(budget as u64);
-	}
-
 	opts.set_use_fsync(false);
 	opts.create_if_missing(true);
 	opts.set_max_open_files(config.max_open_files);
