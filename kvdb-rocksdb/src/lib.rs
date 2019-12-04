@@ -16,7 +16,7 @@
 
 mod iter;
 
-use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, num::NonZeroU32, path::Path, result};
+use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, path::Path, result};
 
 use parking_lot::{Mutex, MutexGuard, RwLock};
 use rocksdb::{
@@ -166,7 +166,11 @@ pub struct DatabaseConfig {
 	/// Compaction profile.
 	pub compaction: CompactionProfile,
 	/// Set number of columns.
-	pub columns: NonZeroU32,
+	///
+	/// # Safety
+	///
+	/// The number of columns must not be zero.
+	pub columns: u32,
 	/// Specify the maximum number of info/debug log files to be kept.
 	pub keep_log_file_num: i32,
 }
@@ -175,18 +179,18 @@ impl DatabaseConfig {
 	/// Create new `DatabaseConfig` with default parameters and specified set of columns.
 	/// Note that cache sizes must be explicitly set.
 	///
-	/// At least 1 column must be used otherwise this function panics.
+	/// # Safety
+	///
+	/// The number of `columns` must not be zero.
 	pub fn with_columns(columns: u32) -> Self {
-		let columns = NonZeroU32::new(columns).expect("At least one column have to be specified");
+		assert!(columns > 0, "the number of columns must not be zero");
 
 		Self { columns, ..Default::default() }
 	}
 
 	/// Returns the total memory budget in bytes.
 	pub fn memory_budget(&self) -> MiB {
-		(0..self.columns.get())
-			.map(|i| self.memory_budget.get(&i).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
-			.sum()
+		(0..self.columns).map(|i| self.memory_budget.get(&i).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB).sum()
 	}
 
 	/// Returns the memory budget of the specified column in bytes.
@@ -215,7 +219,7 @@ impl Default for DatabaseConfig {
 			max_open_files: 512,
 			memory_budget: HashMap::new(),
 			compaction: CompactionProfile::default(),
-			columns: NonZeroU32::new(1).expect("1 is not a zero; qed"),
+			columns: 1,
 			keep_log_file_num: 1,
 		}
 	}
@@ -302,7 +306,13 @@ impl Database {
 	const CORRUPTION_FILE_NAME: &'static str = "CORRUPTED";
 
 	/// Open database file. Creates if it does not exist.
+	///
+	/// # Safety
+	///
+	/// The number of `config.columns` must not be zero.
 	pub fn open(config: &DatabaseConfig, path: &str) -> io::Result<Database> {
+		assert!(config.columns > 0, "the number of columns must not be zero");
+
 		let opts = generate_options(config);
 		let block_opts = generate_block_based_options(config);
 
@@ -314,15 +324,13 @@ impl Database {
 			fs::remove_file(db_corrupted)?;
 		}
 
-		let columns = config.columns.get();
-
-		let column_names: Vec<_> = (0..columns).map(|c| format!("col{}", c)).collect();
+		let column_names: Vec<_> = (0..config.columns).map(|c| format!("col{}", c)).collect();
 
 		let write_opts = WriteOptions::default();
 		let mut read_opts = ReadOptions::default();
 		read_opts.set_verify_checksums(false);
 
-		let cf_descriptors: Vec<_> = (0..columns)
+		let cf_descriptors: Vec<_> = (0..config.columns)
 			.map(|i| ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, i)))
 			.collect();
 
@@ -350,7 +358,7 @@ impl Database {
 				warn!("DB corrupted: {}, attempting repair", s);
 				DB::repair(&opts, path).map_err(other_io_err)?;
 
-				let cf_descriptors: Vec<_> = (0..columns)
+				let cf_descriptors: Vec<_> = (0..config.columns)
 					.map(|i| {
 						ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, i))
 					})
@@ -363,8 +371,8 @@ impl Database {
 		Ok(Database {
 			db: RwLock::new(Some(DBAndColumns { db, column_names })),
 			config: config.clone(),
-			overlay: RwLock::new((0..columns).map(|_| HashMap::new()).collect()),
-			flushing: RwLock::new((0..columns).map(|_| HashMap::new()).collect()),
+			overlay: RwLock::new((0..config.columns).map(|_| HashMap::new()).collect()),
+			flushing: RwLock::new((0..config.columns).map(|_| HashMap::new()).collect()),
 			flushing_lock: Mutex::new(false),
 			path: path.to_owned(),
 			read_opts,
@@ -759,6 +767,19 @@ mod tests {
 	}
 
 	#[test]
+	#[should_panic]
+	fn db_config_with_zero_columns() {
+		let _cfg = DatabaseConfig::with_columns(0);
+	}
+
+	#[test]
+	#[should_panic]
+	fn open_db_with_zero_columns() {
+		let cfg = DatabaseConfig { columns: 0, ..Default::default() };
+		let _db = Database::open(&cfg, "");
+	}
+
+	#[test]
 	fn add_columns() {
 		let config_1 = DatabaseConfig::default();
 		let config_5 = DatabaseConfig::with_columns(5);
@@ -877,7 +898,7 @@ mod tests {
 	#[test]
 	fn default_memory_budget() {
 		let c = DatabaseConfig::default();
-		assert_eq!(c.columns.get(), 1);
+		assert_eq!(c.columns, 1);
 		assert_eq!(c.memory_budget(), DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB, "total memory budget is default");
 		assert_eq!(
 			c.memory_budget_for_col(0),

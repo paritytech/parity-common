@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog].
     - Database must be opened with at least one column and existing DBs has to be opened with a number of columns increased by 1 to avoid having to migrate the data, e.g. before: `Some(9)`, after: `10`.
   - `DatabaseConfig::default()` defaults to 1 column
   - `Database::with_columns` still accepts `u32`, but panics if `0` is provided 
+  - `Database::open` panics if configuration with 0 columns is provided
 
 ## [0.2.0] - 2019-11-28
 - Switched away from using [parity-rocksdb](https://crates.io/crates/parity-rocksdb) in favour of upstream [rust-rocksdb](https://crates.io/crates/rocksdb) (see [PR #257](https://github.com/paritytech/parity-common/pull/257) for details)
