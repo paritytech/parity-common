@@ -16,10 +16,14 @@
 
 //! Benchmark RocksDB read performance.
 //! The benchmark setup consists in writing `NEEDLES * NEEDLES_TO_HAYSTACK_RATIO` 32-bytes random
-//! keys with random values 150 +/- 30 bytes long. With 10 000 keys and a ratio of 100 we get 1
+//! keys with random values 150 +/- 30 bytes long. With 10 000 keys and a ratio of 100 we get one
 //! million keys; ideally the db should be deleted for each benchmark run but in practice it has
 //! little impact on the performance numbers for these small database sizes.
 //! Allocations (on the Rust side) are counted and printed.
+//!
+//! Note that this benchmark is not a good way to measure the performance of the database itself;
+//! its purpose is to be a tool to gauge the performance of the glue code, or work as a starting point
+//! for a more elaborate benchmark of a specific workload.
 
 const NEEDLES: usize = 10_000;
 const NEEDLES_TO_HAYSTACK_RATIO: usize = 100;
@@ -61,11 +65,11 @@ fn n_random_bytes(n: usize) -> Vec<u8> {
 	rng.sample_iter(&range).take((n as i64 + plus_or_minus * variability) as usize).collect()
 }
 
-/// Writes `NEEDLES * NEEDLES_TO_HAYSTACK_RATIO` keys to the DB. Keys are random, 32 bytes
-/// long and values are random, 120-180 bytes long. Every `NEEDLES_TO_HAYSTACK_RATIO` keys are kept
-/// and returned in a `Vec` for use to benchmark point lookup performance. As keys are sorted
-/// lexicographically in the DB, and random bytes are used, the needles are effectively random
-/// points in the key set.
+/// Writes `NEEDLES * NEEDLES_TO_HAYSTACK_RATIO` keys to the DB. Keys are random, 32 bytes long and
+/// values are random, 120-180 bytes long. Every `NEEDLES_TO_HAYSTACK_RATIO` keys are kept and
+/// returned in a `Vec` for and used to benchmark point lookup performance. Keys are sorted
+/// lexicographically in the DB, and the benchmark keys are random bytes making the needles are
+/// effectively random points in the key set.
 fn populate(db: &Database) -> io::Result<Vec<H256>> {
 	let mut needles = Vec::with_capacity(NEEDLES);
 	let mut batch = db.transaction();
@@ -97,6 +101,7 @@ fn get(c: &mut Criterion) {
 		b.iter_custom(|iterations| {
 			total_iterations += iterations;
 			let mut elapsed = Duration::new(0, 0);
+			// NOTE: counts allocations on the Rust side only
 			let (alloc_stats, _) = count_alloc(|| {
 				let start = Instant::now();
 				for _ in 0..iterations {
@@ -125,6 +130,7 @@ fn get(c: &mut Criterion) {
 		b.iter_custom(|iterations| {
 			total_iterations += iterations;
 			let mut elapsed = Duration::new(0, 0);
+			// NOTE: counts allocations on the Rust side only
 			let (alloc_stats, _) = count_alloc(|| {
 				let start = Instant::now();
 				for _ in 0..iterations {
@@ -157,6 +163,7 @@ fn iter(c: &mut Criterion) {
 		b.iter_custom(|iterations| {
 			total_iterations += iterations;
 			let mut elapsed = Duration::new(0, 0);
+			// NOTE: counts allocations on the Rust side only
 			let (alloc_stats, _) = count_alloc(|| {
 				let start = Instant::now();
 				for _ in 0..iterations {
@@ -173,7 +180,7 @@ fn iter(c: &mut Criterion) {
 			"[iterate over 1k keys] total: iterations={}, allocations={}; allocations per iter={:.2}\n",
 			total_iterations,
 			total_allocs,
-			total_allocs as f64 / total_iterations as f64 / 1000.0
+			total_allocs as f64 / total_iterations as f64
 		);
 	}
 
@@ -183,6 +190,7 @@ fn iter(c: &mut Criterion) {
 		b.iter_custom(|iterations| {
 			total_iterations += iterations;
 			let mut elapsed = Duration::new(0, 0);
+			// NOTE: counts allocations on the Rust side only
 			let (alloc_stats, _) = count_alloc(|| {
 				let start = Instant::now();
 				for _ in 0..iterations {
