@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- use `get_pinned` API to save one allocation for each call to `get()`
+- rename `drop_column` to `remove_last_column`
+- rename `get_cf` to `cf`
 
 ## [0.2.0] - 2019-11-28
 - Switched away from using [parity-rocksdb](https://crates.io/crates/parity-rocksdb) in favour of upstream [rust-rocksdb](https://crates.io/crates/rocksdb) (see [PR #257](https://github.com/paritytech/parity-common/pull/257) for details)
