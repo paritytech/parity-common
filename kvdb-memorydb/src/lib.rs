@@ -25,24 +25,23 @@ use std::{
 /// This is generally intended for tests and is not particularly optimized.
 #[derive(Default)]
 pub struct InMemory {
-	columns: RwLock<HashMap<Option<u32>, BTreeMap<Vec<u8>, DBValue>>>,
+	columns: RwLock<HashMap<u32, BTreeMap<Vec<u8>, DBValue>>>,
 }
 
 /// Create an in-memory database with the given number of columns.
 /// Columns will be indexable by 0..`num_cols`
 pub fn create(num_cols: u32) -> InMemory {
 	let mut cols = HashMap::new();
-	cols.insert(None, BTreeMap::new());
 
 	for idx in 0..num_cols {
-		cols.insert(Some(idx), BTreeMap::new());
+		cols.insert(idx, BTreeMap::new());
 	}
 
 	InMemory { columns: RwLock::new(cols) }
 }
 
 impl KeyValueDB for InMemory {
-	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
+	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let columns = self.columns.read();
 		match columns.get(&col) {
 			None => Err(io::Error::new(io::ErrorKind::Other, format!("No such column family: {:?}", col))),
@@ -50,7 +49,7 @@ impl KeyValueDB for InMemory {
 		}
 	}
 
-	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
+	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>> {
 		let columns = self.columns.read();
 		match columns.get(&col) {
 			None => None,
@@ -83,7 +82,7 @@ impl KeyValueDB for InMemory {
 		Ok(())
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				// TODO: worth optimizing at all?
@@ -95,7 +94,7 @@ impl KeyValueDB for InMemory {
 
 	fn iter_from_prefix<'a>(
 		&'a self,
-		col: Option<u32>,
+		col: u32,
 		prefix: &'a [u8],
 	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
 		match self.columns.read().get(&col) {
