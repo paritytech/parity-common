@@ -529,7 +529,11 @@ impl Database {
 							Some(&KeyState::Delete) => Ok(None),
 							None => col
 								.map_or_else(
-									|| cfs.db.get_pinned_opt(key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))),
+									|| {
+										cfs.db
+											.get_pinned_opt(key, &self.read_opts)
+											.map(|r| r.map(|v| DBValue::from_slice(&v)))
+									},
 									|c| {
 										cfs.db
 											.get_pinned_cf_opt(cfs.cf(c as usize), key, &self.read_opts)

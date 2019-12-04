@@ -111,11 +111,7 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 	fn iter(&self, col: Option<u32>) -> Self::Iterator {
 		col.map_or_else(
 			|| self.db.iterator(IteratorMode::Start),
-			|c| {
-				self.db
-					.iterator_cf(self.cf(c as usize), IteratorMode::Start)
-					.expect("iterator params are valid; qed")
-			},
+			|c| self.db.iterator_cf(self.cf(c as usize), IteratorMode::Start).expect("iterator params are valid; qed"),
 		)
 	}
 
