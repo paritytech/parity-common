@@ -102,7 +102,7 @@ impl KeyValueDB for InMemory {
 			Some(map) => Box::new(
 				map.clone()
 					.into_iter()
-					.skip_while(move |&(ref k, _)| !k.starts_with(prefix))
+					.filter(move |&(ref k, _)| k.starts_with(prefix))
 					.map(|(k, v)| (k.into_boxed_slice(), v.into_vec().into_boxed_slice())),
 			),
 			None => Box::new(None.into_iter()),
