@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog].
   - Column argument type changed from `Option<u32>` to `u32`
   - Migration
     - Column index `None` -> `0`, `Some(0)` -> `1`, `Some(1)` -> `2`, etc.
-    - Database should be opened with +1 number of columns for migration
+    - Database must be opened with at least one column and existing DBs has to be opened with a number of columns increased by 1 to avoid having to migrate the data, e.g. before: `Some(9)`, after: `10`.
   - `DatabaseConfig::default()` defaults to 1 column
   - `Database::with_columns` still accepts `u32`, but panics if `0` is provided 
 
