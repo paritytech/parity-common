@@ -226,7 +226,6 @@ struct DBAndColumns {
 }
 
 impl DBAndColumns {
-	#[inline] // todo[dvdplm] measure
 	fn cf(&self, i: usize) -> &ColumnFamily {
 		self.db.cf_handle(&self.column_names[i]).expect("the specified column name is correct; qed")
 	}
@@ -249,7 +248,7 @@ pub struct Database {
 	flushing_lock: Mutex<bool>,
 }
 
-#[inline] // todo[dvdplm] measure
+#[inline]
 fn check_for_corruption<T, P: AsRef<Path>>(path: P, res: result::Result<T, Error>) -> io::Result<T> {
 	if let Err(ref s) = res {
 		if is_corrupted(s) {
@@ -405,7 +404,6 @@ impl Database {
 		DBTransaction::new()
 	}
 
-	#[inline] // todo[dvdplm] measure
 	fn to_overlay_column(col: Option<u32>) -> usize {
 		col.map_or(0, |c| (c + 1) as usize)
 	}
