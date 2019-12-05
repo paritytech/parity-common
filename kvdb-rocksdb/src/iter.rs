@@ -18,8 +18,10 @@
 //! wrapped inside a `RwLock`. Since `RwLock` "owns" the inner data,
 //! we're using `owning_ref` to work around the borrowing rules of Rust.
 //!
-//! Note: this crate does not use "Prefix Seek" mode which means that the prefix iterator will return
-//! keys not starting with the given prefix as well (as long as `key >= prefix`). To work around this we filter the data returned by rocksdb to ensure that all data yielded by the iterator does start with the given prefix.
+//! Note: this crate does not use "Prefix Seek" mode which means that the prefix iterator
+//! will return keys not starting with the given prefix as well (as long as `key >= prefix`).
+//! To work around this we filter the data returned by rocksdb to ensure that
+//! all data yielded by the iterator does start with the given prefix.
 //! See https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes for details.
 
 use crate::DBAndColumns;
@@ -80,9 +82,13 @@ pub trait IterationHandler {
 
 	/// Create an `Iterator` over the default DB column or over a `ColumnFamily` if a column number
 	/// is passed.
+	/// In addition to a read lock and a column index, it takes a ref to the same `ReadOptions` we
+	/// pass to the `get` method.
 	fn iter(&self, col: Option<u32>, read_opts: &ReadOptions) -> Self::Iterator;
 	/// Create an `Iterator` over the default DB column or over a `ColumnFamily` if a column number
 	/// is passed. The iterator starts from the first key having the provided `prefix`.
+	/// In addition to a read lock and a column index, it takes a ref to the same `ReadOptions` we
+	/// pass to the `get` method.
 	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8], read_opts: &ReadOptions) -> Self::Iterator;
 }
 
@@ -90,15 +96,14 @@ impl<'a, T> ReadGuardedIterator<'a, <&'a T as IterationHandler>::Iterator, T>
 where
 	&'a T: IterationHandler,
 {
-	/// Creates a new `ReadGuardedIterator` that maps `RwLock<RocksDB>` to `RwLock<DBIterator>`, where
-	/// `DBIterator` iterates over all keys.
-	/// In addition to a read lock and a column index, it takes a ref to `ReadOptions` to allow customization of the iterator behaviour, e.g. <insert illuminating example here>.
+	/// Creates a new `ReadGuardedIterator` that maps `RwLock<RocksDB>` to `RwLock<DBIterator>`,
+	/// where `DBIterator` iterates over all keys.
 	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: Option<u32>, read_opts: &ReadOptions) -> Self {
 		Self { inner: Self::new_inner(read_lock, |db| db.iter(col, read_opts)) }
 	}
 
-	/// Maps `RwLock<RocksDB>` to `RwLock<DBIterator>`, where
-	/// `DBIterator` iterates over keys >= prefix.
+	/// Creates a new `ReadGuardedIterator` that maps `RwLock<RocksDB>` to `RwLock<DBIterator>`,
+	/// where `DBIterator` iterates over keys >= prefix.
 	pub fn new_from_prefix(
 		read_lock: RwLockReadGuard<'a, Option<T>>,
 		col: Option<u32>,
