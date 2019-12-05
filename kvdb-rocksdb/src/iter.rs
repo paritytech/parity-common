@@ -127,7 +127,7 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 			|| self.db.iterator_opt(IteratorMode::Start, read_opts),
 			|c| {
 				self.db
-					.iterator_cf_opt(self.get_cf(c as usize), read_opts, IteratorMode::Start)
+					.iterator_cf_opt(self.cf(c as usize), read_opts, IteratorMode::Start)
 					.expect("iterator params are valid; qed")
 			},
 		)
@@ -138,7 +138,7 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 			|| self.db.iterator_opt(IteratorMode::From(prefix, Direction::Forward), read_opts),
 			|c| {
 				self.db
-					.iterator_cf_opt(self.get_cf(c as usize), read_opts, IteratorMode::From(prefix, Direction::Forward))
+					.iterator_cf_opt(self.cf(c as usize), read_opts, IteratorMode::From(prefix, Direction::Forward))
 					.expect("iterator params are valid; qed")
 			},
 		)
