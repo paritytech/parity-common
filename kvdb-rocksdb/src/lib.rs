@@ -226,7 +226,7 @@ struct DBAndColumns {
 }
 
 impl DBAndColumns {
-	fn get_cf(&self, i: usize) -> &ColumnFamily {
+	fn cf(&self, i: usize) -> &ColumnFamily {
 		self.db.cf_handle(&self.column_names[i]).expect("the specified column name is correct; qed")
 	}
 }
@@ -438,7 +438,7 @@ impl Database {
 							match *state {
 								KeyState::Delete => {
 									if c > 0 {
-										let cf = cfs.get_cf(c - 1);
+										let cf = cfs.cf(c - 1);
 										batch.delete_cf(cf, key).map_err(other_io_err)?;
 									} else {
 										batch.delete(key).map_err(other_io_err)?;
@@ -446,7 +446,7 @@ impl Database {
 								}
 								KeyState::Insert(ref value) => {
 									if c > 0 {
-										let cf = cfs.get_cf(c - 1);
+										let cf = cfs.cf(c - 1);
 										batch.put_cf(cf, key, value).map_err(other_io_err)?;
 									} else {
 										batch.put(key, value).map_err(other_io_err)?;
@@ -497,11 +497,11 @@ impl Database {
 					match op {
 						DBOp::Insert { col, key, value } => match col {
 							None => batch.put(&key, &value).map_err(other_io_err)?,
-							Some(c) => batch.put_cf(cfs.get_cf(c as usize), &key, &value).map_err(other_io_err)?,
+							Some(c) => batch.put_cf(cfs.cf(c as usize), &key, &value).map_err(other_io_err)?,
 						},
 						DBOp::Delete { col, key } => match col {
 							None => batch.delete(&key).map_err(other_io_err)?,
-							Some(c) => batch.delete_cf(cfs.get_cf(c as usize), &key).map_err(other_io_err)?,
+							Some(c) => batch.delete_cf(cfs.cf(c as usize), &key).map_err(other_io_err)?,
 						},
 					}
 				}
@@ -527,10 +527,14 @@ impl Database {
 							Some(&KeyState::Delete) => Ok(None),
 							None => col
 								.map_or_else(
-									|| cfs.db.get_opt(key, &self.read_opts).map(|r| r.map(|v| DBValue::from_slice(&v))),
+									|| {
+										cfs.db
+											.get_pinned_opt(key, &self.read_opts)
+											.map(|r| r.map(|v| DBValue::from_slice(&v)))
+									},
 									|c| {
 										cfs.db
-											.get_cf_opt(cfs.get_cf(c as usize), key, &self.read_opts)
+											.get_pinned_cf_opt(cfs.cf(c as usize), key, &self.read_opts)
 											.map(|r| r.map(|v| DBValue::from_slice(&v)))
 									},
 								)
@@ -650,8 +654,8 @@ impl Database {
 			.unwrap_or(0)
 	}
 
-	/// Drop a column family.
-	pub fn drop_column(&self) -> io::Result<()> {
+	/// Remove the last column family in the database. The deletion is definitive.
+	pub fn remove_last_column(&self) -> io::Result<()> {
 		match *self.db.write() {
 			Some(DBAndColumns { ref mut db, ref mut column_names }) => {
 				if let Some(name) = column_names.pop() {
@@ -663,7 +667,7 @@ impl Database {
 		}
 	}
 
-	/// Add a column family.
+	/// Add a new column family to the DB.
 	pub fn add_column(&self) -> io::Result<()> {
 		match *self.db.write() {
 			Some(DBAndColumns { ref mut db, ref mut column_names }) => {
@@ -848,7 +852,7 @@ mod tests {
 	}
 
 	#[test]
-	fn drop_columns() {
+	fn remove_columns() {
 		let config = DatabaseConfig::default();
 		let config_5 = DatabaseConfig::with_columns(Some(5));
 
@@ -860,7 +864,7 @@ mod tests {
 			assert_eq!(db.num_columns(), 5);
 
 			for i in (0..5).rev() {
-				db.drop_column().unwrap();
+				db.remove_last_column().unwrap();
 				assert_eq!(db.num_columns(), i);
 			}
 		}
