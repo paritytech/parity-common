@@ -20,7 +20,6 @@ trie-standardmap = "0.15.2"
 hex-literal = "0.2.1"
 
 [features]
-ethereum = ["rlp/ethereum"]
 std = [
 	"hash-db/std",
 	"rlp/std",
