@@ -30,14 +30,13 @@ mod rstd {
 
 #[cfg(not(feature = "std"))]
 mod rstd {
-	pub use alloc::vec::Vec;
 	pub use alloc::collections::BTreeMap;
+	pub use alloc::vec::Vec;
 }
 
 use core::cmp;
 use core::iter::once;
 use rstd::*;
-
 
 use hash_db::Hasher;
 use rlp::RlpStream;
