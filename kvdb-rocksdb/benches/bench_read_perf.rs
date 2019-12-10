@@ -29,11 +29,10 @@ const NEEDLES: usize = 10_000;
 const NEEDLES_TO_HAYSTACK_RATIO: usize = 100;
 
 use std::io;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use alloc_counter::{count_alloc, AllocCounterSystem};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use elastic_array::core_::time::Duration;
 use ethereum_types::H256;
 use rand::{distributions::Uniform, seq::SliceRandom, Rng};
 
