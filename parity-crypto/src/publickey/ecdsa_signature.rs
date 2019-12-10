@@ -215,7 +215,7 @@ impl DerefMut for Signature {
 }
 
 /// Signs message with the given secret key.
-/// Returns the corresponding signature
+/// Returns the corresponding signature.
 pub fn sign(secret: &Secret, message: &Message) -> Result<Signature, Error> {
 	let context = &SECP256K1;
 	let sec = SecretKey::from_slice(secret.as_ref())?;
@@ -280,8 +280,8 @@ mod tests {
 	fn vrs_conversion() {
 		// given
 		let keypair = Random.generate();
-		let message = Message::default();
-		let signature = sign(keypair.secret(), &message).unwrap();
+		let message = Message::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap();
+		let signature = sign(keypair.secret(), &message).expect("can sign a non-zero message");
 
 		// when
 		let vrs = signature.clone().into_electrum();
