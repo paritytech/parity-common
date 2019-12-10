@@ -43,8 +43,6 @@ pub use ethereum_types::{Address, Public};
 pub type Message = H256;
 
 lazy_static! {
-	// todo[dvdplm] Can use VerifyOnly? SignOnly?
-	// todo[dvdplm] we maybe do not need this at all.
 	pub static ref SECP256K1: secp256k1::Secp256k1<secp256k1::All> = secp256k1::Secp256k1::new();
 
 	/// The number -1 encoded as a secret key
