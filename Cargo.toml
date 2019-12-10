@@ -21,3 +21,7 @@ members = [
 	"ethereum-types",
 	"ethbloom",
 ]
+
+[patch.crates-io]
+secp256k1 = { git = "https://github.com/rust-bitcoin/rust-secp256k1.git" }
+
