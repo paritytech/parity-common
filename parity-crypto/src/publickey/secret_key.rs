@@ -26,10 +26,7 @@ use secp256k1::constants::SECRET_KEY_SIZE as SECP256K1_SECRET_KEY_SIZE;
 use secp256k1::key;
 use zeroize::Zeroize;
 
-use crate::{
-	Error,
-	publickey::MINUS_ONE_KEY,
-};
+use crate::publickey::{Error, MINUS_ONE_KEY};
 
 /// Represents secret key
 #[derive(Clone, PartialEq, Eq)]

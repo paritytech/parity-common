@@ -16,12 +16,11 @@
 
 //! ECDH key agreement scheme implemented as a free function.
 
-use super::{Error, Public, Secret, SECP256K1};
+use super::{Error, Public, Secret};
 use secp256k1::{self, ecdh, key};
 
 /// Agree on a shared secret
 pub fn agree(secret: &Secret, public: &Public) -> Result<Secret, Error> {
-	let context = &SECP256K1;
 	let pdata = {
 		let mut temp = [4u8; 65];
 		(&mut temp[1..65]).copy_from_slice(&public[0..64]);
@@ -30,7 +29,7 @@ pub fn agree(secret: &Secret, public: &Public) -> Result<Secret, Error> {
 
 	let publ = key::PublicKey::from_slice(&pdata)?;
 	let sec = key::SecretKey::from_slice(secret.as_bytes())?;
-	let shared = ecdh::SharedSecret::new_raw(context, &publ, &sec);
+	let shared = ecdh::SharedSecret::new(&publ, &sec);
 
 	Secret::import_key(&shared[0..32]).map_err(|_| Error::Secp(secp256k1::Error::InvalidSecretKey))
 }

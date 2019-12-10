@@ -341,7 +341,7 @@ mod derivation {
 		let new_private_sec = SecretKey::from_slice(new_private.as_bytes()).expect(
 			"Private key belongs to the field [0..CURVE_ORDER) (checked above); So initializing can never fail; qed",
 		);
-		let mut new_public = PublicKey::from_secret_key(&SECP256K1, &new_private_sec);
+		let new_public = PublicKey::from_secret_key(&SECP256K1, &new_private_sec);
 
 		// Adding two points on the elliptic curves (combining two public keys)
 		new_public.combine(&public_sec).expect("Addition of two valid points produce valid point");

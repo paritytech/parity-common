@@ -39,15 +39,6 @@ lazy_static! {
 	pub static ref CURVE_ORDER: U256 = H256::from_slice(&SECP256K1_CURVE_ORDER).into_uint();
 }
 
-/// Whether the public key is valid.
-pub fn public_is_valid(public: &Public) -> bool {
-	// todo[dvdplm] the `secp256k1` CHANGELOG says:
-	//   "* [Remove `PublicKey::new()` and `PublicKey::is_valid()`](https://github.com/rust-bitcoin/rust-secp256k1/pull/37) since `new` was unsafe and it should now be impossible to create invalid `PublicKey` objects through the API"
-	//  …so if that is correct we do not need this method at all.
-	true
-//	to_secp256k1_public(public).ok().map_or(false, |p| p.is_valid())
-}
-
 /// In-place multiply public key by secret key (EC point * scalar)
 pub fn public_mul_secret(public: &mut Public, secret: &Secret) -> Result<(), Error> {
 	let key_secret = secret.to_secp256k1_secret()?;
@@ -59,7 +50,7 @@ pub fn public_mul_secret(public: &mut Public, secret: &Secret) -> Result<(), Err
 
 /// In-place add one public key to another (EC point + EC point)
 pub fn public_add(public: &mut Public, other: &Public) -> Result<(), Error> {
-	let mut key_public = to_secp256k1_public(public)?;
+	let key_public = to_secp256k1_public(public)?;
 	let other_public = to_secp256k1_public(other)?;
 	key_public.combine(&other_public)?;
 	set_public(public, &key_public);
@@ -71,7 +62,7 @@ pub fn public_sub(public: &mut Public, other: &Public) -> Result<(), Error> {
 	let mut key_neg_other = to_secp256k1_public(other)?;
 	key_neg_other.mul_assign(&SECP256K1, &MINUS_ONE_KEY[..])?;
 
-	let mut key_public = to_secp256k1_public(public)?;
+	let key_public = to_secp256k1_public(public)?;
 	key_public.combine(&key_neg_other)?;
 	set_public(public, &key_public);
 	Ok(())
@@ -112,7 +103,7 @@ fn set_public(public: &mut Public, key_public: &key::PublicKey) {
 #[cfg(test)]
 mod tests {
 	use super::super::{Generator, Random, Secret};
-	use super::{generation_point, public_add, public_is_valid, public_mul_secret, public_negate, public_sub};
+	use super::{generation_point, public_add, public_mul_secret, public_negate, public_sub};
 	use std::str::FromStr;
 
 	#[test]
@@ -149,12 +140,6 @@ mod tests {
 		public_negate(&mut negation).unwrap();
 
 		assert_eq!(negation, public);
-	}
-
-	#[test]
-	fn known_public_is_valid() {
-		let public = Random.generate().unwrap().public().clone();
-		assert!(public_is_valid(&public));
 	}
 
 	#[test]
