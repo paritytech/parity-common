@@ -279,7 +279,7 @@ mod tests {
 	#[test]
 	fn vrs_conversion() {
 		// given
-		let keypair = Random.generate().unwrap();
+		let keypair = Random.generate();
 		let message = Message::default();
 		let signature = sign(keypair.secret(), &message).unwrap();
 
@@ -293,7 +293,7 @@ mod tests {
 
 	#[test]
 	fn signature_to_and_from_str() {
-		let keypair = Random.generate().unwrap();
+		let keypair = Random.generate();
 		let message = Message::default();
 		let signature = sign(keypair.secret(), &message).unwrap();
 		let string = format!("{}", signature);
@@ -303,7 +303,7 @@ mod tests {
 
 	#[test]
 	fn sign_and_recover_public() {
-		let keypair = Random.generate().unwrap();
+		let keypair = Random.generate();
 		let message = Message::default();
 		let signature = sign(keypair.secret(), &message).unwrap();
 		assert_eq!(keypair.public(), &recover(&signature, &message).unwrap());
@@ -311,7 +311,7 @@ mod tests {
 
 	#[test]
 	fn sign_and_verify_public() {
-		let keypair = Random.generate().unwrap();
+		let keypair = Random.generate();
 		let message = Message::default();
 		let signature = sign(keypair.secret(), &message).unwrap();
 		assert!(verify_public(keypair.public(), &signature, &message).unwrap());
@@ -319,7 +319,7 @@ mod tests {
 
 	#[test]
 	fn sign_and_verify_address() {
-		let keypair = Random.generate().unwrap();
+		let keypair = Random.generate();
 		let message = Message::default();
 		let signature = sign(keypair.secret(), &message).unwrap();
 		assert!(verify_address(&keypair.address(), &signature, &message).unwrap());

@@ -271,7 +271,7 @@ mod tests {
 
 	#[test]
 	fn multiplicating_secret_inversion_with_secret_gives_one() {
-		let secret = Random.generate().unwrap().secret().clone();
+		let secret = Random.generate().secret().clone();
 		let mut inversion = secret.clone();
 		inversion.inv().unwrap();
 		inversion.mul(&secret).unwrap();
@@ -283,7 +283,7 @@ mod tests {
 
 	#[test]
 	fn secret_inversion_is_reversible_with_inversion() {
-		let secret = Random.generate().unwrap().secret().clone();
+		let secret = Random.generate().secret().clone();
 		let mut inversion = secret.clone();
 		inversion.inv().unwrap();
 		inversion.inv().unwrap();
@@ -292,7 +292,7 @@ mod tests {
 
 	#[test]
 	fn secret_pow() {
-		let secret = Random.generate().unwrap().secret().clone();
+		let secret = Random.generate().secret().clone();
 
 		let mut pow0 = secret.clone();
 		pow0.pow(0).unwrap();

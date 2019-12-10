@@ -22,12 +22,8 @@ use super::{Generator, KeyPair, SECP256K1};
 pub struct Random;
 
 impl Generator for Random {
-	type Error = std::io::Error;
-	// todo[dvdplm] this never fails; change the trait.
-	fn generate(&mut self) -> Result<KeyPair, Self::Error> {
-//		let mut rng = secp256k1::rand::OsRng::new().expect("OS has a RNG available; qed");
+	fn generate(&mut self) -> KeyPair {
 		let (sec, publ) = SECP256K1.generate_keypair(&mut secp256k1::rand::thread_rng());
-//		let (sec, publ) = SECP256K1.generate_keypair(&mut rng);
-		Ok(KeyPair::from_keypair(sec, publ))
+		KeyPair::from_keypair(sec, publ)
 	}
 }

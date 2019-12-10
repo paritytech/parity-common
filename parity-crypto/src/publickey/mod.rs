@@ -59,8 +59,6 @@ lazy_static! {
 
 /// Generates new keypair.
 pub trait Generator {
-	type Error;
-
 	/// Should be called to generate new keypair.
-	fn generate(&mut self) -> Result<KeyPair, Self::Error>;
+	fn generate(&mut self) -> KeyPair;
 }

@@ -108,8 +108,8 @@ mod tests {
 
 	#[test]
 	fn public_addition_is_commutative() {
-		let public1 = Random.generate().unwrap().public().clone();
-		let public2 = Random.generate().unwrap().public().clone();
+		let public1 = Random.generate().public().clone();
+		let public2 = Random.generate().public().clone();
 
 		let mut left = public1.clone();
 		public_add(&mut left, &public2).unwrap();
@@ -122,8 +122,8 @@ mod tests {
 
 	#[test]
 	fn public_addition_is_reversible_with_subtraction() {
-		let public1 = Random.generate().unwrap().public().clone();
-		let public2 = Random.generate().unwrap().public().clone();
+		let public1 = Random.generate().public().clone();
+		let public2 = Random.generate().public().clone();
 
 		let mut sum = public1.clone();
 		public_add(&mut sum, &public2).unwrap();
@@ -134,7 +134,7 @@ mod tests {
 
 	#[test]
 	fn public_negation_is_involutory() {
-		let public = Random.generate().unwrap().public().clone();
+		let public = Random.generate().public().clone();
 		let mut negation = public.clone();
 		public_negate(&mut negation).unwrap();
 		public_negate(&mut negation).unwrap();
