@@ -183,8 +183,8 @@ impl Secret {
 	pub fn inv(&mut self) -> Result<(), Error> {
 		let mut key_secret = self.to_secp256k1_secret()?;
 		// todo[dvdplm] this is the main hurdle I think. The impl for `ffi::secp256k1_ec_privkey_inverse` is in `ext.c`.
-		// we can
-		// – try to upstream the change (was this ever attempted?)
+		// We can
+		// – try to upstream the change (was this ever attempted?): yes, and rejected
 		// – extract `ext.c` into a mini-crate and use it in `secret-store` (it calls three functions from secp256k1 though, so it'd pull in the whole lib and we'd have a fork all over again)
 		// – rewrite `ext.c` in rust and use that in `secret-store` (extract from libsecp256k1?)
 		// – let `secret-store` continue depending on the parity fork
