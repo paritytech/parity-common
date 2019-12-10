@@ -52,7 +52,7 @@ use fixed_hash::*;
 use impl_rlp::impl_fixed_hash_rlp;
 #[cfg(feature = "serialize")]
 use impl_serde::impl_fixed_hash_serde;
-use tiny_keccak::keccak256;
+use tiny_keccak::{Hasher, Keccak};
 
 // 3 according to yellowpaper
 const BLOOM_BITS: u32 = 3;
@@ -87,7 +87,13 @@ enum Hash<'a> {
 impl<'a> From<Input<'a>> for Hash<'a> {
 	fn from(input: Input<'a>) -> Self {
 		match input {
-			Input::Raw(raw) => Hash::Owned(keccak256(raw)),
+			Input::Raw(raw) => {
+				let mut out = [0u8; 32];
+				let mut keccak256 = Keccak::v256();
+				keccak256.update(raw);
+				keccak256.finalize(&mut out);
+				Hash::Owned(out)
+			}
 			Input::Hash(hash) => Hash::Ref(hash),
 		}
 	}

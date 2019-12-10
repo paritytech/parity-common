@@ -10,7 +10,6 @@
 
 // Re-export liballoc using an alias so that the macros can work without
 // requiring `extern crate alloc` downstream.
-#[cfg(not(feature = "std"))]
 #[doc(hidden)]
 pub extern crate alloc as alloc_;
 

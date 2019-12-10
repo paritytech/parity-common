@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.4.4] - 2019-11-20
+### Added
+- Method `Rlp::at_with_offset` (https://github.com/paritytech/parity-common/pull/269)
+
 ## [0.4.3] - 2019-10-24
 ### Dependencies
 - Updated dependencies (https://github.com/paritytech/parity-common/pull/239)

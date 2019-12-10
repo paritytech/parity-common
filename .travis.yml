@@ -8,20 +8,31 @@ matrix:
       rust: stable
       before_script:
         - rustup component add rustfmt
-      after_script:
-        - cargo fmt -- --check
     - os: linux
       rust: beta
     - os: linux
       rust: nightly
     - os: osx
-      osx_image: xcode11
+      osx_image: xcode11.2
+      addons:
+        chrome: stable
+        firefox: latest
+      install:
+        - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.1/install.sh | sh
+        - source ~/.nvm/nvm.sh
+        - nvm install --lts
+        - npm install -g chromedriver
+        - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        - which chromedriver
       rust: stable
   allow_failures:
     - rust: nightly
 install:
   - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 script:
+  - if [ "$TRAVIS_RUST_VERSION" == "stable" ] && [ "$TRAVIS_OS_NAME" == "linux" ]; then
+    cargo fmt -- --check;
+    fi
   - cargo check --all --tests
   - cargo build --all
   - cargo test --all --exclude uint --exclude fixed-hash
@@ -40,6 +51,5 @@ script:
   - cd parity-util-mem/ && cargo test --no-default-features --features=dlmalloc-global && cd ..
   - cd rlp/ && cargo test --no-default-features && cargo check --benches && cd ..
   - cd triehash/ && cargo check --benches && cd ..
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
-    cd kvdb-web/ && wasm-pack test --headless --chrome --firefox && cd ..;
-    fi
+  - cd kvdb-web/ && wasm-pack test --headless --chrome --firefox && cd ..
+

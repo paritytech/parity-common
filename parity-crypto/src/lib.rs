@@ -28,7 +28,7 @@ pub mod scrypt;
 pub use crate::error::Error;
 
 use subtle::ConstantTimeEq;
-use tiny_keccak::Keccak;
+use tiny_keccak::{Hasher, Keccak};
 
 pub const KEY_LENGTH: usize = 32;
 pub const KEY_ITERATIONS: usize = 10240;
@@ -48,7 +48,7 @@ where
 	T: AsRef<[u8]>,
 {
 	fn keccak256(&self) -> [u8; 32] {
-		let mut keccak = Keccak::new_keccak256();
+		let mut keccak = Keccak::v256();
 		let mut result = [0u8; 32];
 		keccak.update(self.as_ref());
 		keccak.finalize(&mut result);
