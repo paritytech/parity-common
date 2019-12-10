@@ -84,7 +84,7 @@ pub struct ExtendedSecret {
 impl ExtendedSecret {
 	/// New extended key from given secret and chain code.
 	pub fn with_code(secret: Secret, chain_code: H256) -> ExtendedSecret {
-		ExtendedSecret { secret: secret, chain_code: chain_code }
+		ExtendedSecret { secret, chain_code }
 	}
 
 	/// New extended key from given secret with the random chain code.
@@ -93,7 +93,7 @@ impl ExtendedSecret {
 	}
 
 	/// New extended key from given secret.
-	/// Chain code will be derived from the secret itself (in a deterministic way).
+	/// Chain code will be derived from the secret itself (deterministically).
 	pub fn new(secret: Secret) -> ExtendedSecret {
 		let chain_code = derivation::chain_code(*secret);
 		ExtendedSecret::with_code(secret, chain_code)
@@ -341,10 +341,10 @@ mod derivation {
 		let new_private_sec = SecretKey::from_slice(new_private.as_bytes()).expect(
 			"Private key belongs to the field [0..CURVE_ORDER) (checked above); So initializing can never fail; qed",
 		);
-		let new_public = PublicKey::from_secret_key(&SECP256K1, &new_private_sec);
+		let mut new_public = PublicKey::from_secret_key(&SECP256K1, &new_private_sec);
 
 		// Adding two points on the elliptic curves (combining two public keys)
-		new_public.combine(&public_sec).expect("Addition of two valid points produce valid point");
+		new_public = new_public.combine(&public_sec).expect("Addition of two valid points produce valid point");
 
 		let serialized = new_public.serialize_uncompressed();
 
@@ -488,7 +488,7 @@ mod tests {
 	}
 
 	#[test]
-	fn match_() {
+	fn test_key_derivation() {
 		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let extended_secret = ExtendedSecret::with_code(secret.clone(), H256::from_low_u64_be(1));
 		let extended_public = ExtendedPublic::from_secret(&extended_secret).expect("Extended public should be created");

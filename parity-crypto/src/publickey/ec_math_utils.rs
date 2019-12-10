@@ -50,9 +50,9 @@ pub fn public_mul_secret(public: &mut Public, secret: &Secret) -> Result<(), Err
 
 /// In-place add one public key to another (EC point + EC point)
 pub fn public_add(public: &mut Public, other: &Public) -> Result<(), Error> {
-	let key_public = to_secp256k1_public(public)?;
+	let mut key_public = to_secp256k1_public(public)?;
 	let other_public = to_secp256k1_public(other)?;
-	key_public.combine(&other_public)?;
+	let key_public = key_public.combine(&other_public)?;
 	set_public(public, &key_public);
 	Ok(())
 }
@@ -62,8 +62,8 @@ pub fn public_sub(public: &mut Public, other: &Public) -> Result<(), Error> {
 	let mut key_neg_other = to_secp256k1_public(other)?;
 	key_neg_other.mul_assign(&SECP256K1, &MINUS_ONE_KEY[..])?;
 
-	let key_public = to_secp256k1_public(public)?;
-	key_public.combine(&key_neg_other)?;
+	let mut key_public = to_secp256k1_public(public)?;
+	key_public = key_public.combine(&key_neg_other)?;
 	set_public(public, &key_public);
 	Ok(())
 }
