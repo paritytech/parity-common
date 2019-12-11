@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.1.2] - 2019-12-11
+### Dependencies
+- Updated dependencies (https://github.com/paritytech/parity-common/pull/239)
+### Changed
+- Migrated to 2018 edition (https://github.com/paritytech/parity-common/pull/205)
 ## [0.1.1] - 2019-10-24
 ### Dependencies
 - Updated dependencies (https://github.com/paritytech/parity-common/pull/239)

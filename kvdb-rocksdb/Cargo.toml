@@ -1,6 +1,6 @@
 [package]
 name = "kvdb-rocksdb"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "kvdb implementation backed by rocksDB"
@@ -12,7 +12,7 @@ name = "bench_read_perf"
 harness = false
 
 [dependencies]
-elastic-array = "0.10.2"
+elastic-array = "0.11.0"
 fs-swap = "0.2.4"
 interleaved-ordered = "0.1.1"
 kvdb = { path = "../kvdb", version = "0.1" }
