@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Secret key implementation
+//! Secret key implementation.
 
 use std::convert::TryFrom;
 use std::fmt;
@@ -188,7 +188,7 @@ impl Secret {
 		// – extract `ext.c` into a mini-crate and use it in `secret-store` (it calls three functions from secp256k1 though, so it'd pull in the whole lib and we'd have a fork all over again)
 		// – rewrite `ext.c` in rust and use that in `secret-store` (extract from libsecp256k1?)
 		// – let `secret-store` continue depending on the parity fork
-//		key_secret.inv_assign(&SECP256K1)?;
+		key_secret.inv_assign()?;
 
 		*self = key_secret.into();
 		Ok(())
@@ -216,6 +216,7 @@ impl Secret {
 
 	/// Create `secp256k1::key::SecretKey` based on this secret
 	pub fn to_secp256k1_secret(&self) -> Result<key::SecretKey, Error> {
+//		todo[dvdplm] can't this just be? `key::SecretKey::from_slice(&self[..])` – need error conversion from secp256k1::Error for publickey::error::Error
 		Ok(key::SecretKey::from_slice(&self[..])?)
 	}
 }
