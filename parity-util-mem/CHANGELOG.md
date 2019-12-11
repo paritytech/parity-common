@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- Updated dependencies (See [PR #281](https://github.com/paritytech/parity-common/pull/281) for details)
 
 ## [0.2.1] - 2019-10-24
 ### Dependencies
