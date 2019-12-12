@@ -28,7 +28,7 @@ use kvdb::{DBOp, DBTransaction};
 use log::{debug, warn};
 use std::ops::Deref;
 
-use crate::{error::Error, Column};
+use crate::error::Error;
 
 pub struct IndexedDB {
 	pub version: u32,
@@ -85,13 +85,9 @@ fn store_name(num: u32) -> String {
 	format!("col{}", num)
 }
 
-fn column_to_number(column: Column) -> u32 {
-	column.map(|c| c + 1).unwrap_or_default()
-}
-
 // Returns js objects representing store names for each column
 fn store_names_js(columns: u32) -> Array {
-	let column_names = (0..=columns).map(store_name);
+	let column_names = (0..columns).map(store_name);
 
 	let js_array = Array::new();
 	for name in column_names {
@@ -136,7 +132,7 @@ pub fn idb_commit_transaction(idb: &IdbDatabase, txn: &DBTransaction, columns: u
 		.expect("The provided mode and store names are valid; qed");
 
 	// Open object stores (columns)
-	let object_stores = (0..=columns)
+	let object_stores = (0..columns)
 		.map(|n| {
 			idb_txn
 				.object_store(store_name(n).as_str())
@@ -147,8 +143,7 @@ pub fn idb_commit_transaction(idb: &IdbDatabase, txn: &DBTransaction, columns: u
 	for op in &txn.ops {
 		match op {
 			DBOp::Insert { col, key, value } => {
-				let column = column_to_number(*col) as usize;
-
+				let column = *col as usize;
 				// Convert rust bytes to js arrays
 				let key_js = Uint8Array::from(key.as_ref());
 				let val_js = Uint8Array::from(value.as_ref());
@@ -160,8 +155,7 @@ pub fn idb_commit_transaction(idb: &IdbDatabase, txn: &DBTransaction, columns: u
 				}
 			}
 			DBOp::Delete { col, key } => {
-				let column = column_to_number(*col) as usize;
-
+				let column = *col as usize;
 				// Convert rust bytes to js arrays
 				let key_js = Uint8Array::from(key.as_ref());
 
