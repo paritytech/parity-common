@@ -24,10 +24,9 @@ use rocksdb::{
 };
 
 use crate::iter::KeyValuePair;
-use elastic_array::ElasticArray32;
 use fs_swap::{swap, swap_nonatomic};
 use interleaved_ordered::interleave_ordered;
-use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
+use kvdb::{DBOp, DBTransaction, DBValue, DBKey, KeyValueDB};
 use log::{debug, warn};
 
 #[cfg(target_os = "linux")]
@@ -240,9 +239,9 @@ pub struct Database {
 	read_opts: ReadOptions,
 	block_opts: BlockBasedOptions,
 	// Dirty values added with `write_buffered`. Cleaned on `flush`.
-	overlay: RwLock<Vec<HashMap<ElasticArray32<u8>, KeyState>>>,
+	overlay: RwLock<Vec<HashMap<DBKey, KeyState>>>,
 	// Values currently being flushed. Cleared when `flush` completes.
-	flushing: RwLock<Vec<HashMap<ElasticArray32<u8>, KeyState>>>,
+	flushing: RwLock<Vec<HashMap<DBKey, KeyState>>>,
 	// Prevents concurrent flushes.
 	// Value indicates if a flush is in progress.
 	flushing_lock: Mutex<bool>,
