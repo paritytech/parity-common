@@ -27,7 +27,7 @@ pub const PREFIX_LEN: usize = 12;
 
 /// Database value.
 pub type DBValue = SmallVec<[u8; 128]>;
-// todo[dvdplm] is this type useful or harmful?
+/// Database keys.
 pub type DBKey = SmallVec<[u8; 32]>;
 
 /// Write transaction. Batches a sequence of put/delete operations for efficiency.
@@ -75,19 +75,16 @@ impl DBTransaction {
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
 	pub fn put(&mut self, col: Option<u32>, key: &[u8], value: &[u8]) {
-		// todo[dvdplm] can avoid copy with `from_buf()` here?
 		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value: DBValue::from_slice(value) })
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
 	pub fn put_vec(&mut self, col: Option<u32>, key: &[u8], value: Bytes) {
-		// todo[dvdplm] can avoid copy with `from_buf()` here?
 		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value: DBValue::from_vec(value) });
 	}
 
 	/// Delete value by key.
 	pub fn delete(&mut self, col: Option<u32>, key: &[u8]) {
-		// todo[dvdplm] can avoid copy with `from_buf()` here?
 		self.ops.push(DBOp::Delete { col, key: DBKey::from_slice(key) });
 	}
 }
