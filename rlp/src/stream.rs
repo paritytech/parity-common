@@ -317,7 +317,7 @@ impl RlpStream {
 			Some(ref mut x) => {
 				x.current += inserted_items;
 				match x.max {
-					Some(ref max) if x.current > *max => panic!("You cannot append more items then you expect!"),
+					Some(ref max) if x.current > *max => panic!("You cannot append more items than you expect!"),
 					Some(ref max) => x.current == *max,
 					_ => false,
 				}
