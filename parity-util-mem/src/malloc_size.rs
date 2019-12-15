@@ -344,7 +344,6 @@ where
 
 impl<T: MallocSizeOf> MallocSizeOf for [T] {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-		println!("[T] IMPL");
 		let mut n = 0;
 		for elem in self.iter() {
 			n += elem.size_of(ops);
@@ -356,7 +355,6 @@ impl<T: MallocSizeOf> MallocSizeOf for [T] {
 impl<T: MallocSizeOf> MallocSizeOf for Vec<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		println!("VEC IMPL, shallow size: {:?}", n);
 		for elem in self.iter() {
 			n += elem.size_of(ops);
 		}
