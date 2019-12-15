@@ -40,20 +40,20 @@ macro_rules! impl_smallvec {
 		where
 			T: MallocSizeOf,
 		{
-			fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-				// todo[dvdplm] this will always be `0` because it resolves to the `[T]` impl. Can do better than that?
-				self[..].size_of(ops)
+			fn size_of(&self, _: &mut MallocSizeOfOps) -> usize {
+				if self.spilled() {
+					self.capacity() * core::mem::size_of::<T>()
+				} else {
+					0
+				}
 			}
 		}
 	};
 }
 
 // todo[dvdplm]: check if we really need all these impls.
-impl_smallvec!(32);
-impl_smallvec!(36); // trie-db use this
-impl_smallvec!(64);
-impl_smallvec!(128);
-impl_smallvec!(256);
+impl_smallvec!(32); // kvdb uses this
+impl_smallvec!(36); // trie-db uses this
 
 impl<T: MallocSizeOf> MallocSizeOf for Mutex<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
@@ -69,18 +69,23 @@ impl<T: MallocSizeOf> MallocSizeOf for RwLock<T> {
 
 #[cfg(test)]
 mod tests {
-	use crate::{allocators::new_malloc_size_ops, MallocSizeOf};
+	use crate::{allocators::new_malloc_size_ops, MallocSizeOf, MallocSizeOfOps};
 	use smallvec::SmallVec;
+	impl_smallvec!(3);
 
 	#[test]
 	fn test_smallvec() {
-		let mut v: SmallVec<[u8; 2]> = SmallVec::new();
+		let mut v: SmallVec<[u8; 3]> = SmallVec::new();
 		let mut ops = new_malloc_size_ops();
 		assert_eq!(v.size_of(&mut ops), 0);
 		v.push(1);
 		v.push(2);
-		assert_eq!(v.size_of(&mut ops), 0);
 		v.push(3);
-		assert_eq!(v.size_of(&mut ops), 0); // todo[dvdplm] why isn't this 1? use `spilled()` and to see if we allocated a `Vec`.
+		assert_eq!(v.size_of(&mut ops), 0);
+		assert!(!v.spilled());
+		v.push(4);
+		assert!(v.spilled(), "SmallVec spills when going beyond the capacity of the inner backing array");
+		assert_eq!(v.len(), 4);
+		assert_eq!(v.size_of(&mut ops), 4);
 	}
 }
