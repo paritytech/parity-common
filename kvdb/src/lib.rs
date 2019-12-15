@@ -26,7 +26,7 @@ use std::sync::Arc;
 pub const PREFIX_LEN: usize = 12;
 
 /// Database value.
-pub type DBValue = SmallVec<[u8; 128]>;
+pub type DBValue = Vec<u8>;
 /// Database keys.
 pub type DBKey = SmallVec<[u8; 32]>;
 
@@ -40,8 +40,8 @@ pub struct DBTransaction {
 /// Database operation.
 #[derive(Clone, PartialEq)]
 pub enum DBOp {
-	Insert { col: Option<u32>, key: DBKey, value: DBValue },
-	Delete { col: Option<u32>, key: DBKey },
+	Insert { col: u32, key: DBKey, value: DBValue },
+	Delete { col: u32, key: DBKey },
 }
 
 impl DBOp {
@@ -54,7 +54,7 @@ impl DBOp {
 	}
 
 	/// Returns the column associated with this operation.
-	pub fn col(&self) -> Option<u32> {
+	pub fn col(&self) -> u32 {
 		match *self {
 			DBOp::Insert { col, .. } => col,
 			DBOp::Delete { col, .. } => col,
@@ -74,17 +74,17 @@ impl DBTransaction {
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
-	pub fn put(&mut self, col: Option<u32>, key: &[u8], value: &[u8]) {
-		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value: DBValue::from_slice(value) })
+	pub fn put(&mut self, col: u32, key: &[u8], value: &[u8]) {
+		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value: value.to_vec() })
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
-	pub fn put_vec(&mut self, col: Option<u32>, key: &[u8], value: Bytes) {
-		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value: DBValue::from_vec(value) });
+	pub fn put_vec(&mut self, col: u32, key: &[u8], value: Bytes) {
+		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value });
 	}
 
 	/// Delete value by key.
-	pub fn delete(&mut self, col: Option<u32>, key: &[u8]) {
+	pub fn delete(&mut self, col: u32, key: &[u8]) {
 		self.ops.push(DBOp::Delete { col, key: DBKey::from_slice(key) });
 	}
 }
@@ -114,10 +114,10 @@ pub trait KeyValueDB: Sync + Send {
 	}
 
 	/// Get a value by key.
-	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>>;
+	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>>;
 
 	/// Get a value by partial key. Only works for flushed data.
-	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>>;
+	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>>;
 
 	/// Write a transaction of changes to the buffer.
 	fn write_buffered(&self, transaction: DBTransaction);
@@ -132,12 +132,12 @@ pub trait KeyValueDB: Sync + Send {
 	fn flush(&self) -> io::Result<()>;
 
 	/// Iterate over flushed data for a given column.
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
 
 	/// Iterate over flushed data for a given column, starting from a given prefix.
 	fn iter_from_prefix<'a>(
 		&'a self,
-		col: Option<u32>,
+		col: u32,
 		prefix: &'a [u8],
 	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
 

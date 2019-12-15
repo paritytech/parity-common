@@ -5,9 +5,17 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
-- use `get_pinned` API to save one allocation for each call to `get()` (See [PR #274](https://github.com/paritytech/parity-common/pull/274) for details)
-- rename `drop_column` to `remove_last_column` (See [PR #274](https://github.com/paritytech/parity-common/pull/274) for details)
-- rename `get_cf` to `cf` (See [PR #274](https://github.com/paritytech/parity-common/pull/274) for details)
+- Use `get_pinned` API to save one allocation for each call to `get()` (See [PR #274](https://github.com/paritytech/parity-common/pull/274) for details)
+- Rename `drop_column` to `remove_last_column` (See [PR #274](https://github.com/paritytech/parity-common/pull/274) for details)
+- Rename `get_cf` to `cf` (See [PR #274](https://github.com/paritytech/parity-common/pull/274) for details)
+- Default column support removed from the API (See [PR #278](https://github.com/paritytech/parity-common/pull/278) for details)
+  - Column argument type changed from `Option<u32>` to `u32`
+  - Migration
+    - Column index `None` -> `0`, `Some(0)` -> `1`, `Some(1)` -> `2`, etc.
+    - Database must be opened with at least one column and existing DBs has to be opened with a number of columns increased by 1 to avoid having to migrate the data, e.g. before: `Some(9)`, after: `10`.
+  - `DatabaseConfig::default()` defaults to 1 column
+  - `Database::with_columns` still accepts `u32`, but panics if `0` is provided 
+  - `Database::open` panics if configuration with 0 columns is provided
 
 ## [0.2.0] - 2019-11-28
 - Switched away from using [parity-rocksdb](https://crates.io/crates/parity-rocksdb) in favour of upstream [rust-rocksdb](https://crates.io/crates/rocksdb) (see [PR #257](https://github.com/paritytech/parity-common/pull/257) for details)

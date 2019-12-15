@@ -48,8 +48,8 @@ where
 // Used for memory budget.
 type MiB = usize;
 
-const KB: usize = 1024;
-const MB: usize = 1024 * KB;
+const KB: usize = 1_024;
+const MB: usize = 1_024 * KB;
 
 /// The default column memory budget in MiB.
 pub const DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB: MiB = 128;
@@ -161,11 +161,15 @@ pub struct DatabaseConfig {
 	/// write buffer size for each column including the default one.
 	/// If the memory budget of a column is not specified,
 	/// `DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB` is used for that column.
-	pub memory_budget: HashMap<Option<u32>, MiB>,
+	pub memory_budget: HashMap<u32, MiB>,
 	/// Compaction profile.
 	pub compaction: CompactionProfile,
 	/// Set number of columns.
-	pub columns: Option<u32>,
+	///
+	/// # Safety
+	///
+	/// The number of columns must not be zero.
+	pub columns: u32,
 	/// Specify the maximum number of info/debug log files to be kept.
 	pub keep_log_file_num: i32,
 }
@@ -173,23 +177,24 @@ pub struct DatabaseConfig {
 impl DatabaseConfig {
 	/// Create new `DatabaseConfig` with default parameters and specified set of columns.
 	/// Note that cache sizes must be explicitly set.
-	pub fn with_columns(columns: Option<u32>) -> Self {
+	///
+	/// # Safety
+	///
+	/// The number of `columns` must not be zero.
+	pub fn with_columns(columns: u32) -> Self {
+		assert!(columns > 0, "the number of columns must not be zero");
+
 		Self { columns, ..Default::default() }
 	}
 
 	/// Returns the total memory budget in bytes.
 	pub fn memory_budget(&self) -> MiB {
-		match self.columns {
-			None => self.memory_budget.get(&None).unwrap_or(&DB_DEFAULT_MEMORY_BUDGET_MB) * MB,
-			Some(columns) => (0..columns)
-				.map(|i| self.memory_budget.get(&Some(i)).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
-				.sum(),
-		}
+		(0..self.columns).map(|i| self.memory_budget.get(&i).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB).sum()
 	}
 
 	/// Returns the memory budget of the specified column in bytes.
 	fn memory_budget_for_col(&self, col: u32) -> MiB {
-		self.memory_budget.get(&Some(col)).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
+		self.memory_budget.get(&col).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
 	}
 
 	// Get column family configuration with the given block based options.
@@ -213,7 +218,7 @@ impl Default for DatabaseConfig {
 			max_open_files: 512,
 			memory_budget: HashMap::new(),
 			compaction: CompactionProfile::default(),
-			columns: None,
+			columns: 1,
 			keep_log_file_num: 1,
 		}
 	}
@@ -267,17 +272,6 @@ fn is_corrupted(err: &Error) -> bool {
 /// Generate the options for RocksDB, based on the given `DatabaseConfig`.
 fn generate_options(config: &DatabaseConfig) -> Options {
 	let mut opts = Options::default();
-	let columns = config.columns.unwrap_or(0);
-
-	if columns == 0 {
-		let budget = config.memory_budget() / 2;
-		opts.set_db_write_buffer_size(budget);
-		// from https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#memtable
-		// Memtable size is controlled by the option `write_buffer_size`.
-		// If you increase your memtable size, be sure to also increase your L1 size!
-		// L1 size is controlled by the option `max_bytes_for_level_base`.
-		opts.set_max_bytes_for_level_base(budget as u64);
-	}
 
 	opts.set_use_fsync(false);
 	opts.create_if_missing(true);
@@ -310,20 +304,16 @@ fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
 impl Database {
 	const CORRUPTION_FILE_NAME: &'static str = "CORRUPTED";
 
-	/// Open database with default settings.
-	pub fn open_default(path: &str) -> io::Result<Database> {
-		Database::open(&DatabaseConfig::default(), path)
-	}
-
 	/// Open database file. Creates if it does not exist.
+	///
+	/// # Safety
+	///
+	/// The number of `config.columns` must not be zero.
 	pub fn open(config: &DatabaseConfig, path: &str) -> io::Result<Database> {
+		assert!(config.columns > 0, "the number of columns must not be zero");
+
 		let opts = generate_options(config);
 		let block_opts = generate_block_based_options(config);
-		let columns = config.columns.unwrap_or(0);
-
-		if config.columns.is_some() && config.memory_budget.contains_key(&None) {
-			warn!("Memory budget for the default column (None) is ignored if columns.is_some()");
-		}
 
 		// attempt database repair if it has been previously marked as corrupted
 		let db_corrupted = Path::new(path).join(Database::CORRUPTION_FILE_NAME);
@@ -333,36 +323,32 @@ impl Database {
 			fs::remove_file(db_corrupted)?;
 		}
 
-		let column_names: Vec<_> = (0..columns).map(|c| format!("col{}", c)).collect();
+		let column_names: Vec<_> = (0..config.columns).map(|c| format!("col{}", c)).collect();
 
 		let write_opts = WriteOptions::default();
 		let mut read_opts = ReadOptions::default();
 		read_opts.set_verify_checksums(false);
 
-		let db = if config.columns.is_some() {
-			let cf_descriptors: Vec<_> = (0..columns)
-				.map(|i| ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, i)))
-				.collect();
+		let cf_descriptors: Vec<_> = (0..config.columns)
+			.map(|i| ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, i)))
+			.collect();
 
-			match DB::open_cf_descriptors(&opts, path, cf_descriptors) {
-				Err(_) => {
-					// retry and create CFs
-					match DB::open_cf(&opts, path, &[] as &[&str]) {
-						Ok(mut db) => {
-							for (i, name) in column_names.iter().enumerate() {
-								let _ = db
-									.create_cf(name, &config.column_config(&block_opts, i as u32))
-									.map_err(other_io_err)?;
-							}
-							Ok(db)
+		let db = match DB::open_cf_descriptors(&opts, path, cf_descriptors) {
+			Err(_) => {
+				// retry and create CFs
+				match DB::open_cf(&opts, path, &[] as &[&str]) {
+					Ok(mut db) => {
+						for (i, name) in column_names.iter().enumerate() {
+							let _ = db
+								.create_cf(name, &config.column_config(&block_opts, i as u32))
+								.map_err(other_io_err)?;
 						}
-						err => err,
+						Ok(db)
 					}
+					err => err,
 				}
-				ok => ok,
 			}
-		} else {
-			DB::open(&opts, path)
+			ok => ok,
 		};
 
 		let db = match db {
@@ -371,25 +357,21 @@ impl Database {
 				warn!("DB corrupted: {}, attempting repair", s);
 				DB::repair(&opts, path).map_err(other_io_err)?;
 
-				if config.columns.is_some() {
-					let cf_descriptors: Vec<_> = (0..columns)
-						.map(|i| {
-							ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, i))
-						})
-						.collect();
+				let cf_descriptors: Vec<_> = (0..config.columns)
+					.map(|i| {
+						ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, i))
+					})
+					.collect();
 
-					DB::open_cf_descriptors(&opts, path, cf_descriptors).map_err(other_io_err)?
-				} else {
-					DB::open(&opts, path).map_err(other_io_err)?
-				}
+				DB::open_cf_descriptors(&opts, path, cf_descriptors).map_err(other_io_err)?
 			}
 			Err(s) => return Err(other_io_err(s)),
 		};
 		Ok(Database {
 			db: RwLock::new(Some(DBAndColumns { db, column_names })),
 			config: config.clone(),
-			overlay: RwLock::new((0..=columns).map(|_| HashMap::new()).collect()),
-			flushing: RwLock::new((0..=columns).map(|_| HashMap::new()).collect()),
+			overlay: RwLock::new((0..config.columns).map(|_| HashMap::new()).collect()),
+			flushing: RwLock::new((0..config.columns).map(|_| HashMap::new()).collect()),
 			flushing_lock: Mutex::new(false),
 			path: path.to_owned(),
 			read_opts,
@@ -403,25 +385,15 @@ impl Database {
 		DBTransaction::new()
 	}
 
-	fn to_overlay_column(col: Option<u32>) -> usize {
-		col.map_or(0, |c| (c + 1) as usize)
-	}
-
 	/// Commit transaction to database.
 	pub fn write_buffered(&self, tr: DBTransaction) {
 		let mut overlay = self.overlay.write();
 		let ops = tr.ops;
 		for op in ops {
 			match op {
-				DBOp::Insert { col, key, value } => {
-					let c = Self::to_overlay_column(col);
-					overlay[c].insert(key, KeyState::Insert(value));
-				}
-				DBOp::Delete { col, key } => {
-					let c = Self::to_overlay_column(col);
-					overlay[c].insert(key, KeyState::Delete);
-				}
-			}
+				DBOp::Insert { col, key, value } => overlay[col as usize].insert(key, KeyState::Insert(value)),
+				DBOp::Delete { col, key } => overlay[col as usize].insert(key, KeyState::Delete),
+			};
 		}
 	}
 
@@ -434,24 +406,11 @@ impl Database {
 				{
 					for (c, column) in self.flushing.read().iter().enumerate() {
 						for (key, state) in column.iter() {
+							let cf = cfs.cf(c);
 							match *state {
-								KeyState::Delete => {
-									if c > 0 {
-										let cf = cfs.cf(c - 1);
-										batch.delete_cf(cf, key).map_err(other_io_err)?;
-									} else {
-										batch.delete(key).map_err(other_io_err)?;
-									}
-								}
-								KeyState::Insert(ref value) => {
-									if c > 0 {
-										let cf = cfs.cf(c - 1);
-										batch.put_cf(cf, key, value).map_err(other_io_err)?;
-									} else {
-										batch.put(key, value).map_err(other_io_err)?;
-									}
-								}
-							}
+								KeyState::Delete => batch.delete_cf(cf, key).map_err(other_io_err)?,
+								KeyState::Insert(ref value) => batch.put_cf(cf, key, value).map_err(other_io_err)?,
+							};
 						}
 					}
 				}
@@ -491,18 +450,14 @@ impl Database {
 				let ops = tr.ops;
 				for op in ops {
 					// remove any buffered operation for this key
-					self.overlay.write()[Self::to_overlay_column(op.col())].remove(op.key());
+					self.overlay.write()[op.col() as usize].remove(op.key());
+
+					let cf = cfs.cf(op.col() as usize);
 
 					match op {
-						DBOp::Insert { col, key, value } => match col {
-							None => batch.put(&key, &value).map_err(other_io_err)?,
-							Some(c) => batch.put_cf(cfs.cf(c as usize), &key, &value).map_err(other_io_err)?,
-						},
-						DBOp::Delete { col, key } => match col {
-							None => batch.delete(&key).map_err(other_io_err)?,
-							Some(c) => batch.delete_cf(cfs.cf(c as usize), &key).map_err(other_io_err)?,
-						},
-					}
+						DBOp::Insert { col: _, key, value } => batch.put_cf(cf, &key, &value).map_err(other_io_err)?,
+						DBOp::Delete { col: _, key } => batch.delete_cf(cf, &key).map_err(other_io_err)?,
+					};
 				}
 
 				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))
@@ -512,31 +467,22 @@ impl Database {
 	}
 
 	/// Get value by key.
-	pub fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
+	pub fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		match *self.db.read() {
 			Some(ref cfs) => {
-				let overlay = &self.overlay.read()[Self::to_overlay_column(col)];
+				let overlay = &self.overlay.read()[col as usize];
 				match overlay.get(key) {
 					Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
 					Some(&KeyState::Delete) => Ok(None),
 					None => {
-						let flushing = &self.flushing.read()[Self::to_overlay_column(col)];
+						let flushing = &self.flushing.read()[col as usize];
 						match flushing.get(key) {
 							Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
 							Some(&KeyState::Delete) => Ok(None),
-							None => col
-								.map_or_else(
-									|| {
-										cfs.db
-											.get_pinned_opt(key, &self.read_opts)
-											.map(|r| r.map(|v| DBValue::from_slice(&v)))
-									},
-									|c| {
-										cfs.db
-											.get_pinned_cf_opt(cfs.cf(c as usize), key, &self.read_opts)
-											.map(|r| r.map(|v| DBValue::from_slice(&v)))
-									},
-								)
+							None => cfs
+								.db
+								.get_pinned_cf_opt(cfs.cf(col as usize), key, &self.read_opts)
+								.map(|r| r.map(|v| v.to_vec()))
 								.map_err(other_io_err),
 						}
 					}
@@ -548,24 +494,23 @@ impl Database {
 
 	/// Get value by partial key. Prefix size should match configured prefix size. Only searches flushed values.
 	// TODO: support prefix seek for unflushed data
-	pub fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
+	pub fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>> {
 		self.iter_from_prefix(col, prefix).next().map(|(_, v)| v)
 	}
 
 	/// Get database iterator for flushed data.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
-	pub fn iter<'a>(&'a self, col: Option<u32>) -> impl Iterator<Item = KeyValuePair> + 'a {
+	pub fn iter<'a>(&'a self, col: u32) -> impl Iterator<Item = KeyValuePair> + 'a {
 		let read_lock = self.db.read();
 		let optional = if read_lock.is_some() {
-			let c = Self::to_overlay_column(col);
 			let overlay_data = {
-				let overlay = &self.overlay.read()[c];
+				let overlay = &self.overlay.read()[col as usize];
 				let mut overlay_data = overlay
 					.iter()
 					.filter_map(|(k, v)| match *v {
 						KeyState::Insert(ref value) => {
-							Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_vec().into_boxed_slice()))
+							Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_boxed_slice()))
 						}
 						KeyState::Delete => None,
 					})
@@ -581,14 +526,11 @@ impl Database {
 		};
 		optional.into_iter().flat_map(identity)
 	}
+
 	/// Get database iterator from prefix for flushed data.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
-	fn iter_from_prefix<'a>(
-		&'a self,
-		col: Option<u32>,
-		prefix: &'a [u8],
-	) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
+	fn iter_from_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
 		let read_lock = self.db.read();
 		let optional = if read_lock.is_some() {
 			let guarded = iter::ReadGuardedIterator::new_from_prefix(read_lock, col, prefix);
@@ -685,11 +627,11 @@ impl Database {
 // duplicate declaration of methods here to avoid trait import in certain existing cases
 // at time of addition.
 impl KeyValueDB for Database {
-	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
+	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		Database::get(self, col, key)
 	}
 
-	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
+	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>> {
 		Database::get_by_prefix(self, col, prefix)
 	}
 
@@ -705,16 +647,12 @@ impl KeyValueDB for Database {
 		Database::flush(self)
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item = KeyValuePair> + 'a> {
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = KeyValuePair> + 'a> {
 		let unboxed = Database::iter(self, col);
 		Box::new(unboxed.into_iter())
 	}
 
-	fn iter_from_prefix<'a>(
-		&'a self,
-		col: Option<u32>,
-		prefix: &'a [u8],
-	) -> Box<dyn Iterator<Item = KeyValuePair> + 'a> {
+	fn iter_from_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> Box<dyn Iterator<Item = KeyValuePair> + 'a> {
 		let unboxed = Database::iter_from_prefix(self, col, prefix);
 		Box::new(unboxed.into_iter())
 	}
@@ -742,6 +680,7 @@ mod tests {
 	fn test_db(config: &DatabaseConfig) {
 		let tempdir = TempDir::new("").unwrap();
 		let db = Database::open(config, tempdir.path().to_str().unwrap()).unwrap();
+
 		let key1 = H256::from_str("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
 		let key2 = H256::from_str("03c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
 		let key3 = H256::from_str("04c00000000b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
@@ -749,64 +688,65 @@ mod tests {
 		let key5 = H256::from_str("04c02222220b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
 
 		let mut batch = db.transaction();
-		batch.put(None, key1.as_bytes(), b"cat");
-		batch.put(None, key2.as_bytes(), b"dog");
-		batch.put(None, key3.as_bytes(), b"caterpillar");
-		batch.put(None, key4.as_bytes(), b"beef");
-		batch.put(None, key5.as_bytes(), b"fish");
+		batch.put(0, key1.as_bytes(), b"cat");
+		batch.put(0, key2.as_bytes(), b"dog");
+		batch.put(0, key3.as_bytes(), b"caterpillar");
+		batch.put(0, key4.as_bytes(), b"beef");
+		batch.put(0, key5.as_bytes(), b"fish");
 		db.write(batch).unwrap();
 
-		assert_eq!(&*db.get(None, key1.as_bytes()).unwrap().unwrap(), b"cat");
+		assert_eq!(&*db.get(0, key1.as_bytes()).unwrap().unwrap(), b"cat");
 
-		let contents: Vec<_> = db.iter(None).into_iter().collect();
+		let contents: Vec<_> = db.iter(0).into_iter().collect();
 		assert_eq!(contents.len(), 5);
 		assert_eq!(&*contents[0].0, key1.as_bytes());
 		assert_eq!(&*contents[0].1, b"cat");
 		assert_eq!(&*contents[1].0, key2.as_bytes());
 		assert_eq!(&*contents[1].1, b"dog");
 
-		let mut prefix_iter = db.iter_from_prefix(None, &[0x04, 0xc0]);
+		let mut prefix_iter = db.iter_from_prefix(0, &[0x04, 0xc0]);
 		assert_eq!(*prefix_iter.next().unwrap().1, b"caterpillar"[..]);
 		assert_eq!(*prefix_iter.next().unwrap().1, b"beef"[..]);
 		assert_eq!(*prefix_iter.next().unwrap().1, b"fish"[..]);
 
 		let mut batch = db.transaction();
-		batch.delete(None, key1.as_bytes());
+		batch.delete(0, key1.as_bytes());
 		db.write(batch).unwrap();
 
-		assert!(db.get(None, key1.as_bytes()).unwrap().is_none());
+		assert!(db.get(0, key1.as_bytes()).unwrap().is_none());
 
 		let mut batch = db.transaction();
-		batch.put(None, key1.as_bytes(), b"cat");
+		batch.put(0, key1.as_bytes(), b"cat");
 		db.write(batch).unwrap();
 
 		let mut transaction = db.transaction();
-		transaction.put(None, key3.as_bytes(), b"elephant");
-		transaction.delete(None, key1.as_bytes());
+		transaction.put(0, key3.as_bytes(), b"elephant");
+		transaction.delete(0, key1.as_bytes());
 		db.write(transaction).unwrap();
-		assert!(db.get(None, key1.as_bytes()).unwrap().is_none());
-		assert_eq!(&*db.get(None, key3.as_bytes()).unwrap().unwrap(), b"elephant");
+		assert!(db.get(0, key1.as_bytes()).unwrap().is_none());
+		assert_eq!(&*db.get(0, key3.as_bytes()).unwrap().unwrap(), b"elephant");
 
-		assert_eq!(&*db.get_by_prefix(None, key3.as_bytes()).unwrap(), b"elephant");
-		assert_eq!(&*db.get_by_prefix(None, key2.as_bytes()).unwrap(), b"dog");
+		assert_eq!(&*db.get_by_prefix(0, key3.as_bytes()).unwrap(), b"elephant");
+		assert_eq!(&*db.get_by_prefix(0, key2.as_bytes()).unwrap(), b"dog");
 
 		let mut transaction = db.transaction();
-		transaction.put(None, key1.as_bytes(), b"horse");
-		transaction.delete(None, key3.as_bytes());
+		transaction.put(0, key1.as_bytes(), b"horse");
+		transaction.delete(0, key3.as_bytes());
 		db.write_buffered(transaction);
-		assert!(db.get(None, key3.as_bytes()).unwrap().is_none());
-		assert_eq!(&*db.get(None, key1.as_bytes()).unwrap().unwrap(), b"horse");
+		assert!(db.get(0, key3.as_bytes()).unwrap().is_none());
+		assert_eq!(&*db.get(0, key1.as_bytes()).unwrap().unwrap(), b"horse");
 
 		db.flush().unwrap();
-		assert!(db.get(None, key3.as_bytes()).unwrap().is_none());
-		assert_eq!(&*db.get(None, key1.as_bytes()).unwrap().unwrap(), b"horse");
+		assert!(db.get(0, key3.as_bytes()).unwrap().is_none());
+		assert_eq!(&*db.get(0, key1.as_bytes()).unwrap().unwrap(), b"horse");
 	}
 
 	#[test]
 	fn kvdb() {
 		let tempdir = TempDir::new("").unwrap();
-		let _ = Database::open_default(tempdir.path().to_str().unwrap()).unwrap();
-		test_db(&DatabaseConfig::default());
+		let config = DatabaseConfig::default();
+		let _ = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
+		test_db(&config);
 	}
 
 	#[test]
@@ -826,18 +766,31 @@ mod tests {
 	}
 
 	#[test]
+	#[should_panic]
+	fn db_config_with_zero_columns() {
+		let _cfg = DatabaseConfig::with_columns(0);
+	}
+
+	#[test]
+	#[should_panic]
+	fn open_db_with_zero_columns() {
+		let cfg = DatabaseConfig { columns: 0, ..Default::default() };
+		let _db = Database::open(&cfg, "");
+	}
+
+	#[test]
 	fn add_columns() {
-		let config = DatabaseConfig::default();
-		let config_5 = DatabaseConfig::with_columns(Some(5));
+		let config_1 = DatabaseConfig::default();
+		let config_5 = DatabaseConfig::with_columns(5);
 
 		let tempdir = TempDir::new("").unwrap();
 
-		// open empty, add 5.
+		// open 1, add 4.
 		{
-			let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
-			assert_eq!(db.num_columns(), 0);
+			let db = Database::open(&config_1, tempdir.path().to_str().unwrap()).unwrap();
+			assert_eq!(db.num_columns(), 1);
 
-			for i in 1..=5 {
+			for i in 2..=5 {
 				db.add_column().unwrap();
 				assert_eq!(db.num_columns(), i);
 			}
@@ -852,33 +805,33 @@ mod tests {
 
 	#[test]
 	fn remove_columns() {
-		let config = DatabaseConfig::default();
-		let config_5 = DatabaseConfig::with_columns(Some(5));
+		let config_1 = DatabaseConfig::default();
+		let config_5 = DatabaseConfig::with_columns(5);
 
 		let tempdir = TempDir::new("drop_columns").unwrap();
 
-		// open 5, remove all.
+		// open 5, remove 4.
 		{
 			let db = Database::open(&config_5, tempdir.path().to_str().unwrap()).expect("open with 5 columns");
 			assert_eq!(db.num_columns(), 5);
 
-			for i in (0..5).rev() {
+			for i in (1..5).rev() {
 				db.remove_last_column().unwrap();
 				assert_eq!(db.num_columns(), i);
 			}
 		}
 
-		// reopen as 0.
+		// reopen as 1.
 		{
-			let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
-			assert_eq!(db.num_columns(), 0);
+			let db = Database::open(&config_1, tempdir.path().to_str().unwrap()).unwrap();
+			assert_eq!(db.num_columns(), 1);
 		}
 	}
 
 	#[test]
 	fn test_iter_by_prefix() {
 		let tempdir = TempDir::new("").unwrap();
-		let config = DatabaseConfig::default();
+		let config = DatabaseConfig::with_columns(1);
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
 
 		let key1 = b"0";
@@ -887,14 +840,14 @@ mod tests {
 		let key4 = b"abcd";
 
 		let mut batch = db.transaction();
-		batch.put(None, key1, key1);
-		batch.put(None, key2, key2);
-		batch.put(None, key3, key3);
-		batch.put(None, key4, key4);
+		batch.put(0, key1, key1);
+		batch.put(0, key2, key2);
+		batch.put(0, key3, key3);
+		batch.put(0, key4, key4);
 		db.write(batch).unwrap();
 
 		// empty prefix
-		let contents: Vec<_> = db.iter_from_prefix(None, b"").into_iter().collect();
+		let contents: Vec<_> = db.iter_from_prefix(0, b"").into_iter().collect();
 		assert_eq!(contents.len(), 4);
 		assert_eq!(&*contents[0].0, key1);
 		assert_eq!(&*contents[1].0, key2);
@@ -902,24 +855,24 @@ mod tests {
 		assert_eq!(&*contents[3].0, key4);
 
 		// prefix a
-		let contents: Vec<_> = db.iter_from_prefix(None, b"a").into_iter().collect();
+		let contents: Vec<_> = db.iter_from_prefix(0, b"a").into_iter().collect();
 		assert_eq!(contents.len(), 3);
 		assert_eq!(&*contents[0].0, key2);
 		assert_eq!(&*contents[1].0, key3);
 		assert_eq!(&*contents[2].0, key4);
 
 		// prefix abc
-		let contents: Vec<_> = db.iter_from_prefix(None, b"abc").into_iter().collect();
+		let contents: Vec<_> = db.iter_from_prefix(0, b"abc").into_iter().collect();
 		assert_eq!(contents.len(), 2);
 		assert_eq!(&*contents[0].0, key3);
 		assert_eq!(&*contents[1].0, key4);
 
 		// prefix abcde
-		let contents: Vec<_> = db.iter_from_prefix(None, b"abcde").into_iter().collect();
+		let contents: Vec<_> = db.iter_from_prefix(0, b"abcde").into_iter().collect();
 		assert_eq!(contents.len(), 0);
 
 		// prefix 0
-		let contents: Vec<_> = db.iter_from_prefix(None, b"0").into_iter().collect();
+		let contents: Vec<_> = db.iter_from_prefix(0, b"0").into_iter().collect();
 		assert_eq!(contents.len(), 1);
 		assert_eq!(&*contents[0].0, key1);
 	}
@@ -927,25 +880,25 @@ mod tests {
 	#[test]
 	fn write_clears_buffered_ops() {
 		let tempdir = TempDir::new("").unwrap();
-		let config = DatabaseConfig::default();
+		let config = DatabaseConfig::with_columns(1);
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
 
 		let mut batch = db.transaction();
-		batch.put(None, b"foo", b"bar");
+		batch.put(0, b"foo", b"bar");
 		db.write_buffered(batch);
 
 		let mut batch = db.transaction();
-		batch.put(None, b"foo", b"baz");
+		batch.put(0, b"foo", b"baz");
 		db.write(batch).unwrap();
 
-		assert_eq!(db.get(None, b"foo").unwrap().unwrap().as_ref(), b"baz");
+		assert_eq!(db.get(0, b"foo").unwrap().unwrap(), b"baz");
 	}
 
 	#[test]
 	fn default_memory_budget() {
 		let c = DatabaseConfig::default();
-		assert_eq!(c.columns, None);
-		assert_eq!(c.memory_budget(), DB_DEFAULT_MEMORY_BUDGET_MB * MB, "total memory budget is default");
+		assert_eq!(c.columns, 1);
+		assert_eq!(c.memory_budget(), DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB, "total memory budget is default");
 		assert_eq!(
 			c.memory_budget_for_col(0),
 			DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB,
@@ -960,19 +913,19 @@ mod tests {
 
 	#[test]
 	fn memory_budget() {
-		let mut c = DatabaseConfig::with_columns(Some(3));
-		c.memory_budget = [(0, 10), (1, 15), (2, 20)].iter().cloned().map(|(c, b)| (Some(c), b)).collect();
+		let mut c = DatabaseConfig::with_columns(3);
+		c.memory_budget = [(0, 10), (1, 15), (2, 20)].iter().cloned().collect();
 		assert_eq!(c.memory_budget(), 45 * MB, "total budget is the sum of the column budget");
 	}
 
 	#[test]
 	fn rocksdb_settings() {
 		const NUM_COLS: usize = 2;
-		let mut cfg = DatabaseConfig::with_columns(Some(NUM_COLS as u32));
+		let mut cfg = DatabaseConfig::with_columns(NUM_COLS as u32);
 		cfg.max_open_files = 123; // is capped by the OS fd limit (typically 1024)
 		cfg.compaction.block_size = 323232;
 		cfg.compaction.initial_file_size = 102030;
-		cfg.memory_budget = [(0, 30), (1, 300)].iter().cloned().map(|(c, b)| (Some(c), b)).collect();
+		cfg.memory_budget = [(0, 30), (1, 300)].iter().cloned().collect();
 
 		let db_path = TempDir::new("config_test").expect("the OS can create tmp dirs");
 		let _db = Database::open(&cfg, db_path.path().to_str().unwrap()).expect("can open a db");

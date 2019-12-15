@@ -25,24 +25,23 @@ use std::{
 /// This is generally intended for tests and is not particularly optimized.
 #[derive(Default)]
 pub struct InMemory {
-	columns: RwLock<HashMap<Option<u32>, BTreeMap<Vec<u8>, DBValue>>>,
+	columns: RwLock<HashMap<u32, BTreeMap<Vec<u8>, DBValue>>>,
 }
 
 /// Create an in-memory database with the given number of columns.
 /// Columns will be indexable by 0..`num_cols`
 pub fn create(num_cols: u32) -> InMemory {
 	let mut cols = HashMap::new();
-	cols.insert(None, BTreeMap::new());
 
 	for idx in 0..num_cols {
-		cols.insert(Some(idx), BTreeMap::new());
+		cols.insert(idx, BTreeMap::new());
 	}
 
 	InMemory { columns: RwLock::new(cols) }
 }
 
 impl KeyValueDB for InMemory {
-	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
+	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let columns = self.columns.read();
 		match columns.get(&col) {
 			None => Err(io::Error::new(io::ErrorKind::Other, format!("No such column family: {:?}", col))),
@@ -50,7 +49,7 @@ impl KeyValueDB for InMemory {
 		}
 	}
 
-	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
+	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>> {
 		let columns = self.columns.read();
 		match columns.get(&col) {
 			None => None,
@@ -83,11 +82,11 @@ impl KeyValueDB for InMemory {
 		Ok(())
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				// TODO: worth optimizing at all?
-				map.clone().into_iter().map(|(k, v)| (k.into_boxed_slice(), v.into_vec().into_boxed_slice())),
+				map.clone().into_iter().map(|(k, v)| (k.into_boxed_slice(), v.into_boxed_slice())),
 			),
 			None => Box::new(None.into_iter()),
 		}
@@ -95,15 +94,15 @@ impl KeyValueDB for InMemory {
 
 	fn iter_from_prefix<'a>(
 		&'a self,
-		col: Option<u32>,
+		col: u32,
 		prefix: &'a [u8],
 	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				map.clone()
 					.into_iter()
-					.skip_while(move |&(ref k, _)| !k.starts_with(prefix))
-					.map(|(k, v)| (k.into_boxed_slice(), v.into_vec().into_boxed_slice())),
+					.filter(move |&(ref k, _)| k.starts_with(prefix))
+					.map(|(k, v)| (k.into_boxed_slice(), v.into_boxed_slice())),
 			),
 			None => Box::new(None.into_iter()),
 		}
@@ -111,5 +110,109 @@ impl KeyValueDB for InMemory {
 
 	fn restore(&self, _new_db: &str) -> io::Result<()> {
 		Err(io::Error::new(io::ErrorKind::Other, "Attempted to restore in-memory database"))
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::{create, KeyValueDB};
+
+	#[test]
+	fn get_fails_with_non_existing_column() {
+		let db = create(1);
+		assert!(db.get(1, &[]).is_err());
+	}
+
+	#[test]
+	fn put_and_get() {
+		let db = create(1);
+
+		let key1 = b"key1";
+
+		let mut transaction = db.transaction();
+		transaction.put(0, key1, b"horse");
+		db.write_buffered(transaction);
+		assert_eq!(&*db.get(0, key1).unwrap().unwrap(), b"horse");
+	}
+
+	#[test]
+	fn delete_and_get() {
+		let db = create(1);
+
+		let key1 = b"key1";
+
+		let mut transaction = db.transaction();
+		transaction.put(0, key1, b"horse");
+		db.write_buffered(transaction);
+		assert_eq!(&*db.get(0, key1).unwrap().unwrap(), b"horse");
+
+		let mut transaction = db.transaction();
+		transaction.delete(0, key1);
+		db.write_buffered(transaction);
+		assert!(db.get(0, key1).unwrap().is_none());
+	}
+
+	#[test]
+	fn iter() {
+		let db = create(1);
+
+		let key1 = b"key1";
+		let key2 = b"key2";
+
+		let mut transaction = db.transaction();
+		transaction.put(0, key1, key1);
+		transaction.put(0, key2, key2);
+		db.write_buffered(transaction);
+
+		let contents: Vec<_> = db.iter(0).into_iter().collect();
+		assert_eq!(contents.len(), 2);
+		assert_eq!(&*contents[0].0, key1);
+		assert_eq!(&*contents[0].1, key1);
+		assert_eq!(&*contents[1].0, key2);
+		assert_eq!(&*contents[1].1, key2);
+	}
+
+	#[test]
+	fn iter_from_prefix() {
+		let db = create(1);
+
+		let key1 = b"0";
+		let key2 = b"a";
+		let key3 = b"ab";
+
+		let mut transaction = db.transaction();
+		transaction.put(0, key1, key1);
+		transaction.put(0, key2, key2);
+		transaction.put(0, key3, key3);
+		db.write_buffered(transaction);
+
+		let contents: Vec<_> = db.iter_from_prefix(0, b"").into_iter().collect();
+		assert_eq!(contents.len(), 3);
+		assert_eq!(&*contents[0].0, key1);
+		assert_eq!(&*contents[0].1, key1);
+		assert_eq!(&*contents[1].0, key2);
+		assert_eq!(&*contents[1].1, key2);
+		assert_eq!(&*contents[2].0, key3);
+		assert_eq!(&*contents[2].1, key3);
+
+		let contents: Vec<_> = db.iter_from_prefix(0, b"0").into_iter().collect();
+		assert_eq!(contents.len(), 1);
+		assert_eq!(&*contents[0].0, key1);
+		assert_eq!(&*contents[0].1, key1);
+
+		let contents: Vec<_> = db.iter_from_prefix(0, b"a").into_iter().collect();
+		assert_eq!(contents.len(), 2);
+		assert_eq!(&*contents[0].0, key2);
+		assert_eq!(&*contents[0].1, key2);
+		assert_eq!(&*contents[1].0, key3);
+		assert_eq!(&*contents[1].1, key3);
+
+		let contents: Vec<_> = db.iter_from_prefix(0, b"ab").into_iter().collect();
+		assert_eq!(contents.len(), 1);
+		assert_eq!(&*contents[0].0, key3);
+		assert_eq!(&*contents[0].1, key3);
+
+		let contents: Vec<_> = db.iter_from_prefix(0, b"abc").into_iter().collect();
+		assert_eq!(contents.len(), 0);
 	}
 }
