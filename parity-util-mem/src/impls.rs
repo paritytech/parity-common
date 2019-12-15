@@ -16,7 +16,7 @@
 
 //! Implementation of `MallocSize` for common types :
 //! - ethereum types uint and fixed hash.
-//! - smallvec arrays of sizes 32, 36, 64, 128 and 256
+//! - smallvec arrays of sizes 32, 36
 //! - parking_lot mutex structures
 
 use super::{MallocSizeOf, MallocSizeOfOps};
