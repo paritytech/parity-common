@@ -26,7 +26,7 @@ use rocksdb::{
 use crate::iter::KeyValuePair;
 use fs_swap::{swap, swap_nonatomic};
 use interleaved_ordered::interleave_ordered;
-use kvdb::{DBOp, DBTransaction, DBValue, DBKey, KeyValueDB};
+use kvdb::{DBKey, DBOp, DBTransaction, DBValue, KeyValueDB};
 use log::{debug, warn};
 
 #[cfg(target_os = "linux")]

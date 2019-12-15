@@ -21,9 +21,9 @@
 
 use super::{MallocSizeOf, MallocSizeOfOps};
 
-use smallvec::SmallVec;
 use ethereum_types::{Bloom, H128, H160, H256, H264, H32, H512, H520, H64, U128, U256, U512, U64};
 use parking_lot::{Mutex, RwLock};
+use smallvec::SmallVec;
 
 #[cfg(not(feature = "std"))]
 use core as std;
@@ -36,7 +36,10 @@ malloc_size_of_is_0!(U64, U128, U256, U512, H32, H64, H128, H160, H256, H264, H5
 
 macro_rules! impl_smallvec {
 	($size: expr) => {
-		impl<T> MallocSizeOf for SmallVec<[T; $size]> where T: MallocSizeOf {
+		impl<T> MallocSizeOf for SmallVec<[T; $size]>
+		where
+			T: MallocSizeOf,
+		{
 			fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 				// todo[dvdplm] this will always be `0` because it resolves to the `[T]` impl. Can do better than that?
 				self[..].size_of(ops)
@@ -66,8 +69,8 @@ impl<T: MallocSizeOf> MallocSizeOf for RwLock<T> {
 
 #[cfg(test)]
 mod tests {
+	use crate::{allocators::new_malloc_size_ops, MallocSizeOf};
 	use smallvec::SmallVec;
-	use crate::{MallocSizeOf, allocators::new_malloc_size_ops};
 
 	#[test]
 	fn test_smallvec() {
