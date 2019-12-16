@@ -109,9 +109,12 @@ mod tests {
 			))] {
 				assert_eq!(v.size_of(&mut ops), 3); // 3 u8s on the heap, boxes are on the stack
 			} else if #[cfg(target_os = "linux")] {
-				assert_eq!(v.size_of(&mut ops), 72);
-			} else {
-				assert_eq!(v.size_of(&mut ops), 24);
+				assert!(
+					// Ubuntus default allocator returns 24
+					v.size_of(&mut ops) == 24 ||
+					// Whatever Linux Travis is using has a default allocator that returns 72.
+					v.size_of(&mut ops) == 72
+				);
 			}
 		}
 		assert!(!v.spilled());
