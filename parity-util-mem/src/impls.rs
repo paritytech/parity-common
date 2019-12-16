@@ -108,6 +108,8 @@ mod tests {
 				feature = "dlmalloc-global",
 			))] {
 				assert_eq!(v.size_of(&mut ops), 3); // 3 u8s on the heap, boxes are on the stack
+			} else if #[cfg(target_os = "linux")] {
+				assert_eq!(v.size_of(&mut ops), 72);
 			} else {
 				assert_eq!(v.size_of(&mut ops), 24);
 			}
@@ -125,6 +127,8 @@ mod tests {
 					feature = "dlmalloc-global",
 				))] {
 				assert_eq!(v.size_of(&mut ops), 36); // 4*8 (boxes) + 4 u8 in the heap
+			} else if #[cfg(target_os = "linux")] {
+				assert_eq!(v.size_of(&mut ops), 72);
 			} else {
 				assert_eq!(v.size_of(&mut ops), 64);
 			}
