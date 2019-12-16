@@ -131,14 +131,14 @@ mod tests {
 				))] {
 				assert_eq!(v.size_of(&mut ops), 36); // 4*8 (boxes) + 4 u8 in the heap
 			} else if #[cfg(target_os = "linux")] {
-				assert_eq!(v.size_of(&mut ops), 128);
-			} else {
-				assert_eq!(v.size_of(&mut ops), 64);
+				assert!(
+					v.size_of(&mut ops) == 64 ||
+					v.size_of(&mut ops) == 128
+				);
 			}
 		}
 	}
 
-	#[ignore]
 	#[test]
 	fn test_smallvec_heap_allocated_type() {
 		let mut v: SmallVec<[String; 3]> = SmallVec::new();
@@ -148,12 +148,41 @@ mod tests {
 		v.push("PIG".into());
 		v.push("DUCK".into());
 		assert!(!v.spilled());
-		assert_eq!(v.size_of(&mut ops), 10);
+		cfg_if::cfg_if! {
+			if #[cfg(any(
+				target_os = "windows",
+				all(target_os = "macos", not(feature = "jemalloc-global")),
+				feature = "estimate-heapsize",
+				feature = "weealloc-global",
+				feature = "dlmalloc-global",
+			))] {
+				assert_eq!(v.size_of(&mut ops), 10);
+			} else {
+				assert!(
+					// Ubuntus default allocator returns 24
+					v.size_of(&mut ops) == 24 ||
+					// Whatever Linux Travis is using has a default allocator that returns 72.
+					v.size_of(&mut ops) == 72
+				);
+			}
+		}
 		v.push("ÖWL".into());
 		assert!(v.spilled());
 		let mut ops = new_malloc_size_ops();
-		// Not super clear where 110 comes from tbh, should be 14 bytes of data + 4 pointers = 14 + 32 = 46
-		// so the allocator is likely doing something interesting with Strings.
-		assert_eq!(v.size_of(&mut ops), 110);
+		cfg_if::cfg_if! {
+			if #[cfg(any(
+				target_os = "windows",
+				all(target_os = "macos", not(feature = "jemalloc-global")),
+				feature = "estimate-heapsize",
+				feature = "weealloc-global",
+				feature = "dlmalloc-global",
+			))] {
+				// Not super clear where 110 comes from tbh, should be 14 bytes of data + 4 pointers = 14 + 32 = 46
+				// so the allocator is likely doing something interesting with Strings.
+				assert_eq!(v.size_of(&mut ops), 110);
+			} else {
+				assert_eq!(v.size_of(&mut ops), 192);
+			}
+		}
 	}
 }
