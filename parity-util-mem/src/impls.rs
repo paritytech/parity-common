@@ -128,7 +128,7 @@ mod tests {
 				))] {
 				assert_eq!(v.size_of(&mut ops), 36); // 4*8 (boxes) + 4 u8 in the heap
 			} else if #[cfg(target_os = "linux")] {
-				assert_eq!(v.size_of(&mut ops), 72);
+				assert_eq!(v.size_of(&mut ops), 128);
 			} else {
 				assert_eq!(v.size_of(&mut ops), 64);
 			}
