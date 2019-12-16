@@ -99,14 +99,39 @@ mod tests {
 		v.push(Box::new(1u8));
 		v.push(Box::new(2u8));
 		v.push(Box::new(3u8));
-		assert_eq!(v.size_of(&mut ops), 3); // 3 u8s on the heap, boxes are on the stack
+		cfg_if::cfg_if! {
+			if #[cfg(any(
+				target_os = "windows",
+				all(target_os = "macos", not(feature = "jemalloc-global")),
+				feature = "estimate-heapsize",
+				feature = "weealloc-global",
+				feature = "dlmalloc-global",
+			))] {
+				assert_eq!(v.size_of(&mut ops), 3); // 3 u8s on the heap, boxes are on the stack
+			} else {
+				assert_eq!(v.size_of(&mut ops), 24);
+			}
+		}
 		assert!(!v.spilled());
 		v.push(Box::new(4u8));
 		assert!(v.spilled(), "SmallVec spills when going beyond the capacity of the inner backing array");
 		let mut ops = new_malloc_size_ops();
-		assert_eq!(v.size_of(&mut ops), 36); // 4*8 (boxes) + 4 u8 in the heap
+		cfg_if::cfg_if! {
+			if #[cfg(any(
+					target_os = "windows",
+					all(target_os = "macos", not(feature = "jemalloc-global")),
+					feature = "estimate-heapsize",
+					feature = "weealloc-global",
+					feature = "dlmalloc-global",
+				))] {
+				assert_eq!(v.size_of(&mut ops), 36); // 4*8 (boxes) + 4 u8 in the heap
+			} else {
+				assert_eq!(v.size_of(&mut ops), 64);
+			}
+		}
 	}
 
+	#[ignore]
 	#[test]
 	fn test_smallvec_heap_allocated_type() {
 		let mut v: SmallVec<[String; 3]> = SmallVec::new();
