@@ -604,11 +604,11 @@ impl Database {
 			Some(ref cfs) => {
 				let cf = cfs.cf(col as usize);
 				match cfs.db.property_int_value_cf(cf, ESTIMATE_NUM_KEYS) {
-					Ok(estimate) => { Ok(estimate.unwrap_or_default())},
-					Err(err_string) => Err(other_io_err(err_string))
+					Ok(estimate) => Ok(estimate.unwrap_or_default()),
+					Err(err_string) => Err(other_io_err(err_string)),
 				}
 			}
-			None => Ok(0)
+			None => Ok(0),
 		}
 	}
 
