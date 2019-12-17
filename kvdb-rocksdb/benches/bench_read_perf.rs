@@ -48,7 +48,7 @@ criterion_main!(benches);
 /// family and default options. Needs manual cleanup.
 fn open_db() -> Database {
 	let tempdir_str = "./benches/_rocksdb_bench_get";
-	let cfg = DatabaseConfig::with_columns(Some(1));
+	let cfg = DatabaseConfig::with_columns(1);
 	let db = Database::open(&cfg, tempdir_str).expect("rocksdb works");
 	db
 }
@@ -81,7 +81,7 @@ fn populate(db: &Database) -> io::Result<Vec<H256>> {
 			}
 		}
 		// In ethereum keys are mostly 32 bytes and payloads ~140bytes.
-		batch.put(Some(0), &key.as_bytes(), &n_random_bytes(140));
+		batch.put(0, &key.as_bytes(), &n_random_bytes(140));
 	}
 	db.write(batch)?;
 	// Clear the overlay
@@ -106,7 +106,7 @@ fn get(c: &mut Criterion) {
 				for _ in 0..iterations {
 					// This has no measurable impact on performance (~30ns)
 					let needle = needles.choose(&mut rand::thread_rng()).expect("needles is not empty");
-					black_box(db.get(Some(0), needle.as_bytes()).unwrap());
+					black_box(db.get(0, needle.as_bytes()).unwrap());
 				}
 				elapsed = start.elapsed();
 			});
@@ -135,7 +135,7 @@ fn get(c: &mut Criterion) {
 				for _ in 0..iterations {
 					// This has no measurable impact on performance (~30ns)
 					let needle = needles.choose(&mut rand::thread_rng()).expect("needles is not empty");
-					black_box(db.get_by_prefix(Some(0), &needle.as_bytes()[..8]).unwrap());
+					black_box(db.get_by_prefix(0, &needle.as_bytes()[..8]).unwrap());
 				}
 				elapsed = start.elapsed();
 			});
@@ -166,7 +166,7 @@ fn iter(c: &mut Criterion) {
 			let (alloc_stats, _) = count_alloc(|| {
 				let start = Instant::now();
 				for _ in 0..iterations {
-					black_box(db.iter(Some(0)).take(1000).collect::<Vec<_>>());
+					black_box(db.iter(0).take(1000).collect::<Vec<_>>());
 				}
 				elapsed = start.elapsed();
 			});
@@ -193,7 +193,7 @@ fn iter(c: &mut Criterion) {
 			let (alloc_stats, _) = count_alloc(|| {
 				let start = Instant::now();
 				for _ in 0..iterations {
-					black_box(db.iter(Some(0)).next().unwrap());
+					black_box(db.iter(0).next().unwrap());
 				}
 				elapsed = start.elapsed();
 			});
