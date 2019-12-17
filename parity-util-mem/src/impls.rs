@@ -70,6 +70,7 @@ impl<T: MallocSizeOf> MallocSizeOf for RwLock<T> {
 mod tests {
 	use crate::{allocators::new_malloc_size_ops, MallocSizeOf, MallocSizeOfOps};
 	use smallvec::SmallVec;
+	use std::mem;
 	impl_smallvec!(3);
 
 	#[test]
@@ -100,7 +101,8 @@ mod tests {
 		v.push(Box::new(4u8));
 		assert!(v.spilled(), "SmallVec spills when going beyond the capacity of the inner backing array");
 		let mut ops = new_malloc_size_ops();
-		assert!(v.size_of(&mut ops) >= 36);
+		let expected_min_allocs = mem::size_of::<Box<u8>>() * 4 + 4;
+		assert!(v.size_of(&mut ops) >= expected_min_allocs);
 	}
 
 	#[test]
@@ -112,10 +114,11 @@ mod tests {
 		v.push("PIG".into());
 		v.push("DUCK".into());
 		assert!(!v.spilled());
-		assert!(v.size_of(&mut ops) >= 10);
+		assert!(v.size_of(&mut ops) >= "COW".len() + "PIG".len() + "DUCK".len());
 		v.push("ÖWL".into());
 		assert!(v.spilled());
 		let mut ops = new_malloc_size_ops();
-		assert!(v.size_of(&mut ops) >= 110);
+		let expected_min_allocs = mem::size_of::<String>() * 4 + "ÖWL".len() + "COW".len() + "PIG".len() + "DUCK".len();
+		assert!(v.size_of(&mut ops) >= expected_min_allocs);
 	}
 }
