@@ -45,6 +45,7 @@ struct UnsafeStableAddress<'a, T>(RwLockReadGuard<'a, T>);
 
 impl<'a, T> Deref for UnsafeStableAddress<'a, T> {
 	type Target = T;
+
 	fn deref(&self) -> &Self::Target {
 		self.0.deref()
 	}
@@ -57,6 +58,7 @@ struct DerefWrapper<T>(T);
 
 impl<T> Deref for DerefWrapper<T> {
 	type Target = T;
+
 	fn deref(&self) -> &Self::Target {
 		&self.0
 	}
@@ -84,12 +86,12 @@ pub trait IterationHandler {
 	/// is passed.
 	/// In addition to a read lock and a column index, it takes a ref to the same `ReadOptions` we
 	/// pass to the `get` method.
-	fn iter(&self, col: Option<u32>, read_opts: &ReadOptions) -> Self::Iterator;
+	fn iter(&self, col: u32, read_opts: &ReadOptions) -> Self::Iterator;
 	/// Create an `Iterator` over the default DB column or over a `ColumnFamily` if a column number
 	/// is passed. The iterator starts from the first key having the provided `prefix`.
 	/// In addition to a read lock and a column index, it takes a ref to the same `ReadOptions` we
 	/// pass to the `get` method.
-	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8], read_opts: &ReadOptions) -> Self::Iterator;
+	fn iter_from_prefix(&self, col: u32, prefix: &[u8], read_opts: &ReadOptions) -> Self::Iterator;
 }
 
 impl<'a, T> ReadGuardedIterator<'a, <&'a T as IterationHandler>::Iterator, T>
@@ -98,7 +100,7 @@ where
 {
 	/// Creates a new `ReadGuardedIterator` that maps `RwLock<RocksDB>` to `RwLock<DBIterator>`,
 	/// where `DBIterator` iterates over all keys.
-	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: Option<u32>, read_opts: &ReadOptions) -> Self {
+	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: u32, read_opts: &ReadOptions) -> Self {
 		Self { inner: Self::new_inner(read_lock, |db| db.iter(col, read_opts)) }
 	}
 
@@ -106,7 +108,7 @@ where
 	/// where `DBIterator` iterates over keys >= prefix.
 	pub fn new_from_prefix(
 		read_lock: RwLockReadGuard<'a, Option<T>>,
-		col: Option<u32>,
+		col: u32,
 		prefix: &[u8],
 		read_opts: &ReadOptions,
 	) -> Self {
@@ -127,25 +129,11 @@ where
 impl<'a> IterationHandler for &'a DBAndColumns {
 	type Iterator = DBIterator<'a>;
 
-	fn iter(&self, col: Option<u32>, read_opts: &ReadOptions) -> Self::Iterator {
-		col.map_or_else(
-			|| self.db.iterator_opt(IteratorMode::Start, read_opts),
-			|c| {
-				self.db
-					.iterator_cf_opt(self.cf(c as usize), read_opts, IteratorMode::Start)
-					.expect("iterator params are valid; qed")
-			},
-		)
-	}
+	fn iter(&self, col: u32, read_opts: &ReadOptions) -> Self::Iterator {
+        self.db.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::Start).expect("iterator params are valid; qed")
+    }
 
-	fn iter_from_prefix(&self, col: Option<u32>, prefix: &[u8], read_opts: &ReadOptions) -> Self::Iterator {
-		col.map_or_else(
-			|| self.db.iterator_opt(IteratorMode::From(prefix, Direction::Forward), read_opts),
-			|c| {
-				self.db
-					.iterator_cf_opt(self.cf(c as usize), read_opts, IteratorMode::From(prefix, Direction::Forward))
-					.expect("iterator params are valid; qed")
-			},
-		)
+	fn iter_from_prefix(&self, col: u32, prefix: &[u8], read_opts: &ReadOptions) -> Self::Iterator {
+		self.db.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::From(prefix, Direction::Forward)).expect("iterator params are valid; qed")
 	}
 }

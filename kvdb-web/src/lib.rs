@@ -45,13 +45,6 @@ pub struct Database {
 	indexed_db: SendWrapper<IdbDatabase>,
 }
 
-// The default column is represented as `None`.
-type Column = Option<u32>;
-
-fn number_to_column(col: u32) -> Column {
-	col.checked_sub(1)
-}
-
 impl Database {
 	/// Opens the database with the given name,
 	/// and the specified number of columns (not including the default one).
@@ -76,10 +69,9 @@ impl Database {
 		let indexed_db::IndexedDB { version, inner, .. } = db;
 		let in_memory = in_memory::create(columns);
 		// read the columns from the IndexedDB
-		for n in 0..=columns {
-			let column = number_to_column(n);
+		for column in 0..columns {
 			let mut txn = DBTransaction::new();
-			let mut stream = indexed_db::idb_cursor(&*inner, n);
+			let mut stream = indexed_db::idb_cursor(&*inner, column);
 			while let Some((key, value)) = stream.next().await {
 				txn.put_vec(column, key.as_ref(), value);
 			}
@@ -107,11 +99,11 @@ impl Drop for Database {
 }
 
 impl KeyValueDB for Database {
-	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
+	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		self.in_memory.get(col, key)
 	}
 
-	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
+	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>> {
 		self.in_memory.get_by_prefix(col, prefix)
 	}
 
@@ -125,14 +117,14 @@ impl KeyValueDB for Database {
 	}
 
 	// NOTE: clones the whole db
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
 		self.in_memory.iter(col)
 	}
 
 	// NOTE: clones the whole db
 	fn iter_from_prefix<'a>(
 		&'a self,
-		col: Option<u32>,
+		col: u32,
 		prefix: &'a [u8],
 	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
 		self.in_memory.iter_from_prefix(col, prefix)
