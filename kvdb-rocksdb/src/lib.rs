@@ -608,7 +608,7 @@ impl Database {
 					Err(err_string) => Err(other_io_err(err_string))
 				}
 			}
-			None => Err(other_io_err("Failed to take read lock on the db"))
+			None => Ok(0)
 		}
 	}
 
