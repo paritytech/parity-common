@@ -41,11 +41,7 @@ macro_rules! impl_smallvec {
 			T: MallocSizeOf,
 		{
 			fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-				let mut n = if self.spilled() {
-					self.capacity() * core::mem::size_of::<T>()
-				} else {
-					0
-				};
+				let mut n = if self.spilled() { self.capacity() * core::mem::size_of::<T>() } else { 0 };
 				for elem in self.iter() {
 					n += elem.size_of(ops);
 				}
