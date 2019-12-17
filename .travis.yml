@@ -12,6 +12,8 @@ matrix:
       rust: beta
     - os: linux
       rust: nightly
+      script:
+        - cargo check --all --benches
     - os: osx
       osx_image: xcode11.2
       addons:
