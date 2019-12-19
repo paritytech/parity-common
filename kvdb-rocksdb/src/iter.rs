@@ -82,15 +82,14 @@ impl<'a, I: Iterator, T> Iterator for ReadGuardedIterator<'a, I, T> {
 pub trait IterationHandler {
 	type Iterator: Iterator<Item = KeyValuePair>;
 
-	/// Create an `Iterator` over the default DB column or over a `ColumnFamily` if a column number
-	/// is passed.
-	/// In addition to a read lock and a column index, it takes a ref to the same `ReadOptions` we
-	/// pass to the `get` method.
+	/// Create an `Iterator` over a `ColumnFamily` corresponding to the passed index. Takes a
+	/// reference to a `ReadOptions` to allow configuration of the new iterator (see
+	/// https://github.com/facebook/rocksdb/blob/master/include/rocksdb/options.h#L1169).
 	fn iter(&self, col: u32, read_opts: &ReadOptions) -> Self::Iterator;
-	/// Create an `Iterator` over the default DB column or over a `ColumnFamily` if a column number
-	/// is passed. The iterator starts from the first key having the provided `prefix`.
-	/// In addition to a read lock and a column index, it takes a ref to the same `ReadOptions` we
-	/// pass to the `get` method.
+	/// Create an `Iterator` over a `ColumnFamily` corresponding to the passed index. Takes a
+	/// reference to a `ReadOptions` to allow configuration of the new iterator (see
+	/// https://github.com/facebook/rocksdb/blob/master/include/rocksdb/options.h#L1169).
+	/// The iterator starts from the first key having the provided `prefix`.
 	fn iter_from_prefix(&self, col: u32, prefix: &[u8], read_opts: &ReadOptions) -> Self::Iterator;
 }
 

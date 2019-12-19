@@ -587,7 +587,7 @@ impl Database {
 		Ok(())
 	}
 
-	/// The number of non-default column families.
+	/// The number of column families in the db.
 	pub fn num_columns(&self) -> u32 {
 		self.db
 			.read()
@@ -595,6 +595,22 @@ impl Database {
 			.and_then(|db| if db.column_names.is_empty() { None } else { Some(db.column_names.len()) })
 			.map(|n| n as u32)
 			.unwrap_or(0)
+	}
+
+	/// The number of keys in a column (estimated).
+	/// Does not take into account the unflushed data.
+	pub fn num_keys(&self, col: u32) -> io::Result<u64> {
+		const ESTIMATE_NUM_KEYS: &str = "rocksdb.estimate-num-keys";
+		match *self.db.read() {
+			Some(ref cfs) => {
+				let cf = cfs.cf(col as usize);
+				match cfs.db.property_int_value_cf(cf, ESTIMATE_NUM_KEYS) {
+					Ok(estimate) => Ok(estimate.unwrap_or_default()),
+					Err(err_string) => Err(other_io_err(err_string)),
+				}
+			}
+			None => Ok(0),
+		}
 	}
 
 	/// Remove the last column family in the database. The deletion is definitive.
@@ -828,6 +844,20 @@ mod tests {
 			let db = Database::open(&config_1, tempdir.path().to_str().unwrap()).unwrap();
 			assert_eq!(db.num_columns(), 1);
 		}
+	}
+
+	#[test]
+	fn test_num_keys() {
+		let tempdir = TempDir::new("").unwrap();
+		let config = DatabaseConfig::with_columns(1);
+		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
+
+		assert_eq!(db.num_keys(0).unwrap(), 0, "database is empty after creation");
+		let key1 = b"beef";
+		let mut batch = db.transaction();
+		batch.put(0, key1, key1);
+		db.write(batch).unwrap();
+		assert_eq!(db.num_keys(0).unwrap(), 1, "adding a key increases the count");
 	}
 
 	#[test]

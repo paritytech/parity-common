@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog].
   - `DatabaseConfig::default()` defaults to 1 column
   - `Database::with_columns` still accepts `u32`, but panics if `0` is provided 
   - `Database::open` panics if configuration with 0 columns is provided
+- Add `num_keys(col)` to get an estimate of the number of keys in a column (See [PR #285](https://github.com/paritytech/parity-common/pull/285)).
+
 ### Breaking 
 - Remove `ElasticArray` and use the new `DBValue` (alias for `Vec<u8>`) and `DBKey` types from `kvdb`. (See [PR #282](https://github.com/paritytech/parity-common/pull/282/files))  
 
