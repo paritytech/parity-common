@@ -598,7 +598,7 @@ impl Database {
 	}
 
 	/// The number of keys in a column (estimated).
-	/// Does not take into account unflushed the data.
+	/// Does not take into account the unflushed data.
 	pub fn num_keys(&self, col: u32) -> io::Result<u64> {
 		const ESTIMATE_NUM_KEYS: &str = "rocksdb.estimate-num-keys";
 		match *self.db.read() {
