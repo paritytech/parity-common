@@ -86,7 +86,7 @@ impl KeyValueDB for InMemory {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				// TODO: worth optimizing at all?
-				map.clone().into_iter().map(|(k, v)| (k.into_boxed_slice(), v.into_vec().into_boxed_slice())),
+				map.clone().into_iter().map(|(k, v)| (k.into_boxed_slice(), v.into_boxed_slice())),
 			),
 			None => Box::new(None.into_iter()),
 		}
@@ -102,7 +102,7 @@ impl KeyValueDB for InMemory {
 				map.clone()
 					.into_iter()
 					.filter(move |&(ref k, _)| k.starts_with(prefix))
-					.map(|(k, v)| (k.into_boxed_slice(), v.into_vec().into_boxed_slice())),
+					.map(|(k, v)| (k.into_boxed_slice(), v.into_boxed_slice())),
 			),
 			None => Box::new(None.into_iter()),
 		}
