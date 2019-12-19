@@ -17,7 +17,7 @@
 //! Key-Value store abstraction with `RocksDB` backend.
 
 use bytes::Bytes;
-use elastic_array::{ElasticArray128, ElasticArray32};
+use smallvec::SmallVec;
 use std::io;
 use std::path::Path;
 use std::sync::Arc;
@@ -26,7 +26,9 @@ use std::sync::Arc;
 pub const PREFIX_LEN: usize = 12;
 
 /// Database value.
-pub type DBValue = ElasticArray128<u8>;
+pub type DBValue = Vec<u8>;
+/// Database keys.
+pub type DBKey = SmallVec<[u8; 32]>;
 
 /// Write transaction. Batches a sequence of put/delete operations for efficiency.
 #[derive(Default, Clone, PartialEq)]
@@ -38,8 +40,8 @@ pub struct DBTransaction {
 /// Database operation.
 #[derive(Clone, PartialEq)]
 pub enum DBOp {
-	Insert { col: u32, key: ElasticArray32<u8>, value: DBValue },
-	Delete { col: u32, key: ElasticArray32<u8> },
+	Insert { col: u32, key: DBKey, value: DBValue },
+	Delete { col: u32, key: DBKey },
 }
 
 impl DBOp {
@@ -73,23 +75,17 @@ impl DBTransaction {
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
 	pub fn put(&mut self, col: u32, key: &[u8], value: &[u8]) {
-		let mut ekey = ElasticArray32::new();
-		ekey.append_slice(key);
-		self.ops.push(DBOp::Insert { col, key: ekey, value: DBValue::from_slice(value) });
+		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value: value.to_vec() })
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
 	pub fn put_vec(&mut self, col: u32, key: &[u8], value: Bytes) {
-		let mut ekey = ElasticArray32::new();
-		ekey.append_slice(key);
-		self.ops.push(DBOp::Insert { col, key: ekey, value: DBValue::from_vec(value) });
+		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value });
 	}
 
 	/// Delete value by key.
 	pub fn delete(&mut self, col: u32, key: &[u8]) {
-		let mut ekey = ElasticArray32::new();
-		ekey.append_slice(key);
-		self.ops.push(DBOp::Delete { col, key: ekey });
+		self.ops.push(DBOp::Delete { col, key: DBKey::from_slice(key) });
 	}
 }
 

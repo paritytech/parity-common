@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog].
 ## [Unreleased]
 ### Fixed
 - `iter_from_prefix` behaviour synced with the `kvdb-rocksdb`
+
 ### Changed
 - Default column support removed from the API
   - Column argument type changed from `Option<u32>` to `u32`

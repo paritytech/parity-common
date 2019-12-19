@@ -24,10 +24,9 @@ use rocksdb::{
 };
 
 use crate::iter::KeyValuePair;
-use elastic_array::ElasticArray32;
 use fs_swap::{swap, swap_nonatomic};
 use interleaved_ordered::interleave_ordered;
-use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
+use kvdb::{DBKey, DBOp, DBTransaction, DBValue, KeyValueDB};
 use log::{debug, warn};
 
 #[cfg(target_os = "linux")]
@@ -245,9 +244,9 @@ pub struct Database {
 	read_opts: ReadOptions,
 	block_opts: BlockBasedOptions,
 	// Dirty values added with `write_buffered`. Cleaned on `flush`.
-	overlay: RwLock<Vec<HashMap<ElasticArray32<u8>, KeyState>>>,
+	overlay: RwLock<Vec<HashMap<DBKey, KeyState>>>,
 	// Values currently being flushed. Cleared when `flush` completes.
-	flushing: RwLock<Vec<HashMap<ElasticArray32<u8>, KeyState>>>,
+	flushing: RwLock<Vec<HashMap<DBKey, KeyState>>>,
 	// Prevents concurrent flushes.
 	// Value indicates if a flush is in progress.
 	flushing_lock: Mutex<bool>,
@@ -483,7 +482,7 @@ impl Database {
 							None => cfs
 								.db
 								.get_pinned_cf_opt(cfs.cf(col as usize), key, &self.read_opts)
-								.map(|r| r.map(|v| DBValue::from_slice(&v)))
+								.map(|r| r.map(|v| v.to_vec()))
 								.map_err(other_io_err),
 						}
 					}
@@ -511,7 +510,7 @@ impl Database {
 					.iter()
 					.filter_map(|(k, v)| match *v {
 						KeyState::Insert(ref value) => {
-							Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_vec().into_boxed_slice()))
+							Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_boxed_slice()))
 						}
 						KeyState::Delete => None,
 					})
@@ -597,7 +596,7 @@ impl Database {
 	}
 
 	/// The number of keys in a column (estimated).
-	/// Does not take into account the data in the overlay.
+	/// Does not take into account unflushed the data.
 	pub fn num_keys(&self, col: u32) -> io::Result<u64> {
 		const ESTIMATE_NUM_KEYS: &str = "rocksdb.estimate-num-keys";
 		match *self.db.read() {
@@ -922,7 +921,7 @@ mod tests {
 		batch.put(0, b"foo", b"baz");
 		db.write(batch).unwrap();
 
-		assert_eq!(db.get(0, b"foo").unwrap().unwrap().as_ref(), b"baz");
+		assert_eq!(db.get(0, b"foo").unwrap().unwrap(), b"baz");
 	}
 
 	#[test]

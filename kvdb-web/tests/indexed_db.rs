@@ -39,7 +39,7 @@ async fn reopen_the_database_with_more_columns() {
 	batch.put(0, b"hello", b"world");
 	db.write_buffered(batch);
 
-	assert_eq!(db.get(0, b"hello").unwrap().unwrap().as_ref(), b"world");
+	assert_eq!(db.get(0, b"hello").unwrap().unwrap(), b"world");
 
 	// Check the database version
 	assert_eq!(db.version(), 1);
@@ -51,7 +51,7 @@ async fn reopen_the_database_with_more_columns() {
 	let db = open_db(3).await;
 
 	// The value should still be present
-	assert_eq!(db.get(0, b"hello").unwrap().unwrap().as_ref(), b"world");
+	assert_eq!(db.get(0, b"hello").unwrap().unwrap(), b"world");
 	assert!(db.get(0, b"trash").unwrap().is_none());
 
 	// The version should be bumped
