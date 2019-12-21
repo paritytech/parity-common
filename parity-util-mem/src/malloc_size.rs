@@ -426,9 +426,6 @@ where
 
 #[cfg(feature = "std")]
 impl<K, V, S> MallocShallowSizeOf for std::collections::HashMap<K, V, S>
-where
-	K: Eq + Hash,
-	S: BuildHasher,
 {
 	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		// See the implementation for std::collections::HashSet for details.
@@ -443,9 +440,8 @@ where
 #[cfg(feature = "std")]
 impl<K, V, S> MallocSizeOf for std::collections::HashMap<K, V, S>
 where
-	K: Eq + Hash + MallocSizeOf,
-	V: MallocSizeOf,
-	S: BuildHasher,
+	K: MallocSizeOf,
+	V: MallocSizeOf
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
@@ -458,8 +454,6 @@ where
 }
 
 impl<K, V> MallocShallowSizeOf for rstd::collections::BTreeMap<K, V>
-where
-	K: Eq + Hash,
 {
 	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		if ops.has_malloc_enclosing_size_of() {
@@ -472,7 +466,7 @@ where
 
 impl<K, V> MallocSizeOf for rstd::collections::BTreeMap<K, V>
 where
-	K: Eq + Hash + MallocSizeOf,
+	K: MallocSizeOf,
 	V: MallocSizeOf,
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
