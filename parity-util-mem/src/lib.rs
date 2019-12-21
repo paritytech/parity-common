@@ -23,8 +23,6 @@
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
-use malloc_size_of_derive as malloc_size_derive;
-
 cfg_if::cfg_if! {
 	if #[cfg(all(
 		feature = "jemalloc-global",
@@ -72,7 +70,8 @@ pub mod impls;
 
 pub use allocators::MallocSizeOfExt;
 pub use malloc_size::{MallocSizeOf, MallocSizeOfOps};
-pub use malloc_size_derive::*;
+
+pub use parity_util_mem_derive::*;
 
 #[cfg(feature = "std")]
 #[cfg(test)]
