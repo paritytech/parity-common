@@ -33,7 +33,7 @@ optional = true
 
 [features]
 default = ["std", "ethereum-impls"]
-std = []
+std = ["parking_lot"]
 # use dlmalloc as global allocator
 dlmalloc-global = ["dlmalloc", "estimate-heapsize"]
 # use wee_alloc as global allocator

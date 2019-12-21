@@ -539,10 +539,33 @@ impl<T: MallocSizeOf> MallocConditionalSizeOf for Arc<T> {
 /// If a mutex is stored inside of an Arc value as a member of a data type that is being measured,
 /// the Arc will not be automatically measured so there is no risk of overcounting the mutex's
 /// contents.
+///
+/// The same reasoning applies to RwLock.
 #[cfg(feature = "std")]
 impl<T: MallocSizeOf> MallocSizeOf for std::sync::Mutex<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-		(*self.lock().unwrap()).size_of(ops)
+		self.lock().unwrap().size_of(ops)
+	}
+}
+
+#[cfg(feature = "std")]
+impl<T: MallocSizeOf> MallocSizeOf for parking_lot::Mutex<T> {
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.lock().size_of(ops)
+	}
+}
+
+#[cfg(feature = "std")]
+impl<T: MallocSizeOf> MallocSizeOf for std::sync::RwLock<T> {
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.read().unwrap().size_of(ops)
+	}
+}
+
+#[cfg(feature = "std")]
+impl<T: MallocSizeOf> MallocSizeOf for parking_lot::RwLock<T> {
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.read().size_of(ops)
 	}
 }
 
