@@ -43,6 +43,6 @@ jemalloc-global = ["jemallocator"]
 # use mimalloc as global allocator
 mimalloc-global = ["mimallocator", "mimalloc-sys"]
 # implement additional types
-ethereum-impls = ["ethereum-types", "parking_lot", "smallvec"]
+ethereum-impls = ["ethereum-types", "smallvec"]
 # Full estimate: no call to allocator
 estimate-heapsize = []
