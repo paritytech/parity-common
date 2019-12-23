@@ -46,7 +46,7 @@ pub struct Database {
 }
 
 // TODO: implement when web-based implementation need memory stats
-impl parity_util_mem::MallocSizeOf for Extrinsic {
+impl parity_util_mem::MallocSizeOf for Database {
 	fn size_of(&self, _ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
 		0
 	}

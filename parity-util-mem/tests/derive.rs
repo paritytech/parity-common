@@ -29,8 +29,8 @@ fn derive_vec() {
 	assert!(t.malloc_size_of() > 1000);
 }
 
+#[cfg(feature="std")]
 #[test]
-#[cfg(feature = "std")]
 fn derive_hashmap() {
 	#[derive(MallocSizeOf, Default)]
 	struct Trivia {
@@ -58,6 +58,5 @@ fn derive_ignore() {
 
 	t.hm.insert(1, vec![0u8; 2048]);
 	t.v = vec![0u8; 1024];
-
 	assert!(t.malloc_size_of() < 3000);
 }
