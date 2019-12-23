@@ -233,8 +233,7 @@ struct DBAndColumns {
 
 impl MallocSizeOf for DBAndColumns {
 	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
-		self.column_names.size_of(ops) +
-			0 // TODO: query rockdb memory footprint
+		self.column_names.size_of(ops) + 0 // TODO: query rockdb memory footprint
 	}
 }
 
