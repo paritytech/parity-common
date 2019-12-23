@@ -425,6 +425,13 @@ where
 }
 
 #[cfg(feature = "std")]
+impl<I: MallocSizeOf> MallocSizeOf for std::cmp::Reverse<I> {
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.0.size_of(ops)
+	}
+}
+
+#[cfg(feature = "std")]
 impl<K, V, S> MallocShallowSizeOf for std::collections::HashMap<K, V, S>
 {
 	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {

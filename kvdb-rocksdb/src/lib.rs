@@ -18,6 +18,7 @@ mod iter;
 
 use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, path::Path, result};
 
+use parity_util_mem::MallocSizeOf;
 use parking_lot::{Mutex, MutexGuard, RwLock};
 use rocksdb::{
 	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB,
@@ -57,6 +58,7 @@ pub const DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB: MiB = 128;
 /// The default memory budget in MiB.
 pub const DB_DEFAULT_MEMORY_BUDGET_MB: MiB = 512;
 
+#[derive(MallocSizeOf)]
 enum KeyState {
 	Insert(DBValue),
 	Delete,
@@ -229,6 +231,13 @@ struct DBAndColumns {
 	column_names: Vec<String>,
 }
 
+impl MallocSizeOf for DBAndColumns {
+	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
+		self.column_names.size_of(ops) +
+			0 // TODO: query rockdb memory footprint
+	}
+}
+
 impl DBAndColumns {
 	fn cf(&self, i: usize) -> &ColumnFamily {
 		self.db.cf_handle(&self.column_names[i]).expect("the specified column name is correct; qed")
@@ -236,12 +245,17 @@ impl DBAndColumns {
 }
 
 /// Key-Value database.
+#[derive(MallocSizeOf)]
 pub struct Database {
 	db: RwLock<Option<DBAndColumns>>,
+	#[ignore_malloc_size_of = "insignificant"]
 	config: DatabaseConfig,
 	path: String,
+	#[ignore_malloc_size_of = "insignificant"]
 	write_opts: WriteOptions,
+	#[ignore_malloc_size_of = "insignificant"]
 	read_opts: ReadOptions,
+	#[ignore_malloc_size_of = "insignificant"]
 	block_opts: BlockBasedOptions,
 	// Dirty values added with `write_buffered`. Cleaned on `flush`.
 	overlay: RwLock<Vec<HashMap<DBKey, KeyState>>>,
