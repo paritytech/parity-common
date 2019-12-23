@@ -45,6 +45,13 @@ pub struct Database {
 	indexed_db: SendWrapper<IdbDatabase>,
 }
 
+// TODO: implement when web-based implementation need memory stats
+impl parity_util_mem::MallocSizeOf for Extrinsic {
+	fn size_of(&self, _ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
+		0
+	}
+}
+
 impl Database {
 	/// Opens the database with the given name,
 	/// and the specified number of columns (not including the default one).

@@ -231,10 +231,27 @@ struct DBAndColumns {
 	column_names: Vec<String>,
 }
 
+fn static_property_or_warn(db: &DB, prop: &str) -> usize {
+	match db.property_value(prop) {
+		Ok(Some(v)) => match v.parse::<usize>() {
+			Ok(v) => v,
+			Err(_) => {
+				warn!("Cannot read static property {}", prop);
+				0
+			}
+		},
+		_ => {
+			warn!("Cannot read static property {}", prop);
+			0
+		}
+	}
+}
+
 impl MallocSizeOf for DBAndColumns {
 	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
-		self.column_names.size_of(ops) +
-			0 // TODO: query rockdb memory footprint
+		self.column_names.size_of(ops)
+			+ static_property_or_warn(&self.db, "rocksdb.estimate-table-readers-mem")
+			+ static_property_or_warn(&self.db, "rocksdb.cur-size-all-mem-tables")
 	}
 }
 
