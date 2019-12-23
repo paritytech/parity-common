@@ -1,7 +1,5 @@
-
 #[test]
 fn derive_smoky() {
-
 	use parity_util_mem::{MallocSizeOf, MallocSizeOfExt};
 
 	#[derive(MallocSizeOf)]
@@ -16,7 +14,6 @@ fn derive_smoky() {
 
 #[test]
 fn derive_hashmap() {
-
 	use parity_util_mem::{MallocSizeOf, MallocSizeOfExt};
 
 	#[derive(MallocSizeOf, Default)]
