@@ -1,5 +1,5 @@
 #[test]
-#[cfg(feature="std")]
+#[cfg(feature = "std")]
 fn derive_smoky() {
 	use parity_util_mem::{MallocSizeOf, MallocSizeOfExt};
 
@@ -14,7 +14,7 @@ fn derive_smoky() {
 }
 
 #[test]
-#[cfg(feature="std")]
+#[cfg(feature = "std")]
 fn derive_hashmap() {
 	use parity_util_mem::{MallocSizeOf, MallocSizeOfExt};
 
