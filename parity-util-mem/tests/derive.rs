@@ -60,3 +60,21 @@ fn derive_ignore() {
 	t.v = vec![0u8; 1024];
 	assert!(t.malloc_size_of() < 3000);
 }
+
+#[test]
+#[cfg(feature="std")]
+fn derive_morecomplex() {
+	#[derive(MallocSizeOf)]
+	struct Trivia {
+		hm: hashbrown::HashMap<u64, Vec<u8>>,
+		cache: lru::LruCache<u128, Vec<u8>>,
+	}
+
+	let mut t = Trivia { hm: hashbrown::HashMap::new(), cache: lru::LruCache::unbounded() };
+
+	t.hm.insert(1, vec![0u8; 2048]);
+	t.cache.put(1, vec![0u8; 2048]);
+	t.cache.put(2, vec![0u8; 4096]);
+
+	assert!(t.malloc_size_of() > 8000);
+}
