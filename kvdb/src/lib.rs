@@ -14,13 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Key-Value store abstraction with `RocksDB` backend.
+//! Key-Value store abstraction.
 
 use bytes::Bytes;
 use smallvec::SmallVec;
 use std::io;
 use std::path::Path;
 use std::sync::Arc;
+
+mod io_stats;
 
 /// Required length of prefixes.
 pub const PREFIX_LEN: usize = 12;
@@ -29,6 +31,8 @@ pub const PREFIX_LEN: usize = 12;
 pub type DBValue = Vec<u8>;
 /// Database keys.
 pub type DBKey = SmallVec<[u8; 32]>;
+
+pub use io_stats::IoStats;
 
 /// Write transaction. Batches a sequence of put/delete operations for efficiency.
 #[derive(Default, Clone, PartialEq)]
@@ -143,6 +147,16 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 
 	/// Attempt to replace this database with a new one located at the given path.
 	fn restore(&self, new_db: &str) -> io::Result<()>;
+
+	/// Query statistics.
+	///
+	/// Not all kvdb implementations are able or expected to implement this, so by
+	/// default, empty statistics is returned. Also, not all kvdb implementation
+	/// can return every statistic or configured to do so (some statistics gathering
+	/// may impede the performance and might be off by default).
+	fn io_stats(&self) -> IoStats {
+		IoStats::empty()
+	}
 }
 
 /// Generic key-value database handler. This trait contains one function `open`.
