@@ -567,12 +567,10 @@ impl Database {
 
 					let cf = cfs.cf(op.col() as usize);
 
-					self.stats.add_write_bytes(
-						match op {
-							DBOp::Insert { col: _, ref key, ref value } => key.len() + value.len(),
-							DBOp::Delete { col: _, ref key } => key.len(),
-						} as u64
-					);
+					self.stats.add_write_bytes(match op {
+						DBOp::Insert { col: _, ref key, ref value } => key.len() + value.len(),
+						DBOp::Delete { col: _, ref key } => key.len(),
+					} as u64);
 
 					match op {
 						DBOp::Insert { col: _, key, value } => batch.put_cf(cf, &key, &value).map_err(other_io_err)?,
@@ -1049,7 +1047,9 @@ mod tests {
 		batch.put(1, key1, key1);
 		batch.put(2, key1, key1);
 
-		for _ in 0..10 { db.get(0, key1).unwrap(); }
+		for _ in 0..10 {
+			db.get(0, key1).unwrap();
+		}
 
 		db.write(batch).unwrap();
 
