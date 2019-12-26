@@ -17,6 +17,7 @@
 mod iter;
 
 use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, path::Path, result};
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 
 use parity_util_mem::MallocSizeOf;
 use parking_lot::{Mutex, MutexGuard, RwLock};
@@ -256,6 +257,52 @@ impl DBAndColumns {
 	}
 }
 
+struct DbStats {
+	reads: AtomicU64,
+	writes: AtomicU64,
+	transactions: AtomicU64,
+	started: Mutex<std::time::Instant>,
+}
+
+struct TakenDbStats {
+	reads: u64,
+	writes: u64,
+	transactions: u64,
+	start: std::time::Instant,
+}
+
+impl DbStats {
+	fn new() -> Self {
+		Self { reads: 0.into(), writes: 0.into(), transactions: 0.into(), started: std::time::Instant::now().into(), }
+	}
+
+	fn add_reads(&self, val: u64) {
+		self.reads.fetch_add(val, AtomicOrdering::Relaxed);
+	}
+
+	fn add_writes(&self, val: u64) {
+		self.writes.fetch_add(val, AtomicOrdering::Relaxed);
+	}
+
+	fn add_transactions(&self, val: u64) {
+		self.transactions.fetch_add(val, AtomicOrdering::Relaxed);
+	}
+
+	fn take(&self) -> TakenDbStats {
+		let mut started_lock = self.started.lock();
+		let stats = TakenDbStats {
+			reads: self.reads.swap(0, AtomicOrdering::Relaxed),
+			writes: self.writes.swap(0, AtomicOrdering::Relaxed),
+			transactions: self.transactions.swap(0, AtomicOrdering::Relaxed),
+			start: *started_lock,
+		};
+
+		*started_lock = std::time::Instant::now();
+
+		stats
+	}
+}
+
 /// Key-Value database.
 #[derive(MallocSizeOf)]
 pub struct Database {
@@ -271,6 +318,7 @@ pub struct Database {
 	block_opts: BlockBasedOptions,
 	// Dirty values added with `write_buffered`. Cleaned on `flush`.
 	overlay: RwLock<Vec<HashMap<DBKey, KeyState>>>,
+	stats: DbStats,
 	// Values currently being flushed. Cleared when `flush` completes.
 	flushing: RwLock<Vec<HashMap<DBKey, KeyState>>>,
 	// Prevents concurrent flushes.
@@ -403,6 +451,7 @@ impl Database {
 			read_opts,
 			write_opts,
 			block_opts,
+			stats: DbStats::new(),
 		})
 	}
 
@@ -474,6 +523,10 @@ impl Database {
 			Some(ref cfs) => {
 				let mut batch = WriteBatch::default();
 				let ops = tr.ops;
+
+				self.stats.add_writes(ops.len() as u64);
+				self.stats.add_transactions(1);
+
 				for op in ops {
 					// remove any buffered operation for this key
 					self.overlay.write()[op.col() as usize].remove(op.key());
@@ -494,6 +547,7 @@ impl Database {
 
 	/// Get value by key.
 	pub fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
+		self.stats.add_reads(1);
 		match *self.db.read() {
 			Some(ref cfs) => {
 				let overlay = &self.overlay.read()[col as usize];
@@ -703,6 +757,20 @@ impl KeyValueDB for Database {
 
 	fn restore(&self, new_db: &str) -> io::Result<()> {
 		Database::restore(self, new_db)
+	}
+
+	fn io_stats(&self) -> kvdb::IoStats {
+		let taken_stats = self.stats.take();
+
+		let mut stats = kvdb::IoStats::empty();
+
+		stats.reads = taken_stats.reads;
+		stats.writes = taken_stats.writes;
+		stats.transactions = taken_stats.transactions;
+		stats.start = taken_stats.start;
+		stats.span = taken_stats.start.elapsed();
+
+		stats
 	}
 }
 
@@ -914,6 +982,31 @@ mod tests {
 		batch.put(0, key1, key1);
 		db.write(batch).unwrap();
 		assert_eq!(db.num_keys(0).unwrap(), 1, "adding a key increases the count");
+	}
+
+	#[test]
+	fn stats() {
+		let tempdir = TempDir::new("").unwrap();
+		let config = DatabaseConfig::with_columns(3);
+		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
+
+		let key1 = b"kkk";
+		let mut batch = db.transaction();
+		batch.put(0, key1, key1);
+		batch.put(1, key1, key1);
+		batch.put(2, key1, key1);
+
+		for _ in 0..10 { db.get(0, key1).unwrap(); }
+
+		db.write(batch).unwrap();
+
+		let io_stats = db.io_stats();
+		assert_eq!(io_stats.transactions, 1);
+		assert_eq!(io_stats.writes, 3);
+		assert_eq!(io_stats.reads, 10);
+
+		let new_io_stats = db.io_stats();
+		assert_eq!(new_io_stats.transactions, 0);
 	}
 
 	#[test]
