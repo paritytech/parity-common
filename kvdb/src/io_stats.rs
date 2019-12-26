@@ -26,6 +26,12 @@ pub struct IoStats {
 	pub cache_reads: u64,
 	/// Number of write operations.
 	pub writes: u64,
+	/// Number of bytes read
+	pub read_bytes: u64,
+	/// Number of bytes read from cache
+	pub cache_read_bytes: u64,
+	/// Number of bytes write
+	pub write_bytes: u64,
 	/// Start of the statistic period.
 	pub start: std::time::Instant,
 	/// Total duration of the statistic period.
@@ -40,6 +46,9 @@ impl IoStats {
 			reads: 0,
 			cache_reads: 0,
 			writes: 0,
+			read_bytes: 0,
+			cache_read_bytes: 0,
+			write_bytes: 0,
 			start: std::time::Instant::now(),
 			span: std::time::Duration::default(),
 		}
