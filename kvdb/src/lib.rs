@@ -79,7 +79,7 @@ impl DBSmartTransaction {
 	}
 
 	pub fn iter(&self) -> DataOpIterator {
-		DataOpIterator { tx: self, pos: 0 }
+		DataOpIterator { tx: self, pos: 0, index_pos: 0  }
 	}
 }
 
@@ -95,25 +95,36 @@ pub enum DataOp<'a> {
 	},
 }
 
+impl DataOp<'_> {
+	pub fn col(&self) -> u32 {
+		match &self {
+			DataOp::Insert { col, .. } => *col,
+			DataOp::Delete { col, .. } => *col,
+		}
+	}
+}
+
 pub struct DataOpIterator<'a> {
 	tx: &'a DBSmartTransaction,
 	pos: usize,
+	index_pos: usize,
 }
 
 impl<'a> Iterator for DataOpIterator<'a> {
 	type Item = DataOp<'a>;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		if self.pos == self.tx.ops.len() { return None; }
+		if self.index_pos == self.tx.index.len() { return None; }
 
-		Some(match &self.tx.index[self.pos] {
+		Some(match &self.tx.index[self.index_pos] {
 			DBOpIndex::Insert { col, key_len, value_len } => {
 				let ret = DataOp::Insert {
 					col: *col,
 					key: &self.tx.ops[self.pos..self.pos + key_len],
 					val: &self.tx.ops[self.pos+key_len..self.pos+key_len+value_len],
 				};
-				self.pos = self.pos + key_len + value_len;
+				self.pos += key_len + value_len;
+				self.index_pos += 1;
 				ret
 			}
 			DBOpIndex::Delete { col, key_len } => {
@@ -121,7 +132,8 @@ impl<'a> Iterator for DataOpIterator<'a> {
 					col: *col,
 					key: &self.tx.ops[self.pos..self.pos + key_len ],
 				};
-				self.pos = self.pos + key_len;
+				self.pos += key_len;
+				self.index_pos += 1;
 				ret
 			}
 		})

@@ -71,7 +71,7 @@ fn n_random_bytes(n: usize) -> Vec<u8> {
 /// effectively random points in the key set.
 fn populate(db: &Database) -> io::Result<Vec<H256>> {
 	let mut needles = Vec::with_capacity(NEEDLES);
-	let mut batch = db.transaction();
+	let mut batch = db.smart_transaction();
 	for i in 0..NEEDLES * NEEDLES_TO_HAYSTACK_RATIO {
 		let key = H256::random();
 		if i % NEEDLES_TO_HAYSTACK_RATIO == 0 {
@@ -83,7 +83,7 @@ fn populate(db: &Database) -> io::Result<Vec<H256>> {
 		// In ethereum keys are mostly 32 bytes and payloads ~140bytes.
 		batch.put(0, &key.as_bytes(), &n_random_bytes(140));
 	}
-	db.write(batch)?;
+	db.smart_write(batch)?;
 	// Clear the overlay
 	db.flush()?;
 	Ok(needles)

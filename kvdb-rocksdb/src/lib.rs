@@ -27,7 +27,7 @@ use rocksdb::{
 use crate::iter::KeyValuePair;
 use fs_swap::{swap, swap_nonatomic};
 use interleaved_ordered::interleave_ordered;
-use kvdb::{DBKey, DBOp, DBTransaction, DBValue, KeyValueDB};
+use kvdb::{DBKey, DBOp, DBTransaction, DBValue, KeyValueDB, DBSmartTransaction, DataOpIterator, DataOp};
 use log::{debug, warn};
 
 #[cfg(target_os = "linux")]
@@ -220,6 +220,12 @@ impl Default for DatabaseConfig {
 	}
 }
 
+#[derive(MallocSizeOf)]
+enum KeyState {
+	Insert(DBValue),
+	Delete,
+}
+
 struct DBAndColumns {
 	db: DB,
 	column_names: Vec<String>,
@@ -410,6 +416,11 @@ impl Database {
 		DBTransaction::new()
 	}
 
+	/// Helper to create new smart transaction
+	pub fn smart_transaction(&self) -> DBSmartTransaction {
+		DBSmartTransaction::new()
+	}
+
 	/// Commit transaction to database.
 	pub fn write_buffered(&self, tr: DBTransaction) {
 		self.write(tr).expect("failed to write")
@@ -437,6 +448,33 @@ impl Database {
 						DBOp::Insert { col: _, key, value } => batch.put_cf(cf, &key, &value).map_err(other_io_err)?,
 						DBOp::Delete { col: _, key } => batch.delete_cf(cf, &key).map_err(other_io_err)?,
 					};
+				}
+
+				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))
+			}
+			None => Err(other_io_err("Database is closed")),
+		}
+	}
+
+	pub fn smart_write(&self, tx: DBSmartTransaction) -> io::Result<()> {
+		match *self.db.read() {
+			Some(ref cfs) => {
+				let mut batch = WriteBatch::default();
+				// let ops = tr.ops;
+				// for op in ops {
+				// 	let cf = cfs.cf(op.col() as usize);
+				// 	match op {
+				// 		DBOp::Insert { col: _, key, value } => batch.put_cf(cf, &key, &value).map_err(other_io_err)?,
+				// 		DBOp::Delete { col: _, key } => batch.delete_cf(cf, &key).map_err(other_io_err)?,
+				// 	};
+				// }
+
+				for data_op in tx.iter() {
+					let cf = cfs.cf(data_op.col() as usize);
+					match data_op {
+						DataOp::Insert { col: _ , key, val } => batch.put_cf(cf, key, val).map_err(other_io_err)?,
+						DataOp::Delete { col: _ , key } => batch.delete_cf(cf, key).map_err(other_io_err)?,
+					}
 				}
 
 				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))
@@ -672,13 +710,13 @@ mod tests {
 		let key4 = H256::from_str("04c01111110b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
 		let key5 = H256::from_str("04c02222220b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
 
-		let mut batch = db.transaction();
+		let mut batch = db.smart_transaction();
 		batch.put(0, key1.as_bytes(), b"cat");
 		batch.put(0, key2.as_bytes(), b"dog");
 		batch.put(0, key3.as_bytes(), b"caterpillar");
 		batch.put(0, key4.as_bytes(), b"beef");
 		batch.put(0, key5.as_bytes(), b"fish");
-		db.write(batch).unwrap();
+		db.smart_write(batch).unwrap();
 
 		assert_eq!(&*db.get(0, key1.as_bytes()).unwrap().unwrap(), b"cat");
 
