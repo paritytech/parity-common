@@ -418,59 +418,17 @@ impl Database {
 
 	/// Commit transaction to database.
 	pub fn write_buffered(&self, tr: DBTransaction) {
-		let mut overlay = self.overlay.write();
-		let ops = tr.ops;
-		for op in ops {
-			match op {
-				DBOp::Insert { col, key, value } => overlay[col as usize].insert(key, KeyState::Insert(value)),
-				DBOp::Delete { col, key } => overlay[col as usize].insert(key, KeyState::Delete),
-			};
-		}
+		self.write(tr).expect("failed to write")
 	}
 
 	/// Commit buffered changes to database. Must be called under `flush_lock`
 	fn write_flushing_with_lock(&self, _lock: &mut MutexGuard<'_, bool>) -> io::Result<()> {
-		match *self.db.read() {
-			Some(ref cfs) => {
-				let mut batch = WriteBatch::default();
-				mem::swap(&mut *self.overlay.write(), &mut *self.flushing.write());
-				{
-					for (c, column) in self.flushing.read().iter().enumerate() {
-						for (key, state) in column.iter() {
-							let cf = cfs.cf(c);
-							match *state {
-								KeyState::Delete => batch.delete_cf(cf, key).map_err(other_io_err)?,
-								KeyState::Insert(ref value) => batch.put_cf(cf, key, value).map_err(other_io_err)?,
-							};
-						}
-					}
-				}
-
-				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))?;
-
-				for column in self.flushing.write().iter_mut() {
-					column.clear();
-					column.shrink_to_fit();
-				}
-				Ok(())
-			}
-			None => Err(other_io_err("Database is closed")),
-		}
+		Ok(())
 	}
 
 	/// Commit buffered changes to database.
 	pub fn flush(&self) -> io::Result<()> {
-		let mut lock = self.flushing_lock.lock();
-		// If RocksDB batch allocation fails the thread gets terminated and the lock is released.
-		// The value inside the lock is used to detect that.
-		if *lock {
-			// This can only happen if another flushing thread is terminated unexpectedly.
-			return Err(other_io_err("Database write failure. Running low on memory perhaps?"));
-		}
-		*lock = true;
-		let result = self.write_flushing_with_lock(&mut lock);
-		*lock = false;
-		result
+		Ok(())
 	}
 
 	/// Commit transaction to database.
@@ -480,11 +438,7 @@ impl Database {
 				let mut batch = WriteBatch::default();
 				let ops = tr.ops;
 				for op in ops {
-					// remove any buffered operation for this key
-					self.overlay.write()[op.col() as usize].remove(op.key());
-
 					let cf = cfs.cf(op.col() as usize);
-
 					match op {
 						DBOp::Insert { col: _, key, value } => batch.put_cf(cf, &key, &value).map_err(other_io_err)?,
 						DBOp::Delete { col: _, key } => batch.delete_cf(cf, &key).map_err(other_io_err)?,
@@ -500,26 +454,14 @@ impl Database {
 	/// Get value by key.
 	pub fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		match *self.db.read() {
+			None => return Ok(None),
 			Some(ref cfs) => {
-				let overlay = &self.overlay.read()[col as usize];
-				match overlay.get(key) {
-					Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
-					Some(&KeyState::Delete) => Ok(None),
-					None => {
-						let flushing = &self.flushing.read()[col as usize];
-						match flushing.get(key) {
-							Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
-							Some(&KeyState::Delete) => Ok(None),
-							None => cfs
-								.db
-								.get_pinned_cf_opt(cfs.cf(col as usize), key, &self.read_opts)
-								.map(|r| r.map(|v| v.to_vec()))
-								.map_err(other_io_err),
-						}
-					}
-				}
+				cfs
+					.db
+					.get_pinned_cf_opt(cfs.cf(col as usize), key, &self.read_opts)
+					.map(|r| r.map(|v| v.to_vec()))
+					.map_err(other_io_err)
 			}
-			None => Ok(None),
 		}
 	}
 
