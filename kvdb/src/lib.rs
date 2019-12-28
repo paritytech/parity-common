@@ -37,11 +37,13 @@ pub struct DBTransaction {
 	pub ops: Vec<DBOp>,
 }
 
+#[derive(Clone, PartialEq)]
 enum DBOpIndex {
 	Insert { col: u32, key_len: usize, value_len: usize },
 	Delete { col: u32, key_len: usize },
 }
 
+#[derive(Default, Clone, PartialEq)]
 pub struct DBSmartTransaction {
 	ops: Vec<u8>,
 	index: Vec<DBOpIndex>,
@@ -235,6 +237,8 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 		self.write_buffered(transaction);
 		self.flush()
 	}
+
+	fn smart_write(&self, tx: DBSmartTransaction) -> io::Result<()>;
 
 	/// Flush all buffered data.
 	fn flush(&self) -> io::Result<()>;

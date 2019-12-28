@@ -666,6 +666,10 @@ impl KeyValueDB for Database {
 		Database::write(self, transaction)
 	}
 
+	fn smart_write(&self, transaction: DBSmartTransaction) -> io::Result<()> {
+		Database::smart_write(self, transaction)
+	}
+
 	fn flush(&self) -> io::Result<()> {
 		Database::flush(self)
 	}

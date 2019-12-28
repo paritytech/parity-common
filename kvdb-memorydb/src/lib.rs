@@ -109,6 +109,10 @@ impl KeyValueDB for InMemory {
 		}
 	}
 
+	fn smart_write(&self, transaction: kvdb::DBSmartTransaction) -> std::io::Result<()> {
+		unimplemented!()
+	}
+
 	fn restore(&self, _new_db: &str) -> io::Result<()> {
 		Err(io::Error::new(io::ErrorKind::Other, "Attempted to restore in-memory database"))
 	}
