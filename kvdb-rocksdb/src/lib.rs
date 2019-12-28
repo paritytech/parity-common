@@ -21,7 +21,8 @@ use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, path
 use parity_util_mem::MallocSizeOf;
 use parking_lot::{Mutex, MutexGuard, RwLock};
 use rocksdb::{
-	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB,
+	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions,
+	WriteBatch, WriteOptions, DB, Direction, IteratorMode,
 };
 
 use crate::iter::KeyValuePair;
@@ -264,7 +265,7 @@ impl DBAndColumns {
 /// Key-Value database.
 #[derive(MallocSizeOf)]
 pub struct Database {
-	db: RwLock<Option<DBAndColumns>>,
+	db: DBAndColumns,
 	#[ignore_malloc_size_of = "insignificant"]
 	config: DatabaseConfig,
 	path: String,
@@ -274,13 +275,6 @@ pub struct Database {
 	read_opts: ReadOptions,
 	#[ignore_malloc_size_of = "insignificant"]
 	block_opts: BlockBasedOptions,
-	// Dirty values added with `write_buffered`. Cleaned on `flush`.
-	overlay: RwLock<Vec<HashMap<DBKey, KeyState>>>,
-	// Values currently being flushed. Cleared when `flush` completes.
-	flushing: RwLock<Vec<HashMap<DBKey, KeyState>>>,
-	// Prevents concurrent flushes.
-	// Value indicates if a flush is in progress.
-	flushing_lock: Mutex<bool>,
 }
 
 #[inline]
@@ -399,11 +393,8 @@ impl Database {
 			Err(s) => return Err(other_io_err(s)),
 		};
 		Ok(Database {
-			db: RwLock::new(Some(DBAndColumns { db, column_names })),
+			db: DBAndColumns { db, column_names },
 			config: config.clone(),
-			overlay: RwLock::new((0..config.columns).map(|_| HashMap::new()).collect()),
-			flushing: RwLock::new((0..config.columns).map(|_| HashMap::new()).collect()),
-			flushing_lock: Mutex::new(false),
 			path: path.to_owned(),
 			read_opts,
 			write_opts,
@@ -438,63 +429,39 @@ impl Database {
 
 	/// Commit transaction to database.
 	pub fn write(&self, tr: DBTransaction) -> io::Result<()> {
-		match *self.db.read() {
-			Some(ref cfs) => {
-				let mut batch = WriteBatch::default();
-				let ops = tr.ops;
-				for op in ops {
-					let cf = cfs.cf(op.col() as usize);
-					match op {
-						DBOp::Insert { col: _, key, value } => batch.put_cf(cf, &key, &value).map_err(other_io_err)?,
-						DBOp::Delete { col: _, key } => batch.delete_cf(cf, &key).map_err(other_io_err)?,
-					};
-				}
-
-				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))
-			}
-			None => Err(other_io_err("Database is closed")),
+		let mut batch = WriteBatch::default();
+		let ops = tr.ops;
+		for op in ops {
+			let cf = self.db.cf(op.col() as usize);
+			match op {
+				DBOp::Insert { col: _, key, value } => batch.put_cf(cf, &key, &value).map_err(other_io_err)?,
+				DBOp::Delete { col: _, key } => batch.delete_cf(cf, &key).map_err(other_io_err)?,
+			};
 		}
+
+		check_for_corruption(&self.path, self.db.db.write_opt(batch, &self.write_opts))
 	}
 
 	pub fn smart_write(&self, tx: DBSmartTransaction) -> io::Result<()> {
-		match *self.db.read() {
-			Some(ref cfs) => {
-				let mut batch = WriteBatch::default();
-				// let ops = tr.ops;
-				// for op in ops {
-				// 	let cf = cfs.cf(op.col() as usize);
-				// 	match op {
-				// 		DBOp::Insert { col: _, key, value } => batch.put_cf(cf, &key, &value).map_err(other_io_err)?,
-				// 		DBOp::Delete { col: _, key } => batch.delete_cf(cf, &key).map_err(other_io_err)?,
-				// 	};
-				// }
-
-				for data_op in tx.iter() {
-					let cf = cfs.cf(data_op.col() as usize);
-					match data_op {
-						DataOp::Insert { col: _ , key, val } => batch.put_cf(cf, key, val).map_err(other_io_err)?,
-						DataOp::Delete { col: _ , key } => batch.delete_cf(cf, key).map_err(other_io_err)?,
-					}
-				}
-
-				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))
+		let mut batch = WriteBatch::default();
+		for data_op in tx.iter() {
+			let cf = self.db.cf(data_op.col() as usize);
+			match data_op {
+				DataOp::Insert { col: _ , key, val } => batch.put_cf(cf, key, val).map_err(other_io_err)?,
+				DataOp::Delete { col: _ , key } => batch.delete_cf(cf, key).map_err(other_io_err)?,
 			}
-			None => Err(other_io_err("Database is closed")),
 		}
+
+		check_for_corruption(&self.path, self.db.db.write_opt(batch, &self.write_opts))
 	}
 
 	/// Get value by key.
 	pub fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
-		match *self.db.read() {
-			None => return Ok(None),
-			Some(ref cfs) => {
-				cfs
-					.db
-					.get_pinned_cf_opt(cfs.cf(col as usize), key, &self.read_opts)
-					.map(|r| r.map(|v| v.to_vec()))
-					.map_err(other_io_err)
-			}
-		}
+		self.db
+			.db
+			.get_pinned_cf_opt(self.db.cf(col as usize), key, &self.read_opts)
+			.map(|r| r.map(|v| v.to_vec()))
+			.map_err(other_io_err)
 	}
 
 	/// Get value by partial key. Prefix size should match configured prefix size. Only searches flushed values.
@@ -507,143 +474,52 @@ impl Database {
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
 	pub fn iter<'a>(&'a self, col: u32) -> impl Iterator<Item = KeyValuePair> + 'a {
-		let read_lock = self.db.read();
-		let optional = if read_lock.is_some() {
-			let overlay_data = {
-				let overlay = &self.overlay.read()[col as usize];
-				let mut overlay_data = overlay
-					.iter()
-					.filter_map(|(k, v)| match *v {
-						KeyState::Insert(ref value) => {
-							Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_boxed_slice()))
-						}
-						KeyState::Delete => None,
-					})
-					.collect::<Vec<_>>();
-				overlay_data.sort();
-				overlay_data
-			};
-
-			let guarded = iter::ReadGuardedIterator::new(read_lock, col, &self.read_opts);
-			Some(interleave_ordered(overlay_data, guarded))
-		} else {
-			None
-		};
-		optional.into_iter().flat_map(identity)
+		self.db.db.iterator_cf_opt(self.db.cf(col as usize), &self.read_opts, IteratorMode::Start)
+			.expect("is ok")
 	}
 
 	/// Get database iterator from prefix for flushed data.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
 	fn iter_from_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
-		let read_lock = self.db.read();
-		let optional = if read_lock.is_some() {
-			let guarded = iter::ReadGuardedIterator::new_from_prefix(read_lock, col, prefix, &self.read_opts);
-			Some(interleave_ordered(Vec::new(), guarded))
-		} else {
-			None
-		};
-		// We're not using "Prefix Seek" mode, so the iterator will return
-		// keys not starting with the given prefix as well,
-		// see https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes
-		optional.into_iter().flat_map(identity).filter(move |(k, _)| k.starts_with(prefix))
+		self.db.db.iterator_cf_opt(self.db.cf(col as usize), &self.read_opts, IteratorMode::From(prefix, Direction::Forward))
+			.expect("is ok")
 	}
 
 	/// Close the database
 	fn close(&self) {
-		*self.db.write() = None;
-		self.overlay.write().clear();
-		self.flushing.write().clear();
 	}
 
 	/// Restore the database from a copy at given path.
 	pub fn restore(&self, new_db: &str) -> io::Result<()> {
-		self.close();
-
-		// swap is guaranteed to be atomic
-		match swap(new_db, &self.path) {
-			Ok(_) => {
-				// ignore errors
-				let _ = fs::remove_dir_all(new_db);
-			}
-			Err(err) => {
-				debug!("DB atomic swap failed: {}", err);
-				match swap_nonatomic(new_db, &self.path) {
-					Ok(_) => {
-						// ignore errors
-						let _ = fs::remove_dir_all(new_db);
-					}
-					Err(err) => {
-						warn!("Failed to swap DB directories: {:?}", err);
-						return Err(io::Error::new(
-							io::ErrorKind::Other,
-							"DB restoration failed: could not swap DB directories",
-						));
-					}
-				}
-			}
-		}
-
-		// reopen the database and steal handles into self
-		let db = Self::open(&self.config, &self.path)?;
-		*self.db.write() = mem::replace(&mut *db.db.write(), None);
-		*self.overlay.write() = mem::replace(&mut *db.overlay.write(), Vec::new());
-		*self.flushing.write() = mem::replace(&mut *db.flushing.write(), Vec::new());
-		Ok(())
+		unimplemented!()
 	}
 
 	/// The number of column families in the db.
 	pub fn num_columns(&self) -> u32 {
-		self.db
-			.read()
-			.as_ref()
-			.and_then(|db| if db.column_names.is_empty() { None } else { Some(db.column_names.len()) })
-			.map(|n| n as u32)
-			.unwrap_or(0)
+		self.db.column_names.len() as u32
 	}
 
 	/// The number of keys in a column (estimated).
 	/// Does not take into account the unflushed data.
 	pub fn num_keys(&self, col: u32) -> io::Result<u64> {
 		const ESTIMATE_NUM_KEYS: &str = "rocksdb.estimate-num-keys";
-		match *self.db.read() {
-			Some(ref cfs) => {
-				let cf = cfs.cf(col as usize);
-				match cfs.db.property_int_value_cf(cf, ESTIMATE_NUM_KEYS) {
-					Ok(estimate) => Ok(estimate.unwrap_or_default()),
-					Err(err_string) => Err(other_io_err(err_string)),
-				}
-			}
-			None => Ok(0),
+
+		let cf = self.db.cf(col as usize);
+		match self.db.db.property_int_value_cf(cf, ESTIMATE_NUM_KEYS) {
+			Ok(estimate) => Ok(estimate.unwrap_or_default()),
+			Err(err_string) => Err(other_io_err(err_string)),
 		}
 	}
 
 	/// Remove the last column family in the database. The deletion is definitive.
 	pub fn remove_last_column(&self) -> io::Result<()> {
-		match *self.db.write() {
-			Some(DBAndColumns { ref mut db, ref mut column_names }) => {
-				if let Some(name) = column_names.pop() {
-					db.drop_cf(&name).map_err(other_io_err)?;
-				}
-				Ok(())
-			}
-			None => Ok(()),
-		}
+		unimplemented!()
 	}
 
 	/// Add a new column family to the DB.
 	pub fn add_column(&self) -> io::Result<()> {
-		match *self.db.write() {
-			Some(DBAndColumns { ref mut db, ref mut column_names }) => {
-				let col = column_names.len() as u32;
-				let name = format!("col{}", col);
-				let col_config = self.config.column_config(&self.block_opts, col as u32);
-				let _ = db.create_cf(&name, &col_config).map_err(other_io_err)?;
-				column_names.push(name);
-				Ok(())
-			}
-			None => Ok(()),
-		}
+		unimplemented!()
 	}
 }
 
