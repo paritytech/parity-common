@@ -37,6 +37,97 @@ pub struct DBTransaction {
 	pub ops: Vec<DBOp>,
 }
 
+enum DBOpIndex {
+	Insert { col: u32, key_len: usize, value_len: usize },
+	Delete { col: u32, key_len: usize },
+}
+
+pub struct DBSmartTransaction {
+	ops: Vec<u8>,
+	index: Vec<DBOpIndex>,
+}
+
+impl DBSmartTransaction {
+	pub fn new() -> Self {
+		Self::with_capacity(256)
+	}
+
+	/// Create new transaction with capacity.
+	pub fn with_capacity(cap: usize) -> Self {
+		Self {
+			ops: Vec::with_capacity(cap << 6),
+			index: Vec::with_capacity(cap),
+		}
+	}
+
+	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
+	pub fn put(&mut self, col: u32, key: &[u8], value: &[u8]) {
+		self.ops.extend_from_slice(key);
+		self.ops.extend_from_slice(value);
+		self.index.push(DBOpIndex::Insert { col: col, key_len: key.len(), value_len: value.len() });
+	}
+
+	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
+	pub fn put_vec(&mut self, col: u32, key: &[u8], value: Bytes) {
+		self.put(col, key, &value[..]);
+	}
+
+	/// Delete value by key.
+	pub fn delete(&mut self, col: u32, key: &[u8]) {
+		self.ops.extend_from_slice(key);
+		self.index.push(DBOpIndex::Delete { col: col, key_len: key.len() });
+	}
+
+	pub fn iter(&self) -> DataOpIterator {
+		DataOpIterator { tx: self, pos: 0 }
+	}
+}
+
+pub enum DataOp<'a> {
+	Insert {
+		col: u32,
+		key: &'a [u8],
+		val: &'a [u8],
+	},
+	Delete {
+		col: u32,
+		key: &'a [u8]
+	},
+}
+
+pub struct DataOpIterator<'a> {
+	tx: &'a DBSmartTransaction,
+	pos: usize,
+}
+
+impl<'a> Iterator for DataOpIterator<'a> {
+	type Item = DataOp<'a>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if self.pos == self.tx.ops.len() { return None; }
+
+		Some(match &self.tx.index[self.pos] {
+			DBOpIndex::Insert { col, key_len, value_len } => {
+				let ret = DataOp::Insert {
+					col: *col,
+					key: &self.tx.ops[self.pos..self.pos + key_len],
+					val: &self.tx.ops[self.pos+key_len..self.pos+key_len+value_len],
+				};
+				self.pos = self.pos + key_len + value_len;
+				ret
+			}
+			DBOpIndex::Delete { col, key_len } => {
+				let ret = DataOp::Delete {
+					col: *col,
+					key: &self.tx.ops[self.pos..self.pos + key_len ],
+				};
+				self.pos = self.pos + key_len;
+				ret
+			}
+		})
+	}
+}
+
 /// Database operation.
 #[derive(Clone, PartialEq)]
 pub enum DBOp {
@@ -108,9 +199,14 @@ impl DBTransaction {
 /// The API laid out here, along with the `Sync` bound implies interior synchronization for
 /// implementation.
 pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
-	/// Helper to create a new transaction.
+	/// Helper to create new transaction.
 	fn transaction(&self) -> DBTransaction {
 		DBTransaction::new()
+	}
+
+	/// Helper to create new smart transaction.
+	fn smart_transaction(&self) -> DBSmartTransaction {
+		DBSmartTransaction::new()
 	}
 
 	/// Get a value by key.

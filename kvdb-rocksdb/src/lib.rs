@@ -58,12 +58,6 @@ pub const DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB: MiB = 128;
 /// The default memory budget in MiB.
 pub const DB_DEFAULT_MEMORY_BUDGET_MB: MiB = 512;
 
-#[derive(MallocSizeOf)]
-enum KeyState {
-	Insert(DBValue),
-	Delete,
-}
-
 /// Compaction profile for the database settings
 /// Note, that changing these parameters may trigger
 /// the compaction process of RocksDB on startup.
