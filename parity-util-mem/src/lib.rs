@@ -71,6 +71,7 @@ pub mod impls;
 pub use allocators::MallocSizeOfExt;
 pub use malloc_size::{MallocSizeOf, MallocSizeOfOps};
 
+#[cfg(feature = "derive")]
 pub use parity_util_mem_derive::*;
 
 #[cfg(feature = "std")]
