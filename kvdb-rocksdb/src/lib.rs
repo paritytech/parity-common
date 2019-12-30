@@ -232,16 +232,10 @@ struct DBAndColumns {
 }
 
 fn static_property_or_warn(db: &DB, prop: &str) -> usize {
-	match db.property_value(prop) {
-		Ok(Some(v)) => match v.parse::<usize>() {
-			Ok(v) => v,
-			Err(_) => {
-				warn!("Cannot read static property {}", prop);
-				0
-			}
-		},
+	match db.property_int_value(prop) {
+		Ok(Some(v)) => v as usize,
 		_ => {
-			warn!("Cannot read static property {}", prop);
+			warn!("Cannot read expected static property of RocksDb database: {}", prop);
 			0
 		}
 	}
@@ -788,6 +782,30 @@ mod tests {
 		db.flush().unwrap();
 		assert!(db.get(0, key3.as_bytes()).unwrap().is_none());
 		assert_eq!(&*db.get(0, key1.as_bytes()).unwrap().unwrap(), b"horse");
+	}
+
+	#[test]
+	fn malloc_size() {
+		let tempdir = TempDir::new("").unwrap();
+		let config = DatabaseConfig::default();
+		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
+
+		let mut batch = db.transaction();
+		for i in 0u32..10000u32 {
+			batch.put(0, &i.to_le_bytes(), &(i*17).to_le_bytes());
+		}
+		db.write(batch).unwrap();
+
+		db.flush().unwrap();
+
+		{
+			let db = db.db.read();
+			db.as_ref().map(|db| {
+				assert!(
+					super::static_property_or_warn(&db.db, "rocksdb.cur-size-all-mem-tables") > 0
+				);
+			});
+		}
 	}
 
 	#[test]
