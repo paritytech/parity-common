@@ -1,6 +1,6 @@
 #[test]
 #[cfg(feature = "std")]
-fn derive_smoky() {
+fn derive_vec() {
 	use parity_util_mem::{MallocSizeOf, MallocSizeOfExt};
 
 	#[derive(MallocSizeOf)]
