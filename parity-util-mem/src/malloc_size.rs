@@ -43,7 +43,8 @@
 //!   measured as well as the thing it points to. E.g.
 //!   `<Box<_> as MallocSizeOf>::size_of(field, ops)`.
 
-// This file is patched at commit 5bdea7dc1c80790a852a3fb03edfb2b8fbd403dc DO NOT EDIT.
+//! This is an extended (for own internal needs) version of the Servo internal malloc_size crate.
+//! We should occasionally track the upstream changes/fixes and reintroduce them here, be they applicable.
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
