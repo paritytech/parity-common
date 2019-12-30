@@ -43,7 +43,7 @@
 //!   measured as well as the thing it points to. E.g.
 //!   `<Box<_> as MallocSizeOf>::size_of(field, ops)`.
 
-//! This is an extended (for own internal needs) version of the Servo internal malloc_size crate.
+//! This is an extended version of the Servo internal malloc_size crate.
 //! We should occasionally track the upstream changes/fixes and reintroduce them here, be they applicable.
 
 #[cfg(not(feature = "std"))]
