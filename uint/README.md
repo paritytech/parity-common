@@ -2,7 +2,7 @@
 
 ## Description
 
-Provides facilities to construct big unsigned integer types.
+Provides facilities to construct big unsigned integer types which use no allocations (stack-based, fixed bit length).
 If you want to use a predefined `U128`, `U256` or `U512` type, take a look at the [`primitive-types`](https://github.com/paritytech/parity-common/tree/master/primitive-types) or [`ethereum-types`](https://github.com/paritytech/parity-common/tree/master/ethereum-types) crate.
 
 The focus on the provided big unsigned integer types is performance and cross-platform availability.
