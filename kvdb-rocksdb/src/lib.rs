@@ -573,7 +573,7 @@ impl Database {
 						DBOp::Insert { col: _, key, value } => {
 							stats_total_bytes += key.len() + value.len();
 							batch.put_cf(cf, &key, &value).map_err(other_io_err)?
-						},
+						}
 						DBOp::Delete { col: _, key } => {
 							// We count deletes as writes.
 							stats_total_bytes += key.len();

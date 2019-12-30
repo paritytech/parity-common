@@ -104,7 +104,6 @@ impl IoStats {
 		}
 
 		self.bytes_written as f64 / self.transactions as f64
-
 	}
 
 	pub fn cache_hit_ratio(&self) -> f64 {
