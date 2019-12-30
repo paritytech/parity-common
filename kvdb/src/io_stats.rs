@@ -27,13 +27,13 @@ pub struct IoStats {
 	/// Number of write operations.
 	pub writes: u64,
 	/// Number of bytes read
-	pub read_bytes: u64,
+	pub bytes_read: u64,
 	/// Number of bytes read from cache
 	pub cache_read_bytes: u64,
 	/// Number of bytes write
-	pub write_bytes: u64,
+	pub bytes_written: u64,
 	/// Start of the statistic period.
-	pub start: std::time::Instant,
+	pub started: std::time::Instant,
 	/// Total duration of the statistic period.
 	pub span: std::time::Duration,
 }
@@ -46,10 +46,10 @@ impl IoStats {
 			reads: 0,
 			cache_reads: 0,
 			writes: 0,
-			read_bytes: 0,
+			bytes_read: 0,
 			cache_read_bytes: 0,
-			write_bytes: 0,
-			start: std::time::Instant::now(),
+			bytes_written: 0,
+			started: std::time::Instant::now(),
 			span: std::time::Duration::default(),
 		}
 	}
@@ -98,7 +98,16 @@ impl IoStats {
 		(self.transactions as f64) / self.span.as_secs_f64()
 	}
 
-	pub fn cache_hit_ration(&self) -> f64 {
+	pub fn avg_transaction_size(&self) -> f64 {
+		if self.transactions == 0 {
+			return 0.0;
+		}
+
+		self.bytes_written as f64 / self.transactions as f64
+
+	}
+
+	pub fn cache_hit_ratio(&self) -> f64 {
 		if self.reads == 0 {
 			return 0.0;
 		}

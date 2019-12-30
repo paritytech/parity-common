@@ -260,62 +260,62 @@ impl DBAndColumns {
 struct DbStats {
 	reads: AtomicU64,
 	writes: AtomicU64,
-	write_bytes: AtomicU64,
-	read_bytes: AtomicU64,
+	bytes_written: AtomicU64,
+	bytes_read: AtomicU64,
 	transactions: AtomicU64,
-	started: Mutex<std::time::Instant>,
+	started: RwLock<std::time::Instant>,
 }
 
 struct TakenDbStats {
 	reads: u64,
 	writes: u64,
-	write_bytes: u64,
-	read_bytes: u64,
+	bytes_written: u64,
+	bytes_read: u64,
 	transactions: u64,
-	start: std::time::Instant,
+	started: std::time::Instant,
 }
 
 impl DbStats {
 	fn new() -> Self {
 		Self {
 			reads: 0.into(),
-			read_bytes: 0.into(),
+			bytes_read: 0.into(),
 			writes: 0.into(),
-			write_bytes: 0.into(),
+			bytes_written: 0.into(),
 			transactions: 0.into(),
 			started: std::time::Instant::now().into(),
 		}
 	}
 
-	fn add_reads(&self, val: u64) {
+	fn tally_reads(&self, val: u64) {
 		self.reads.fetch_add(val, AtomicOrdering::Relaxed);
 	}
 
-	fn add_read_bytes(&self, val: u64) {
-		self.read_bytes.fetch_add(val, AtomicOrdering::Relaxed);
+	fn tally_bytes_read(&self, val: u64) {
+		self.bytes_read.fetch_add(val, AtomicOrdering::Relaxed);
 	}
 
-	fn add_writes(&self, val: u64) {
+	fn tally_writes(&self, val: u64) {
 		self.writes.fetch_add(val, AtomicOrdering::Relaxed);
 	}
 
-	fn add_write_bytes(&self, val: u64) {
-		self.write_bytes.fetch_add(val, AtomicOrdering::Relaxed);
+	fn tally_bytes_written(&self, val: u64) {
+		self.bytes_written.fetch_add(val, AtomicOrdering::Relaxed);
 	}
 
-	fn add_transactions(&self, val: u64) {
+	fn tally_transactions(&self, val: u64) {
 		self.transactions.fetch_add(val, AtomicOrdering::Relaxed);
 	}
 
 	fn take(&self) -> TakenDbStats {
-		let mut started_lock = self.started.lock();
+		let mut started_lock = self.started.write();
 		let stats = TakenDbStats {
 			reads: self.reads.swap(0, AtomicOrdering::Relaxed),
 			writes: self.writes.swap(0, AtomicOrdering::Relaxed),
-			write_bytes: self.write_bytes.swap(0, AtomicOrdering::Relaxed),
-			read_bytes: self.read_bytes.swap(0, AtomicOrdering::Relaxed),
+			bytes_written: self.bytes_written.swap(0, AtomicOrdering::Relaxed),
+			bytes_read: self.bytes_read.swap(0, AtomicOrdering::Relaxed),
 			transactions: self.transactions.swap(0, AtomicOrdering::Relaxed),
-			start: *started_lock,
+			started: *started_lock,
 		};
 
 		*started_lock = std::time::Instant::now();
@@ -324,15 +324,15 @@ impl DbStats {
 	}
 
 	fn peek(&self) -> TakenDbStats {
-		let started_lock = self.started.lock();
+		let started_lock = self.started.read();
 
 		TakenDbStats {
 			reads: self.reads.load(AtomicOrdering::Relaxed),
 			writes: self.writes.load(AtomicOrdering::Relaxed),
-			write_bytes: self.write_bytes.load(AtomicOrdering::Relaxed),
-			read_bytes: self.read_bytes.load(AtomicOrdering::Relaxed),
+			bytes_written: self.bytes_written.load(AtomicOrdering::Relaxed),
+			bytes_read: self.bytes_read.load(AtomicOrdering::Relaxed),
 			transactions: self.transactions.load(AtomicOrdering::Relaxed),
-			start: *started_lock,
+			started: *started_lock,
 		}
 	}
 }
@@ -558,8 +558,10 @@ impl Database {
 				let mut batch = WriteBatch::default();
 				let ops = tr.ops;
 
-				self.stats.add_writes(ops.len() as u64);
-				self.stats.add_transactions(1);
+				self.stats.tally_writes(ops.len() as u64);
+				self.stats.tally_transactions(1);
+
+				let mut stats_total_bytes = 0;
 
 				for op in ops {
 					// remove any buffered operation for this key
@@ -567,16 +569,19 @@ impl Database {
 
 					let cf = cfs.cf(op.col() as usize);
 
-					self.stats.add_write_bytes(match op {
-						DBOp::Insert { col: _, ref key, ref value } => key.len() + value.len(),
-						DBOp::Delete { col: _, ref key } => key.len(),
-					} as u64);
-
 					match op {
-						DBOp::Insert { col: _, key, value } => batch.put_cf(cf, &key, &value).map_err(other_io_err)?,
-						DBOp::Delete { col: _, key } => batch.delete_cf(cf, &key).map_err(other_io_err)?,
+						DBOp::Insert { col: _, key, value } => {
+							stats_total_bytes += key.len() + value.len();
+							batch.put_cf(cf, &key, &value).map_err(other_io_err)?
+						},
+						DBOp::Delete { col: _, key } => {
+							// We count deletes as writes.
+							stats_total_bytes += key.len();
+							batch.delete_cf(cf, &key).map_err(other_io_err)?
+						}
 					};
 				}
+				self.stats.tally_bytes_written(stats_total_bytes as u64);
 
 				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))
 			}
@@ -586,7 +591,7 @@ impl Database {
 
 	/// Get value by key.
 	pub fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
-		self.stats.add_reads(1);
+		self.stats.tally_reads(1);
 		match *self.db.read() {
 			Some(ref cfs) => {
 				let overlay = &self.overlay.read()[col as usize];
@@ -606,8 +611,8 @@ impl Database {
 									.map_err(other_io_err);
 
 								match aquired_val {
-									Ok(Some(ref v)) => self.stats.add_read_bytes((key.len() + v.len()) as u64),
-									Ok(None) => self.stats.add_read_bytes(key.len() as u64),
+									Ok(Some(ref v)) => self.stats.tally_bytes_read((key.len() + v.len()) as u64),
+									Ok(None) => self.stats.tally_bytes_read(key.len() as u64),
 									_ => {}
 								};
 
@@ -816,10 +821,10 @@ impl KeyValueDB for Database {
 		stats.reads = taken_stats.reads;
 		stats.writes = taken_stats.writes;
 		stats.transactions = taken_stats.transactions;
-		stats.start = taken_stats.start;
-		stats.span = taken_stats.start.elapsed();
-		stats.write_bytes = taken_stats.write_bytes;
-		stats.read_bytes = taken_stats.read_bytes;
+		stats.started = taken_stats.started;
+		stats.span = taken_stats.started.elapsed();
+		stats.bytes_written = taken_stats.bytes_written;
+		stats.bytes_read = taken_stats.bytes_read;
 
 		stats
 	}
@@ -1056,9 +1061,9 @@ mod tests {
 		let io_stats = db.io_stats(false);
 		assert_eq!(io_stats.transactions, 1);
 		assert_eq!(io_stats.writes, 3);
-		assert_eq!(io_stats.write_bytes, 18);
+		assert_eq!(io_stats.bytes_written, 18);
 		assert_eq!(io_stats.reads, 10);
-		assert_eq!(io_stats.read_bytes, 30);
+		assert_eq!(io_stats.bytes_read, 30);
 
 		let new_io_stats = db.io_stats(true);
 		// Since we choosed not to keep previous statistic period,
