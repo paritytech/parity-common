@@ -77,7 +77,7 @@ pub use malloc_size_derive::*;
 #[cfg(feature = "std")]
 #[cfg(test)]
 mod test {
-	use super::MallocSizeOfExt;
+	use super::{MallocSizeOfExt, malloc_size::MallocUnconditionalShallowSizeOf, allocators::new_malloc_size_ops};
 	use std::sync::Arc;
 
 	#[test]
@@ -85,5 +85,14 @@ mod test {
 		let val = Arc::new("test".to_string());
 		let s = val.malloc_size_of();
 		assert!(s > 0);
+	}
+
+	#[test]
+	fn test_arc_negative() {
+		let mut ops = new_malloc_size_ops();
+		struct NoMalloc(Box<u32>, Vec<u8>);
+		let arc_val = Arc::new(NoMalloc(Box::new(2), vec![0u8; 10000]));
+		let measured = arc_val.unconditional_shallow_size_of(&mut ops);
+		assert!(measured > 10000);
 	}
 }
