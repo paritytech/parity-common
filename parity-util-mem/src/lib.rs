@@ -73,10 +73,17 @@ pub use malloc_size::{MallocSizeOf, MallocSizeOfOps};
 
 pub use parity_util_mem_derive::*;
 
+/// Heap size of structure.
+///
+/// Structure can be anything that implements MallocSizeOf.
+pub fn malloc_size<T: MallocSizeOf + ?Sized>(t: &T) -> usize {
+	MallocSizeOf::size_of(t, &mut allocators::new_malloc_size_ops())
+}
+
 #[cfg(feature = "std")]
 #[cfg(test)]
 mod test {
-	use super::MallocSizeOfExt;
+	use super::{MallocSizeOfExt, MallocSizeOf, malloc_size};
 	use std::sync::Arc;
 
 	#[test]
@@ -84,5 +91,13 @@ mod test {
 		let val = Arc::new("test".to_string());
 		let s = val.malloc_size_of();
 		assert!(s > 0);
+	}
+
+	#[test]
+	fn test_dyn() {
+		trait Augmented : MallocSizeOf { }
+		impl Augmented for Vec<u8> { }
+		let val: Arc<dyn Augmented> = Arc::new(vec![0u8; 1024]);
+		assert!(malloc_size(&*val) > 1000);
 	}
 }
