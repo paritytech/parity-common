@@ -43,8 +43,8 @@
 //!   measured as well as the thing it points to. E.g.
 //!   `<Box<_> as MallocSizeOf>::size_of(field, ops)`.
 
-//! This is an extended (for own internal needs) version of the Servo internal malloc_size crate.
-//! We should occasionally track the upstream changes/fixes and reintroduce them here, be they applicable.
+//! This is an extended version of the Servo internal malloc_size crate.
+//! We should occasionally track the upstream changes/fixes and reintroduce them here, whenever applicable.
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
@@ -426,11 +426,7 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<K, V, S> MallocShallowSizeOf for std::collections::HashMap<K, V, S>
-where
-	K: Eq + Hash,
-	S: BuildHasher,
-{
+impl<K, V, S> MallocShallowSizeOf for std::collections::HashMap<K, V, S> {
 	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		// See the implementation for std::collections::HashSet for details.
 		if ops.has_malloc_enclosing_size_of() {
@@ -444,9 +440,8 @@ where
 #[cfg(feature = "std")]
 impl<K, V, S> MallocSizeOf for std::collections::HashMap<K, V, S>
 where
-	K: Eq + Hash + MallocSizeOf,
+	K: MallocSizeOf,
 	V: MallocSizeOf,
-	S: BuildHasher,
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
@@ -458,10 +453,7 @@ where
 	}
 }
 
-impl<K, V> MallocShallowSizeOf for rstd::collections::BTreeMap<K, V>
-where
-	K: Eq + Hash,
-{
+impl<K, V> MallocShallowSizeOf for rstd::collections::BTreeMap<K, V> {
 	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		if ops.has_malloc_enclosing_size_of() {
 			self.values().next().map_or(0, |v| unsafe { ops.malloc_enclosing_size_of(v) })
@@ -473,7 +465,7 @@ where
 
 impl<K, V> MallocSizeOf for rstd::collections::BTreeMap<K, V>
 where
-	K: Eq + Hash + MallocSizeOf,
+	K: MallocSizeOf,
 	V: MallocSizeOf,
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
