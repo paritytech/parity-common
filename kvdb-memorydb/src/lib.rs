@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
+use parity_util_mem::MallocSizeOf;
 use parking_lot::RwLock;
 use std::{
 	collections::{BTreeMap, HashMap},
@@ -23,7 +24,7 @@ use std::{
 
 /// A key-value database fulfilling the `KeyValueDB` trait, living in memory.
 /// This is generally intended for tests and is not particularly optimized.
-#[derive(Default)]
+#[derive(Default, MallocSizeOf)]
 pub struct InMemory {
 	columns: RwLock<HashMap<u32, BTreeMap<Vec<u8>, DBValue>>>,
 }

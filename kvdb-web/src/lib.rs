@@ -45,6 +45,9 @@ pub struct Database {
 	indexed_db: SendWrapper<IdbDatabase>,
 }
 
+// TODO: implement when web-based implementation need memory stats
+parity_util_mem::malloc_size_of_is_0!(Database);
+
 impl Database {
 	/// Opens the database with the given name,
 	/// and the specified number of columns (not including the default one).

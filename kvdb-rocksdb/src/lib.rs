@@ -18,6 +18,7 @@ mod iter;
 
 use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, path::Path, result};
 
+use parity_util_mem::MallocSizeOf;
 use parking_lot::{Mutex, MutexGuard, RwLock};
 use rocksdb::{
 	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB,
@@ -57,6 +58,7 @@ pub const DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB: MiB = 128;
 /// The default memory budget in MiB.
 pub const DB_DEFAULT_MEMORY_BUDGET_MB: MiB = 512;
 
+#[derive(MallocSizeOf)]
 enum KeyState {
 	Insert(DBValue),
 	Delete,
@@ -229,6 +231,25 @@ struct DBAndColumns {
 	column_names: Vec<String>,
 }
 
+fn static_property_or_warn(db: &DB, prop: &str) -> usize {
+	match db.property_int_value(prop) {
+		Ok(Some(v)) => v as usize,
+		_ => {
+			warn!("Cannot read expected static property of RocksDb database: {}", prop);
+			0
+		}
+	}
+}
+
+impl MallocSizeOf for DBAndColumns {
+	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
+		self.column_names.size_of(ops)
+			+ static_property_or_warn(&self.db, "rocksdb.estimate-table-readers-mem")
+			+ static_property_or_warn(&self.db, "rocksdb.cur-size-all-mem-tables")
+			+ static_property_or_warn(&self.db, "rocksdb.block-cache-usage")
+	}
+}
+
 impl DBAndColumns {
 	fn cf(&self, i: usize) -> &ColumnFamily {
 		self.db.cf_handle(&self.column_names[i]).expect("the specified column name is correct; qed")
@@ -236,12 +257,17 @@ impl DBAndColumns {
 }
 
 /// Key-Value database.
+#[derive(MallocSizeOf)]
 pub struct Database {
 	db: RwLock<Option<DBAndColumns>>,
+	#[ignore_malloc_size_of = "insignificant"]
 	config: DatabaseConfig,
 	path: String,
+	#[ignore_malloc_size_of = "insignificant"]
 	write_opts: WriteOptions,
+	#[ignore_malloc_size_of = "insignificant"]
 	read_opts: ReadOptions,
+	#[ignore_malloc_size_of = "insignificant"]
 	block_opts: BlockBasedOptions,
 	// Dirty values added with `write_buffered`. Cleaned on `flush`.
 	overlay: RwLock<Vec<HashMap<DBKey, KeyState>>>,
@@ -757,6 +783,36 @@ mod tests {
 		db.flush().unwrap();
 		assert!(db.get(0, key3.as_bytes()).unwrap().is_none());
 		assert_eq!(&*db.get(0, key1.as_bytes()).unwrap().unwrap(), b"horse");
+	}
+
+	#[test]
+	fn mem_tables_size() {
+		let tempdir = TempDir::new("").unwrap();
+
+		let config = DatabaseConfig {
+			max_open_files: 512,
+			memory_budget: HashMap::new(),
+			compaction: CompactionProfile::default(),
+			columns: 11,
+			keep_log_file_num: 1,
+		};
+
+		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
+
+		let mut batch = db.transaction();
+		for i in 0u32..10000u32 {
+			batch.put(i / 1000 + 1, &i.to_le_bytes(), &(i * 17).to_le_bytes());
+		}
+		db.write(batch).unwrap();
+
+		db.flush().unwrap();
+
+		{
+			let db = db.db.read();
+			db.as_ref().map(|db| {
+				assert!(super::static_property_or_warn(&db.db, "rocksdb.cur-size-all-mem-tables") > 512);
+			});
+		}
 	}
 
 	#[test]
