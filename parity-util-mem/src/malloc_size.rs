@@ -425,7 +425,6 @@ where
 	}
 }
 
-#[cfg(feature = "std")]
 impl<I: MallocSizeOf> MallocSizeOf for rstd::cmp::Reverse<I> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.0.size_of(ops)
