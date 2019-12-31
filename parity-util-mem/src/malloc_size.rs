@@ -43,7 +43,8 @@
 //!   measured as well as the thing it points to. E.g.
 //!   `<Box<_> as MallocSizeOf>::size_of(field, ops)`.
 
-// This file is patched at commit 5bdea7dc1c80790a852a3fb03edfb2b8fbd403dc DO NOT EDIT.
+//! This is an extended (for own internal needs) version of the Servo internal malloc_size crate.
+//! We should occasionally track the upstream changes/fixes and reintroduce them here, be they applicable.
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
@@ -539,10 +540,33 @@ impl<T: MallocSizeOf> MallocConditionalSizeOf for Arc<T> {
 /// If a mutex is stored inside of an Arc value as a member of a data type that is being measured,
 /// the Arc will not be automatically measured so there is no risk of overcounting the mutex's
 /// contents.
+///
+/// The same reasoning applies to RwLock.
 #[cfg(feature = "std")]
 impl<T: MallocSizeOf> MallocSizeOf for std::sync::Mutex<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-		(*self.lock().unwrap()).size_of(ops)
+		self.lock().unwrap().size_of(ops)
+	}
+}
+
+#[cfg(feature = "std")]
+impl<T: MallocSizeOf> MallocSizeOf for parking_lot::Mutex<T> {
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.lock().size_of(ops)
+	}
+}
+
+#[cfg(feature = "std")]
+impl<T: MallocSizeOf> MallocSizeOf for std::sync::RwLock<T> {
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.read().unwrap().size_of(ops)
+	}
+}
+
+#[cfg(feature = "std")]
+impl<T: MallocSizeOf> MallocSizeOf for parking_lot::RwLock<T> {
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		self.read().size_of(ops)
 	}
 }
 

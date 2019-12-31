@@ -17,12 +17,10 @@
 //! Implementation of `MallocSize` for common types :
 //! - ethereum types uint and fixed hash.
 //! - smallvec arrays of sizes 32, 36
-//! - parking_lot mutex structures
 
 use super::{MallocSizeOf, MallocSizeOfOps};
 
 use ethereum_types::{Bloom, H128, H160, H256, H264, H32, H512, H520, H64, U128, U256, U512, U64};
-use parking_lot::{Mutex, RwLock};
 use smallvec::SmallVec;
 
 #[cfg(not(feature = "std"))]
@@ -53,18 +51,6 @@ macro_rules! impl_smallvec {
 
 impl_smallvec!(32); // kvdb uses this
 impl_smallvec!(36); // trie-db uses this
-
-impl<T: MallocSizeOf> MallocSizeOf for Mutex<T> {
-	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-		(*self.lock()).size_of(ops)
-	}
-}
-
-impl<T: MallocSizeOf> MallocSizeOf for RwLock<T> {
-	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-		self.read().size_of(ops)
-	}
-}
 
 #[cfg(test)]
 mod tests {
