@@ -1069,6 +1069,19 @@ mod tests {
 		// Since we choosed not to keep previous statistic period,
 		// this is expected to be totally empty.
 		assert_eq!(new_io_stats.transactions, 0);
+
+		let mut batch = db.transaction();
+		batch.delete(0, key1);
+		batch.delete(1, key1);
+		batch.delete(2, key1);
+
+		// transaction is not commited yet
+		assert_eq!(db.io_stats(false).writes, 0);
+
+		db.write(batch).unwrap();
+		// now it is, and delete is counted as write
+		assert_eq!(db.io_stats(false).writes, 3);
+
 	}
 
 	#[test]
