@@ -246,6 +246,7 @@ impl MallocSizeOf for DBAndColumns {
 		self.column_names.size_of(ops)
 			+ static_property_or_warn(&self.db, "rocksdb.estimate-table-readers-mem")
 			+ static_property_or_warn(&self.db, "rocksdb.cur-size-all-mem-tables")
+			+ static_property_or_warn(&self.db, "rocksdb.block-cache-usage")
 	}
 }
 
