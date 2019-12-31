@@ -591,9 +591,9 @@ impl Database {
 
 	/// Get value by key.
 	pub fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
-		self.stats.tally_reads(1);
 		match *self.db.read() {
 			Some(ref cfs) => {
+				self.stats.tally_reads(1);
 				let overlay = &self.overlay.read()[col as usize];
 				match overlay.get(key) {
 					Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
