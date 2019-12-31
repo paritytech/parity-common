@@ -1081,7 +1081,6 @@ mod tests {
 		db.write(batch).unwrap();
 		// now it is, and delete is counted as write
 		assert_eq!(db.io_stats(false).writes, 3);
-
 	}
 
 	#[test]
