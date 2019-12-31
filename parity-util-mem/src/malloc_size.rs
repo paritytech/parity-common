@@ -433,8 +433,7 @@ impl<I: MallocSizeOf> MallocSizeOf for std::cmp::Reverse<I> {
 }
 
 #[cfg(feature = "std")]
-impl<K, V, S> MallocShallowSizeOf for std::collections::HashMap<K, V, S>
-{
+impl<K, V, S> MallocShallowSizeOf for std::collections::HashMap<K, V, S> {
 	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		// See the implementation for std::collections::HashSet for details.
 		if ops.has_malloc_enclosing_size_of() {

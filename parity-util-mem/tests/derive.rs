@@ -29,7 +29,7 @@ fn derive_vec() {
 	assert!(t.malloc_size_of() > 1000);
 }
 
-#[cfg(feature="std")]
+#[cfg(feature = "std")]
 #[test]
 fn derive_hashmap() {
 	#[derive(MallocSizeOf, Default)]

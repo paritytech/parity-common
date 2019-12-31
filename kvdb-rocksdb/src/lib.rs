@@ -800,7 +800,7 @@ mod tests {
 
 		let mut batch = db.transaction();
 		for i in 0u32..10000u32 {
-			batch.put(i/1000+1, &i.to_le_bytes(), &(i*17).to_le_bytes());
+			batch.put(i / 1000 + 1, &i.to_le_bytes(), &(i * 17).to_le_bytes());
 		}
 		db.write(batch).unwrap();
 
@@ -809,9 +809,7 @@ mod tests {
 		{
 			let db = db.db.read();
 			db.as_ref().map(|db| {
-				assert!(
-					super::static_property_or_warn(&db.db, "rocksdb.cur-size-all-mem-tables") > 512
-				);
+				assert!(super::static_property_or_warn(&db.db, "rocksdb.cur-size-all-mem-tables") > 512);
 			});
 		}
 	}
