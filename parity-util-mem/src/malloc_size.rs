@@ -635,7 +635,6 @@ impl<K, V, S> MallocShallowSizeOf for hashbrown::HashMap<K, V, S> {
 	}
 }
 
-#[cfg(feature = "std")]
 impl<K, V, S> MallocShallowSizeOf for hashbrown::HashMap<K, V, S> {
 	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		// See the implementation for std::collections::HashSet for details.
