@@ -14,10 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
+#![cfg(feature = "std")]
+
 use parity_util_mem::{MallocSizeOf, MallocSizeOfExt};
 
 #[test]
-#[cfg(feature = "std")]
 fn derive_vec() {
 	#[derive(MallocSizeOf)]
 	struct Trivia {
@@ -29,7 +30,6 @@ fn derive_vec() {
 	assert!(t.malloc_size_of() > 1000);
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn derive_hashmap() {
 	#[derive(MallocSizeOf, Default)]
@@ -45,7 +45,6 @@ fn derive_hashmap() {
 }
 
 #[test]
-#[cfg(feature = "std")]
 fn derive_ignore() {
 	#[derive(MallocSizeOf, Default)]
 	struct Trivia {
@@ -59,4 +58,21 @@ fn derive_ignore() {
 	t.hm.insert(1, vec![0u8; 2048]);
 	t.v = vec![0u8; 1024];
 	assert!(t.malloc_size_of() < 3000);
+}
+
+#[test]
+fn derive_morecomplex() {
+	#[derive(MallocSizeOf)]
+	struct Trivia {
+		hm: hashbrown::HashMap<u64, Vec<u8>>,
+		cache: lru::LruCache<u128, Vec<u8>>,
+	}
+
+	let mut t = Trivia { hm: hashbrown::HashMap::new(), cache: lru::LruCache::unbounded() };
+
+	t.hm.insert(1, vec![0u8; 2048]);
+	t.cache.put(1, vec![0u8; 2048]);
+	t.cache.put(2, vec![0u8; 4096]);
+
+	assert!(t.malloc_size_of() > 8000);
 }

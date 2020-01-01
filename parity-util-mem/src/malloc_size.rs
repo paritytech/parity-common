@@ -68,6 +68,7 @@ use std::sync::Arc;
 pub use alloc::boxed::Box;
 #[cfg(not(feature = "std"))]
 use core::ffi::c_void;
+#[cfg(feature = "std")]
 use rstd::hash::Hash;
 use rstd::mem::size_of;
 use rstd::ops::Range;
@@ -621,5 +622,50 @@ impl<T: MallocSizeOf> Deref for Measurable<T> {
 impl<T: MallocSizeOf> DerefMut for Measurable<T> {
 	fn deref_mut(&mut self) -> &mut T {
 		&mut self.0
+	}
+}
+
+#[cfg(feature = "hashbrown")]
+impl<K, V, S> MallocShallowSizeOf for hashbrown::HashMap<K, V, S> {
+	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		// See the implementation for std::collections::HashSet for details.
+		if ops.has_malloc_enclosing_size_of() {
+			self.values().next().map_or(0, |v| unsafe { ops.malloc_enclosing_size_of(v) })
+		} else {
+			self.capacity() * (size_of::<V>() + size_of::<K>() + size_of::<usize>())
+		}
+	}
+}
+
+#[cfg(feature = "hashbrown")]
+impl<K, V, S> MallocSizeOf for hashbrown::HashMap<K, V, S>
+where
+	K: MallocSizeOf,
+	V: MallocSizeOf,
+{
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		let mut n = self.shallow_size_of(ops);
+		for (k, v) in self.iter() {
+			n += k.size_of(ops);
+			n += v.size_of(ops);
+		}
+		n
+	}
+}
+
+#[cfg(feature = "lru")]
+impl<K, V, S> MallocSizeOf for lru::LruCache<K, V, S>
+where
+	K: MallocSizeOf + rstd::cmp::Eq + rstd::hash::Hash,
+	V: MallocSizeOf,
+	S: rstd::hash::BuildHasher,
+{
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		let mut n = 0;
+		for (k, v) in self.iter() {
+			n += k.size_of(ops);
+			n += v.size_of(ops);
+		}
+		n
 	}
 }
