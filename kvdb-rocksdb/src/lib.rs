@@ -432,20 +432,32 @@ impl Database {
 		match *self.db.read() {
 			Some(ref cfs) => {
 				let mut batch = WriteBatch::default();
+				let mut ops: usize = 0;
+				let mut bytes: usize = 0;
 				mem::swap(&mut *self.overlay.write(), &mut *self.flushing.write());
 				{
 					for (c, column) in self.flushing.read().iter().enumerate() {
+						ops += column.len();
 						for (key, state) in column.iter() {
 							let cf = cfs.cf(c);
 							match *state {
-								KeyState::Delete => batch.delete_cf(cf, key).map_err(other_io_err)?,
-								KeyState::Insert(ref value) => batch.put_cf(cf, key, value).map_err(other_io_err)?,
+								KeyState::Delete => {
+									bytes += key.len();
+									batch.delete_cf(cf, key).map_err(other_io_err)?
+								},
+								KeyState::Insert(ref value) => {
+									bytes += key.len() + value.len();
+									batch.put_cf(cf, key, value).map_err(other_io_err)?
+								}
 							};
 						}
 					}
 				}
 
 				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))?;
+				self.stats.tally_transactions(1);
+				self.stats.tally_writes(ops as u64);
+				self.stats.tally_bytes_written(bytes as u64);
 
 				for column in self.flushing.write().iter_mut() {
 					column.clear();
