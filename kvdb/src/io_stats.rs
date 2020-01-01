@@ -25,6 +25,7 @@ pub enum Kind {
 }
 
 /// Statistic for the `span` period
+#[derive(Debug, Clone)]
 pub struct IoStats {
 	/// Number of transaction.
 	pub transactions: u64,
@@ -79,6 +80,14 @@ impl IoStats {
 		self.reads as f64 / self.span.as_secs_f64()
 	}
 
+	pub fn byte_reads_per_sec(&self) -> f64 {
+		if self.span.as_secs_f64() == 0.0 {
+			return 0.0
+		}
+
+		self.bytes_read as f64 / self.span.as_secs_f64()
+	}
+
 	/// Write operations per second.
 	pub fn writes_per_sec(&self) -> f64 {
 		if self.span.as_secs_f64() == 0.0 {
@@ -87,6 +96,15 @@ impl IoStats {
 
 		self.writes as f64 / self.span.as_secs_f64()
 	}
+
+	pub fn byte_writes_per_sec(&self) -> f64 {
+		if self.span.as_secs_f64() == 0.0 {
+			return 0.0
+		}
+
+		self.bytes_written as f64 / self.span.as_secs_f64()
+	}
+
 
 	/// Total number of operations per second.
 	pub fn ops_per_sec(&self) -> f64 {
