@@ -966,6 +966,21 @@ mod tests {
 	}
 
 	#[test]
+	fn memstats() {
+		let tempdir = TempDir::new("").unwrap();
+		let config = DatabaseConfig::with_columns(3);
+		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
+
+		let mut batch = db.transaction();
+		for var in 0u64..10000 {
+			batch.put(0, &var.to_le_bytes(), &var.to_le_bytes());
+		}
+		db.write_buffered(batch);
+
+		assert!(parity_util_mem::malloc_size(&db) > 10000);
+	}
+
+	#[test]
 	fn stats() {
 		use kvdb::IoStatsKind;
 
