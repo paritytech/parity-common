@@ -15,9 +15,9 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 mod iter;
+mod stats;
 
 use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, path::Path, result};
-use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 
 use parity_util_mem::MallocSizeOf;
 use parking_lot::{Mutex, MutexGuard, RwLock};
@@ -257,86 +257,6 @@ impl DBAndColumns {
 	}
 }
 
-struct DbStats {
-	reads: AtomicU64,
-	writes: AtomicU64,
-	bytes_written: AtomicU64,
-	bytes_read: AtomicU64,
-	transactions: AtomicU64,
-	started: RwLock<std::time::Instant>,
-}
-
-struct TakenDbStats {
-	reads: u64,
-	writes: u64,
-	bytes_written: u64,
-	bytes_read: u64,
-	transactions: u64,
-	started: std::time::Instant,
-}
-
-impl DbStats {
-	fn new() -> Self {
-		Self {
-			reads: 0.into(),
-			bytes_read: 0.into(),
-			writes: 0.into(),
-			bytes_written: 0.into(),
-			transactions: 0.into(),
-			started: std::time::Instant::now().into(),
-		}
-	}
-
-	fn tally_reads(&self, val: u64) {
-		self.reads.fetch_add(val, AtomicOrdering::Relaxed);
-	}
-
-	fn tally_bytes_read(&self, val: u64) {
-		self.bytes_read.fetch_add(val, AtomicOrdering::Relaxed);
-	}
-
-	fn tally_writes(&self, val: u64) {
-		self.writes.fetch_add(val, AtomicOrdering::Relaxed);
-	}
-
-	fn tally_bytes_written(&self, val: u64) {
-		self.bytes_written.fetch_add(val, AtomicOrdering::Relaxed);
-	}
-
-	fn tally_transactions(&self, val: u64) {
-		self.transactions.fetch_add(val, AtomicOrdering::Relaxed);
-	}
-
-	fn take(&self) -> TakenDbStats {
-		let mut started_lock = self.started.write();
-		let stats = TakenDbStats {
-			reads: self.reads.swap(0, AtomicOrdering::Relaxed),
-			writes: self.writes.swap(0, AtomicOrdering::Relaxed),
-			bytes_written: self.bytes_written.swap(0, AtomicOrdering::Relaxed),
-			bytes_read: self.bytes_read.swap(0, AtomicOrdering::Relaxed),
-			transactions: self.transactions.swap(0, AtomicOrdering::Relaxed),
-			started: *started_lock,
-		};
-
-		*started_lock = std::time::Instant::now();
-
-		stats
-	}
-
-	fn peek(&self) -> TakenDbStats {
-		let started_lock = self.started.read();
-
-		TakenDbStats {
-			reads: self.reads.load(AtomicOrdering::Relaxed),
-			writes: self.writes.load(AtomicOrdering::Relaxed),
-			bytes_written: self.bytes_written.load(AtomicOrdering::Relaxed),
-			bytes_read: self.bytes_read.load(AtomicOrdering::Relaxed),
-			transactions: self.transactions.load(AtomicOrdering::Relaxed),
-			started: *started_lock,
-		}
-	}
-}
-
 /// Key-Value database.
 #[derive(MallocSizeOf)]
 pub struct Database {
@@ -352,7 +272,8 @@ pub struct Database {
 	block_opts: BlockBasedOptions,
 	// Dirty values added with `write_buffered`. Cleaned on `flush`.
 	overlay: RwLock<Vec<HashMap<DBKey, KeyState>>>,
-	stats: DbStats,
+	#[ignore_malloc_size_of = "insignificant"]
+	stats: stats::RunningDbStats,
 	// Values currently being flushed. Cleared when `flush` completes.
 	flushing: RwLock<Vec<HashMap<DBKey, KeyState>>>,
 	// Prevents concurrent flushes.
@@ -485,7 +406,7 @@ impl Database {
 			read_opts,
 			write_opts,
 			block_opts,
-			stats: DbStats::new(),
+			stats: stats::RunningDbStats::new(),
 		})
 	}
 
@@ -813,18 +734,22 @@ impl KeyValueDB for Database {
 		Database::restore(self, new_db)
 	}
 
-	fn io_stats(&self, keep: bool) -> kvdb::IoStats {
-		let taken_stats = if keep { self.stats.peek() } else { self.stats.take() };
+	fn io_stats(&self, kind: kvdb::IoStatsKind) -> kvdb::IoStats {
+		let taken_stats = match kind {
+			kvdb::IoStatsKind::Overall => self.stats.overall(),
+			kvdb::IoStatsKind::SincePrevious => self.stats.since_previous(),
+		};
 
 		let mut stats = kvdb::IoStats::empty();
 
-		stats.reads = taken_stats.reads;
-		stats.writes = taken_stats.writes;
-		stats.transactions = taken_stats.transactions;
+		stats.reads = taken_stats.raw.reads;
+		stats.writes = taken_stats.raw.writes;
+		stats.transactions = taken_stats.raw.transactions;
+		stats.bytes_written = taken_stats.raw.bytes_written;
+		stats.bytes_read = taken_stats.raw.bytes_read;
+
 		stats.started = taken_stats.started;
 		stats.span = taken_stats.started.elapsed();
-		stats.bytes_written = taken_stats.bytes_written;
-		stats.bytes_read = taken_stats.bytes_read;
 
 		stats
 	}

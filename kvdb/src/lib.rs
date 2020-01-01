@@ -32,7 +32,7 @@ pub type DBValue = Vec<u8>;
 /// Database keys.
 pub type DBKey = SmallVec<[u8; 32]>;
 
-pub use io_stats::IoStats;
+pub use io_stats::{IoStats, Kind as IoStatsKind};
 
 /// Write transaction. Batches a sequence of put/delete operations for efficiency.
 #[derive(Default, Clone, PartialEq)]
@@ -157,7 +157,7 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	///
 	/// `keep` argument indicates if database should erase current accumulated statistics
 	/// and start new gathering period at current time.
-	fn io_stats(&self, _keep: bool) -> IoStats {
+	fn io_stats(&self, _kind: IoStatsKind) -> IoStats {
 		IoStats::empty()
 	}
 }

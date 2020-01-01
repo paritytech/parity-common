@@ -16,6 +16,14 @@
 
 //! Generic statistics for key-value databases
 
+/// Statistic kind to query.
+pub enum Kind {
+	/// Overall statistics since start.
+	Overall,
+	/// Statistics since previous query.
+	SincePrevious,
+}
+
 /// Statistic for the `span` period
 pub struct IoStats {
 	/// Number of transaction.
