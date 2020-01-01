@@ -83,7 +83,7 @@ pub fn malloc_size<T: MallocSizeOf + ?Sized>(t: &T) -> usize {
 #[cfg(feature = "std")]
 #[cfg(test)]
 mod test {
-	use super::{MallocSizeOfExt, MallocSizeOf, malloc_size};
+	use super::{malloc_size, MallocSizeOf, MallocSizeOfExt};
 	use std::sync::Arc;
 
 	#[test]
