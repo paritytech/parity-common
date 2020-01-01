@@ -129,7 +129,7 @@ impl RunningDbStats {
 
 		let stats = TakenDbStats { raw: current, started: overall_lock.last_taken };
 
-		overall_lock.last_taken = std::time::Instant::now();
+		overall_lock.last_taken = Instant::now();
 
 		stats
 	}
