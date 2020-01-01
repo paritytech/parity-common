@@ -967,6 +967,8 @@ mod tests {
 
 	#[test]
 	fn stats() {
+		use kvdb::IoStatsKind;
+
 		let tempdir = TempDir::new("").unwrap();
 		let config = DatabaseConfig::with_columns(3);
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
@@ -983,17 +985,21 @@ mod tests {
 
 		db.write(batch).unwrap();
 
-		let io_stats = db.io_stats(false);
+		let io_stats = db.io_stats(IoStatsKind::SincePrevious);
 		assert_eq!(io_stats.transactions, 1);
 		assert_eq!(io_stats.writes, 3);
 		assert_eq!(io_stats.bytes_written, 18);
 		assert_eq!(io_stats.reads, 10);
 		assert_eq!(io_stats.bytes_read, 30);
 
-		let new_io_stats = db.io_stats(true);
-		// Since we choosed not to keep previous statistic period,
+		let new_io_stats = db.io_stats(IoStatsKind::SincePrevious);
+		// Since we taken previous statistic period,
 		// this is expected to be totally empty.
 		assert_eq!(new_io_stats.transactions, 0);
+
+		// but the overall should be there
+		let new_io_stats = db.io_stats(IoStatsKind::Overall);
+		assert_eq!(new_io_stats.bytes_written, 18);
 
 		let mut batch = db.transaction();
 		batch.delete(0, key1);
@@ -1001,11 +1007,11 @@ mod tests {
 		batch.delete(2, key1);
 
 		// transaction is not commited yet
-		assert_eq!(db.io_stats(false).writes, 0);
+		assert_eq!(db.io_stats(IoStatsKind::SincePrevious).writes, 0);
 
 		db.write(batch).unwrap();
 		// now it is, and delete is counted as write
-		assert_eq!(db.io_stats(false).writes, 3);
+		assert_eq!(db.io_stats(IoStatsKind::SincePrevious).writes, 3);
 	}
 
 	#[test]
