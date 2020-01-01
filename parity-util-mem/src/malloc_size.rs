@@ -624,7 +624,6 @@ impl<T: MallocSizeOf> DerefMut for Measurable<T> {
 	}
 }
 
-#[cfg(feature = "std")]
 impl<K, V, S> MallocShallowSizeOf for hashbrown::HashMap<K, V, S> {
 	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		// See the implementation for std::collections::HashSet for details.
@@ -637,6 +636,17 @@ impl<K, V, S> MallocShallowSizeOf for hashbrown::HashMap<K, V, S> {
 }
 
 #[cfg(feature = "std")]
+impl<K, V, S> MallocShallowSizeOf for hashbrown::HashMap<K, V, S> {
+	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		// See the implementation for std::collections::HashSet for details.
+		if ops.has_malloc_enclosing_size_of() {
+			self.values().next().map_or(0, |v| unsafe { ops.malloc_enclosing_size_of(v) })
+		} else {
+			self.capacity() * (size_of::<V>() + size_of::<K>() + size_of::<usize>())
+		}
+	}
+}
+
 impl<K, V, S> MallocSizeOf for hashbrown::HashMap<K, V, S>
 where
 	K: MallocSizeOf,
@@ -652,12 +662,11 @@ where
 	}
 }
 
-#[cfg(feature = "lru")]
 impl<K, V, S> MallocSizeOf for lru::LruCache<K, V, S>
 where
-	K: MallocSizeOf + std::cmp::Eq + std::hash::Hash,
+	K: MallocSizeOf + rstd::cmp::Eq + rstd::hash::Hash,
 	V: MallocSizeOf,
-	S: std::hash::BuildHasher
+	S: rstd::hash::BuildHasher
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = 0;
