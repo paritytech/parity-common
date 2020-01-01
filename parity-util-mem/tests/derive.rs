@@ -14,10 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
+#![cfg(feature = "std")]
+
 use parity_util_mem::{MallocSizeOf, MallocSizeOfExt};
 
 #[test]
-#[cfg(feature = "std")]
 fn derive_vec() {
 	#[derive(MallocSizeOf)]
 	struct Trivia {
@@ -29,7 +30,6 @@ fn derive_vec() {
 	assert!(t.malloc_size_of() > 1000);
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn derive_hashmap() {
 	#[derive(MallocSizeOf, Default)]
@@ -45,7 +45,6 @@ fn derive_hashmap() {
 }
 
 #[test]
-#[cfg(feature = "std")]
 fn derive_ignore() {
 	#[derive(MallocSizeOf, Default)]
 	struct Trivia {
@@ -62,7 +61,6 @@ fn derive_ignore() {
 }
 
 #[test]
-#[cfg(feature="std")]
 fn derive_morecomplex() {
 	#[derive(MallocSizeOf)]
 	struct Trivia {

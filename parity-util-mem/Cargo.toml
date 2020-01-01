@@ -11,8 +11,8 @@ edition = "2018"
 cfg-if = "0.1.10"
 dlmalloc = { version = "0.1.3", features = ["global"], optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
-lru = { version = "0.4" }
-hashbrown = { version = "0.6" }
+lru = { version = "0.4", optional = true }
+hashbrown = { version = "0.6", optional = true }
 # from https://github.com/microsoft/mimalloc:
 # mimalloc can be built in secure mode,
 # adding guard pages, randomized allocation, encrypted free lists, etc.
@@ -34,7 +34,7 @@ version = "0.3.2"
 optional = true
 
 [features]
-default = ["std", "ethereum-impls"]
+default = ["std", "ethereum-impls", "lru", "hashbrown"]
 std = ["parking_lot"]
 # use dlmalloc as global allocator
 dlmalloc-global = ["dlmalloc", "estimate-heapsize"]
