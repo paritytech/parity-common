@@ -96,7 +96,7 @@ mod test {
 	#[test]
 	fn test_dyn() {
 		trait Augmented : MallocSizeOf { }
-		impl Augmented for Vec<u8> { }
+		impl Augmented for Vec<u8> {}
 		let val: Arc<dyn Augmented> = Arc::new(vec![0u8; 1024]);
 		assert!(malloc_size(&*val) > 1000);
 	}
