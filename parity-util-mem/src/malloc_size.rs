@@ -658,7 +658,7 @@ impl<K, V, S> MallocSizeOf for lru::LruCache<K, V, S>
 where
 	K: MallocSizeOf + rstd::cmp::Eq + rstd::hash::Hash,
 	V: MallocSizeOf,
-	S: rstd::hash::BuildHasher
+	S: rstd::hash::BuildHasher,
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = 0;
