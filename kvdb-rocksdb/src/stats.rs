@@ -65,7 +65,7 @@ pub struct RunningDbStats {
 
 pub struct TakenDbStats {
 	pub raw: RawDbStats,
-	pub started: std::time::Instant,
+	pub started: Instant,
 }
 
 impl RunningDbStats {
