@@ -1,6 +1,6 @@
 [package]
 name = "kvdb-web"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "A key-value database for use in browsers"
@@ -11,12 +11,12 @@ edition = "2018"
 [dependencies]
 wasm-bindgen = "0.2.54"
 js-sys = "0.3.31"
-kvdb = { version = "0.2", path = "../kvdb" }
-kvdb-memorydb = { version = "0.2", path = "../kvdb-memorydb" }
+kvdb = { version = "0.3", path = "../kvdb" }
+kvdb-memorydb = { version = "0.3", path = "../kvdb-memorydb" }
 futures = "0.3"
 log = "0.4.8"
 send_wrapper = "0.3.0"
-parity-util-mem = { path = "../parity-util-mem", version = "0.3" }
+parity-util-mem = { path = "../parity-util-mem", version = "0.4" }
 
 [dependencies.web-sys]
 version = "0.3.31"

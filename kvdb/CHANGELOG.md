@@ -1,10 +1,13 @@
 # Changelog
 
-The format is based on [Keep a Changelog]. 
+The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+## [0.3.0] - 2020-01-01
+- I/O statistics API. [#294](https://github.com/paritytech/parity-common/pull/294)
 
 ## [0.2.0] - 2019-12-19
 ### Changed
