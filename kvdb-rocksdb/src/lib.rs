@@ -444,7 +444,7 @@ impl Database {
 								KeyState::Delete => {
 									bytes += key.len();
 									batch.delete_cf(cf, key).map_err(other_io_err)?
-								},
+								}
 								KeyState::Insert(ref value) => {
 									bytes += key.len() + value.len();
 									batch.put_cf(cf, key, value).map_err(other_io_err)?
