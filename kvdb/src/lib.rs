@@ -154,9 +154,6 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	/// default, empty statistics is returned. Also, not all kvdb implementation
 	/// can return every statistic or configured to do so (some statistics gathering
 	/// may impede the performance and might be off by default).
-	///
-	/// `keep` argument indicates if database should erase current accumulated statistics
-	/// and start new gathering period at current time.
 	fn io_stats(&self, _kind: IoStatsKind) -> IoStats {
 		IoStats::empty()
 	}
