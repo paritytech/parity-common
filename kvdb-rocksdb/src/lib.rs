@@ -15,6 +15,7 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 mod iter;
+mod stats;
 
 use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, path::Path, result};
 
@@ -271,6 +272,8 @@ pub struct Database {
 	block_opts: BlockBasedOptions,
 	// Dirty values added with `write_buffered`. Cleaned on `flush`.
 	overlay: RwLock<Vec<HashMap<DBKey, KeyState>>>,
+	#[ignore_malloc_size_of = "insignificant"]
+	stats: stats::RunningDbStats,
 	// Values currently being flushed. Cleared when `flush` completes.
 	flushing: RwLock<Vec<HashMap<DBKey, KeyState>>>,
 	// Prevents concurrent flushes.
@@ -403,6 +406,7 @@ impl Database {
 			read_opts,
 			write_opts,
 			block_opts,
+			stats: stats::RunningDbStats::new(),
 		})
 	}
 
@@ -428,20 +432,32 @@ impl Database {
 		match *self.db.read() {
 			Some(ref cfs) => {
 				let mut batch = WriteBatch::default();
+				let mut ops: usize = 0;
+				let mut bytes: usize = 0;
 				mem::swap(&mut *self.overlay.write(), &mut *self.flushing.write());
 				{
 					for (c, column) in self.flushing.read().iter().enumerate() {
+						ops += column.len();
 						for (key, state) in column.iter() {
 							let cf = cfs.cf(c);
 							match *state {
-								KeyState::Delete => batch.delete_cf(cf, key).map_err(other_io_err)?,
-								KeyState::Insert(ref value) => batch.put_cf(cf, key, value).map_err(other_io_err)?,
+								KeyState::Delete => {
+									bytes += key.len();
+									batch.delete_cf(cf, key).map_err(other_io_err)?
+								}
+								KeyState::Insert(ref value) => {
+									bytes += key.len() + value.len();
+									batch.put_cf(cf, key, value).map_err(other_io_err)?
+								}
 							};
 						}
 					}
 				}
 
 				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))?;
+				self.stats.tally_transactions(1);
+				self.stats.tally_writes(ops as u64);
+				self.stats.tally_bytes_written(bytes as u64);
 
 				for column in self.flushing.write().iter_mut() {
 					column.clear();
@@ -474,6 +490,12 @@ impl Database {
 			Some(ref cfs) => {
 				let mut batch = WriteBatch::default();
 				let ops = tr.ops;
+
+				self.stats.tally_writes(ops.len() as u64);
+				self.stats.tally_transactions(1);
+
+				let mut stats_total_bytes = 0;
+
 				for op in ops {
 					// remove any buffered operation for this key
 					self.overlay.write()[op.col() as usize].remove(op.key());
@@ -481,10 +503,18 @@ impl Database {
 					let cf = cfs.cf(op.col() as usize);
 
 					match op {
-						DBOp::Insert { col: _, key, value } => batch.put_cf(cf, &key, &value).map_err(other_io_err)?,
-						DBOp::Delete { col: _, key } => batch.delete_cf(cf, &key).map_err(other_io_err)?,
+						DBOp::Insert { col: _, key, value } => {
+							stats_total_bytes += key.len() + value.len();
+							batch.put_cf(cf, &key, &value).map_err(other_io_err)?
+						}
+						DBOp::Delete { col: _, key } => {
+							// We count deletes as writes.
+							stats_total_bytes += key.len();
+							batch.delete_cf(cf, &key).map_err(other_io_err)?
+						}
 					};
 				}
+				self.stats.tally_bytes_written(stats_total_bytes as u64);
 
 				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))
 			}
@@ -496,6 +526,7 @@ impl Database {
 	pub fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		match *self.db.read() {
 			Some(ref cfs) => {
+				self.stats.tally_reads(1);
 				let overlay = &self.overlay.read()[col as usize];
 				match overlay.get(key) {
 					Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
@@ -505,11 +536,21 @@ impl Database {
 						match flushing.get(key) {
 							Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
 							Some(&KeyState::Delete) => Ok(None),
-							None => cfs
-								.db
-								.get_pinned_cf_opt(cfs.cf(col as usize), key, &self.read_opts)
-								.map(|r| r.map(|v| v.to_vec()))
-								.map_err(other_io_err),
+							None => {
+								let aquired_val = cfs
+									.db
+									.get_pinned_cf_opt(cfs.cf(col as usize), key, &self.read_opts)
+									.map(|r| r.map(|v| v.to_vec()))
+									.map_err(other_io_err);
+
+								match aquired_val {
+									Ok(Some(ref v)) => self.stats.tally_bytes_read((key.len() + v.len()) as u64),
+									Ok(None) => self.stats.tally_bytes_read(key.len() as u64),
+									_ => {}
+								};
+
+								aquired_val
+							}
 						}
 					}
 				}
@@ -703,6 +744,26 @@ impl KeyValueDB for Database {
 
 	fn restore(&self, new_db: &str) -> io::Result<()> {
 		Database::restore(self, new_db)
+	}
+
+	fn io_stats(&self, kind: kvdb::IoStatsKind) -> kvdb::IoStats {
+		let taken_stats = match kind {
+			kvdb::IoStatsKind::Overall => self.stats.overall(),
+			kvdb::IoStatsKind::SincePrevious => self.stats.since_previous(),
+		};
+
+		let mut stats = kvdb::IoStats::empty();
+
+		stats.reads = taken_stats.raw.reads;
+		stats.writes = taken_stats.raw.writes;
+		stats.transactions = taken_stats.raw.transactions;
+		stats.bytes_written = taken_stats.raw.bytes_written;
+		stats.bytes_read = taken_stats.raw.bytes_read;
+
+		stats.started = taken_stats.started;
+		stats.span = taken_stats.started.elapsed();
+
+		stats
 	}
 }
 
@@ -914,6 +975,55 @@ mod tests {
 		batch.put(0, key1, key1);
 		db.write(batch).unwrap();
 		assert_eq!(db.num_keys(0).unwrap(), 1, "adding a key increases the count");
+	}
+
+	#[test]
+	fn stats() {
+		use kvdb::IoStatsKind;
+
+		let tempdir = TempDir::new("").unwrap();
+		let config = DatabaseConfig::with_columns(3);
+		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
+
+		let key1 = b"kkk";
+		let mut batch = db.transaction();
+		batch.put(0, key1, key1);
+		batch.put(1, key1, key1);
+		batch.put(2, key1, key1);
+
+		for _ in 0..10 {
+			db.get(0, key1).unwrap();
+		}
+
+		db.write(batch).unwrap();
+
+		let io_stats = db.io_stats(IoStatsKind::SincePrevious);
+		assert_eq!(io_stats.transactions, 1);
+		assert_eq!(io_stats.writes, 3);
+		assert_eq!(io_stats.bytes_written, 18);
+		assert_eq!(io_stats.reads, 10);
+		assert_eq!(io_stats.bytes_read, 30);
+
+		let new_io_stats = db.io_stats(IoStatsKind::SincePrevious);
+		// Since we taken previous statistic period,
+		// this is expected to be totally empty.
+		assert_eq!(new_io_stats.transactions, 0);
+
+		// but the overall should be there
+		let new_io_stats = db.io_stats(IoStatsKind::Overall);
+		assert_eq!(new_io_stats.bytes_written, 18);
+
+		let mut batch = db.transaction();
+		batch.delete(0, key1);
+		batch.delete(1, key1);
+		batch.delete(2, key1);
+
+		// transaction is not commited yet
+		assert_eq!(db.io_stats(IoStatsKind::SincePrevious).writes, 0);
+
+		db.write(batch).unwrap();
+		// now it is, and delete is counted as write
+		assert_eq!(db.io_stats(IoStatsKind::SincePrevious).writes, 3);
 	}
 
 	#[test]
