@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog].
 ## [Unreleased]
 
 ## [0.4.0] - 2019-01-03
-- Support of I/O statistics for RocksDB. [#294](https://github.com/paritytech/parity-common/pull/294)
+- Add I/O statistics for RocksDB. [#294](https://github.com/paritytech/parity-common/pull/294)
 - Support querying memory footprint via `MallocSizeOf` trait. [#292](https://github.com/paritytech/parity-common/pull/292)
 
 ## [0.3.0] - 2019-12-19
