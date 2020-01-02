@@ -11,3 +11,6 @@ edition = "2018"
 parity-util-mem = { path = "../parity-util-mem", version = "0.3" }
 parking_lot = "0.9.0"
 kvdb = { version = "0.2", path = "../kvdb" }
+
+[dev-dependencies]
+kvdb-test-utils = { path = "../kvdb-test-utils", version = "0.1" }

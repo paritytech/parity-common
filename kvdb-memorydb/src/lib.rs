@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
+// Copyright 2015-2020 Parity Technologies (UK) Ltd.
 // This file is part of Parity.
 
 // Parity is free software: you can redistribute it and/or modify
@@ -116,104 +116,42 @@ impl KeyValueDB for InMemory {
 
 #[cfg(test)]
 mod tests {
-	use super::{create, KeyValueDB};
+	use super::create;
+	use kvdb_test_utils as utils;
 
 	#[test]
 	fn get_fails_with_non_existing_column() {
 		let db = create(1);
-		assert!(db.get(1, &[]).is_err());
+		utils::test_get_fails_with_non_existing_column(&db);
 	}
 
 	#[test]
 	fn put_and_get() {
 		let db = create(1);
-
-		let key1 = b"key1";
-
-		let mut transaction = db.transaction();
-		transaction.put(0, key1, b"horse");
-		db.write_buffered(transaction);
-		assert_eq!(&*db.get(0, key1).unwrap().unwrap(), b"horse");
+		utils::test_put_and_get(&db);
 	}
 
 	#[test]
 	fn delete_and_get() {
 		let db = create(1);
-
-		let key1 = b"key1";
-
-		let mut transaction = db.transaction();
-		transaction.put(0, key1, b"horse");
-		db.write_buffered(transaction);
-		assert_eq!(&*db.get(0, key1).unwrap().unwrap(), b"horse");
-
-		let mut transaction = db.transaction();
-		transaction.delete(0, key1);
-		db.write_buffered(transaction);
-		assert!(db.get(0, key1).unwrap().is_none());
+		utils::test_delete_and_get(&db);
 	}
 
 	#[test]
 	fn iter() {
 		let db = create(1);
-
-		let key1 = b"key1";
-		let key2 = b"key2";
-
-		let mut transaction = db.transaction();
-		transaction.put(0, key1, key1);
-		transaction.put(0, key2, key2);
-		db.write_buffered(transaction);
-
-		let contents: Vec<_> = db.iter(0).into_iter().collect();
-		assert_eq!(contents.len(), 2);
-		assert_eq!(&*contents[0].0, key1);
-		assert_eq!(&*contents[0].1, key1);
-		assert_eq!(&*contents[1].0, key2);
-		assert_eq!(&*contents[1].1, key2);
+		utils::test_iter(&db);
 	}
 
 	#[test]
 	fn iter_from_prefix() {
 		let db = create(1);
+		utils::test_iter_from_prefix(&db);
+	}
 
-		let key1 = b"0";
-		let key2 = b"a";
-		let key3 = b"ab";
-
-		let mut transaction = db.transaction();
-		transaction.put(0, key1, key1);
-		transaction.put(0, key2, key2);
-		transaction.put(0, key3, key3);
-		db.write_buffered(transaction);
-
-		let contents: Vec<_> = db.iter_from_prefix(0, b"").into_iter().collect();
-		assert_eq!(contents.len(), 3);
-		assert_eq!(&*contents[0].0, key1);
-		assert_eq!(&*contents[0].1, key1);
-		assert_eq!(&*contents[1].0, key2);
-		assert_eq!(&*contents[1].1, key2);
-		assert_eq!(&*contents[2].0, key3);
-		assert_eq!(&*contents[2].1, key3);
-
-		let contents: Vec<_> = db.iter_from_prefix(0, b"0").into_iter().collect();
-		assert_eq!(contents.len(), 1);
-		assert_eq!(&*contents[0].0, key1);
-		assert_eq!(&*contents[0].1, key1);
-
-		let contents: Vec<_> = db.iter_from_prefix(0, b"a").into_iter().collect();
-		assert_eq!(contents.len(), 2);
-		assert_eq!(&*contents[0].0, key2);
-		assert_eq!(&*contents[0].1, key2);
-		assert_eq!(&*contents[1].0, key3);
-		assert_eq!(&*contents[1].1, key3);
-
-		let contents: Vec<_> = db.iter_from_prefix(0, b"ab").into_iter().collect();
-		assert_eq!(contents.len(), 1);
-		assert_eq!(&*contents[0].0, key3);
-		assert_eq!(&*contents[0].1, key3);
-
-		let contents: Vec<_> = db.iter_from_prefix(0, b"abc").into_iter().collect();
-		assert_eq!(contents.len(), 0);
+	#[test]
+	fn complex() {
+		let db = create(1);
+		utils::test_complex(&db);
 	}
 }
