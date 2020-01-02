@@ -6,6 +6,7 @@ members = [
 	"kvdb",
 	"kvdb-memorydb",
 	"kvdb-rocksdb",
+	"kvdb-test-utils",
 	"kvdb-web",
 	"parity-bytes",
 	"parity-crypto",
