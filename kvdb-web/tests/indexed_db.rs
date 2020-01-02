@@ -18,21 +18,58 @@
 
 use futures::future::TryFutureExt as _;
 
+use kvdb_test_utils as utils;
 use kvdb_web::{Database, KeyValueDB as _};
 
 use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
+async fn open_db(col: u32, name: &str) -> Database {
+	Database::open(name.into(), col).unwrap_or_else(|err| panic!("{}", err)).await
+}
+
+#[wasm_bindgen_test]
+async fn get_fails_with_non_existing_column() {
+	let db = open_db(1, "get_fails_with_non_existing_column").await;
+	utils::test_get_fails_with_non_existing_column(&db).unwrap()
+}
+
+#[wasm_bindgen_test]
+async fn put_and_get() {
+	let db = open_db(1, "put_and_get").await;
+	utils::test_put_and_get(&db).unwrap()
+}
+
+#[wasm_bindgen_test]
+async fn delete_and_get() {
+	let db = open_db(1, "delete_and_get").await;
+	utils::test_delete_and_get(&db).unwrap()
+}
+
+#[wasm_bindgen_test]
+async fn iter() {
+	let db = open_db(1, "iter").await;
+	utils::test_iter(&db).unwrap()
+}
+
+#[wasm_bindgen_test]
+async fn iter_from_prefix() {
+	let db = open_db(1, "iter_from_prefix").await;
+	utils::test_iter_from_prefix(&db).unwrap()
+}
+
+#[wasm_bindgen_test]
+async fn complex() {
+	let db = open_db(1, "complex").await;
+	utils::test_complex(&db).unwrap()
+}
+
 #[wasm_bindgen_test]
 async fn reopen_the_database_with_more_columns() {
 	let _ = console_log::init_with_level(log::Level::Trace);
 
-	async fn open_db(col: u32) -> Database {
-		Database::open("MyAsyncTest".into(), col).unwrap_or_else(|err| panic!("{}", err)).await
-	}
-
-	let db = open_db(1).await;
+	let db = open_db(1, "reopen_the_database_with_more_columns").await;
 
 	// Write a value into the database
 	let mut batch = db.transaction();
@@ -48,7 +85,7 @@ async fn reopen_the_database_with_more_columns() {
 	drop(db);
 
 	// Reopen it again with 3 columns
-	let db = open_db(3).await;
+	let db = open_db(3, "reopen_the_database_with_more_columns").await;
 
 	// The value should still be present
 	assert_eq!(db.get(0, b"hello").unwrap().unwrap(), b"world");

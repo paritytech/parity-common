@@ -38,6 +38,7 @@ features = [
 ]
 
 [dev-dependencies]
-wasm-bindgen-test = "0.3.4"
 console_log = "0.1.2"
+kvdb-test-utils = { path = "../kvdb-test-utils", version = "0.1" }
+wasm-bindgen-test = "0.3.4"
 wasm-bindgen-futures = "0.4.4"
