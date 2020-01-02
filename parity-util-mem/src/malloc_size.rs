@@ -261,42 +261,12 @@ impl<T: MallocSizeOf + ?Sized> MallocSizeOf for Box<T> {
 	}
 }
 
-impl MallocSizeOf for () {
-	fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-		0
-	}
-}
-
-impl<T1, T2> MallocSizeOf for (T1, T2)
-where
-	T1: MallocSizeOf,
-	T2: MallocSizeOf,
-{
+#[impl_trait_for_tuples::impl_for_tuples(12)]
+impl MallocSizeOf for Tuple {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-		self.0.size_of(ops) + self.1.size_of(ops)
-	}
-}
-
-impl<T1, T2, T3> MallocSizeOf for (T1, T2, T3)
-where
-	T1: MallocSizeOf,
-	T2: MallocSizeOf,
-	T3: MallocSizeOf,
-{
-	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-		self.0.size_of(ops) + self.1.size_of(ops) + self.2.size_of(ops)
-	}
-}
-
-impl<T1, T2, T3, T4> MallocSizeOf for (T1, T2, T3, T4)
-where
-	T1: MallocSizeOf,
-	T2: MallocSizeOf,
-	T3: MallocSizeOf,
-	T4: MallocSizeOf,
-{
-	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-		self.0.size_of(ops) + self.1.size_of(ops) + self.2.size_of(ops) + self.3.size_of(ops)
+		let mut result = 0;
+		for_tuples!( #( result += Tuple.size_of(ops); )* );
+		result
 	}
 }
 
