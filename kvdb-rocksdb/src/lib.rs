@@ -17,7 +17,8 @@
 mod iter;
 mod stats;
 
-use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, path::Path, result};
+use std::{cmp, convert::identity, error, fs, io, mem, path::Path, result};
+use hashbrown::HashMap;
 
 use parity_util_mem::MallocSizeOf;
 use parking_lot::{Mutex, MutexGuard, RwLock};
