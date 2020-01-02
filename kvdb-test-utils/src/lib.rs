@@ -17,56 +17,60 @@
 //! Common testing utilities for `KeyValueDB` implementations.
 
 use kvdb::{IoStatsKind, KeyValueDB};
-
+use std::io;
 
 /// A test for `KeyValueDB::get`.
-pub fn test_put_and_get(db: &dyn KeyValueDB) {
+pub fn test_put_and_get(db: &dyn KeyValueDB) -> io::Result<()> {
 	let key1 = b"key1";
 
 	let mut transaction = db.transaction();
 	transaction.put(0, key1, b"horse");
 	db.write_buffered(transaction);
-	assert_eq!(&*db.get(0, key1).unwrap().unwrap(), b"horse");
+	assert_eq!(&*db.get(0, key1)?.unwrap(), b"horse");
+	Ok(())
 }
 
 /// A test for `KeyValueDB::get`.
-pub fn test_delete_and_get(db: &dyn KeyValueDB) {
+pub fn test_delete_and_get(db: &dyn KeyValueDB) -> io::Result<()> {
 	let key1 = b"key1";
 
 	let mut transaction = db.transaction();
 	transaction.put(0, key1, b"horse");
 	db.write_buffered(transaction);
-	assert_eq!(&*db.get(0, key1).unwrap().unwrap(), b"horse");
+	assert_eq!(&*db.get(0, key1)?.unwrap(), b"horse");
 
 	let mut transaction = db.transaction();
 	transaction.delete(0, key1);
 	db.write_buffered(transaction);
-	assert!(db.get(0, key1).unwrap().is_none());
+	assert!(db.get(0, key1)?.is_none());
+	Ok(())
 }
 
 /// A test for `KeyValueDB::get`.
 /// Assumes the `db` has only 1 column.
-pub fn test_get_fails_with_non_existing_column(db: &dyn KeyValueDB) {
+pub fn test_get_fails_with_non_existing_column(db: &dyn KeyValueDB) -> io::Result<()> {
 	assert!(db.get(1, &[]).is_err());
+	Ok(())
 }
 
 /// A test for `KeyValueDB::write`.
-pub fn test_write_clears_buffered_ops(db: &dyn KeyValueDB) {
+pub fn test_write_clears_buffered_ops(db: &dyn KeyValueDB) -> io::Result<()> {
 	let mut batch = db.transaction();
 	batch.put(0, b"foo", b"bar");
 	db.write_buffered(batch);
 
-	assert_eq!(db.get(0, b"foo").unwrap().unwrap(), b"bar");
+	assert_eq!(db.get(0, b"foo")?.unwrap(), b"bar");
 
 	let mut batch = db.transaction();
 	batch.put(0, b"foo", b"baz");
-	db.write(batch).unwrap();
+	db.write(batch)?;
 
-	assert_eq!(db.get(0, b"foo").unwrap().unwrap(), b"baz");
+	assert_eq!(db.get(0, b"foo")?.unwrap(), b"baz");
+	Ok(())
 }
 
 /// A test for `KeyValueDB::iter`.
-pub fn test_iter(db: &dyn KeyValueDB) {
+pub fn test_iter(db: &dyn KeyValueDB) -> io::Result<()> {
 	let key1 = b"key1";
 	let key2 = b"key2";
 
@@ -81,10 +85,11 @@ pub fn test_iter(db: &dyn KeyValueDB) {
 	assert_eq!(&*contents[0].1, key1);
 	assert_eq!(&*contents[1].0, key2);
 	assert_eq!(&*contents[1].1, key2);
+	Ok(())
 }
 
 /// A test for `KeyValueDB::iter_from_prefix`.
-pub fn test_iter_from_prefix(db: &dyn KeyValueDB) {
+pub fn test_iter_from_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 	let key1 = b"0";
 	let key2 = b"ab";
 	let key3 = b"abc";
@@ -95,7 +100,7 @@ pub fn test_iter_from_prefix(db: &dyn KeyValueDB) {
 	batch.put(0, key2, key2);
 	batch.put(0, key3, key3);
 	batch.put(0, key4, key4);
-	db.write(batch).unwrap();
+	db.write(batch)?;
 
 	// empty prefix
 	let contents: Vec<_> = db.iter_from_prefix(0, b"").into_iter().collect();
@@ -126,11 +131,12 @@ pub fn test_iter_from_prefix(db: &dyn KeyValueDB) {
 	let contents: Vec<_> = db.iter_from_prefix(0, b"0").into_iter().collect();
 	assert_eq!(contents.len(), 1);
 	assert_eq!(&*contents[0].0, key1);
+	Ok(())
 }
 
 /// A test for `KeyValueDB::io_stats`.
 /// Assumes that the `db` has at least 3 columns.
-pub fn test_io_stats(db: &dyn KeyValueDB) {
+pub fn test_io_stats(db: &dyn KeyValueDB) -> io::Result<()> {
 	let key1 = b"kkk";
 	let mut batch = db.transaction();
 	batch.put(0, key1, key1);
@@ -138,10 +144,10 @@ pub fn test_io_stats(db: &dyn KeyValueDB) {
 	batch.put(2, key1, key1);
 
 	for _ in 0..10 {
-		db.get(0, key1).unwrap();
+		db.get(0, key1)?;
 	}
 
-	db.write(batch).unwrap();
+	db.write(batch)?;
 
 	let io_stats = db.io_stats(IoStatsKind::SincePrevious);
 	assert_eq!(io_stats.transactions, 1);
@@ -167,13 +173,14 @@ pub fn test_io_stats(db: &dyn KeyValueDB) {
 	// transaction is not commited yet
 	assert_eq!(db.io_stats(IoStatsKind::SincePrevious).writes, 0);
 
-	db.write(batch).unwrap();
+	db.write(batch)?;
 	// now it is, and delete is counted as write
 	assert_eq!(db.io_stats(IoStatsKind::SincePrevious).writes, 3);
+	Ok(())
 }
 
 /// A complex test.
-pub fn test_complex(db: &dyn KeyValueDB) {
+pub fn test_complex(db: &dyn KeyValueDB) -> io::Result<()> {
 	let key1 = b"02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc";
 	let key2 = b"03c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc";
 	let key3 = b"04c00000000b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc";
@@ -186,9 +193,9 @@ pub fn test_complex(db: &dyn KeyValueDB) {
 	batch.put(0, key3, b"caterpillar");
 	batch.put(0, key4, b"beef");
 	batch.put(0, key5, b"fish");
-	db.write(batch).unwrap();
+	db.write(batch)?;
 
-	assert_eq!(&*db.get(0, key1).unwrap().unwrap(), b"cat");
+	assert_eq!(&*db.get(0, key1)?.unwrap(), b"cat");
 
 	let contents: Vec<_> = db.iter(0).into_iter().collect();
 	assert_eq!(contents.len(), 5);
@@ -204,20 +211,20 @@ pub fn test_complex(db: &dyn KeyValueDB) {
 
 	let mut batch = db.transaction();
 	batch.delete(0, key1);
-	db.write(batch).unwrap();
+	db.write(batch)?;
 
-	assert!(db.get(0, key1).unwrap().is_none());
+	assert!(db.get(0, key1)?.is_none());
 
 	let mut batch = db.transaction();
 	batch.put(0, key1, b"cat");
-	db.write(batch).unwrap();
+	db.write(batch)?;
 
 	let mut transaction = db.transaction();
 	transaction.put(0, key3, b"elephant");
 	transaction.delete(0, key1);
-	db.write(transaction).unwrap();
-	assert!(db.get(0, key1).unwrap().is_none());
-	assert_eq!(&*db.get(0, key3).unwrap().unwrap(), b"elephant");
+	db.write(transaction)?;
+	assert!(db.get(0, key1)?.is_none());
+	assert_eq!(&*db.get(0, key3)?.unwrap(), b"elephant");
 
 	assert_eq!(&*db.get_by_prefix(0, key3).unwrap(), b"elephant");
 	assert_eq!(&*db.get_by_prefix(0, key2).unwrap(), b"dog");
@@ -226,10 +233,11 @@ pub fn test_complex(db: &dyn KeyValueDB) {
 	transaction.put(0, key1, b"horse");
 	transaction.delete(0, key3);
 	db.write_buffered(transaction);
-	assert!(db.get(0, key3).unwrap().is_none());
-	assert_eq!(&*db.get(0, key1).unwrap().unwrap(), b"horse");
+	assert!(db.get(0, key3)?.is_none());
+	assert_eq!(&*db.get(0, key1)?.unwrap(), b"horse");
 
-	db.flush().unwrap();
-	assert!(db.get(0, key3).unwrap().is_none());
-	assert_eq!(&*db.get(0, key1).unwrap().unwrap(), b"horse");
+	db.flush()?;
+	assert!(db.get(0, key3)?.is_none());
+	assert_eq!(&*db.get(0, key1)?.unwrap(), b"horse");
+	Ok(())
 }

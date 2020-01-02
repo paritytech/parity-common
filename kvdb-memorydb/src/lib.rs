@@ -118,40 +118,41 @@ impl KeyValueDB for InMemory {
 mod tests {
 	use super::create;
 	use kvdb_test_utils as utils;
+	use std::io;
 
 	#[test]
-	fn get_fails_with_non_existing_column() {
+	fn get_fails_with_non_existing_column() -> io::Result<()> {
 		let db = create(1);
-		utils::test_get_fails_with_non_existing_column(&db);
+		utils::test_get_fails_with_non_existing_column(&db)
 	}
 
 	#[test]
-	fn put_and_get() {
+	fn put_and_get() -> io::Result<()> {
 		let db = create(1);
-		utils::test_put_and_get(&db);
+		utils::test_put_and_get(&db)
 	}
 
 	#[test]
-	fn delete_and_get() {
+	fn delete_and_get() -> io::Result<()> {
 		let db = create(1);
-		utils::test_delete_and_get(&db);
+		utils::test_delete_and_get(&db)
 	}
 
 	#[test]
-	fn iter() {
+	fn iter() -> io::Result<()> {
 		let db = create(1);
-		utils::test_iter(&db);
+		utils::test_iter(&db)
 	}
 
 	#[test]
-	fn iter_from_prefix() {
+	fn iter_from_prefix() -> io::Result<()> {
 		let db = create(1);
-		utils::test_iter_from_prefix(&db);
+		utils::test_iter_from_prefix(&db)
 	}
 
 	#[test]
-	fn complex() {
+	fn complex() -> io::Result<()> {
 		let db = create(1);
-		utils::test_complex(&db);
+		utils::test_complex(&db)
 	}
 }
