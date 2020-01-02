@@ -13,7 +13,7 @@ edition = "2018"
 tiny-keccak = { version = "2.0", features = ["keccak"] }
 crunchy = { version = "0.2.2", default-features = false, features = ["limit_256"] }
 fixed-hash = { path = "../fixed-hash", version = "0.5", default-features = false }
-impl-serde = { path = "../primitive-types/impls/serde", version = "0.2", default-features = false, optional = true }
+impl-serde = { path = "../primitive-types/impls/serde", version = "0.3", default-features = false, optional = true }
 impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.2", default-features = false }
 
 [dev-dependencies]
