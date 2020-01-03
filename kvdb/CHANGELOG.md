@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.3.0] - 2020-01-01
+## [0.3.0] - 2020-01-03
 - I/O statistics API. [#294](https://github.com/paritytech/parity-common/pull/294)
 
 ## [0.2.0] - 2019-12-19
