@@ -1,6 +1,6 @@
 [package]
 name = "kvdb"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "Generic key-value trait"
@@ -10,4 +10,4 @@ edition = "2018"
 [dependencies]
 smallvec = "1.0.0"
 bytes = { package = "parity-bytes", version = "0.1", path = "../parity-bytes" }
-parity-util-mem = { path = "../parity-util-mem", version = "0.3" }
+parity-util-mem = { path = "../parity-util-mem", version = "0.4" }
