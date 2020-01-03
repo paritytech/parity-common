@@ -80,10 +80,8 @@ impl std::error::Error for FromHexError {}
 impl fmt::Display for FromHexError {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
-			Self::MissingPrefix =>
-				write!(fmt, "0x prefix is missing"),
-			Self::InvalidHex { character, index } =>
-				write!(fmt, "invalid hex character: {}, at {}", character, index),
+			Self::MissingPrefix => write!(fmt, "0x prefix is missing"),
+			Self::InvalidHex { character, index } => write!(fmt, "invalid hex character: {}, at {}", character, index),
 		}
 	}
 }
@@ -190,10 +188,8 @@ pub enum ExpectedLen<'a> {
 impl<'a> fmt::Display for ExpectedLen<'a> {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
-			ExpectedLen::Exact(ref v) =>
-				write!(fmt, "length of {}", v.len() * 2),
-			ExpectedLen::Between(min, ref v) =>
-				write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
+			ExpectedLen::Exact(ref v) => write!(fmt, "length of {}", v.len() * 2),
+			ExpectedLen::Between(min, ref v) => write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
 		}
 	}
 }
@@ -249,10 +245,8 @@ where
 
 			let len = v.len();
 			let is_len_valid = match self.len {
-				ExpectedLen::Exact(ref slice) =>
-					len == 2 * slice.len() + 2,
-				ExpectedLen::Between(min, ref slice) =>
-					len <= 2 * slice.len() + 2 && len > 2 * min + 2,
+				ExpectedLen::Exact(ref slice) => len == 2 * slice.len() + 2,
+				ExpectedLen::Between(min, ref slice) => len <= 2 * slice.len() + 2 && len > 2 * min + 2,
 			};
 
 			if !is_len_valid {
