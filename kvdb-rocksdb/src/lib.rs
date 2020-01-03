@@ -537,19 +537,19 @@ impl Database {
 							Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
 							Some(&KeyState::Delete) => Ok(None),
 							None => {
-								let aquired_val = cfs
+								let acquired_val = cfs
 									.db
 									.get_pinned_cf_opt(cfs.cf(col as usize), key, &self.read_opts)
 									.map(|r| r.map(|v| v.to_vec()))
 									.map_err(other_io_err);
 
-								match aquired_val {
+								match acquired_val {
 									Ok(Some(ref v)) => self.stats.tally_bytes_read((key.len() + v.len()) as u64),
 									Ok(None) => self.stats.tally_bytes_read(key.len() as u64),
 									_ => {}
 								};
 
-								aquired_val
+								acquired_val
 							}
 						}
 					}
