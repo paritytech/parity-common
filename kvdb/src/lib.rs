@@ -19,8 +19,6 @@
 use bytes::Bytes;
 use smallvec::SmallVec;
 use std::io;
-use std::path::Path;
-use std::sync::Arc;
 
 mod io_stats;
 
