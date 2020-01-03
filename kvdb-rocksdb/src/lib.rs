@@ -1,4 +1,4 @@
-// Copyright 2015-2019 Parity Technologies (UK) Ltd.
+// Copyright 2015-2020 Parity Technologies (UK) Ltd.
 // This file is part of Parity.
 
 // Parity is free software: you can redistribute it and/or modify
@@ -527,7 +527,9 @@ impl Database {
 		match *self.db.read() {
 			Some(ref cfs) => {
 				self.stats.tally_reads(1);
-				let overlay = &self.overlay.read()[col as usize];
+				let guard = self.overlay.read();
+				let overlay =
+					guard.get(col as usize).ok_or_else(|| other_io_err("kvdb column index is out of bounds"))?;
 				match overlay.get(key) {
 					Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
 					Some(&KeyState::Delete) => Ok(None),
@@ -777,73 +779,56 @@ impl Drop for Database {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use ethereum_types::H256;
-	use std::io::Read;
-	use std::str::FromStr;
+	use kvdb_shared_tests as st;
+	use std::io::{self, Read};
 	use tempdir::TempDir;
 
-	fn test_db(config: &DatabaseConfig) {
-		let tempdir = TempDir::new("").unwrap();
-		let db = Database::open(config, tempdir.path().to_str().unwrap()).unwrap();
+	fn create(columns: u32) -> io::Result<Database> {
+		let tempdir = TempDir::new("")?;
+		let config = DatabaseConfig::with_columns(columns);
+		Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))
+	}
 
-		let key1 = H256::from_str("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
-		let key2 = H256::from_str("03c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
-		let key3 = H256::from_str("04c00000000b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
-		let key4 = H256::from_str("04c01111110b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
-		let key5 = H256::from_str("04c02222220b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
+	#[test]
+	fn get_fails_with_non_existing_column() -> io::Result<()> {
+		let db = create(1)?;
+		st::test_get_fails_with_non_existing_column(&db)
+	}
 
-		let mut batch = db.transaction();
-		batch.put(0, key1.as_bytes(), b"cat");
-		batch.put(0, key2.as_bytes(), b"dog");
-		batch.put(0, key3.as_bytes(), b"caterpillar");
-		batch.put(0, key4.as_bytes(), b"beef");
-		batch.put(0, key5.as_bytes(), b"fish");
-		db.write(batch).unwrap();
+	#[test]
+	fn put_and_get() -> io::Result<()> {
+		let db = create(1)?;
+		st::test_put_and_get(&db)
+	}
 
-		assert_eq!(&*db.get(0, key1.as_bytes()).unwrap().unwrap(), b"cat");
+	#[test]
+	fn delete_and_get() -> io::Result<()> {
+		let db = create(1)?;
+		st::test_delete_and_get(&db)
+	}
 
-		let contents: Vec<_> = db.iter(0).into_iter().collect();
-		assert_eq!(contents.len(), 5);
-		assert_eq!(&*contents[0].0, key1.as_bytes());
-		assert_eq!(&*contents[0].1, b"cat");
-		assert_eq!(&*contents[1].0, key2.as_bytes());
-		assert_eq!(&*contents[1].1, b"dog");
+	#[test]
+	fn iter() -> io::Result<()> {
+		let db = create(1)?;
+		st::test_iter(&db)
+	}
 
-		let mut prefix_iter = db.iter_from_prefix(0, &[0x04, 0xc0]);
-		assert_eq!(*prefix_iter.next().unwrap().1, b"caterpillar"[..]);
-		assert_eq!(*prefix_iter.next().unwrap().1, b"beef"[..]);
-		assert_eq!(*prefix_iter.next().unwrap().1, b"fish"[..]);
+	#[test]
+	fn iter_from_prefix() -> io::Result<()> {
+		let db = create(1)?;
+		st::test_iter_from_prefix(&db)
+	}
 
-		let mut batch = db.transaction();
-		batch.delete(0, key1.as_bytes());
-		db.write(batch).unwrap();
+	#[test]
+	fn complex() -> io::Result<()> {
+		let db = create(1)?;
+		st::test_complex(&db)
+	}
 
-		assert!(db.get(0, key1.as_bytes()).unwrap().is_none());
-
-		let mut batch = db.transaction();
-		batch.put(0, key1.as_bytes(), b"cat");
-		db.write(batch).unwrap();
-
-		let mut transaction = db.transaction();
-		transaction.put(0, key3.as_bytes(), b"elephant");
-		transaction.delete(0, key1.as_bytes());
-		db.write(transaction).unwrap();
-		assert!(db.get(0, key1.as_bytes()).unwrap().is_none());
-		assert_eq!(&*db.get(0, key3.as_bytes()).unwrap().unwrap(), b"elephant");
-
-		assert_eq!(&*db.get_by_prefix(0, key3.as_bytes()).unwrap(), b"elephant");
-		assert_eq!(&*db.get_by_prefix(0, key2.as_bytes()).unwrap(), b"dog");
-
-		let mut transaction = db.transaction();
-		transaction.put(0, key1.as_bytes(), b"horse");
-		transaction.delete(0, key3.as_bytes());
-		db.write_buffered(transaction);
-		assert!(db.get(0, key3.as_bytes()).unwrap().is_none());
-		assert_eq!(&*db.get(0, key1.as_bytes()).unwrap().unwrap(), b"horse");
-
-		db.flush().unwrap();
-		assert!(db.get(0, key3.as_bytes()).unwrap().is_none());
-		assert_eq!(&*db.get(0, key1.as_bytes()).unwrap().unwrap(), b"horse");
+	#[test]
+	fn stats() -> io::Result<()> {
+		let db = create(3)?;
+		st::test_io_stats(&db)
 	}
 
 	#[test]
@@ -874,14 +859,6 @@ mod tests {
 				assert!(super::static_property_or_warn(&db.db, "rocksdb.cur-size-all-mem-tables") > 512);
 			});
 		}
-	}
-
-	#[test]
-	fn kvdb() {
-		let tempdir = TempDir::new("").unwrap();
-		let config = DatabaseConfig::default();
-		let _ = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
-		test_db(&config);
 	}
 
 	#[test]
@@ -975,121 +952,6 @@ mod tests {
 		batch.put(0, key1, key1);
 		db.write(batch).unwrap();
 		assert_eq!(db.num_keys(0).unwrap(), 1, "adding a key increases the count");
-	}
-
-	#[test]
-	fn stats() {
-		use kvdb::IoStatsKind;
-
-		let tempdir = TempDir::new("").unwrap();
-		let config = DatabaseConfig::with_columns(3);
-		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
-
-		let key1 = b"kkk";
-		let mut batch = db.transaction();
-		batch.put(0, key1, key1);
-		batch.put(1, key1, key1);
-		batch.put(2, key1, key1);
-
-		for _ in 0..10 {
-			db.get(0, key1).unwrap();
-		}
-
-		db.write(batch).unwrap();
-
-		let io_stats = db.io_stats(IoStatsKind::SincePrevious);
-		assert_eq!(io_stats.transactions, 1);
-		assert_eq!(io_stats.writes, 3);
-		assert_eq!(io_stats.bytes_written, 18);
-		assert_eq!(io_stats.reads, 10);
-		assert_eq!(io_stats.bytes_read, 30);
-
-		let new_io_stats = db.io_stats(IoStatsKind::SincePrevious);
-		// Since we taken previous statistic period,
-		// this is expected to be totally empty.
-		assert_eq!(new_io_stats.transactions, 0);
-
-		// but the overall should be there
-		let new_io_stats = db.io_stats(IoStatsKind::Overall);
-		assert_eq!(new_io_stats.bytes_written, 18);
-
-		let mut batch = db.transaction();
-		batch.delete(0, key1);
-		batch.delete(1, key1);
-		batch.delete(2, key1);
-
-		// transaction is not commited yet
-		assert_eq!(db.io_stats(IoStatsKind::SincePrevious).writes, 0);
-
-		db.write(batch).unwrap();
-		// now it is, and delete is counted as write
-		assert_eq!(db.io_stats(IoStatsKind::SincePrevious).writes, 3);
-	}
-
-	#[test]
-	fn test_iter_by_prefix() {
-		let tempdir = TempDir::new("").unwrap();
-		let config = DatabaseConfig::with_columns(1);
-		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
-
-		let key1 = b"0";
-		let key2 = b"ab";
-		let key3 = b"abc";
-		let key4 = b"abcd";
-
-		let mut batch = db.transaction();
-		batch.put(0, key1, key1);
-		batch.put(0, key2, key2);
-		batch.put(0, key3, key3);
-		batch.put(0, key4, key4);
-		db.write(batch).unwrap();
-
-		// empty prefix
-		let contents: Vec<_> = db.iter_from_prefix(0, b"").into_iter().collect();
-		assert_eq!(contents.len(), 4);
-		assert_eq!(&*contents[0].0, key1);
-		assert_eq!(&*contents[1].0, key2);
-		assert_eq!(&*contents[2].0, key3);
-		assert_eq!(&*contents[3].0, key4);
-
-		// prefix a
-		let contents: Vec<_> = db.iter_from_prefix(0, b"a").into_iter().collect();
-		assert_eq!(contents.len(), 3);
-		assert_eq!(&*contents[0].0, key2);
-		assert_eq!(&*contents[1].0, key3);
-		assert_eq!(&*contents[2].0, key4);
-
-		// prefix abc
-		let contents: Vec<_> = db.iter_from_prefix(0, b"abc").into_iter().collect();
-		assert_eq!(contents.len(), 2);
-		assert_eq!(&*contents[0].0, key3);
-		assert_eq!(&*contents[1].0, key4);
-
-		// prefix abcde
-		let contents: Vec<_> = db.iter_from_prefix(0, b"abcde").into_iter().collect();
-		assert_eq!(contents.len(), 0);
-
-		// prefix 0
-		let contents: Vec<_> = db.iter_from_prefix(0, b"0").into_iter().collect();
-		assert_eq!(contents.len(), 1);
-		assert_eq!(&*contents[0].0, key1);
-	}
-
-	#[test]
-	fn write_clears_buffered_ops() {
-		let tempdir = TempDir::new("").unwrap();
-		let config = DatabaseConfig::with_columns(1);
-		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
-
-		let mut batch = db.transaction();
-		batch.put(0, b"foo", b"bar");
-		db.write_buffered(batch);
-
-		let mut batch = db.transaction();
-		batch.put(0, b"foo", b"baz");
-		db.write(batch).unwrap();
-
-		assert_eq!(db.get(0, b"foo").unwrap().unwrap(), b"baz");
 	}
 
 	#[test]
