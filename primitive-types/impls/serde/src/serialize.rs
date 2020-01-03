@@ -22,19 +22,18 @@ pub fn to_hex(bytes: &[u8], skip_leading_zero: bool) -> String {
 		let non_zero = bytes.iter().take_while(|b| **b == 0).count();
 		let bytes = &bytes[non_zero..];
 		if bytes.is_empty() {
-			return "0x0".into()
+			return "0x0".into();
 		} else {
 			bytes
 		}
 	} else if bytes.is_empty() {
-		return "0x".into()
+		return "0x".into();
 	} else {
 		bytes
 	};
 
 	let mut slice = vec![0u8; (bytes.len() + 1) * 2];
-	to_hex_raw(&mut slice, bytes, skip_leading_zero)
-		.into()
+	to_hex_raw(&mut slice, bytes, skip_leading_zero).into()
 }
 
 fn to_hex_raw<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a str {
@@ -103,7 +102,6 @@ pub fn from_hex(v: &str) -> Result<Vec<u8>, String> {
 
 	Ok(bytes)
 }
-
 
 /// Serializes a slice of bytes.
 pub fn serialize_raw<S>(slice: &mut [u8], bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
