@@ -1,6 +1,6 @@
 [package]
 name = "impl-serde"
-version = "0.2.3"
+version = "0.3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
 license = "Apache-2.0/MIT"
