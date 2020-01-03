@@ -1,7 +1,7 @@
 [package]
 name = "parity-util-mem-derive"
 version = "0.1.0"
-authors = ["Parity Technologies"]
+authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT"
 description = "Crate for memory reporting"
 repository = "https://github.com/paritytech/pariry-common/parity-util-mem/derive"
