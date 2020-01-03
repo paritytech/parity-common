@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog].
 ## [Unreleased]
 
 ## [0.3.0] - 2019-01-03
-- InMemory key-value database now can report memory used (via `MallocSizeOf`).
+- InMemory key-value database now can report memory used (via `MallocSizeOf`). [#292](https://github.com/paritytech/parity-common/pull/292)
 
 ## [0.2.0] - 2019-12-19
 ### Fixed
