@@ -1,9 +1,9 @@
 [package]
-name = "kvdb-test-utils"
+name = "kvdb-shared-tests"
 version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
-description = "Common testing utilities for `KeyValueDB` implementations."
+description = "Shared tests for kvdb functionality, to be executed against actual implementations"
 license = "GPL-3.0"
 
 [dependencies]

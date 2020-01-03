@@ -18,7 +18,7 @@
 
 use futures::future::TryFutureExt as _;
 
-use kvdb_test_utils as utils;
+use kvdb_shared_tests as st;
 use kvdb_web::{Database, KeyValueDB as _};
 
 use wasm_bindgen_test::*;
@@ -32,37 +32,37 @@ async fn open_db(col: u32, name: &str) -> Database {
 #[wasm_bindgen_test]
 async fn get_fails_with_non_existing_column() {
 	let db = open_db(1, "get_fails_with_non_existing_column").await;
-	utils::test_get_fails_with_non_existing_column(&db).unwrap()
+	st::test_get_fails_with_non_existing_column(&db).unwrap()
 }
 
 #[wasm_bindgen_test]
 async fn put_and_get() {
 	let db = open_db(1, "put_and_get").await;
-	utils::test_put_and_get(&db).unwrap()
+	st::test_put_and_get(&db).unwrap()
 }
 
 #[wasm_bindgen_test]
 async fn delete_and_get() {
 	let db = open_db(1, "delete_and_get").await;
-	utils::test_delete_and_get(&db).unwrap()
+	st::test_delete_and_get(&db).unwrap()
 }
 
 #[wasm_bindgen_test]
 async fn iter() {
 	let db = open_db(1, "iter").await;
-	utils::test_iter(&db).unwrap()
+	st::test_iter(&db).unwrap()
 }
 
 #[wasm_bindgen_test]
 async fn iter_from_prefix() {
 	let db = open_db(1, "iter_from_prefix").await;
-	utils::test_iter_from_prefix(&db).unwrap()
+	st::test_iter_from_prefix(&db).unwrap()
 }
 
 #[wasm_bindgen_test]
 async fn complex() {
 	let db = open_db(1, "complex").await;
-	utils::test_complex(&db).unwrap()
+	st::test_complex(&db).unwrap()
 }
 
 #[wasm_bindgen_test]

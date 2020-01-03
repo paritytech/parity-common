@@ -779,7 +779,7 @@ impl Drop for Database {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use kvdb_test_utils as utils;
+	use kvdb_shared_tests as st;
 	use std::io::{self, Read};
 	use tempdir::TempDir;
 
@@ -792,43 +792,43 @@ mod tests {
 	#[test]
 	fn get_fails_with_non_existing_column() -> io::Result<()> {
 		let db = create(1)?;
-		utils::test_get_fails_with_non_existing_column(&db)
+		st::test_get_fails_with_non_existing_column(&db)
 	}
 
 	#[test]
 	fn put_and_get() -> io::Result<()> {
 		let db = create(1)?;
-		utils::test_put_and_get(&db)
+		st::test_put_and_get(&db)
 	}
 
 	#[test]
 	fn delete_and_get() -> io::Result<()> {
 		let db = create(1)?;
-		utils::test_delete_and_get(&db)
+		st::test_delete_and_get(&db)
 	}
 
 	#[test]
 	fn iter() -> io::Result<()> {
 		let db = create(1)?;
-		utils::test_iter(&db)
+		st::test_iter(&db)
 	}
 
 	#[test]
 	fn iter_from_prefix() -> io::Result<()> {
 		let db = create(1)?;
-		utils::test_iter_from_prefix(&db)
+		st::test_iter_from_prefix(&db)
 	}
 
 	#[test]
 	fn complex() -> io::Result<()> {
 		let db = create(1)?;
-		utils::test_complex(&db)
+		st::test_complex(&db)
 	}
 
 	#[test]
 	fn stats() -> io::Result<()> {
 		let db = create(3)?;
-		utils::test_io_stats(&db)
+		st::test_io_stats(&db)
 	}
 
 	#[test]
