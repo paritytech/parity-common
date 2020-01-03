@@ -61,21 +61,59 @@ fn to_hex_raw<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a
 	unsafe { std::str::from_utf8_unchecked(&v[0..idx]) }
 }
 
+/// Decoding bytes from hex string error.
+#[derive(Debug, PartialEq, Eq)]
+pub enum FromHexError {
+	/// The `0x` prefix is missing.
+	MissingPrefix,
+	/// Invalid (non-hex) character encountered.
+	InvalidHex {
+		/// The unexpected character.
+		character: char,
+		/// Index of that occurrence.
+		index: usize,
+	},
+}
+
+impl std::error::Error for FromHexError {}
+
+impl fmt::Display for FromHexError {
+	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+		match *self {
+			Self::MissingPrefix =>
+				write!(fmt, "0x prefix is missing"),
+			Self::InvalidHex { character, index } =>
+				write!(fmt, "invalid hex character: {}, at {}", character, index),
+		}
+	}
+}
+
 /// Decode given hex string into a vector of bytes.
 ///
 /// Returns an error if the string is not prefixed with `0x`
 /// or non-hex characters are present.
-pub fn from_hex(v: &str) -> Result<Vec<u8>, String> {
+pub fn from_hex(v: &str) -> Result<Vec<u8>, FromHexError> {
 	if !v.starts_with("0x") {
-		return Err("0x prefix is missing".into());
+		return Err(FromHexError::MissingPrefix);
 	}
 
+	let mut bytes = vec![0u8; (v.len() - 1) / 2];
+	from_hex_raw(v, &mut bytes)?;
+	Ok(bytes)
+}
+
+/// Decode given 0x-prefixed hex string into provided slice.
+/// Used internally by `from_hex` and `deserialize_check_len`.
+///
+/// The method will panic if:
+/// 1. `v` is shorter than 2 characters (you need to check 0x prefix outside).
+/// 2. `bytes` have incorrect length (make sure to allocate enough beforehand).
+fn from_hex_raw<'a>(v: &str, bytes: &mut [u8]) -> Result<usize, FromHexError> {
 	let bytes_len = v.len() - 2;
 	let mut modulus = bytes_len % 2;
-	let mut bytes = vec![0u8; (bytes_len + 1) / 2];
 	let mut buf = 0;
 	let mut pos = 0;
-	for (idx, byte) in v.bytes().enumerate().skip(2) {
+	for (index, byte) in v.bytes().enumerate().skip(2) {
 		buf <<= 4;
 
 		match byte {
@@ -87,8 +125,8 @@ pub fn from_hex(v: &str) -> Result<Vec<u8>, String> {
 				continue;
 			}
 			b => {
-				let ch = char::from(b);
-				return Err(format!("invalid hex character: {}, at {}", ch, idx));
+				let character = char::from(b);
+				return Err(FromHexError::InvalidHex { character, index });
 			}
 		}
 
@@ -100,7 +138,7 @@ pub fn from_hex(v: &str) -> Result<Vec<u8>, String> {
 		}
 	}
 
-	Ok(bytes)
+	Ok(pos)
 }
 
 /// Serializes a slice of bytes.
@@ -152,8 +190,10 @@ pub enum ExpectedLen<'a> {
 impl<'a> fmt::Display for ExpectedLen<'a> {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
-			ExpectedLen::Exact(ref v) => write!(fmt, "length of {}", v.len() * 2),
-			ExpectedLen::Between(min, ref v) => write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
+			ExpectedLen::Exact(ref v) =>
+				write!(fmt, "length of {}", v.len() * 2),
+			ExpectedLen::Between(min, ref v) =>
+				write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
 		}
 	}
 }
@@ -204,12 +244,15 @@ where
 
 		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
 			if !v.starts_with("0x") {
-				return Err(E::custom("prefix is missing"));
+				return Err(E::custom(FromHexError::MissingPrefix));
 			}
 
+			let len = v.len();
 			let is_len_valid = match self.len {
-				ExpectedLen::Exact(ref slice) => v.len() == 2 * slice.len() + 2,
-				ExpectedLen::Between(min, ref slice) => v.len() <= 2 * slice.len() + 2 && v.len() > 2 * min + 2,
+				ExpectedLen::Exact(ref slice) =>
+					len == 2 * slice.len() + 2,
+				ExpectedLen::Between(min, ref slice) =>
+					len <= 2 * slice.len() + 2 && len > 2 * min + 2,
 			};
 
 			if !is_len_valid {
@@ -221,35 +264,7 @@ where
 				ExpectedLen::Between(_, slice) => slice,
 			};
 
-			let mut modulus = v.len() % 2;
-			let mut buf = 0;
-			let mut pos = 0;
-			for (idx, byte) in v.bytes().enumerate().skip(2) {
-				buf <<= 4;
-
-				match byte {
-					b'A'..=b'F' => buf |= byte - b'A' + 10,
-					b'a'..=b'f' => buf |= byte - b'a' + 10,
-					b'0'..=b'9' => buf |= byte - b'0',
-					b' ' | b'\r' | b'\n' | b'\t' => {
-						buf >>= 4;
-						continue;
-					}
-					b => {
-						let ch = char::from(b);
-						return Err(E::custom(&format!("invalid hex character: {}, at {}", ch, idx)));
-					}
-				}
-
-				modulus += 1;
-				if modulus == 2 {
-					modulus = 0;
-					bytes[pos] = buf;
-					pos += 1;
-				}
-			}
-
-			Ok(pos)
+			from_hex_raw(v, bytes).map_err(E::custom)
 		}
 
 		fn visit_string<E: de::Error>(self, v: String) -> Result<Self::Value, E> {
