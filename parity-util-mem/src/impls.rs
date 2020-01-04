@@ -18,45 +18,9 @@
 //! - ethereum types uint and fixed hash.
 //! - smallvec arrays of sizes 32, 36
 
-use super::{MallocSizeOf, MallocSizeOfOps};
-
 use ethereum_types::{Bloom, H128, H160, H256, H264, H32, H512, H520, H64, U128, U256, U512, U64};
-use smallvec::SmallVec;
-
-#[cfg(not(feature = "std"))]
-use core as std;
-
-#[cfg(feature = "std")]
-malloc_size_of_is_0!(std::time::Instant);
-malloc_size_of_is_0!(std::time::Duration);
 
 malloc_size_of_is_0!(U64, U128, U256, U512, H32, H64, H128, H160, H256, H264, H512, H520, Bloom);
-
-malloc_size_of_is_0!(
-	[u8; 1], [u8; 2], [u8; 3], [u8; 4], [u8; 5], [u8; 6], [u8; 7], [u8; 8], [u8; 9], [u8; 10], [u8; 11], [u8; 12],
-	[u8; 13], [u8; 14], [u8; 15], [u8; 16], [u8; 17], [u8; 18], [u8; 19], [u8; 20], [u8; 21], [u8; 22], [u8; 23],
-	[u8; 24], [u8; 25], [u8; 26], [u8; 27], [u8; 28], [u8; 29], [u8; 30], [u8; 31], [u8; 32]
-);
-
-macro_rules! impl_smallvec {
-	($size: expr) => {
-		impl<T> MallocSizeOf for SmallVec<[T; $size]>
-		where
-			T: MallocSizeOf,
-		{
-			fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-				let mut n = if self.spilled() { self.capacity() * core::mem::size_of::<T>() } else { 0 };
-				for elem in self.iter() {
-					n += elem.size_of(ops);
-				}
-				n
-			}
-		}
-	};
-}
-
-impl_smallvec!(32); // kvdb uses this
-impl_smallvec!(36); // trie-db uses this
 
 #[cfg(test)]
 mod tests {
