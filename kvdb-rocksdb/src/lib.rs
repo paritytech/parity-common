@@ -232,8 +232,8 @@ struct DBAndColumns {
 	column_names: Vec<String>,
 }
 
-fn static_property_or_warn(db: &DB, prop: &str) -> usize {
-	match db.property_int_value(prop) {
+fn static_property_or_warn(db: &DB, col: &ColumnFamily, prop: &str) -> usize {
+	match db.property_int_value_cf(col, prop) {
 		Ok(Some(v)) => v as usize,
 		_ => {
 			warn!("Cannot read expected static property of RocksDb database: {}", prop);
@@ -244,10 +244,16 @@ fn static_property_or_warn(db: &DB, prop: &str) -> usize {
 
 impl MallocSizeOf for DBAndColumns {
 	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
-		self.column_names.size_of(ops)
-			+ static_property_or_warn(&self.db, "rocksdb.estimate-table-readers-mem")
-			+ static_property_or_warn(&self.db, "rocksdb.cur-size-all-mem-tables")
-			+ static_property_or_warn(&self.db, "rocksdb.block-cache-usage")
+		let mut total = self.column_names.size_of(ops);
+		for v in 0..self.column_names.len() {
+			total = total + static_property_or_warn(&self.db, self.cf(v), "rocksdb.estimate-table-readers-mem");
+			total = total + static_property_or_warn(&self.db, self.cf(v), "rocksdb.cur-size-all-mem-tables");
+			if v == 0 {
+				total = total + static_property_or_warn(&self.db, self.cf(v), "rocksdb.block-cache-usage");
+			}
+		}
+
+		total
 	}
 }
 
