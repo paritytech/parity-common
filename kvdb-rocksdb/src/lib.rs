@@ -232,25 +232,15 @@ struct DBAndColumns {
 	column_names: Vec<String>,
 }
 
-fn static_property_or_warn(db: &DB, col: &ColumnFamily, prop: &str) -> usize {
-	match db.property_int_value_cf(col, prop) {
-		Ok(Some(v)) => v as usize,
-		_ => {
-			warn!("Cannot read expected static property of RocksDb database: {}", prop);
-			0
-		}
-	}
-}
-
 impl MallocSizeOf for DBAndColumns {
 	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
-		let mut total = self.column_names.size_of(ops);
+		let mut total = self.column_names.size_of(ops)
+			// we have at least one column always, so we can call property on it
+			+ self.static_property_or_warn(0, "rocksdb.block-cache-usage");
+
 		for v in 0..self.column_names.len() {
-			total = total + static_property_or_warn(&self.db, self.cf(v), "rocksdb.estimate-table-readers-mem");
-			total = total + static_property_or_warn(&self.db, self.cf(v), "rocksdb.cur-size-all-mem-tables");
-			if v == 0 {
-				total = total + static_property_or_warn(&self.db, self.cf(v), "rocksdb.block-cache-usage");
-			}
+			total += self.static_property_or_warn(v, "rocksdb.estimate-table-readers-mem");
+			total += self.static_property_or_warn(v, "rocksdb.cur-size-all-mem-tables");
 		}
 
 		total
@@ -260,6 +250,16 @@ impl MallocSizeOf for DBAndColumns {
 impl DBAndColumns {
 	fn cf(&self, i: usize) -> &ColumnFamily {
 		self.db.cf_handle(&self.column_names[i]).expect("the specified column name is correct; qed")
+	}
+
+	fn static_property_or_warn(&self, col: usize, prop: &str) -> usize {
+		match self.db.property_int_value_cf(self.cf(col), prop) {
+			Ok(Some(v)) => v as usize,
+			_ => {
+				warn!("Cannot read expected static property of RocksDb database: {}", prop);
+				0
+			}
+		}
 	}
 }
 
@@ -862,7 +862,7 @@ mod tests {
 		{
 			let db = db.db.read();
 			db.as_ref().map(|db| {
-				assert!(super::static_property_or_warn(&db.db, "rocksdb.cur-size-all-mem-tables") > 512);
+				assert!(db.static_property_or_warn(0, "rocksdb.cur-size-all-mem-tables") > 512);
 			});
 		}
 	}
