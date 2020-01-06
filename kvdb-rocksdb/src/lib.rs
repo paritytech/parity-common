@@ -28,7 +28,7 @@ use rocksdb::{
 use crate::iter::KeyValuePair;
 use fs_swap::{swap, swap_nonatomic};
 use interleaved_ordered::interleave_ordered;
-use kvdb::{DBKey, DBOp, DBTransaction, DBValue, KeyValueDB, DBSmartTransaction, DataOpIterator, DataOp};
+use kvdb::{DBKey, DBOp, DBTransaction, DBValue, KeyValueDB, DataOpIterator, DataOp};
 use log::{debug, warn};
 
 #[cfg(target_os = "linux")]
@@ -407,19 +407,9 @@ impl Database {
 		DBTransaction::new()
 	}
 
-	/// Helper to create new smart transaction
-	pub fn smart_transaction(&self) -> DBSmartTransaction {
-		DBSmartTransaction::new()
-	}
-
 	/// Commit transaction to database.
 	pub fn write_buffered(&self, tr: DBTransaction) {
 		self.write(tr).expect("failed to write")
-	}
-
-	/// Commit buffered changes to database. Must be called under `flush_lock`
-	fn write_flushing_with_lock(&self, _lock: &mut MutexGuard<'_, bool>) -> io::Result<()> {
-		Ok(())
 	}
 
 	/// Commit buffered changes to database.
@@ -427,22 +417,7 @@ impl Database {
 		Ok(())
 	}
 
-	/// Commit transaction to database.
-	pub fn write(&self, tr: DBTransaction) -> io::Result<()> {
-		let mut batch = WriteBatch::default();
-		let ops = tr.ops;
-		for op in ops {
-			let cf = self.db.cf(op.col() as usize);
-			match op {
-				DBOp::Insert { col: _, key, value } => batch.put_cf(cf, &key, &value).map_err(other_io_err)?,
-				DBOp::Delete { col: _, key } => batch.delete_cf(cf, &key).map_err(other_io_err)?,
-			};
-		}
-
-		check_for_corruption(&self.path, self.db.db.write_opt(batch, &self.write_opts))
-	}
-
-	pub fn smart_write(&self, tx: DBSmartTransaction) -> io::Result<()> {
+	pub fn write(&self, tx: DBTransaction) -> io::Result<()> {
 		let mut batch = WriteBatch::default();
 		for data_op in tx.iter() {
 			let cf = self.db.cf(data_op.col() as usize);
@@ -488,6 +463,7 @@ impl Database {
 
 	/// Close the database
 	fn close(&self) {
+		unimplemented!(); // what should be here
 	}
 
 	/// Restore the database from a copy at given path.
@@ -542,10 +518,6 @@ impl KeyValueDB for Database {
 		Database::write(self, transaction)
 	}
 
-	fn smart_write(&self, transaction: DBSmartTransaction) -> io::Result<()> {
-		Database::smart_write(self, transaction)
-	}
-
 	fn flush(&self) -> io::Result<()> {
 		Database::flush(self)
 	}
@@ -590,13 +562,13 @@ mod tests {
 		let key4 = H256::from_str("04c01111110b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
 		let key5 = H256::from_str("04c02222220b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").unwrap();
 
-		let mut batch = db.smart_transaction();
+		let mut batch = db.transaction();
 		batch.put(0, key1.as_bytes(), b"cat");
 		batch.put(0, key2.as_bytes(), b"dog");
 		batch.put(0, key3.as_bytes(), b"caterpillar");
 		batch.put(0, key4.as_bytes(), b"beef");
 		batch.put(0, key5.as_bytes(), b"fish");
-		db.smart_write(batch).unwrap();
+		db.write(batch).unwrap();
 
 		assert_eq!(&*db.get(0, key1.as_bytes()).unwrap().unwrap(), b"cat");
 

@@ -30,13 +30,6 @@ pub type DBValue = Vec<u8>;
 /// Database keys.
 pub type DBKey = SmallVec<[u8; 32]>;
 
-/// Write transaction. Batches a sequence of put/delete operations for efficiency.
-#[derive(Default, Clone, PartialEq)]
-pub struct DBTransaction {
-	/// Database operations.
-	pub ops: Vec<DBOp>,
-}
-
 #[derive(Clone, PartialEq)]
 enum DBOpIndex {
 	Insert { col: u32, key_len: usize, value_len: usize },
@@ -44,12 +37,12 @@ enum DBOpIndex {
 }
 
 #[derive(Default, Clone, PartialEq)]
-pub struct DBSmartTransaction {
+pub struct DBTransaction {
 	ops: Vec<u8>,
 	index: Vec<DBOpIndex>,
 }
 
-impl DBSmartTransaction {
+impl DBTransaction {
 	pub fn new() -> Self {
 		Self::with_capacity(256)
 	}
@@ -107,7 +100,7 @@ impl DataOp<'_> {
 }
 
 pub struct DataOpIterator<'a> {
-	tx: &'a DBSmartTransaction,
+	tx: &'a DBTransaction,
 	pos: usize,
 	index_pos: usize,
 }
@@ -167,33 +160,6 @@ impl DBOp {
 	}
 }
 
-impl DBTransaction {
-	/// Create new transaction.
-	pub fn new() -> DBTransaction {
-		DBTransaction::with_capacity(256)
-	}
-
-	/// Create new transaction with capacity.
-	pub fn with_capacity(cap: usize) -> DBTransaction {
-		DBTransaction { ops: Vec::with_capacity(cap) }
-	}
-
-	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
-	pub fn put(&mut self, col: u32, key: &[u8], value: &[u8]) {
-		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value: value.to_vec() })
-	}
-
-	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
-	pub fn put_vec(&mut self, col: u32, key: &[u8], value: Bytes) {
-		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value });
-	}
-
-	/// Delete value by key.
-	pub fn delete(&mut self, col: u32, key: &[u8]) {
-		self.ops.push(DBOp::Delete { col, key: DBKey::from_slice(key) });
-	}
-}
-
 /// Generic key-value database.
 ///
 /// This makes a distinction between "buffered" and "flushed" values. Values which have been
@@ -218,11 +184,6 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 		DBTransaction::new()
 	}
 
-	/// Helper to create new smart transaction.
-	fn smart_transaction(&self) -> DBSmartTransaction {
-		DBSmartTransaction::new()
-	}
-
 	/// Get a value by key.
 	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>>;
 
@@ -237,8 +198,6 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 		self.write_buffered(transaction);
 		self.flush()
 	}
-
-	fn smart_write(&self, tx: DBSmartTransaction) -> io::Result<()>;
 
 	/// Flush all buffered data.
 	fn flush(&self) -> io::Result<()>;
@@ -255,11 +214,4 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 
 	/// Attempt to replace this database with a new one located at the given path.
 	fn restore(&self, new_db: &str) -> io::Result<()>;
-}
-
-/// Generic key-value database handler. This trait contains one function `open`.
-/// When called, it opens database with a predefined config.
-pub trait KeyValueDBHandler: Send + Sync {
-	/// Open the predefined key-value database.
-	fn open(&self, path: &Path) -> io::Result<Arc<dyn KeyValueDB>>;
 }
