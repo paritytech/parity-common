@@ -35,7 +35,7 @@ version = "0.3.2"
 optional = true
 
 [features]
-default = ["std", "ethereum-impls", "lru", "hashbrown"]
+default = ["std", "ethereum-impls", "lru", "hashbrown", "smallvec"]
 std = ["parking_lot"]
 # use dlmalloc as global allocator
 dlmalloc-global = ["dlmalloc", "estimate-heapsize"]
@@ -46,6 +46,6 @@ jemalloc-global = ["jemallocator"]
 # use mimalloc as global allocator
 mimalloc-global = ["mimallocator", "mimalloc-sys"]
 # implement additional types
-ethereum-impls = ["ethereum-types", "smallvec"]
+ethereum-impls = ["ethereum-types"]
 # Full estimate: no call to allocator
 estimate-heapsize = []
