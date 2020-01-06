@@ -672,7 +672,7 @@ malloc_size_of_is_0!(std::time::Instant);
 #[cfg(feature = "std")]
 malloc_size_of_is_0!(std::time::Duration);
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))] // tests are using std implementations
 mod tests {
 	use crate::{allocators::new_malloc_size_ops, MallocSizeOf, MallocSizeOfOps};
 	use smallvec::SmallVec;
