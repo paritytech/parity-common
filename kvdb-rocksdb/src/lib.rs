@@ -20,7 +20,7 @@ mod stats;
 use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, path::Path, result};
 
 use parity_util_mem::MallocSizeOf;
-use parking_lot::{Mutex, MutexGuard, RwLock};
+use parking_lot::RwLock;
 use rocksdb::{
 	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB,
 };
@@ -28,8 +28,8 @@ use rocksdb::{
 use crate::iter::KeyValuePair;
 use fs_swap::{swap, swap_nonatomic};
 use interleaved_ordered::interleave_ordered;
-use kvdb::{DBKey, DBOp, DBTransaction, DBValue, KeyValueDB};
-use log::{debug, warn};
+use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
+use log::{debug, warn, error};
 
 #[cfg(target_os = "linux")]
 use regex::Regex;
@@ -58,12 +58,6 @@ pub const DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB: MiB = 128;
 
 /// The default memory budget in MiB.
 pub const DB_DEFAULT_MEMORY_BUDGET_MB: MiB = 512;
-
-#[derive(MallocSizeOf)]
-enum KeyState {
-	Insert(DBValue),
-	Delete,
-}
 
 /// Compaction profile for the database settings
 /// Note, that changing these parameters may trigger
@@ -276,15 +270,8 @@ pub struct Database {
 	read_opts: ReadOptions,
 	#[ignore_malloc_size_of = "insignificant"]
 	block_opts: BlockBasedOptions,
-	// Dirty values added with `write_buffered`. Cleaned on `flush`.
-	overlay: RwLock<Vec<HashMap<DBKey, KeyState>>>,
 	#[ignore_malloc_size_of = "insignificant"]
 	stats: stats::RunningDbStats,
-	// Values currently being flushed. Cleared when `flush` completes.
-	flushing: RwLock<Vec<HashMap<DBKey, KeyState>>>,
-	// Prevents concurrent flushes.
-	// Value indicates if a flush is in progress.
-	flushing_lock: Mutex<bool>,
 }
 
 #[inline]
@@ -405,9 +392,6 @@ impl Database {
 		Ok(Database {
 			db: RwLock::new(Some(DBAndColumns { db, column_names })),
 			config: config.clone(),
-			overlay: RwLock::new((0..config.columns).map(|_| HashMap::new()).collect()),
-			flushing: RwLock::new((0..config.columns).map(|_| HashMap::new()).collect()),
-			flushing_lock: Mutex::new(false),
 			path: path.to_owned(),
 			read_opts,
 			write_opts,
@@ -423,71 +407,14 @@ impl Database {
 
 	/// Commit transaction to database.
 	pub fn write_buffered(&self, tr: DBTransaction) {
-		let mut overlay = self.overlay.write();
-		let ops = tr.ops;
-		for op in ops {
-			match op {
-				DBOp::Insert { col, key, value } => overlay[col as usize].insert(key, KeyState::Insert(value)),
-				DBOp::Delete { col, key } => overlay[col as usize].insert(key, KeyState::Delete),
-			};
-		}
-	}
-
-	/// Commit buffered changes to database. Must be called under `flush_lock`
-	fn write_flushing_with_lock(&self, _lock: &mut MutexGuard<'_, bool>) -> io::Result<()> {
-		match *self.db.read() {
-			Some(ref cfs) => {
-				let mut batch = WriteBatch::default();
-				let mut ops: usize = 0;
-				let mut bytes: usize = 0;
-				mem::swap(&mut *self.overlay.write(), &mut *self.flushing.write());
-				{
-					for (c, column) in self.flushing.read().iter().enumerate() {
-						ops += column.len();
-						for (key, state) in column.iter() {
-							let cf = cfs.cf(c);
-							match *state {
-								KeyState::Delete => {
-									bytes += key.len();
-									batch.delete_cf(cf, key).map_err(other_io_err)?
-								}
-								KeyState::Insert(ref value) => {
-									bytes += key.len() + value.len();
-									batch.put_cf(cf, key, value).map_err(other_io_err)?
-								}
-							};
-						}
-					}
-				}
-
-				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))?;
-				self.stats.tally_transactions(1);
-				self.stats.tally_writes(ops as u64);
-				self.stats.tally_bytes_written(bytes as u64);
-
-				for column in self.flushing.write().iter_mut() {
-					column.clear();
-					column.shrink_to_fit();
-				}
-				Ok(())
-			}
-			None => Err(other_io_err("Database is closed")),
+		if let Err(err) = self.write(tr) {
+			error!("failed to write a transaction to RocksDB: {}", err);
 		}
 	}
 
 	/// Commit buffered changes to database.
 	pub fn flush(&self) -> io::Result<()> {
-		let mut lock = self.flushing_lock.lock();
-		// If RocksDB batch allocation fails the thread gets terminated and the lock is released.
-		// The value inside the lock is used to detect that.
-		if *lock {
-			// This can only happen if another flushing thread is terminated unexpectedly.
-			return Err(other_io_err("Database write failure. Running low on memory perhaps?"));
-		}
-		*lock = true;
-		let result = self.write_flushing_with_lock(&mut lock);
-		*lock = false;
-		result
+		Ok(())
 	}
 
 	/// Commit transaction to database.
@@ -503,9 +430,6 @@ impl Database {
 				let mut stats_total_bytes = 0;
 
 				for op in ops {
-					// remove any buffered operation for this key
-					self.overlay.write()[op.col() as usize].remove(op.key());
-
 					let cf = cfs.cf(op.col() as usize);
 
 					match op {
@@ -532,36 +456,23 @@ impl Database {
 	pub fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		match *self.db.read() {
 			Some(ref cfs) => {
-				self.stats.tally_reads(1);
-				let guard = self.overlay.read();
-				let overlay =
-					guard.get(col as usize).ok_or_else(|| other_io_err("kvdb column index is out of bounds"))?;
-				match overlay.get(key) {
-					Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
-					Some(&KeyState::Delete) => Ok(None),
-					None => {
-						let flushing = &self.flushing.read()[col as usize];
-						match flushing.get(key) {
-							Some(&KeyState::Insert(ref value)) => Ok(Some(value.clone())),
-							Some(&KeyState::Delete) => Ok(None),
-							None => {
-								let acquired_val = cfs
-									.db
-									.get_pinned_cf_opt(cfs.cf(col as usize), key, &self.read_opts)
-									.map(|r| r.map(|v| v.to_vec()))
-									.map_err(other_io_err);
-
-								match acquired_val {
-									Ok(Some(ref v)) => self.stats.tally_bytes_read((key.len() + v.len()) as u64),
-									Ok(None) => self.stats.tally_bytes_read(key.len() as u64),
-									_ => {}
-								};
-
-								acquired_val
-							}
-						}
-					}
+				if cfs.column_names.get(col as usize).is_none() {
+					return Err(other_io_err("column index is out of bounds"));
 				}
+				self.stats.tally_reads(1);
+				let acquired_val = cfs
+					.db
+					.get_pinned_cf_opt(cfs.cf(col as usize), key, &self.read_opts)
+					.map(|r| r.map(|v| v.to_vec()))
+					.map_err(other_io_err);
+
+				match acquired_val {
+					Ok(Some(ref v)) => self.stats.tally_bytes_read((key.len() + v.len()) as u64),
+					Ok(None) => self.stats.tally_bytes_read(key.len() as u64),
+					_ => {}
+				};
+
+				acquired_val
 			}
 			None => Ok(None),
 		}
@@ -579,23 +490,8 @@ impl Database {
 	pub fn iter<'a>(&'a self, col: u32) -> impl Iterator<Item = KeyValuePair> + 'a {
 		let read_lock = self.db.read();
 		let optional = if read_lock.is_some() {
-			let overlay_data = {
-				let overlay = &self.overlay.read()[col as usize];
-				let mut overlay_data = overlay
-					.iter()
-					.filter_map(|(k, v)| match *v {
-						KeyState::Insert(ref value) => {
-							Some((k.clone().into_vec().into_boxed_slice(), value.clone().into_boxed_slice()))
-						}
-						KeyState::Delete => None,
-					})
-					.collect::<Vec<_>>();
-				overlay_data.sort();
-				overlay_data
-			};
-
 			let guarded = iter::ReadGuardedIterator::new(read_lock, col, &self.read_opts);
-			Some(interleave_ordered(overlay_data, guarded))
+			Some(guarded)
 		} else {
 			None
 		};
@@ -622,8 +518,6 @@ impl Database {
 	/// Close the database
 	fn close(&self) {
 		*self.db.write() = None;
-		self.overlay.write().clear();
-		self.flushing.write().clear();
 	}
 
 	/// Restore the database from a copy at given path.
@@ -657,8 +551,6 @@ impl Database {
 		// reopen the database and steal handles into self
 		let db = Self::open(&self.config, &self.path)?;
 		*self.db.write() = mem::replace(&mut *db.db.write(), None);
-		*self.overlay.write() = mem::replace(&mut *db.overlay.write(), Vec::new());
-		*self.flushing.write() = mem::replace(&mut *db.flushing.write(), Vec::new());
 		Ok(())
 	}
 
