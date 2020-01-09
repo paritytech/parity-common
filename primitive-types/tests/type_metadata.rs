@@ -8,10 +8,8 @@
 
 //! Tests for type-metadata feature of primitive-types.
 
-use primitive_types::{U256, H256};
-use type_metadata::{
-    HasTypeDef, HasTypeId, Namespace, TypeIdCustom, TypeDefTupleStruct, UnnamedField,
-};
+use primitive_types::{H256, U256};
+use type_metadata::{HasTypeDef, HasTypeId, Namespace, TypeDefTupleStruct, TypeIdCustom, UnnamedField};
 
 #[test]
 fn u256_type_metadata() {

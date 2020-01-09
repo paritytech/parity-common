@@ -16,9 +16,9 @@
 
 use core::convert::TryFrom;
 use fixed_hash::{construct_fixed_hash, impl_fixed_hash_conversions};
-use uint::{construct_uint, uint_full_mul_reg};
 #[cfg(feature = "type-metadata")]
 use type_metadata::Metadata;
+use uint::{construct_uint, uint_full_mul_reg};
 
 /// Error type for conversion.
 #[derive(Debug, PartialEq, Eq)]
