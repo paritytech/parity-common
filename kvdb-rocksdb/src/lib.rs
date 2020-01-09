@@ -27,7 +27,6 @@ use rocksdb::{
 
 use crate::iter::KeyValuePair;
 use fs_swap::{swap, swap_nonatomic};
-use interleaved_ordered::interleave_ordered;
 use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
 use log::{debug, warn, error};
 
@@ -505,7 +504,7 @@ impl Database {
 		let read_lock = self.db.read();
 		let optional = if read_lock.is_some() {
 			let guarded = iter::ReadGuardedIterator::new_from_prefix(read_lock, col, prefix, &self.read_opts);
-			Some(interleave_ordered(Vec::new(), guarded))
+			Some(guarded)
 		} else {
 			None
 		};
