@@ -408,6 +408,7 @@ impl Database {
 	pub fn write_buffered(&self, tr: DBTransaction) {
 		if let Err(err) = self.write(tr) {
 			error!("failed to write a transaction to RocksDB: {}", err);
+			panic!("low-level IO failure");
 		}
 	}
 
