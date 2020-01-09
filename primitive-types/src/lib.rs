@@ -17,6 +17,8 @@
 use core::convert::TryFrom;
 use fixed_hash::{construct_fixed_hash, impl_fixed_hash_conversions};
 use uint::{construct_uint, uint_full_mul_reg};
+#[cfg(feature = "type-metadata")]
+use type_metadata::Metadata;
 
 /// Error type for conversion.
 #[derive(Debug, PartialEq, Eq)]
@@ -27,27 +29,33 @@ pub enum Error {
 
 construct_uint! {
 	/// 128-bit unsigned integer.
+	#[cfg_attr(feature = "type-metadata", derive(Metadata))]
 	pub struct U128(2);
 }
 construct_uint! {
 	/// 256-bit unsigned integer.
+	#[cfg_attr(feature = "type-metadata", derive(Metadata))]
 	pub struct U256(4);
 }
 construct_uint! {
 	/// 512-bits unsigned integer.
+	#[cfg_attr(feature = "type-metadata", derive(Metadata))]
 	pub struct U512(8);
 }
 
 construct_fixed_hash! {
 	/// Fixed-size uninterpreted hash type with 20 bytes (160 bits) size.
+	#[cfg_attr(feature = "type-metadata", derive(Metadata))]
 	pub struct H160(20);
 }
 construct_fixed_hash! {
 	/// Fixed-size uninterpreted hash type with 32 bytes (256 bits) size.
+	#[cfg_attr(feature = "type-metadata", derive(Metadata))]
 	pub struct H256(32);
 }
 construct_fixed_hash! {
 	/// Fixed-size uninterpreted hash type with 64 bytes (512 bits) size.
+	#[cfg_attr(feature = "type-metadata", derive(Metadata))]
 	pub struct H512(64);
 }
 

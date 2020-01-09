@@ -13,6 +13,8 @@ uint = { version = "0.8.1", path = "../uint", default-features = false }
 impl-serde = { version = "0.3.0", path = "impls/serde", default-features = false, optional = true }
 impl-codec = { version = "0.4.1", path = "impls/codec", default-features = false, optional = true }
 impl-rlp = { version = "0.2", path = "impls/rlp", default-features = false, optional = true }
+# type-metadata = { version = "0.1", features = ["derive"], default-features = false, optional = true }
+type-metadata = { git = "https://github.com/type-metadata/type-metadata", default-features = false, features = ["derive"], optional = true }
 
 [features]
 default = ["std"]
@@ -23,3 +25,7 @@ rustc-hex = ["fixed-hash/rustc-hex"]
 serde = ["std", "impl-serde"]
 codec = ["impl-codec"]
 rlp = ["impl-rlp"]
+
+[[test]]
+name = "type_metadata"
+required-features = ["type-metadata"]
