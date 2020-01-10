@@ -28,7 +28,7 @@ use rocksdb::{
 use crate::iter::KeyValuePair;
 use fs_swap::{swap, swap_nonatomic};
 use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
-use log::{debug, warn, error};
+use log::{debug, error, warn};
 
 #[cfg(target_os = "linux")]
 use regex::Regex;
@@ -422,20 +422,18 @@ impl Database {
 		match *self.db.read() {
 			Some(ref cfs) => {
 				let mut batch = WriteBatch::default();
-				let ops = tr.ops;
-
-				self.stats.tally_writes(ops.len() as u64);
+				self.stats.tally_writes(tr.len() as u64);
 				self.stats.tally_transactions(1);
 
 				let mut stats_total_bytes = 0;
 
-				for op in ops {
+				for op in tr.iter() {
 					let cf = cfs.cf(op.col() as usize);
 
 					match op {
-						DBOp::Insert { col: _, key, value } => {
-							stats_total_bytes += key.len() + value.len();
-							batch.put_cf(cf, &key, &value).map_err(other_io_err)?
+						DBOp::Insert { col: _, key, val } => {
+							stats_total_bytes += key.len() + val.len();
+							batch.put_cf(cf, &key, &val).map_err(other_io_err)?
 						}
 						DBOp::Delete { col: _, key } => {
 							// We count deletes as writes.

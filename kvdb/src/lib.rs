@@ -32,62 +32,102 @@ pub type DBKey = SmallVec<[u8; 32]>;
 
 pub use io_stats::{IoStats, Kind as IoStatsKind};
 
+#[derive(Clone, PartialEq)]
+enum DBOpIndex {
+	Insert { col: u32, key_len: usize, value_len: usize },
+	Delete { col: u32, key_len: usize },
+}
+
 /// Write transaction. Batches a sequence of put/delete operations for efficiency.
 #[derive(Default, Clone, PartialEq)]
 pub struct DBTransaction {
-	/// Database operations.
-	pub ops: Vec<DBOp>,
-}
-
-/// Database operation.
-#[derive(Clone, PartialEq)]
-pub enum DBOp {
-	Insert { col: u32, key: DBKey, value: DBValue },
-	Delete { col: u32, key: DBKey },
-}
-
-impl DBOp {
-	/// Returns the key associated with this operation.
-	pub fn key(&self) -> &[u8] {
-		match *self {
-			DBOp::Insert { ref key, .. } => key,
-			DBOp::Delete { ref key, .. } => key,
-		}
-	}
-
-	/// Returns the column associated with this operation.
-	pub fn col(&self) -> u32 {
-		match *self {
-			DBOp::Insert { col, .. } => col,
-			DBOp::Delete { col, .. } => col,
-		}
-	}
+	ops: Vec<u8>,
+	index: Vec<DBOpIndex>,
 }
 
 impl DBTransaction {
-	/// Create new transaction.
-	pub fn new() -> DBTransaction {
-		DBTransaction::with_capacity(256)
+	pub fn new() -> Self {
+		Self::with_capacity(256)
 	}
 
 	/// Create new transaction with capacity.
-	pub fn with_capacity(cap: usize) -> DBTransaction {
-		DBTransaction { ops: Vec::with_capacity(cap) }
+	pub fn with_capacity(cap: usize) -> Self {
+		Self { ops: Vec::with_capacity(cap << 6), index: Vec::with_capacity(cap) }
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
 	pub fn put(&mut self, col: u32, key: &[u8], value: &[u8]) {
-		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value: value.to_vec() })
+		self.ops.extend_from_slice(key);
+		self.ops.extend_from_slice(value);
+		self.index.push(DBOpIndex::Insert { col, key_len: key.len(), value_len: value.len() });
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
 	pub fn put_vec(&mut self, col: u32, key: &[u8], value: Bytes) {
-		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value });
+		self.put(col, key, &value[..]);
 	}
 
 	/// Delete value by key.
 	pub fn delete(&mut self, col: u32, key: &[u8]) {
-		self.ops.push(DBOp::Delete { col, key: DBKey::from_slice(key) });
+		self.ops.extend_from_slice(key);
+		self.index.push(DBOpIndex::Delete { col, key_len: key.len() });
+	}
+
+	pub fn iter<'a>(&'a self) -> impl Iterator<Item = DBOp<'a>> {
+		DataOpIterator { tx: self, pos: 0, index_pos: 0 }
+	}
+
+	pub fn len(&self) -> usize {
+		self.index.len()
+	}
+}
+
+pub enum DBOp<'a> {
+	Insert { col: u32, key: &'a [u8], val: &'a [u8] },
+	Delete { col: u32, key: &'a [u8] },
+}
+
+impl DBOp<'_> {
+	pub fn col(&self) -> u32 {
+		match &self {
+			DBOp::Insert { col, .. } => *col,
+			DBOp::Delete { col, .. } => *col,
+		}
+	}
+}
+
+pub struct DataOpIterator<'a> {
+	tx: &'a DBTransaction,
+	pos: usize,
+	index_pos: usize,
+}
+
+impl<'a> Iterator for DataOpIterator<'a> {
+	type Item = DBOp<'a>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if self.index_pos == self.tx.index.len() {
+			return None;
+		}
+
+		Some(match &self.tx.index[self.index_pos] {
+			DBOpIndex::Insert { col, key_len, value_len } => {
+				let ret = DBOp::Insert {
+					col: *col,
+					key: &self.tx.ops[self.pos..self.pos + key_len],
+					val: &self.tx.ops[self.pos + key_len..self.pos + key_len + value_len],
+				};
+				self.pos += key_len + value_len;
+				self.index_pos += 1;
+				ret
+			}
+			DBOpIndex::Delete { col, key_len } => {
+				let ret = DBOp::Delete { col: *col, key: &self.tx.ops[self.pos..self.pos + key_len] };
+				self.pos += key_len;
+				self.index_pos += 1;
+				ret
+			}
+		})
 	}
 }
 
