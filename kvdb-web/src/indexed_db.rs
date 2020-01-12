@@ -140,13 +140,13 @@ pub fn idb_commit_transaction(idb: &IdbDatabase, txn: &DBTransaction, columns: u
 		})
 		.collect::<Vec<_>>();
 
-	for op in &txn.ops {
+	for op in txn.iter() {
 		match op {
-			DBOp::Insert { col, key, value } => {
-				let column = *col as usize;
+			DBOp::Insert { col, key, val } => {
+				let column = col as usize;
 				// Convert rust bytes to js arrays
-				let key_js = Uint8Array::from(key.as_ref());
-				let val_js = Uint8Array::from(value.as_ref());
+				let key_js = Uint8Array::from(key);
+				let val_js = Uint8Array::from(val);
 
 				// Insert key/value pair into the object store
 				let res = object_stores[column].put_with_key(val_js.as_ref(), key_js.as_ref());
@@ -155,12 +155,12 @@ pub fn idb_commit_transaction(idb: &IdbDatabase, txn: &DBTransaction, columns: u
 				}
 			}
 			DBOp::Delete { col, key } => {
-				let column = *col as usize;
+				let column = col as usize;
 				// Convert rust bytes to js arrays
-				let key_js = Uint8Array::from(key.as_ref());
+				let key_js = Uint8Array::from(key);
 
 				// Delete key/value pair from the object store
-				let res = object_stores[column].delete(key_js.as_ref());
+				let res = object_stores[column].delete(&key_js);
 				if let Err(err) = res {
 					warn!("error deleting key from col_{}: {:?}", column, err);
 				}
