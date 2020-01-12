@@ -62,6 +62,12 @@ impl DBTransaction {
 		self.index.push(DBOpIndex::Insert { col, key_len: key.len(), value_len: value.len() });
 	}
 
+	pub fn put_composite_key(&mut self, col: u32, composite_key: &[&[u8]], value: &[u8]) {
+		for key in composite_key.iter() { self.ops.extend_from_slice(key); }
+		self.ops.extend_from_slice(value);
+		self.index.push(DBOpIndex::Insert { col, key_len: composite_key.iter().fold(0, |sum, k| sum + k.len()), value_len: value.len() });
+	}
+
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
 	pub fn put_vec(&mut self, col: u32, key: &[u8], value: Bytes) {
 		self.put(col, key, &value[..]);
