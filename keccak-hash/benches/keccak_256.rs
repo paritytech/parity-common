@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use criterion::{criterion_group, criterion_main, black_box, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use keccak_hash::keccak;
 
 criterion_group!(keccak_256, keccak_256_with_empty_input, keccak_256_with_typical_input, keccak_256_with_large_input,);
