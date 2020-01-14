@@ -30,7 +30,7 @@ pub fn keccak_256_with_empty_input(c: &mut Criterion) {
 }
 
 pub fn keccak_256_with_typical_input(c: &mut Criterion) {
-	let data: Vec<u8> = From::from("some medum length string with important information");
+	let data: Vec<u8> = From::from("some medium length string with important information");
 	c.bench_function("keccak_256_with_typical_input", |b| {
 		b.iter(|| {
 			let _out = keccak(black_box(&data));
