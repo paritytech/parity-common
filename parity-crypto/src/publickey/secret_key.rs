@@ -26,7 +26,7 @@ use secp256k1::constants::SECRET_KEY_SIZE as SECP256K1_SECRET_KEY_SIZE;
 use secp256k1::key;
 use zeroize::Zeroize;
 
-use crate::publickey::{Error, MINUS_ONE_KEY};
+use crate::publickey::Error;
 
 /// Represents secret key
 #[derive(Clone, PartialEq, Eq)]
@@ -120,7 +120,7 @@ impl Secret {
 			(false, false) => {
 				let mut key_secret = self.to_secp256k1_secret()?;
 				let mut other_secret = other.to_secp256k1_secret()?;
-				other_secret.mul_assign(&MINUS_ONE_KEY[..])?;
+				other_secret.mul_assign(super::MINUS_ONE_KEY)?;
 				key_secret.add_assign(&other_secret[..])?;
 
 				*self = key_secret.into();
@@ -133,12 +133,12 @@ impl Secret {
 	pub fn dec(&mut self) -> Result<(), Error> {
 		match self.is_zero() {
 			true => {
-				*self = Secret::from(*MINUS_ONE_KEY);
+				*self = Secret::try_from(super::MINUS_ONE_KEY).expect("Constructing a secret key from a known-good constant works; qed.");
 				Ok(())
 			}
 			false => {
 				let mut key_secret = self.to_secp256k1_secret()?;
-				key_secret.add_assign(&MINUS_ONE_KEY[..])?;
+				key_secret.add_assign(super::MINUS_ONE_KEY)?;
 
 				*self = key_secret.into();
 				Ok(())
@@ -171,7 +171,7 @@ impl Secret {
 			true => Ok(()),
 			false => {
 				let mut key_secret = self.to_secp256k1_secret()?;
-				key_secret.mul_assign(&MINUS_ONE_KEY[..])?;
+				key_secret.mul_assign(super::MINUS_ONE_KEY)?;
 
 				*self = key_secret.into();
 				Ok(())
@@ -182,12 +182,6 @@ impl Secret {
 	/// Inplace inverse secret key (1 / scalar)
 	pub fn inv(&mut self) -> Result<(), Error> {
 		let mut key_secret = self.to_secp256k1_secret()?;
-		// todo[dvdplm] this is the main hurdle I think. The impl for `ffi::secp256k1_ec_privkey_inverse` is in `ext.c`.
-		// We can
-		// – try to upstream the change (was this ever attempted? <– yes, and rejected)
-		// – extract `ext.c` into a mini-crate and use it in `secret-store` (it calls three functions from secp256k1 though, so it'd pull in the whole lib and we'd have a fork all over again)
-		// – rewrite `ext.c` in rust and use that in `secret-store` (extract from libsecp256k1?)
-		// – let `secret-store` continue depending on the parity fork
 		key_secret.inv_assign()?;
 
 		*self = key_secret.into();
@@ -214,10 +208,9 @@ impl Secret {
 		Ok(())
 	}
 
-	/// Create `secp256k1::key::SecretKey` based on this secret
+	/// Create a `secp256k1::key::SecretKey` based on this secret.
 	pub fn to_secp256k1_secret(&self) -> Result<key::SecretKey, Error> {
-//		todo[dvdplm] can't this just be? `key::SecretKey::from_slice(&self[..])` – need error conversion from secp256k1::Error for publickey::error::Error
-		Ok(key::SecretKey::from_slice(&self[..])?)
+		key::SecretKey::from_slice(&self[..]).map_err(Into::into)
 	}
 }
 
@@ -245,6 +238,17 @@ impl TryFrom<&str> for Secret {
 
 	fn try_from(s: &str) -> Result<Self, Error> {
 		s.parse().map_err(|e| Error::Custom(format!("{:?}", e)))
+	}
+}
+
+impl TryFrom<&[u8]> for Secret {
+	type Error = Error;
+
+	fn try_from(b: &[u8]) -> Result<Self, Error> {
+		if b.len() != SECP256K1_SECRET_KEY_SIZE {
+			return Err(Error::InvalidSecretKey)
+		}
+		Ok(Self { inner: H256::from_slice(b) } )
 	}
 }
 

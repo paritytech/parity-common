@@ -16,7 +16,7 @@ required-features = ["publickey"]
 [dependencies]
 tiny-keccak = { version = "2.0", features = ["keccak"] }
 scrypt = { version = "0.2.0", default-features = false }
-secp256k1 = { version = "0.17", optional = true, features = ["recovery", "rand-std"] }
+secp256k1 = { version = "0.17.2", optional = true, features = ["recovery", "rand-std"] }
 ethereum-types = { version = "0.8.0", optional = true }
 lazy_static = { version = "1.0", optional = true }
 ripemd160 = "0.8.0"

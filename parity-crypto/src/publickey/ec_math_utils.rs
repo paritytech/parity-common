@@ -22,8 +22,6 @@ use lazy_static::lazy_static;
 use secp256k1::constants::CURVE_ORDER as SECP256K1_CURVE_ORDER;
 use secp256k1::key;
 
-use crate::publickey::MINUS_ONE_KEY;
-
 /// Generation point array combined from X and Y coordinates
 /// Equivalent to uncompressed form, see https://tools.ietf.org/id/draft-jivsov-ecc-compact-05.html#rfc.section.3
 pub const BASE_POINT_BYTES: [u8; 65] = [
@@ -60,7 +58,7 @@ pub fn public_add(public: &mut Public, other: &Public) -> Result<(), Error> {
 /// In-place sub one public key from another (EC point - EC point)
 pub fn public_sub(public: &mut Public, other: &Public) -> Result<(), Error> {
 	let mut key_neg_other = to_secp256k1_public(other)?;
-	key_neg_other.mul_assign(&SECP256K1, &MINUS_ONE_KEY[..])?;
+	key_neg_other.mul_assign(&SECP256K1, super::MINUS_ONE_KEY)?;
 
 	let mut key_public = to_secp256k1_public(public)?;
 	key_public = key_public.combine(&key_neg_other)?;
@@ -71,7 +69,7 @@ pub fn public_sub(public: &mut Public, other: &Public) -> Result<(), Error> {
 /// Replace a public key with its additive inverse (EC point = - EC point)
 pub fn public_negate(public: &mut Public) -> Result<(), Error> {
 	let mut key_public = to_secp256k1_public(public)?;
-	key_public.mul_assign(&SECP256K1, &MINUS_ONE_KEY[..])?;
+	key_public.mul_assign(&SECP256K1, super::MINUS_ONE_KEY)?;
 	set_public(public, &key_public);
 	Ok(())
 }
