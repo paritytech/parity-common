@@ -13,38 +13,30 @@
 /// Create a public unformatted hash type with 32 bytes size.
 ///
 /// ```
-/// # #[macro_use] extern crate fixed_hash;
+/// use fixed_hash::construct_fixed_hash;
+///
 /// construct_fixed_hash!{ pub struct H256(32); }
-/// # fn main() {
-/// # 	assert_eq!(std::mem::size_of::<H256>(), 32);
-/// # }
+/// assert_eq!(std::mem::size_of::<H256>(), 32);
 /// ```
 ///
 /// With additional attributes and doc comments.
 ///
 /// ```
-/// # #[macro_use] extern crate fixed_hash;
-/// // Add the below two lines to import serde and its derive
-/// // extern crate serde;
-/// // #[macro_use] extern crate serde_derive;
+/// use fixed_hash::construct_fixed_hash;
 /// construct_fixed_hash!{
 /// 	/// My unformatted 160 bytes sized hash type.
 /// 	#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 /// 	pub struct H160(20);
 /// }
-/// # fn main() {
-/// # 	assert_eq!(std::mem::size_of::<H160>(), 20);
-/// # }
+/// assert_eq!(std::mem::size_of::<H160>(), 20);
 /// ```
 ///
 /// The visibility modifier is optional and you can create a private hash type.
 ///
 /// ```
-/// # #[macro_use] extern crate fixed_hash;
+/// use fixed_hash::construct_fixed_hash;
 /// construct_fixed_hash!{ struct H512(64); }
-/// # fn main() {
-/// # 	assert_eq!(std::mem::size_of::<H512>(), 64);
-/// # }
+/// assert_eq!(std::mem::size_of::<H512>(), 64);
 /// ```
 #[macro_export(local_inner_macros)]
 macro_rules! construct_fixed_hash {
@@ -761,15 +753,13 @@ macro_rules! impl_ops_for_hash {
 /// # Example
 ///
 /// ```
-/// #[macro_use] extern crate fixed_hash;
+/// use fixed_hash::{construct_fixed_hash, impl_fixed_hash_conversions};
 /// construct_fixed_hash!{ struct H160(20); }
 /// construct_fixed_hash!{ struct H256(32); }
 /// impl_fixed_hash_conversions!(H256, H160);
 /// // now use it!
-/// # fn main() {
 /// assert_eq!(H256::from(H160::zero()), H256::zero());
 /// assert_eq!(H160::from(H256::zero()), H160::zero());
-/// # }
 /// ```
 #[macro_export(local_inner_macros)]
 macro_rules! impl_fixed_hash_conversions {
