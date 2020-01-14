@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+### Breaking
+- Updated to the new `kvdb` interface. [#313](https://github.com/paritytech/parity-common/pull/313) 
 
 ## [0.2.0] - 2019-12-19
 ### Changed
