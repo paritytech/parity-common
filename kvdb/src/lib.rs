@@ -93,7 +93,7 @@ impl DBTransaction {
 
 /// Generic key-value database.
 ///
-/// The `KeyValueDB` deals in "column families", which can be thought of as distinct
+/// The `KeyValueDB` deals with "column families", which can be thought of as distinct
 /// stores within a database. Keys written in one column family will not be accessible from
 /// any other. The number of column families must be specified at initialization, with a
 /// differing interface for each database.
@@ -109,7 +109,7 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	/// Get a value by key.
 	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>>;
 
-	/// Get a value by partial key. Only works for the data.
+	/// Get the first value matching the given prefix.
 	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>>;
 
 	/// Write a transaction of changes to the backing store.

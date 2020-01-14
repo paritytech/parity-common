@@ -470,7 +470,7 @@ impl Database {
 		self.iter_from_prefix(col, prefix).next().map(|(_, v)| v)
 	}
 
-	/// Get database iterator for the data.
+	/// Iterator over the data in the given database column index.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
 	pub fn iter<'a>(&'a self, col: u32) -> impl Iterator<Item = KeyValuePair> + 'a {
@@ -484,7 +484,7 @@ impl Database {
 		optional.into_iter().flat_map(identity)
 	}
 
-	/// Get database iterator from prefix for the data.
+	/// Iterator over data in the `col` database column index matching the given prefix.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
 	fn iter_from_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
