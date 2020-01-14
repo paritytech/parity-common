@@ -341,7 +341,7 @@ fn conversions(c: &mut Criterion) {
 	);
 }
 
-fn bench_convert_to_biguit(b: &mut Bencher, i: u64) {
+fn bench_convert_to_biguit(b: &mut Bencher<'_>, i: u64) {
 	let z = U256::from(i);
 	let z512 = U512::from(i);
 	b.iter(|| {
@@ -350,7 +350,7 @@ fn bench_convert_to_biguit(b: &mut Bencher, i: u64) {
 	});
 }
 
-fn bench_convert_to_gmp(b: &mut Bencher, i: u64) {
+fn bench_convert_to_gmp(b: &mut Bencher<'_>, i: u64) {
 	let z = U256::from(i);
 	let z512 = U512::from(i);
 	b.iter(|| {
@@ -368,12 +368,12 @@ fn u512_mul_u32_vs_u64(c: &mut Criterion) {
 	);
 }
 
-fn bench_u512_mul_u32(b: &mut Bencher, i: u32) {
+fn bench_u512_mul_u32(b: &mut Bencher<'_>, i: u32) {
 	let x = U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	b.iter(|| black_box(x * i));
 }
 
-fn bench_u512_mul_u64(b: &mut Bencher, i: u64) {
+fn bench_u512_mul_u64(b: &mut Bencher<'_>, i: u64) {
 	let x = U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	b.iter(|| black_box(x * i));
 }
@@ -393,7 +393,7 @@ fn mulmod_u512_vs_biguint_vs_gmp(c: &mut Criterion) {
 	);
 }
 
-fn bench_biguint_mulmod(b: &mut Bencher, z: U256) {
+fn bench_biguint_mulmod(b: &mut Bencher<'_>, z: U256) {
 	let x = U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	let y = U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	b.iter(|| {
@@ -402,7 +402,7 @@ fn bench_biguint_mulmod(b: &mut Bencher, z: U256) {
 	});
 }
 
-fn bench_gmp_mulmod(b: &mut Bencher, z: U256) {
+fn bench_gmp_mulmod(b: &mut Bencher<'_>, z: U256) {
 	let x = U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	let y = U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	b.iter(|| {
@@ -411,7 +411,7 @@ fn bench_gmp_mulmod(b: &mut Bencher, z: U256) {
 	});
 }
 
-fn bench_u512_mulmod(b: &mut Bencher, z: U256) {
+fn bench_u512_mulmod(b: &mut Bencher<'_>, z: U256) {
 	let x = U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	let y = U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	let z = U512([z.0[0], z.0[1], z.0[2], z.0[3], 0, 0, 0, 0]);
