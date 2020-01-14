@@ -84,8 +84,6 @@ fn populate(db: &Database) -> io::Result<Vec<H256>> {
 		batch.put(0, &key.as_bytes(), &n_random_bytes(140));
 	}
 	db.write(batch)?;
-	// Clear the overlay
-	db.flush()?;
 	Ok(needles)
 }
 
