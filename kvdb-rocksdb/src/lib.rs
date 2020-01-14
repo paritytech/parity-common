@@ -28,7 +28,7 @@ use rocksdb::{
 use crate::iter::KeyValuePair;
 use fs_swap::{swap, swap_nonatomic};
 use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
-use log::{debug, warn, error};
+use log::{debug, warn};
 
 #[cfg(target_os = "linux")]
 use regex::Regex;
@@ -405,19 +405,6 @@ impl Database {
 	}
 
 	/// Commit transaction to database.
-	pub fn write_buffered(&self, tr: DBTransaction) {
-		if let Err(err) = self.write(tr) {
-			error!("failed to write a transaction to RocksDB: {}", err);
-			panic!("low-level IO failure");
-		}
-	}
-
-	/// Commit buffered changes to database.
-	pub fn flush(&self) -> io::Result<()> {
-		Ok(())
-	}
-
-	/// Commit transaction to database.
 	pub fn write(&self, tr: DBTransaction) -> io::Result<()> {
 		match *self.db.read() {
 			Some(ref cfs) => {
@@ -478,13 +465,12 @@ impl Database {
 		}
 	}
 
-	/// Get value by partial key. Prefix size should match configured prefix size. Only searches flushed values.
-	// TODO: support prefix seek for unflushed data
+	/// Get value by partial key. Prefix size should match configured prefix size.
 	pub fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>> {
 		self.iter_from_prefix(col, prefix).next().map(|(_, v)| v)
 	}
 
-	/// Get database iterator for flushed data.
+	/// Get database iterator for the data.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
 	pub fn iter<'a>(&'a self, col: u32) -> impl Iterator<Item = KeyValuePair> + 'a {
@@ -498,7 +484,7 @@ impl Database {
 		optional.into_iter().flat_map(identity)
 	}
 
-	/// Get database iterator from prefix for flushed data.
+	/// Get database iterator from prefix for the data.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
 	fn iter_from_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
@@ -565,7 +551,6 @@ impl Database {
 	}
 
 	/// The number of keys in a column (estimated).
-	/// Does not take into account the unflushed data.
 	pub fn num_keys(&self, col: u32) -> io::Result<u64> {
 		const ESTIMATE_NUM_KEYS: &str = "rocksdb.estimate-num-keys";
 		match *self.db.read() {
@@ -620,16 +605,8 @@ impl KeyValueDB for Database {
 		Database::get_by_prefix(self, col, prefix)
 	}
 
-	fn write_buffered(&self, transaction: DBTransaction) {
-		Database::write_buffered(self, transaction)
-	}
-
 	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
 		Database::write(self, transaction)
-	}
-
-	fn flush(&self) -> io::Result<()> {
-		Database::flush(self)
 	}
 
 	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = KeyValuePair> + 'a> {
@@ -664,13 +641,6 @@ impl KeyValueDB for Database {
 		stats.span = taken_stats.started.elapsed();
 
 		stats
-	}
-}
-
-impl Drop for Database {
-	fn drop(&mut self) {
-		// write all buffered changes if we can.
-		let _ = self.flush();
 	}
 }
 
@@ -748,8 +718,6 @@ mod tests {
 			batch.put(i / 1000 + 1, &i.to_le_bytes(), &(i * 17).to_le_bytes());
 		}
 		db.write(batch).unwrap();
-
-		db.flush().unwrap();
 
 		{
 			let db = db.db.read();

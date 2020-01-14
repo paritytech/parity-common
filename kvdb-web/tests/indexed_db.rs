@@ -74,7 +74,7 @@ async fn reopen_the_database_with_more_columns() {
 	// Write a value into the database
 	let mut batch = db.transaction();
 	batch.put(0, b"hello", b"world");
-	db.write_buffered(batch);
+	db.write(batch).unwrap();
 
 	assert_eq!(db.get(0, b"hello").unwrap().unwrap(), b"world");
 

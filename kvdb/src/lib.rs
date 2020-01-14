@@ -93,20 +93,11 @@ impl DBTransaction {
 
 /// Generic key-value database.
 ///
-/// This makes a distinction between "buffered" and "flushed" values. Values which have been
-/// written can always be read, but may be present in an in-memory buffer. Values which have
-/// been flushed have been moved to backing storage, like a RocksDB instance. There are certain
-/// operations which are only guaranteed to operate on flushed data and not buffered,
-/// although implementations may differ in this regard.
-///
-/// The contents of an interior buffer may be explicitly flushed using the `flush` method.
-///
-/// The `KeyValueDB` also deals in "column families", which can be thought of as distinct
+/// The `KeyValueDB` deals in "column families", which can be thought of as distinct
 /// stores within a database. Keys written in one column family will not be accessible from
 /// any other. The number of column families must be specified at initialization, with a
-/// differing interface for each database. The `None` argument in place of a column index
-/// is always supported.
-///
+/// differing interface for each database.
+/// 
 /// The API laid out here, along with the `Sync` bound implies interior synchronization for
 /// implementation.
 pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
@@ -118,25 +109,16 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	/// Get a value by key.
 	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>>;
 
-	/// Get a value by partial key. Only works for flushed data.
+	/// Get a value by partial key. Only works for the data.
 	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>>;
 
-	/// Write a transaction of changes to the buffer.
-	fn write_buffered(&self, transaction: DBTransaction);
-
 	/// Write a transaction of changes to the backing store.
-	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
-		self.write_buffered(transaction);
-		self.flush()
-	}
+	fn write(&self, transaction: DBTransaction) -> io::Result<()>;
 
-	/// Flush all buffered data.
-	fn flush(&self) -> io::Result<()>;
-
-	/// Iterate over flushed data for a given column.
+	/// Iterate over the data for a given column.
 	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
 
-	/// Iterate over flushed data for a given column, starting from a given prefix.
+	/// Iterate over the data for a given column, starting from a given prefix.
 	fn iter_from_prefix<'a>(
 		&'a self,
 		col: u32,

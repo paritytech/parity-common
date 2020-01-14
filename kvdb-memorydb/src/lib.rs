@@ -60,7 +60,7 @@ impl KeyValueDB for InMemory {
 		}
 	}
 
-	fn write_buffered(&self, transaction: DBTransaction) {
+	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
 		let mut columns = self.columns.write();
 		let ops = transaction.ops;
 		for op in ops {
@@ -77,9 +77,6 @@ impl KeyValueDB for InMemory {
 				}
 			}
 		}
-	}
-
-	fn flush(&self) -> io::Result<()> {
 		Ok(())
 	}
 

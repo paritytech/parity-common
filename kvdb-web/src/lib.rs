@@ -79,7 +79,7 @@ impl Database {
 				txn.put_vec(column, key.as_ref(), value);
 			}
 			// write each column into memory
-			in_memory.write_buffered(txn);
+			in_memory.write(txn).expect("writing in memory always succeeds; qed");
 		}
 		Ok(Database { name: name_clone, version, columns, in_memory, indexed_db: inner })
 	}
@@ -110,13 +110,9 @@ impl KeyValueDB for Database {
 		self.in_memory.get_by_prefix(col, prefix)
 	}
 
-	fn write_buffered(&self, transaction: DBTransaction) {
+	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
 		let _ = indexed_db::idb_commit_transaction(&*self.indexed_db, &transaction, self.columns);
-		self.in_memory.write_buffered(transaction);
-	}
-
-	fn flush(&self) -> io::Result<()> {
-		Ok(())
+		self.in_memory.write(transaction)
 	}
 
 	// NOTE: clones the whole db
