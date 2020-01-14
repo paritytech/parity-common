@@ -97,7 +97,7 @@ impl DBTransaction {
 /// stores within a database. Keys written in one column family will not be accessible from
 /// any other. The number of column families must be specified at initialization, with a
 /// differing interface for each database.
-/// 
+///
 /// The API laid out here, along with the `Sync` bound implies interior synchronization for
 /// implementation.
 pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
