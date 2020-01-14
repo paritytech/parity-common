@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+### Breaking
+- Removed `write_buffered` and `flush` methods. [#313](https://github.com/paritytech/parity-common/pull/313) 
 
 ## [0.3.0] - 2020-01-03
 - I/O statistics API. [#294](https://github.com/paritytech/parity-common/pull/294)
