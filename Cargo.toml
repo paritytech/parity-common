@@ -6,6 +6,7 @@ members = [
 	"kvdb",
 	"kvdb-memorydb",
 	"kvdb-rocksdb",
+	"kvdb-shared-tests",
 	"kvdb-web",
 	"parity-bytes",
 	"parity-crypto",
@@ -20,6 +21,7 @@ members = [
 	"primitive-types",
 	"ethereum-types",
 	"ethbloom",
+	"parity-util-mem/derive"
 ]
 
 [patch.crates-io]
