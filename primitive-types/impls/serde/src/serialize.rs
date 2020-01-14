@@ -78,7 +78,7 @@ pub enum FromHexError {
 impl std::error::Error for FromHexError {}
 
 impl fmt::Display for FromHexError {
-	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
 			Self::MissingPrefix => write!(fmt, "0x prefix is missing"),
 			Self::InvalidHex { character, index } => write!(fmt, "invalid hex character: {}, at {}", character, index),
@@ -186,7 +186,7 @@ pub enum ExpectedLen<'a> {
 }
 
 impl<'a> fmt::Display for ExpectedLen<'a> {
-	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
 			ExpectedLen::Exact(ref v) => write!(fmt, "length of {}", v.len() * 2),
 			ExpectedLen::Between(min, ref v) => write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
@@ -205,7 +205,7 @@ where
 	impl<'b> de::Visitor<'b> for Visitor {
 		type Value = Vec<u8>;
 
-		fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+		fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
 			write!(formatter, "a 0x-prefixed hex string")
 		}
 
@@ -234,7 +234,7 @@ where
 	impl<'a, 'b> de::Visitor<'b> for Visitor<'a> {
 		type Value = usize;
 
-		fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+		fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
 			write!(formatter, "a 0x-prefixed hex string with {}", self.len)
 		}
 
@@ -272,9 +272,7 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use serde_derive;
-
-	use self::serde_derive::{Deserialize, Serialize};
+	use serde_derive::{Deserialize, Serialize};
 
 	#[derive(Serialize, Deserialize)]
 	struct Bytes(#[serde(with = "super")] Vec<u8>);
