@@ -14,11 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-#[macro_use]
-extern crate criterion;
-
 use crate::parity_crypto::publickey::Generator;
-use criterion::{Bencher, Criterion};
+use criterion::{criterion_group, criterion_main, Bencher, Criterion};
 
 criterion_group!(benches, input_len, ecdh_agree,);
 

@@ -36,6 +36,7 @@ script:
     cargo fmt -- --check;
     fi
   - cargo check --all --tests
+  - cargo check --all --benches
   - cargo build --all
   - cargo test --all --exclude uint --exclude fixed-hash
   - if [ "$TRAVIS_RUST_VERSION" == "nightly" ]; then
