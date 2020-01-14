@@ -447,19 +447,19 @@ impl Database {
 					return Err(other_io_err("column index is out of bounds"));
 				}
 				self.stats.tally_reads(1);
-				let acquired_val = cfs
+				let value = cfs
 					.db
 					.get_pinned_cf_opt(cfs.cf(col as usize), key, &self.read_opts)
 					.map(|r| r.map(|v| v.to_vec()))
 					.map_err(other_io_err);
 
-				match acquired_val {
+				match value {
 					Ok(Some(ref v)) => self.stats.tally_bytes_read((key.len() + v.len()) as u64),
 					Ok(None) => self.stats.tally_bytes_read(key.len() as u64),
 					_ => {}
 				};
 
-				acquired_val
+				value
 			}
 			None => Ok(None),
 		}
