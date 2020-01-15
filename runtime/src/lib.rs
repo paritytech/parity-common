@@ -16,12 +16,12 @@
 
 //! Tokio Runtime wrapper.
 
-use std::{fmt, thread};
+use futures::{future, Future, IntoFuture};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
-use futures::{future, Future, IntoFuture};
+use std::{fmt, thread};
+pub use tokio::runtime::{Builder as TokioRuntimeBuilder, Runtime as TokioRuntime, TaskExecutor};
 pub use tokio::timer::Delay;
-pub use tokio::runtime::{Runtime as TokioRuntime, Builder as TokioRuntimeBuilder, TaskExecutor};
 
 /// Runtime for futures.
 ///
@@ -33,27 +33,23 @@ pub struct Runtime {
 
 impl Runtime {
 	fn new(runtime_bldr: &mut TokioRuntimeBuilder) -> Self {
-		let mut runtime = runtime_bldr
-			.build()
-			.expect("Building a Tokio runtime will only fail when mio components \
-				cannot be initialized (catastrophic)");
+		let mut runtime = runtime_bldr.build().expect(
+			"Building a Tokio runtime will only fail when mio components \
+			 cannot be initialized (catastrophic)",
+		);
 		let (stop, stopped) = futures::oneshot();
 		let (tx, rx) = mpsc::channel();
 		let handle = thread::spawn(move || {
 			tx.send(runtime.executor()).expect("Rx is blocking upper thread.");
-			runtime.block_on(futures::empty().select(stopped).map(|_| ()).map_err(|_| ()))
+			runtime
+				.block_on(futures::empty().select(stopped).map(|_| ()).map_err(|_| ()))
 				.expect("Tokio runtime should not have unhandled errors.");
 		});
 		let executor = rx.recv().expect("tx is transfered to a newly spawned thread.");
 
 		Runtime {
-			executor: Executor {
-				inner: Mode::Tokio(executor),
-			},
-			handle: RuntimeHandle {
-				close: Some(stop),
-				handle: Some(handle),
-			},
+			executor: Executor { inner: Mode::Tokio(executor) },
+			handle: RuntimeHandle { close: Some(stop), handle: Some(handle) },
 		}
 	}
 
@@ -117,20 +113,18 @@ impl fmt::Debug for Mode {
 
 /// Returns a future which runs `f` until `duration` has elapsed, at which
 /// time `on_timeout` is run and the future resolves.
-fn timeout<F, R, T>(f: F, duration: Duration, on_timeout: T)
-	-> impl Future<Item = (), Error = ()> + Send + 'static
+fn timeout<F, R, T>(f: F, duration: Duration, on_timeout: T) -> impl Future<Item = (), Error = ()> + Send + 'static
 where
 	T: FnOnce() -> () + Send + 'static,
 	F: FnOnce() -> R + Send + 'static,
-	R: IntoFuture<Item=(), Error=()> + Send + 'static,
+	R: IntoFuture<Item = (), Error = ()> + Send + 'static,
 	R::Future: Send + 'static,
 {
 	let future = future::lazy(f);
-	let timeout = Delay::new(Instant::now() + duration)
-		.then(move |_| {
-			on_timeout();
-			Ok(())
-		});
+	let timeout = Delay::new(Instant::now() + duration).then(move |_| {
+		on_timeout();
+		Ok(())
+	});
 	future.select(timeout).then(|_| Ok(()))
 }
 
@@ -141,85 +135,80 @@ pub struct Executor {
 
 impl Executor {
 	/// Executor for existing runtime.
-	#[deprecated(note="Exists only to connect with current JSONRPC implementation")]
+	#[deprecated(note = "Exists only to connect with current JSONRPC implementation")]
 	pub fn new(executor: TaskExecutor) -> Self {
-		Executor {
-			inner: Mode::Tokio(executor),
-		}
+		Executor { inner: Mode::Tokio(executor) }
 	}
 
 	/// Synchronous executor, used for tests.
 	#[cfg(any(test, feature = "test-helpers"))]
 	pub fn new_sync() -> Self {
-		Executor {
-			inner: Mode::Sync,
-		}
+		Executor { inner: Mode::Sync }
 	}
 
 	/// Spawns a new thread for each future (use only for tests).
 	#[cfg(any(test, feature = "test-helpers"))]
 	pub fn new_thread_per_future() -> Self {
-		Executor {
-			inner: Mode::ThreadPerFuture,
-		}
+		Executor { inner: Mode::ThreadPerFuture }
 	}
 
 	/// Spawn a future on this runtime
-	pub fn spawn<R>(&self, r: R) where
-		R: IntoFuture<Item=(), Error=()> + Send + 'static,
+	pub fn spawn<R>(&self, r: R)
+	where
+		R: IntoFuture<Item = (), Error = ()> + Send + 'static,
 		R::Future: Send + 'static,
 	{
 		match self.inner {
 			Mode::Tokio(ref executor) => executor.spawn(r.into_future()),
 			Mode::Sync => {
-				let _= r.into_future().wait();
-			},
+				let _ = r.into_future().wait();
+			}
 			Mode::ThreadPerFuture => {
 				thread::spawn(move || {
-					let _= r.into_future().wait();
+					let _ = r.into_future().wait();
 				});
-			},
+			}
 		}
 	}
 
 	/// Spawn a new future returned by the given closure.
-	pub fn spawn_fn<F, R>(&self, f: F) where
+	pub fn spawn_fn<F, R>(&self, f: F)
+	where
 		F: FnOnce() -> R + Send + 'static,
-		R: IntoFuture<Item=(), Error=()> + Send + 'static,
+		R: IntoFuture<Item = (), Error = ()> + Send + 'static,
 		R::Future: Send + 'static,
 	{
 		match self.inner {
 			Mode::Tokio(ref executor) => executor.spawn(future::lazy(f)),
 			Mode::Sync => {
 				let _ = future::lazy(f).wait();
-			},
+			}
 			Mode::ThreadPerFuture => {
 				thread::spawn(move || {
-					let _= f().into_future().wait();
+					let _ = f().into_future().wait();
 				});
-			},
+			}
 		}
 	}
 
 	/// Spawn a new future and wait for it or for a timeout to occur.
-	pub fn spawn_with_timeout<F, R, T>(&self, f: F, duration: Duration, on_timeout: T) where
+	pub fn spawn_with_timeout<F, R, T>(&self, f: F, duration: Duration, on_timeout: T)
+	where
 		T: FnOnce() -> () + Send + 'static,
 		F: FnOnce() -> R + Send + 'static,
-		R: IntoFuture<Item=(), Error=()> + Send + 'static,
+		R: IntoFuture<Item = (), Error = ()> + Send + 'static,
 		R::Future: Send + 'static,
 	{
 		match self.inner {
-			Mode::Tokio(ref executor) => {
-				executor.spawn(timeout(f, duration, on_timeout))
-			},
+			Mode::Tokio(ref executor) => executor.spawn(timeout(f, duration, on_timeout)),
 			Mode::Sync => {
 				let _ = timeout(f, duration, on_timeout).wait();
-			},
+			}
 			Mode::ThreadPerFuture => {
 				thread::spawn(move || {
 					let _ = timeout(f, duration, on_timeout).wait();
 				});
-			},
+			}
 		}
 	}
 }
@@ -229,15 +218,15 @@ impl<F: Future<Item = (), Error = ()> + Send + 'static> future::Executor<F> for 
 		match self.inner {
 			Mode::Tokio(ref executor) => executor.execute(future),
 			Mode::Sync => {
-				let _= future.wait();
+				let _ = future.wait();
 				Ok(())
-			},
+			}
 			Mode::ThreadPerFuture => {
 				thread::spawn(move || {
-					let _= future.wait();
+					let _ = future.wait();
 				});
 				Ok(())
-			},
+			}
 		}
 	}
 }
@@ -245,7 +234,7 @@ impl<F: Future<Item = (), Error = ()> + Send + 'static> future::Executor<F> for 
 /// A handle to a runtime. Dropping the handle will cause runtime to shutdown.
 pub struct RuntimeHandle {
 	close: Option<futures::sync::oneshot::Sender<()>>,
-	handle: Option<thread::JoinHandle<()>>
+	handle: Option<thread::JoinHandle<()>>,
 }
 
 impl From<Runtime> for RuntimeHandle {
@@ -263,14 +252,12 @@ impl Drop for RuntimeHandle {
 impl RuntimeHandle {
 	/// Blocks current thread and waits until the runtime is finished.
 	pub fn wait(mut self) -> thread::Result<()> {
-		self.handle.take()
-			.expect("Handle is taken only in `wait`, `wait` is consuming; qed").join()
+		self.handle.take().expect("Handle is taken only in `wait`, `wait` is consuming; qed").join()
 	}
 
 	/// Finishes this runtime.
 	pub fn close(mut self) {
-		let _ = self.close.take()
-			.expect("Close is taken only in `close` and `drop`. `close` is consuming; qed")
-			.send(());
+		let _ =
+			self.close.take().expect("Close is taken only in `close` and `drop`. `close` is consuming; qed").send(());
 	}
 }
