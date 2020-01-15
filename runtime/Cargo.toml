@@ -14,3 +14,6 @@ include = ["Cargo.toml", "src/**/*.rs", "README.md", "CHANGELOG.md"]
 [dependencies]
 futures = "0.1"
 tokio = "0.1.22"
+
+[features]
+test-helpers = []

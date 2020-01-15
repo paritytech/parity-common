@@ -68,7 +68,7 @@ impl Runtime {
 	/// Spawns a new tokio runtime with a the specified thread count on a
 	/// background thread and returns a `Runtime` which can be used to spawn
 	/// tasks via its executor.
-	#[cfg(test)]
+	#[cfg(any(test, feature = "test-helpers"))]
 	pub fn with_thread_count(thread_count: usize) -> Self {
 		let mut runtime_bldr = TokioRuntimeBuilder::new();
 		runtime_bldr.core_threads(thread_count);
@@ -77,7 +77,7 @@ impl Runtime {
 	}
 
 	/// Returns this runtime raw executor.
-	#[cfg(test)]
+	#[cfg(any(test, feature = "test-helpers"))]
 	pub fn raw_executor(&self) -> TaskExecutor {
 		if let Mode::Tokio(ref executor) = self.executor.inner {
 			executor.clone()
@@ -95,7 +95,11 @@ impl Runtime {
 #[derive(Clone)]
 enum Mode {
 	Tokio(TaskExecutor),
+	// Mode used in tests
+	#[allow(dead_code)]
 	Sync,
+	// Mode used in tests
+	#[allow(dead_code)]
 	ThreadPerFuture,
 }
 
@@ -144,7 +148,8 @@ impl Executor {
 		}
 	}
 
-	/// Synchronous executor, used mostly for tests.
+	/// Synchronous executor, used for tests.
+	#[cfg(any(test, feature = "test-helpers"))]
 	pub fn new_sync() -> Self {
 		Executor {
 			inner: Mode::Sync,
@@ -152,6 +157,7 @@ impl Executor {
 	}
 
 	/// Spawns a new thread for each future (use only for tests).
+	#[cfg(any(test, feature = "test-helpers"))]
 	pub fn new_thread_per_future() -> Self {
 		Executor {
 			inner: Mode::ThreadPerFuture,
