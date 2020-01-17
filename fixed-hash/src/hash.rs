@@ -527,14 +527,6 @@ macro_rules! impl_rand_for_fixed_hash {
 	};
 }
 
-// Implementation for disabled libc crate support.
-//
-// # Note
-//
-// Feature guarded macro definitions instead of feature guarded impl blocks
-// to work around the problems of introducing `libc` crate feature in
-// a user crate.
-#[cfg(not(all(feature = "libc", not(target_os = "unknown"))))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_cmp_for_fixed_hash {
@@ -550,52 +542,6 @@ macro_rules! impl_cmp_for_fixed_hash {
 			#[inline]
 			fn cmp(&self, other: &Self) -> $crate::core_::cmp::Ordering {
 				self.as_bytes().cmp(other.as_bytes())
-			}
-		}
-	};
-}
-
-// Implementation for enabled libc crate support.
-//
-// # Note
-//
-// Feature guarded macro definitions instead of feature guarded impl blocks
-// to work around the problems of introducing `libc` crate feature in
-// a user crate.
-#[cfg(all(feature = "libc", not(target_os = "unknown")))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_cmp_for_fixed_hash {
-	( $name:ident ) => {
-		impl $crate::core_::cmp::PartialEq for $name {
-			#[inline]
-			fn eq(&self, other: &Self) -> bool {
-				unsafe {
-					$crate::libc::memcmp(
-						self.as_ptr() as *const $crate::libc::c_void,
-						other.as_ptr() as *const $crate::libc::c_void,
-						Self::len_bytes(),
-					) == 0
-				}
-			}
-		}
-
-		impl $crate::core_::cmp::Ord for $name {
-			fn cmp(&self, other: &Self) -> $crate::core_::cmp::Ordering {
-				let r = unsafe {
-					$crate::libc::memcmp(
-						self.as_ptr() as *const $crate::libc::c_void,
-						other.as_ptr() as *const $crate::libc::c_void,
-						Self::len_bytes(),
-					)
-				};
-				if r < 0 {
-					return $crate::core_::cmp::Ordering::Less;
-				}
-				if r > 0 {
-					return $crate::core_::cmp::Ordering::Greater;
-				}
-				$crate::core_::cmp::Ordering::Equal
 			}
 		}
 	};
