@@ -313,7 +313,7 @@ macro_rules! construct_fixed_hash {
 
 		impl_byteorder_for_fixed_hash!($name);
 		impl_rand_for_fixed_hash!($name);
-		impl_libc_for_fixed_hash!($name);
+		impl_cmp_for_fixed_hash!($name);
 		impl_rustc_hex_for_fixed_hash!($name);
 		impl_quickcheck_for_fixed_hash!($name);
 	}
@@ -537,7 +537,7 @@ macro_rules! impl_rand_for_fixed_hash {
 #[cfg(not(all(feature = "libc", not(target_os = "unknown"))))]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_libc_for_fixed_hash {
+macro_rules! impl_cmp_for_fixed_hash {
 	( $name:ident ) => {
 		impl $crate::core_::cmp::PartialEq for $name {
 			#[inline]
@@ -565,7 +565,7 @@ macro_rules! impl_libc_for_fixed_hash {
 #[cfg(all(feature = "libc", not(target_os = "unknown")))]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_libc_for_fixed_hash {
+macro_rules! impl_cmp_for_fixed_hash {
 	( $name:ident ) => {
 		impl $crate::core_::cmp::PartialEq for $name {
 			#[inline]
