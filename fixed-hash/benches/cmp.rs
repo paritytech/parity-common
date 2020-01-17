@@ -13,7 +13,6 @@ use criterion::{criterion_group, criterion_main};
 
 use fixed_hash::construct_fixed_hash;
 
-construct_fixed_hash! { pub struct H160(20); }
 construct_fixed_hash! { pub struct H256(32); }
 
 criterion_group!(cmp, eq_equal, eq_nonequal, compare,);
