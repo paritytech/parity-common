@@ -23,8 +23,3 @@ members = [
 	"ethbloom",
 	"parity-util-mem/derive"
 ]
-
-[patch.crates-io]
-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1.git", branch = "dp/chore/update-to-upstream"}
-#secp256k1 = { path = "../parity-secp256k1" }
-
