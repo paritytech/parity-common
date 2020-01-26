@@ -642,8 +642,8 @@ macro_rules! construct_uint {
 
 			/// Zero (additive identity) of this type.
 			#[inline]
-			pub fn zero() -> Self {
-				From::from(0u64)
+			pub const fn zero() -> Self {
+				Self([0; $n_words])
 			}
 
 			/// One (multiplicative identity) of this type.
