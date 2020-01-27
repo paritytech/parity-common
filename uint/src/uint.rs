@@ -370,8 +370,7 @@ macro_rules! construct_uint {
 
 			impl $name {
 				/// Low 2 words (u128)
-				#[inline]
-				pub fn low_u128(&self) -> u128 {
+				pub const fn low_u128(&self) -> u128 {
 					let &$name(ref arr) = self;
 					((arr[1] as u128) << 64) + arr[0] as u128
 				}
@@ -557,8 +556,7 @@ macro_rules! construct_uint {
 			/// # Panics
 			///
 			/// Panics if `index` exceeds the bit width of the number.
-			#[inline]
-			pub fn bit(&self, index: usize) -> bool {
+			pub const fn bit(&self, index: usize) -> bool {
 				let &$name(ref arr) = self;
 				arr[index / 64] & (1 << (index % 64)) != 0
 			}
@@ -1062,18 +1060,18 @@ macro_rules! construct_uint {
 			}
 
 			#[inline(always)]
-			fn mul_u64(a: u64, b: u64, carry: u64) -> (u64, u64) {
-				let (hi, lo) = Self::split_u128(u128::from(a) * u128::from(b) + u128::from(carry));
+			const fn mul_u64(a: u64, b: u64, carry: u64) -> (u64, u64) {
+				let (hi, lo) = Self::split_u128(a as u128 * b as u128 + carry as u128);
 				(lo, hi)
 			}
 
 			#[inline(always)]
-			fn split(a: u64) -> (u64, u64) {
+			const fn split(a: u64) -> (u64, u64) {
 				(a >> 32, a & 0xFFFF_FFFF)
 			}
 
 			#[inline(always)]
-			fn split_u128(a: u128) -> (u64, u64) {
+			const fn split_u128(a: u128) -> (u64, u64) {
 				((a >> 64) as _, (a & 0xFFFFFFFFFFFFFFFF) as _)
 			}
 
