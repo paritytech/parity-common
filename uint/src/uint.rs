@@ -472,15 +472,13 @@ macro_rules! construct_uint {
 			}
 
 			/// Conversion to u32
-			#[inline]
-			pub fn low_u32(&self) -> u32 {
+			pub const fn low_u32(&self) -> u32 {
 				let &$name(ref arr) = self;
 				arr[0] as u32
 			}
 
 			/// Low word (u64)
-			#[inline]
-			pub fn low_u64(&self) -> u64 {
+			pub const fn low_u64(&self) -> u64 {
 				let &$name(ref arr) = self;
 				arr[0]
 			}
@@ -600,8 +598,7 @@ macro_rules! construct_uint {
 			/// # Panics
 			///
 			/// Panics if `index` exceeds the byte width of the number.
-			#[inline]
-			pub fn byte(&self, index: usize) -> u8 {
+			pub const fn byte(&self, index: usize) -> u8 {
 				let &$name(ref arr) = self;
 				(arr[index / 8] >> (((index % 8)) * 8)) as u8
 			}
@@ -641,7 +638,6 @@ macro_rules! construct_uint {
 			}
 
 			/// Zero (additive identity) of this type.
-			#[inline]
 			pub const fn zero() -> Self {
 				Self([0; $n_words])
 			}
