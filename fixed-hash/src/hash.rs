@@ -106,16 +106,19 @@ macro_rules! construct_fixed_hash {
 
 		impl $name {
 			/// Returns a new fixed hash where all bits are set to the given byte.
+			#[inline]
 			pub const fn repeat_byte(byte: u8) -> $name {
 				$name([byte; $n_bytes])
 			}
 
 			/// Returns a new zero-initialized fixed hash.
+			#[inline]
 			pub const fn zero() -> $name {
 				$name::repeat_byte(0u8)
 			}
 
 			/// Returns the size of this hash in bytes.
+			#[inline]
 			pub const fn len_bytes() -> usize {
 				$n_bytes
 			}
@@ -133,6 +136,7 @@ macro_rules! construct_fixed_hash {
 			}
 
 			/// Extracts a reference to the byte array containing the entire fixed hash.
+			#[inline]
 			pub const fn as_fixed_bytes(&self) -> &[u8; $n_bytes] {
 				&self.0
 			}
@@ -144,6 +148,7 @@ macro_rules! construct_fixed_hash {
 			}
 
 			/// Returns the inner bytes array.
+			#[inline]
 			pub const fn to_fixed_bytes(self) -> [u8; $n_bytes] {
 				self.0
 			}
