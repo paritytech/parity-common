@@ -1,0 +1,13 @@
+[package]
+name = "kvdb-async"
+version = "0.1.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+repository = "https://github.com/paritytech/parity-common"
+description = "Generic async key-value trait"
+license = "GPL-3.0"
+edition = "2018"
+
+[dependencies]
+kvdb = { path = "../kvdb", version = "0.3" }
+parity-util-mem = { path = "../parity-util-mem", version = "0.4", default-features = false }
+futures = { version = "0.3" } # TODO: do we need all the default features?

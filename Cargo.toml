@@ -4,6 +4,7 @@ members = [
 	"fixed-hash",
 	"keccak-hash",
 	"kvdb",
+	"kvdb-async",
 	"kvdb-memorydb",
 	"kvdb-rocksdb",
 	"kvdb-shared-tests",
