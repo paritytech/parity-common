@@ -49,6 +49,16 @@ pub trait AsyncKeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 		col: u32,
 		prefix: &'a [u8],
 	) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a>>;
+
+	/// Query statistics.
+	///
+	/// Not all kvdb implementations are able or expected to implement this, so by
+	/// default, empty statistics is returned. Also, not all kvdb implementation
+	/// can return every statistic or configured to do so (some statistics gathering
+	/// may impede the performance and might be off by default).
+	fn io_stats(&self, _kind: IoStatsKind) -> IoStats {
+		IoStats::empty()
+	}
 }
 
 impl<T: ?Sized + KeyValueDB> AsyncKeyValueDB for T {
@@ -70,5 +80,9 @@ impl<T: ?Sized + KeyValueDB> AsyncKeyValueDB for T {
 		prefix: &'a [u8],
 	) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a>> {
 		Box::pin(futures::stream::iter(self.iter_from_prefix(col, prefix)))
+	}
+
+	fn io_stats(&self, kind: IoStatsKind) -> IoStats {
+		KeyValueDB::io_stats(self, kind)
 	}
 }
