@@ -265,19 +265,6 @@ mod tests {
 	use super::Secret;
 	use std::str::FromStr;
 
-	// todo[dvdplm]: move this test to `secret-store`?
-//	#[test]
-//	fn multiplicating_secret_inversion_with_secret_gives_one() {
-//		let secret = Random.generate().secret().clone();
-//		let mut inversion = secret.clone();
-//		inversion.inv().unwrap();
-//		inversion.mul(&secret).unwrap();
-//		assert_eq!(
-//			inversion,
-//			Secret::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap()
-//		);
-//	}
-//
 	#[test]
 	fn secret_pow() {
 		let secret = Random.generate().secret().clone();
