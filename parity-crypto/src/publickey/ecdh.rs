@@ -29,7 +29,6 @@ pub fn agree(secret: &Secret, public: &Public) -> Result<Secret, Error> {
 
 	let publ = key::PublicKey::from_slice(&pdata)?;
 	let sec = key::SecretKey::from_slice(secret.as_bytes())?;
-	// todo[dvdplm]: could go with new_with_hash_no_panic here (unsafe), but without a benchmark I don't see why.
 	let shared = ecdh::SharedSecret::new_with_hash(&publ, &sec, |x, _| {
 		x.into()
 	})?;
