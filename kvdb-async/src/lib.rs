@@ -41,14 +41,14 @@ pub trait AsyncKeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	fn write(&self, transaction: DBTransaction) -> Pin<Box<dyn Future<Output = io::Result<()>> + Send>>;
 
 	/// Iterate over the data for a given column.
-	fn iter<'a>(&'a self, col: u32) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a + Send>>;
+	fn iter<'a>(&'a self, col: u32) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a>>;
 
 	/// Iterate over the data for a given column, starting from a given prefix.
 	fn iter_from_prefix<'a>(
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
-	) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a + Send>>;
+	) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a>>;
 }
 
 impl<T: ?Sized + KeyValueDB> AsyncKeyValueDB for T {
@@ -61,14 +61,14 @@ impl<T: ?Sized + KeyValueDB> AsyncKeyValueDB for T {
 	fn write(&self, transaction: DBTransaction) -> Pin<Box<dyn Future<Output = io::Result<()>> + Send>> {
 		Box::pin(futures::future::ready(self.write(transaction)))
 	}
-	fn iter<'a>(&'a self, col: u32) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a + Send>> {
+	fn iter<'a>(&'a self, col: u32) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a>> {
 		Box::pin(futures::stream::iter(self.iter(col)))
 	}
 	fn iter_from_prefix<'a>(
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
-	) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a + Send>> {
+	) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a>> {
 		Box::pin(futures::stream::iter(self.iter_from_prefix(col, prefix)))
 	}
 }
