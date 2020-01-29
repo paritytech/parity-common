@@ -32,43 +32,43 @@ pub trait AsyncKeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	}
 
 	/// Get a value by key.
-	fn get(&self, col: u32, key: &[u8]) -> Pin<Box<dyn Future<Output = io::Result<Option<DBValue>>>>>;
+	fn get(&self, col: u32, key: &[u8]) -> Pin<Box<dyn Future<Output = io::Result<Option<DBValue>>> + Send>>;
 
 	/// Get a value by partial key.
-	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Pin<Box<dyn Future<Output = Option<Box<[u8]>>>>>;
+	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Pin<Box<dyn Future<Output = Option<Box<[u8]>>> + Send>>;
 
 	/// Write a transaction of changes to the backing store.
-	fn write(&self, transaction: DBTransaction) -> Pin<Box<dyn Future<Output = io::Result<()>>>>;
+	fn write(&self, transaction: DBTransaction) -> Pin<Box<dyn Future<Output = io::Result<()>> + Send>>;
 
 	/// Iterate over the data for a given column.
-	fn iter<'a>(&'a self, col: u32) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a>>;
+	fn iter<'a>(&'a self, col: u32) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a + Send>>;
 
 	/// Iterate over the data for a given column, starting from a given prefix.
 	fn iter_from_prefix<'a>(
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
-	) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a>>;
+	) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a + Send>>;
 }
 
 impl<T: ?Sized + KeyValueDB> AsyncKeyValueDB for T {
-	fn get(&self, col: u32, key: &[u8]) -> Pin<Box<dyn Future<Output = io::Result<Option<DBValue>>>>> {
+	fn get(&self, col: u32, key: &[u8]) -> Pin<Box<dyn Future<Output = io::Result<Option<DBValue>>> + Send>> {
 		Box::pin(futures::future::ready(self.get(col, key)))
 	}
-	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Pin<Box<dyn Future<Output = Option<Box<[u8]>>>>> {
+	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Pin<Box<dyn Future<Output = Option<Box<[u8]>>> + Send>> {
 		Box::pin(futures::future::ready(self.get_by_prefix(col, prefix)))
 	}
-	fn write(&self, transaction: DBTransaction) -> Pin<Box<dyn Future<Output = io::Result<()>>>> {
+	fn write(&self, transaction: DBTransaction) -> Pin<Box<dyn Future<Output = io::Result<()>> + Send>> {
 		Box::pin(futures::future::ready(self.write(transaction)))
 	}
-	fn iter<'a>(&'a self, col: u32) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a>> {
+	fn iter<'a>(&'a self, col: u32) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a + Send>> {
 		Box::pin(futures::stream::iter(self.iter(col)))
 	}
 	fn iter_from_prefix<'a>(
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
-	) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a>> {
+	) -> Pin<Box<dyn Stream<Item = (Box<[u8]>, Box<[u8]>)> + 'a + Send>> {
 		Box::pin(futures::stream::iter(self.iter_from_prefix(col, prefix)))
 	}
 }
