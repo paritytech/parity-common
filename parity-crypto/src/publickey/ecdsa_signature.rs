@@ -21,12 +21,8 @@ use ethereum_types::{H256, H520};
 use rustc_hex::{FromHex, ToHex};
 use secp256k1::key::{PublicKey, SecretKey};
 use secp256k1::{
-	Error as SecpError,
-	Message as SecpMessage,
-	recovery::{
-		RecoverableSignature,
-		RecoveryId
-	},
+	recovery::{RecoverableSignature, RecoveryId},
+	Error as SecpError, Message as SecpMessage,
 };
 use std::cmp::PartialEq;
 use std::fmt;
@@ -232,8 +228,7 @@ pub fn sign(secret: &Secret, message: &Message) -> Result<Signature, Error> {
 /// Performs verification of the signature for the given message with corresponding public key
 pub fn verify_public(public: &Public, signature: &Signature, message: &Message) -> Result<bool, Error> {
 	let context = &SECP256K1;
-	let rsig =
-		RecoverableSignature::from_compact(&signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
+	let rsig = RecoverableSignature::from_compact(&signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
 	let sig = rsig.to_standard();
 
 	let pdata: [u8; 65] = {
@@ -260,8 +255,7 @@ pub fn verify_address(address: &Address, signature: &Signature, message: &Messag
 /// Recovers the public key from the signature for the message
 pub fn recover(signature: &Signature, message: &Message) -> Result<Public, Error> {
 	let context = &SECP256K1;
-	let rsig =
-		RecoverableSignature::from_compact(&signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
+	let rsig = RecoverableSignature::from_compact(&signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
 	let pubkey = context.recover(&SecpMessage::from_slice(&message[..])?, &rsig)?;
 	let serialized = pubkey.serialize_uncompressed();
 

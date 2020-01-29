@@ -76,8 +76,7 @@ pub fn public_negate(public: &mut Public) -> Result<(), Error> {
 
 /// Return the generation point (aka base point) of secp256k1
 pub fn generation_point() -> Public {
-	let public_key =
-		key::PublicKey::from_slice(&BASE_POINT_BYTES).expect("constructed using constants; qed");
+	let public_key = key::PublicKey::from_slice(&BASE_POINT_BYTES).expect("constructed using constants; qed");
 	let mut public = Public::default();
 	set_public(&mut public, &public_key);
 	public

@@ -133,7 +133,8 @@ impl Secret {
 	pub fn dec(&mut self) -> Result<(), Error> {
 		match self.is_zero() {
 			true => {
-				*self = Secret::try_from(super::MINUS_ONE_KEY).expect("Constructing a secret key from a known-good constant works; qed.");
+				*self = Secret::try_from(super::MINUS_ONE_KEY)
+					.expect("Constructing a secret key from a known-good constant works; qed.");
 				Ok(())
 			}
 			false => {
@@ -237,9 +238,9 @@ impl TryFrom<&[u8]> for Secret {
 
 	fn try_from(b: &[u8]) -> Result<Self, Error> {
 		if b.len() != SECP256K1_SECRET_KEY_SIZE {
-			return Err(Error::InvalidSecretKey)
+			return Err(Error::InvalidSecretKey);
 		}
-		Ok(Self { inner: H256::from_slice(b) } )
+		Ok(Self { inner: H256::from_slice(b) })
 	}
 }
 

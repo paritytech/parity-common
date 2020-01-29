@@ -29,16 +29,14 @@ pub fn agree(secret: &Secret, public: &Public) -> Result<Secret, Error> {
 
 	let publ = key::PublicKey::from_slice(&pdata)?;
 	let sec = key::SecretKey::from_slice(secret.as_bytes())?;
-	let shared = ecdh::SharedSecret::new_with_hash(&publ, &sec, |x, _| {
-		x.into()
-	})?;
+	let shared = ecdh::SharedSecret::new_with_hash(&publ, &sec, |x, _| x.into())?;
 
 	Secret::import_key(&shared[0..32]).map_err(|_| Error::Secp(secp256k1::Error::InvalidSecretKey))
 }
 
 #[cfg(test)]
 mod tests {
-	use super::{Secret, Public, agree};
+	use super::{agree, Public, Secret};
 	use std::str::FromStr;
 
 	#[test]
@@ -49,9 +47,6 @@ mod tests {
 		let shared = agree(&secret, &public);
 
 		assert!(shared.is_ok());
-		assert_eq!(
-			shared.unwrap().to_hex(),
-			"28ab6fad6afd854ff27162e0006c3f6bd2daafc0816c85b5dfb05dbb865fa6ac",
-		);
+		assert_eq!(shared.unwrap().to_hex(), "28ab6fad6afd854ff27162e0006c3f6bd2daafc0816c85b5dfb05dbb865fa6ac",);
 	}
 }
