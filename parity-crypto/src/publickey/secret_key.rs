@@ -179,15 +179,6 @@ impl Secret {
 		}
 	}
 
-	/// Inplace inverse secret key (1 / scalar)
-	pub fn inv(&mut self) -> Result<(), Error> {
-		let mut key_secret = self.to_secp256k1_secret()?;
-		key_secret.inv_assign()?;
-
-		*self = key_secret.into();
-		Ok(())
-	}
-
 	/// Compute power of secret key inplace (secret ^ pow).
 	pub fn pow(&mut self, pow: usize) -> Result<(), Error> {
 		if self.is_zero() {
@@ -274,27 +265,19 @@ mod tests {
 	use super::Secret;
 	use std::str::FromStr;
 
-	#[test]
-	fn multiplicating_secret_inversion_with_secret_gives_one() {
-		let secret = Random.generate().secret().clone();
-		let mut inversion = secret.clone();
-		inversion.inv().unwrap();
-		inversion.mul(&secret).unwrap();
-		assert_eq!(
-			inversion,
-			Secret::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap()
-		);
-	}
-
-	#[test]
-	fn secret_inversion_is_reversible_with_inversion() {
-		let secret = Random.generate().secret().clone();
-		let mut inversion = secret.clone();
-		inversion.inv().unwrap();
-		inversion.inv().unwrap();
-		assert_eq!(inversion, secret);
-	}
-
+	// todo[dvdplm]: move this test to `secret-store`?
+//	#[test]
+//	fn multiplicating_secret_inversion_with_secret_gives_one() {
+//		let secret = Random.generate().secret().clone();
+//		let mut inversion = secret.clone();
+//		inversion.inv().unwrap();
+//		inversion.mul(&secret).unwrap();
+//		assert_eq!(
+//			inversion,
+//			Secret::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap()
+//		);
+//	}
+//
 	#[test]
 	fn secret_pow() {
 		let secret = Random.generate().secret().clone();
