@@ -54,5 +54,5 @@ script:
   - cd parity-util-mem/ && cargo test --no-default-features --features=dlmalloc-global && cd ..
   - cd rlp/ && cargo test --no-default-features && cargo check --benches && cd ..
   - cd triehash/ && cargo check --benches && cd ..
-  - cd kvdb-web/ && wasm-pack test --headless --chrome --firefox && cd ..
+  - cd kvdb-web/ && wasm-pack test --headless --firefox && cd ..
 
