@@ -456,7 +456,7 @@ where
 }
 
 
-impl<T> MallocShallowSizeOf for std::collections::BTreeSet<T>
+impl<T> MallocShallowSizeOf for rstd::collections::BTreeSet<T>
 {
 	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		if ops.has_malloc_enclosing_size_of() {
