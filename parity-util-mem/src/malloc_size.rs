@@ -455,9 +455,7 @@ where
 	}
 }
 
-
-impl<T> MallocShallowSizeOf for rstd::collections::BTreeSet<T>
-{
+impl<T> MallocShallowSizeOf for rstd::collections::BTreeSet<T> {
 	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		if ops.has_malloc_enclosing_size_of() {
 			// See implementation for HashSet how this works.
@@ -703,8 +701,8 @@ malloc_size_of_is_0!(std::time::Duration);
 mod tests {
 	use crate::{allocators::new_malloc_size_ops, MallocSizeOf, MallocSizeOfOps};
 	use smallvec::SmallVec;
-	use std::mem;
 	use std::collections::BTreeSet;
+	use std::mem;
 	impl_smallvec!(3);
 
 	#[test]
@@ -759,7 +757,9 @@ mod tests {
 	#[test]
 	fn btree_set() {
 		let mut set = BTreeSet::new();
-		for t in 0..100 { set.insert(vec![t]); }
+		for t in 0..100 {
+			set.insert(vec![t]);
+		}
 		// ~36 per value
 		assert!(crate::malloc_size(&set) > 3000);
 	}
