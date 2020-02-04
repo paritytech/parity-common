@@ -68,6 +68,9 @@ mod malloc_size;
 #[cfg(feature = "ethereum-impls")]
 pub mod ethereum_impls;
 
+#[cfg(feature = "primitive-types")]
+pub mod primitives_impls;
+
 pub use allocators::MallocSizeOfExt;
 pub use malloc_size::{MallocSizeOf, MallocSizeOfOps};
 

@@ -54,9 +54,6 @@ pub use rand;
 #[doc(hidden)]
 pub use quickcheck;
 
-#[cfg(test)]
-extern crate rand_xorshift;
-
 #[macro_use]
 mod hash;
 

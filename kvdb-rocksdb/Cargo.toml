@@ -1,6 +1,6 @@
 [package]
 name = "kvdb-rocksdb"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "kvdb implementation backed by RocksDB"
@@ -27,6 +27,7 @@ parity-util-mem = { path = "../parity-util-mem", version = "0.4", default-featur
 [dev-dependencies]
 alloc_counter = "0.0.4"
 criterion = "0.3"
+ethereum-types = { path = "../ethereum-types" }
 kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.1" }
 rand = "0.7.2"
 tempdir = "0.3.7"

@@ -14,6 +14,7 @@ primitive-types = { path = "../primitive-types", version = "0.6", default-featur
 
 [dev-dependencies]
 tempdir = "0.3.7"
+criterion = "0.3.0"
 
 [features]
 default = ["std"]

@@ -1,45 +1,42 @@
 //!
-//! ```rust
-//! extern crate ethbloom;
-//! #[macro_use] extern crate hex_literal;
+//! ```
+//! use hex_literal::hex;
 //! use ethbloom::{Bloom, Input};
 //!
-//! fn main() {
-//! 	use std::str::FromStr;
-//! 	let bloom = Bloom::from_str(
-//! 		"00000000000000000000000000000000\
-//! 		 00000000100000000000000000000000\
-//! 		 00000000000000000000000000000000\
-//! 		 00000000000000000000000000000000\
-//! 		 00000000000000000000000000000000\
-//! 		 00000000000000000000000000000000\
-//! 		 00000002020000000000000000000000\
-//! 		 00000000000000000000000800000000\
-//! 		 10000000000000000000000000000000\
-//! 		 00000000000000000000001000000000\
-//! 		 00000000000000000000000000000000\
-//! 		 00000000000000000000000000000000\
-//! 		 00000000000000000000000000000000\
-//! 		 00000000000000000000000000000000\
-//! 		 00000000000000000000000000000000\
-//! 		 00000000000000000000000000000000"
-//! 	).unwrap();
-//! 	let address = hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106");
-//! 	let topic = hex!("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc");
+//! use std::str::FromStr;
+//! let bloom = Bloom::from_str(
+//! 	"00000000000000000000000000000000\
+//! 	00000000100000000000000000000000\
+//! 	00000000000000000000000000000000\
+//! 	00000000000000000000000000000000\
+//! 	00000000000000000000000000000000\
+//! 	00000000000000000000000000000000\
+//! 	00000002020000000000000000000000\
+//! 	00000000000000000000000800000000\
+//! 	10000000000000000000000000000000\
+//! 	00000000000000000000001000000000\
+//! 	00000000000000000000000000000000\
+//! 	00000000000000000000000000000000\
+//! 	00000000000000000000000000000000\
+//! 	00000000000000000000000000000000\
+//! 	00000000000000000000000000000000\
+//! 	00000000000000000000000000000000"
+//! ).unwrap();
+//! let address = hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106");
+//! let topic = hex!("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc");
 //!
-//! 	let mut my_bloom = Bloom::default();
-//! 	assert!(!my_bloom.contains_input(Input::Raw(&address)));
-//! 	assert!(!my_bloom.contains_input(Input::Raw(&topic)));
+//! let mut my_bloom = Bloom::default();
+//! assert!(!my_bloom.contains_input(Input::Raw(&address)));
+//! assert!(!my_bloom.contains_input(Input::Raw(&topic)));
 //!
-//! 	my_bloom.accrue(Input::Raw(&address));
-//! 	assert!(my_bloom.contains_input(Input::Raw(&address)));
-//! 	assert!(!my_bloom.contains_input(Input::Raw(&topic)));
+//! my_bloom.accrue(Input::Raw(&address));
+//! assert!(my_bloom.contains_input(Input::Raw(&address)));
+//! assert!(!my_bloom.contains_input(Input::Raw(&topic)));
 //!
-//! 	my_bloom.accrue(Input::Raw(&topic));
-//! 	assert!(my_bloom.contains_input(Input::Raw(&address)));
-//! 	assert!(my_bloom.contains_input(Input::Raw(&topic)));
-//! 	assert_eq!(my_bloom, bloom);
-//! 	}
+//! my_bloom.accrue(Input::Raw(&topic));
+//! assert!(my_bloom.contains_input(Input::Raw(&address)));
+//! assert!(my_bloom.contains_input(Input::Raw(&topic)));
+//! assert_eq!(my_bloom, bloom);
 //! ```
 //!
 
