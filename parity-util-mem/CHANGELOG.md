@@ -7,8 +7,8 @@ The format is based on [Keep a Changelog].
 ## [Unreleased]
 
 ## [0.4.2] - 2020-02-04
-- Implementation of `MallocSizeOf` for BTreeSet.[#325](https://github.com/paritytech/parity-common/pull/325)
-- Split off implementation of `MallocSizeOf` for primitive-types. [#323](https://github.com/paritytech/parity-common/pull/323)
+- Implementation of `MallocSizeOf` for `BTreeSet`. [#325](https://github.com/paritytech/parity-common/pull/325)
+- Split off implementation of `MallocSizeOf` for `primitive-types`. [#323](https://github.com/paritytech/parity-common/pull/323)
 
 ## [0.4.1] - 2020-01-06
 - Implementation of `MallocSizeOf` for SmallVec no longer requires ethereum `ethereum-impls` feature. [#307](https://github.com/paritytech/parity-common/pull/307)

@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.3.1] - 2019-01-06
+- Updated features and feature dependencies. [#307](https://github.com/paritytech/parity-common/pull/307)
+
 ## [0.3.0] - 2019-01-03
 - InMemory key-value database now can report memory used (via `MallocSizeOf`). [#292](https://github.com/paritytech/parity-common/pull/292)
 
