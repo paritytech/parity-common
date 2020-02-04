@@ -455,6 +455,31 @@ where
 	}
 }
 
+impl<T> MallocShallowSizeOf for rstd::collections::BTreeSet<T> {
+	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		if ops.has_malloc_enclosing_size_of() {
+			// See implementation for HashSet how this works.
+			self.iter().next().map_or(0, |t| unsafe { ops.malloc_enclosing_size_of(t) })
+		} else {
+			// An estimate.
+			self.len() * (size_of::<T>() + size_of::<usize>())
+		}
+	}
+}
+
+impl<T> MallocSizeOf for rstd::collections::BTreeSet<T>
+where
+	T: MallocSizeOf,
+{
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		let mut n = self.shallow_size_of(ops);
+		for k in self.iter() {
+			n += k.size_of(ops);
+		}
+		n
+	}
+}
+
 // PhantomData is always 0.
 impl<T> MallocSizeOf for rstd::marker::PhantomData<T> {
 	fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
@@ -676,6 +701,7 @@ malloc_size_of_is_0!(std::time::Duration);
 mod tests {
 	use crate::{allocators::new_malloc_size_ops, MallocSizeOf, MallocSizeOfOps};
 	use smallvec::SmallVec;
+	use std::collections::BTreeSet;
 	use std::mem;
 	impl_smallvec!(3);
 
@@ -726,5 +752,15 @@ mod tests {
 		let mut ops = new_malloc_size_ops();
 		let expected_min_allocs = mem::size_of::<String>() * 4 + "ÖWL".len() + "COW".len() + "PIG".len() + "DUCK".len();
 		assert!(v.size_of(&mut ops) >= expected_min_allocs);
+	}
+
+	#[test]
+	fn btree_set() {
+		let mut set = BTreeSet::new();
+		for t in 0..100 {
+			set.insert(vec![t]);
+		}
+		// ~36 per value
+		assert!(crate::malloc_size(&set) > 3000);
 	}
 }
