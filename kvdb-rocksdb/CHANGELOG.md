@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+
+## [0.4.3] - 2019-02-05
+- Bump parking_lot to 0.10. [#332](https://github.com/paritytech/parity-common/pull/332
+
 ## [0.4.2] - 2019-02-04
 ### Fixes
 - Fixed `iter_from_prefix` being slow. [#326](https://github.com/paritytech/parity-common/pull/326)
