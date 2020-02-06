@@ -18,36 +18,44 @@
 //!
 //! This module should be used to generate trie root hash.
 
-use std::cmp;
-use std::collections::BTreeMap;
-use std::iter::once;
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(feature = "std")]
+mod rstd {
+	pub use std::collections::BTreeMap;
+}
+
+#[cfg(not(feature = "std"))]
+mod rstd {
+	pub use alloc::collections::BTreeMap;
+	pub use alloc::vec::Vec;
+}
+
+use core::cmp;
+use core::iter::once;
+use rstd::*;
 
 use hash_db::Hasher;
 use rlp::RlpStream;
 
 fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
-	first.iter()
-		.zip(second.iter())
-		.position(|(f, s)| f != s)
-		.unwrap_or_else(|| cmp::min(first.len(), second.len()))
+	first.iter().zip(second.iter()).position(|(f, s)| f != s).unwrap_or_else(|| cmp::min(first.len(), second.len()))
 }
 
 /// Generates a trie root hash for a vector of values
 ///
-/// ```rust
-/// extern crate triehash;
-/// extern crate keccak_hasher;
-/// extern crate ethereum_types;
-/// #[macro_use] extern crate hex_literal;
+/// ```
+/// use hex_literal::hex;
 /// use ethereum_types::H256;
 /// use triehash::ordered_trie_root;
 /// use keccak_hasher::KeccakHasher;
 ///
-/// fn main() {
-/// 	let v = &["doe", "reindeer"];
-/// 	let root = H256::from(hex!("e766d5d51b89dc39d981b41bda63248d7abce4f0225eefd023792a540bcffee3"));
-/// 	assert_eq!(ordered_trie_root::<KeccakHasher, _>(v), root.as_ref());
-/// }
+/// let v = &["doe", "reindeer"];
+/// let root = H256::from(hex!("e766d5d51b89dc39d981b41bda63248d7abce4f0225eefd023792a540bcffee3"));
+/// assert_eq!(ordered_trie_root::<KeccakHasher, _>(v), root.as_ref());
 /// ```
 pub fn ordered_trie_root<H, I>(input: I) -> H::Out
 where
@@ -61,25 +69,20 @@ where
 
 /// Generates a trie root hash for a vector of key-value tuples
 ///
-/// ```rust
-/// extern crate triehash;
-/// extern crate ethereum_types;
-/// extern crate keccak_hasher;
-/// #[macro_use] extern crate hex_literal;
+/// ```
+/// use hex_literal::hex;
 /// use triehash::trie_root;
 /// use ethereum_types::H256;
 /// use keccak_hasher::KeccakHasher;
 ///
-/// fn main() {
-/// 	let v = vec![
-/// 		("doe", "reindeer"),
-/// 		("dog", "puppy"),
-/// 		("dogglesworth", "cat"),
-/// 	];
+/// let v = vec![
+/// 	("doe", "reindeer"),
+/// 	("dog", "puppy"),
+/// 	("dogglesworth", "cat"),
+/// ];
 ///
-/// 	let root = H256::from(hex!("8aad789dff2f538bca5d8ea56e8abe10f4c7ba3a5dea95fea4cd6e7c3a1168d3"));
-/// 	assert_eq!(trie_root::<KeccakHasher, _, _, _>(v), root.as_ref());
-/// }
+/// let root = H256::from(hex!("8aad789dff2f538bca5d8ea56e8abe10f4c7ba3a5dea95fea4cd6e7c3a1168d3"));
+/// assert_eq!(trie_root::<KeccakHasher, _, _, _>(v), root.as_ref());
 /// ```
 pub fn trie_root<H, I, A, B>(input: I) -> H::Out
 where
@@ -90,9 +93,7 @@ where
 	<H as hash_db::Hasher>::Out: cmp::Ord,
 {
 	// first put elements into btree to sort them and to remove duplicates
-	let input = input
-		.into_iter()
-		.collect::<BTreeMap<_, _>>();
+	let input = input.into_iter().collect::<BTreeMap<_, _>>();
 
 	let mut nibbles = Vec::with_capacity(input.keys().map(|k| k.as_ref().len()).sum::<usize>() * 2);
 	let mut lens = Vec::with_capacity(input.len() + 1);
@@ -106,9 +107,7 @@ where
 	}
 
 	// then move them to a vector
-	let input = input.into_iter().zip(lens.windows(2))
-		.map(|((_, v), w)| (&nibbles[w[0]..w[1]], v))
-		.collect::<Vec<_>>();
+	let input = input.into_iter().zip(lens.windows(2)).map(|((_, v), w)| (&nibbles[w[0]..w[1]], v)).collect::<Vec<_>>();
 
 	let mut stream = RlpStream::new();
 	hash256rlp::<H, _, _>(&input, 0, &mut stream);
@@ -117,25 +116,20 @@ where
 
 /// Generates a key-hashed (secure) trie root hash for a vector of key-value tuples.
 ///
-/// ```rust
-/// extern crate triehash;
-/// extern crate keccak_hasher;
-/// extern crate ethereum_types;
-/// #[macro_use] extern crate hex_literal;
+/// ```
+/// use hex_literal::hex;
 /// use ethereum_types::H256;
 /// use triehash::sec_trie_root;
 /// use keccak_hasher::KeccakHasher;
 ///
-/// fn main() {
-/// 	let v = vec![
-/// 		("doe", "reindeer"),
-/// 		("dog", "puppy"),
-/// 		("dogglesworth", "cat"),
-/// 	];
+/// let v = vec![
+/// 	("doe", "reindeer"),
+/// 	("dog", "puppy"),
+/// 	("dogglesworth", "cat"),
+/// ];
 ///
-/// 	let root = H256::from(hex!("d4cd937e4a4368d7931a9cf51686b7e10abb3dce38a39000fd7902a092b64585"));
-/// 	assert_eq!(sec_trie_root::<KeccakHasher, _, _, _>(v), root.as_ref());
-/// }
+/// let root = H256::from(hex!("d4cd937e4a4368d7931a9cf51686b7e10abb3dce38a39000fd7902a092b64585"));
+/// assert_eq!(sec_trie_root::<KeccakHasher, _, _, _>(v), root.as_ref());
 /// ```
 pub fn sec_trie_root<H, I, A, B>(input: I) -> H::Out
 where
@@ -209,13 +203,12 @@ where
 	}
 
 	// get length of the longest shared prefix in slice keys
-	let shared_prefix = input.iter()
+	let shared_prefix = input
+		.iter()
 		// skip first tuple
 		.skip(1)
 		// get minimum number of shared nibbles between first and each successive
-		.fold(key.len(), | acc, &(ref k, _) | {
-			cmp::min(shared_prefix_len(key, k.as_ref()), acc)
-		});
+		.fold(key.len(), |acc, &(ref k, _)| cmp::min(shared_prefix_len(key, k.as_ref()), acc));
 
 	// if shared prefix is higher than current prefix append its
 	// new part of the key to the stream
@@ -237,17 +230,15 @@ where
 	// iterate over all possible nibbles
 	for i in 0..16 {
 		// count how many successive elements have same next nibble
-		let len = input
-			.iter()
-			.skip(begin)
-			.take_while(|pair| pair.0.as_ref()[pre_len] == i)
-			.count();
+		let len = input.iter().skip(begin).take_while(|pair| pair.0.as_ref()[pre_len] == i).count();
 
 		// if at least 1 successive element has the same nibble
 		// append their suffixes
 		match len {
-			0 => { stream.append_empty_data(); },
-			_ => hash256aux::<H, _, _>(&input[begin..(begin + len)], pre_len + 1, stream)
+			0 => {
+				stream.append_empty_data();
+			}
+			_ => hash256aux::<H, _, _>(&input[begin..(begin + len)], pre_len + 1, stream),
 		}
 		begin += len;
 	}
@@ -271,16 +262,16 @@ where
 	let out = s.out();
 	match out.len() {
 		0..=31 => stream.append_raw(&out, 1),
-		_ => stream.append(&H::hash(&out).as_ref())
+		_ => stream.append(&H::hash(&out).as_ref()),
 	};
 }
 
 #[cfg(test)]
 mod tests {
-	use super::{trie_root, shared_prefix_len, hex_prefix_encode};
-	use keccak_hasher::KeccakHasher;
+	use super::{hex_prefix_encode, shared_prefix_len, trie_root};
 	use ethereum_types::H256;
 	use hex_literal::hex;
+	use keccak_hasher::KeccakHasher;
 
 	#[test]
 	fn test_hex_prefix_encode() {
@@ -318,9 +309,10 @@ mod tests {
 	#[test]
 	fn simple_test() {
 		assert_eq!(
-			trie_root::<KeccakHasher, _, _, _>(vec![
-				(b"A", b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as &[u8])
-			]),
+			trie_root::<KeccakHasher, _, _, _>(vec![(
+				b"A",
+				b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as &[u8]
+			)]),
 			H256::from(hex!("d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab")).as_ref(),
 		);
 	}
@@ -343,22 +335,22 @@ mod tests {
 
 	#[test]
 	fn test_shared_prefix() {
-		let a = vec![1,2,3,4,5,6];
-		let b = vec![4,2,3,4,5,6];
+		let a = vec![1, 2, 3, 4, 5, 6];
+		let b = vec![4, 2, 3, 4, 5, 6];
 		assert_eq!(shared_prefix_len(&a, &b), 0);
 	}
 
 	#[test]
 	fn test_shared_prefix2() {
-		let a = vec![1,2,3,3,5];
-		let b = vec![1,2,3];
+		let a = vec![1, 2, 3, 3, 5];
+		let b = vec![1, 2, 3];
 		assert_eq!(shared_prefix_len(&a, &b), 3);
 	}
 
 	#[test]
 	fn test_shared_prefix3() {
-		let a = vec![1,2,3,4,5,6];
-		let b = vec![1,2,3,4,5,6];
+		let a = vec![1, 2, 3, 4, 5, 6];
+		let b = vec![1, 2, 3, 4, 5, 6];
 		assert_eq!(shared_prefix_len(&a, &b), 6);
 	}
 }

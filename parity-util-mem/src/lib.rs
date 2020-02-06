@@ -23,9 +23,6 @@
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
-use malloc_size_of_derive as malloc_size_derive;
-
-
 cfg_if::cfg_if! {
 	if #[cfg(all(
 		feature = "jemalloc-global",
@@ -57,13 +54,7 @@ cfg_if::cfg_if! {
 
 pub mod allocators;
 
-#[cfg(any(
-	all(
-		target_os = "macos",
-		not(feature = "jemalloc-global"),
-	),
-	feature = "estimate-heapsize"
-))]
+#[cfg(any(all(target_os = "macos", not(feature = "jemalloc-global"),), feature = "estimate-heapsize"))]
 pub mod sizeof;
 
 /// This is a copy of patched crate `malloc_size_of` as a module.
@@ -71,28 +62,45 @@ pub mod sizeof;
 /// if at some point the trait become standard enough we could use the right way of doing it
 /// by implementing it in our type traits crates. At this time moving this trait to the primitive
 /// types level would impact too much of the dependencies to be easily manageable.
-#[macro_use] mod malloc_size;
+#[macro_use]
+mod malloc_size;
 
 #[cfg(feature = "ethereum-impls")]
-pub mod impls;
+pub mod ethereum_impls;
 
-pub use malloc_size_derive::*;
-pub use malloc_size::{
- 	MallocSizeOfOps,
-	MallocSizeOf,
-};
+#[cfg(feature = "primitive-types")]
+pub mod primitives_impls;
+
 pub use allocators::MallocSizeOfExt;
+pub use malloc_size::{MallocSizeOf, MallocSizeOfOps};
+
+pub use parity_util_mem_derive::*;
+
+/// Heap size of structure.
+///
+/// Structure can be anything that implements MallocSizeOf.
+pub fn malloc_size<T: MallocSizeOf + ?Sized>(t: &T) -> usize {
+	MallocSizeOf::size_of(t, &mut allocators::new_malloc_size_ops())
+}
 
 #[cfg(feature = "std")]
 #[cfg(test)]
 mod test {
+	use super::{malloc_size, MallocSizeOf, MallocSizeOfExt};
 	use std::sync::Arc;
-	use super::MallocSizeOfExt;
 
 	#[test]
 	fn test_arc() {
 		let val = Arc::new("test".to_string());
 		let s = val.malloc_size_of();
 		assert!(s > 0);
+	}
+
+	#[test]
+	fn test_dyn() {
+		trait Augmented: MallocSizeOf {}
+		impl Augmented for Vec<u8> {}
+		let val: Arc<dyn Augmented> = Arc::new(vec![0u8; 1024]);
+		assert!(malloc_size(&*val) > 1000);
 	}
 }

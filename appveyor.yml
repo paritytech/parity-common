@@ -18,11 +18,11 @@ install:
   - cargo -vV
 
 build_script:
-  - cargo check --tests --features "%FEATURES%"
-  - cargo build --all --features "%FEATURES%"
+  - cargo check --tests
+  - cargo build --all
 
 test_script:
-  - cargo test --all --features "%FEATURES%" --exclude uint --exclude fixed-hash
+  - cargo test --all --exclude uint --exclude fixed-hash
   - cd fixed-hash/ && cargo test --all-features && cd ..
   - cd uint/ && cargo test --features=std,quickcheck --release && cd ..
   - cd plain_hasher/ && cargo test --no-default-features && cd ..

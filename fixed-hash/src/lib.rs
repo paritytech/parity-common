@@ -10,7 +10,6 @@
 
 // Re-export liballoc using an alias so that the macros can work without
 // requiring `extern crate alloc` downstream.
-#[cfg(not(feature = "std"))]
 #[doc(hidden)]
 pub extern crate alloc as alloc_;
 
@@ -18,10 +17,6 @@ pub extern crate alloc as alloc_;
 // requiring `use core` downstream.
 #[doc(hidden)]
 pub use core as core_;
-
-#[cfg(all(feature = "libc", not(target_os = "unknown")))]
-#[doc(hidden)]
-pub use libc;
 
 // This disables a warning for unused #[macro_use(..)]
 // which is incorrect since the compiler does not check
@@ -39,10 +34,6 @@ pub use static_assertions::const_assert;
 #[doc(hidden)]
 pub use byteorder;
 
-#[cfg(not(feature = "libc"))]
-#[doc(hidden)]
-pub mod libc {}
-
 #[cfg(feature = "rustc-hex")]
 #[doc(hidden)]
 pub use rustc_hex;
@@ -55,9 +46,6 @@ pub use rand;
 #[doc(hidden)]
 pub use quickcheck;
 
-#[cfg(test)]
-extern crate rand_xorshift;
-
 #[macro_use]
 mod hash;
 
@@ -65,7 +53,7 @@ mod hash;
 mod tests;
 
 #[cfg(feature = "api-dummy")]
-construct_fixed_hash!{
-    /// Go here for an overview of the hash type API.
-    pub struct ApiDummy(32);
+construct_fixed_hash! {
+	/// Go here for an overview of the hash type API.
+	pub struct ApiDummy(32);
 }

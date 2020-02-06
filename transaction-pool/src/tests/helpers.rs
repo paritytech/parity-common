@@ -17,9 +17,9 @@
 use std::cmp;
 use std::collections::HashMap;
 
-use ethereum_types::{H160 as Sender, U256};
-use crate::{pool, scoring, Scoring, ShouldReplace, ReplaceTransaction, Ready, Readiness};
 use super::Transaction;
+use crate::{pool, scoring, Readiness, Ready, ReplaceTransaction, Scoring, ShouldReplace};
+use ethereum_types::{H160 as Sender, U256};
 
 #[derive(Debug, Default)]
 pub struct DummyScoring {
@@ -28,9 +28,7 @@ pub struct DummyScoring {
 
 impl DummyScoring {
 	pub fn always_insert() -> Self {
-		DummyScoring {
-			always_insert: true,
-		}
+		DummyScoring { always_insert: true }
 	}
 }
 
@@ -54,7 +52,12 @@ impl Scoring<Transaction> for DummyScoring {
 		}
 	}
 
-	fn update_scores(&self, txs: &[pool::Transaction<Transaction>], scores: &mut [Self::Score], change: scoring::Change) {
+	fn update_scores(
+		&self,
+		txs: &[pool::Transaction<Transaction>],
+		scores: &mut [Self::Score],
+		change: scoring::Change,
+	) {
 		if let scoring::Change::Event(_) = change {
 			// In case of event reset all scores to 0
 			for i in 0..txs.len() {
@@ -74,7 +77,11 @@ impl Scoring<Transaction> for DummyScoring {
 }
 
 impl ShouldReplace<Transaction> for DummyScoring {
-	fn should_replace(&self, old: &ReplaceTransaction<'_, Transaction>, new: &ReplaceTransaction<'_, Transaction>) -> scoring::Choice {
+	fn should_replace(
+		&self,
+		old: &ReplaceTransaction<'_, Transaction>,
+		new: &ReplaceTransaction<'_, Transaction>,
+	) -> scoring::Choice {
 		if self.always_insert {
 			scoring::Choice::InsertNew
 		} else if new.gas_price > old.gas_price {
@@ -105,7 +112,7 @@ impl Ready<Transaction> for NonceReady {
 			cmp::Ordering::Equal => {
 				*nonce += 1.into();
 				Readiness::Ready
-			},
+			}
 			cmp::Ordering::Less => Readiness::Stale,
 		}
 	}

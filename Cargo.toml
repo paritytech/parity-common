@@ -6,6 +6,7 @@ members = [
 	"kvdb",
 	"kvdb-memorydb",
 	"kvdb-rocksdb",
+	"kvdb-shared-tests",
 	"kvdb-web",
 	"kvdb-sled",
 	"parity-bytes",
@@ -21,4 +22,5 @@ members = [
 	"primitive-types",
 	"ethereum-types",
 	"ethbloom",
+	"parity-util-mem/derive"
 ]

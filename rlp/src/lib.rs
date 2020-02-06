@@ -37,18 +37,18 @@
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
-mod traits;
 mod error;
+mod impls;
 mod rlpin;
 mod stream;
-mod impls;
+mod traits;
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 use core::borrow::Borrow;
 
 pub use self::error::DecoderError;
-pub use self::rlpin::{Rlp, RlpIterator, PayloadInfo, Prototype};
+pub use self::rlpin::{PayloadInfo, Prototype, Rlp, RlpIterator};
 pub use self::stream::RlpStream;
 pub use self::traits::{Decodable, Encodable};
 
@@ -59,43 +59,48 @@ pub const EMPTY_LIST_RLP: [u8; 1] = [0xC0; 1];
 
 /// Shortcut function to decode trusted rlp
 ///
-/// ```rust
-/// extern crate rlp;
-///
-/// fn main () {
-/// 	let data = vec![0x83, b'c', b'a', b't'];
-/// 	let animal: String = rlp::decode(&data).expect("could not decode");
-/// 	assert_eq!(animal, "cat".to_owned());
-/// }
 /// ```
-pub fn decode<T>(bytes: &[u8]) -> Result<T, DecoderError> where T: Decodable {
+/// let data = vec![0x83, b'c', b'a', b't'];
+/// let animal: String = rlp::decode(&data).expect("could not decode");
+/// assert_eq!(animal, "cat".to_owned());
+/// ```
+pub fn decode<T>(bytes: &[u8]) -> Result<T, DecoderError>
+where
+	T: Decodable,
+{
 	let rlp = Rlp::new(bytes);
 	rlp.as_val()
 }
 
-pub fn decode_list<T>(bytes: &[u8]) -> Vec<T> where T: Decodable {
+pub fn decode_list<T>(bytes: &[u8]) -> Vec<T>
+where
+	T: Decodable,
+{
 	let rlp = Rlp::new(bytes);
 	rlp.as_list().expect("trusted rlp should be valid")
 }
 
 /// Shortcut function to encode structure into rlp.
 ///
-/// ```rust
-/// extern crate rlp;
-///
-/// fn main () {
-/// 	let animal = "cat";
-/// 	let out = rlp::encode(&animal);
-/// 	assert_eq!(out, vec![0x83, b'c', b'a', b't']);
-/// }
 /// ```
-pub fn encode<E>(object: &E) -> Vec<u8> where E: Encodable {
+/// let animal = "cat";
+/// let out = rlp::encode(&animal);
+/// assert_eq!(out, vec![0x83, b'c', b'a', b't']);
+/// ```
+pub fn encode<E>(object: &E) -> Vec<u8>
+where
+	E: Encodable,
+{
 	let mut stream = RlpStream::new();
 	stream.append(object);
 	stream.drain()
 }
 
-pub fn encode_list<E, K>(object: &[K]) -> Vec<u8> where E: Encodable, K: Borrow<E> {
+pub fn encode_list<E, K>(object: &[K]) -> Vec<u8>
+where
+	E: Encodable,
+	K: Borrow<E>,
+{
 	let mut stream = RlpStream::new();
 	stream.append_list(object);
 	stream.drain()

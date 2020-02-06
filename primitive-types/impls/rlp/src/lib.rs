@@ -11,10 +11,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[doc(hidden)]
-pub extern crate rlp;
+pub use rlp;
 
 #[doc(hidden)]
-pub extern crate core as core_;
+pub use core as core_;
 
 /// Add RLP serialization support to an integer created by `construct_uint!`.
 #[macro_export]
@@ -42,7 +42,7 @@ macro_rules! impl_uint_rlp {
 				})
 			}
 		}
-	}
+	};
 }
 
 /// Add RLP serialization support to a fixed-sized hash type created by `construct_fixed_hash!`.
@@ -68,5 +68,5 @@ macro_rules! impl_fixed_hash_rlp {
 				})
 			}
 		}
-	}
+	};
 }

@@ -14,8 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::{fmt::{Debug, LowerHex}, sync::Arc};
 use crate::error::Error;
+use std::{
+	fmt::{Debug, LowerHex},
+	sync::Arc,
+};
 
 /// Transaction pool listener.
 ///
@@ -49,7 +52,8 @@ pub trait Listener<T> {
 pub struct NoopListener;
 impl<T> Listener<T> for NoopListener {}
 
-impl<T, A, B> Listener<T> for (A, B) where
+impl<T, A, B> Listener<T> for (A, B)
+where
 	A: Listener<T>,
 	B: Listener<T>,
 {

@@ -9,11 +9,12 @@ license = "GPL-3.0"
 edition = "2018"
 
 [dependencies]
-tiny-keccak = "1.5.0"
+tiny-keccak = { version = "2.0", features = ["keccak"] }
 primitive-types = { path = "../primitive-types", version = "0.6", default-features = false }
 
 [dev-dependencies]
 tempdir = "0.3.7"
+criterion = "0.3.0"
 
 [features]
 default = ["std"]

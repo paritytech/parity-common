@@ -21,20 +21,24 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use plain_hasher::PlainHasher;
 
 fn bench_write_hasher(c: &mut Criterion) {
-	c.bench_function("write_plain_hasher", |b| b.iter(|| {
-		(0..100u8).fold(PlainHasher::default(), |mut old, new| {
-			let bb = [new; 32];
-			old.write(&bb);
-			old
-		});
-	}));
-	c.bench_function("write_default_hasher", |b| b.iter(|| {
-		(0..100u8).fold(DefaultHasher::default(), |mut old, new| {
-			let bb = [new; 32];
-			old.write(&bb);
-			old
-		});
-	}));
+	c.bench_function("write_plain_hasher", |b| {
+		b.iter(|| {
+			(0..100u8).fold(PlainHasher::default(), |mut old, new| {
+				let bb = [new; 32];
+				old.write(&bb);
+				old
+			});
+		})
+	});
+	c.bench_function("write_default_hasher", |b| {
+		b.iter(|| {
+			(0..100u8).fold(DefaultHasher::default(), |mut old, new| {
+				let bb = [new; 32];
+				old.write(&bb);
+				old
+			});
+		})
+	});
 }
 
 criterion_group!(benches, bench_write_hasher);

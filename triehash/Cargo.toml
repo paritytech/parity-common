@@ -1,6 +1,6 @@
 [package]
 name = "triehash"
-version = "0.8.1"
+version = "0.8.2"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "In-memory patricia trie operations"
 repository = "https://github.com/paritytech/parity-common"
@@ -8,16 +8,23 @@ license = "GPL-3.0"
 edition = "2018"
 
 [dependencies]
-hash-db = "0.15.2"
-rlp = { version = "0.4", path = "../rlp" }
+hash-db = { version = "0.15.2", default-features = false }
+rlp = { version = "0.4", path = "../rlp", default-features = false }
 
 [dev-dependencies]
 criterion = "0.3.0"
 keccak-hasher = "0.15.2"
 ethereum-types = { version = "0.8.0", path = "../ethereum-types" }
-tiny-keccak = "1.5.0"
+tiny-keccak = { version = "2.0", features = ["keccak"] }
 trie-standardmap = "0.15.2"
 hex-literal = "0.2.1"
+
+[features]
+default = ["std"]
+std = [
+	"hash-db/std",
+	"rlp/std",
+]
 
 [[bench]]
 name = "triehash"
