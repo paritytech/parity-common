@@ -28,6 +28,6 @@ parity-util-mem = { path = "../parity-util-mem", version = "0.5", default-featur
 alloc_counter = "0.0.4"
 criterion = "0.3"
 ethereum-types = { path = "../ethereum-types" }
-kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.1" }
+kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.2" }
 rand = "0.7.2"
 tempdir = "0.3.7"
