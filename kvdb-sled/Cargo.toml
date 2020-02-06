@@ -10,8 +10,10 @@ edition = "2018"
 
 [dependencies]
 sled = "0.31.0"
-kvdb = { version = "0.1" }
+kvdb = { version = "0.3", path = "../kvdb" }
 log = "0.4.8"
+parity-util-mem = { version = "0.4", default-features = false, path = "../parity-util-mem" }
 
 [dev-dependencies]
 tempdir = "0.3.7"
+kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.1" }

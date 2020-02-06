@@ -23,7 +23,7 @@ use log::warn;
 
 const KB: u64 = 1024;
 const MB: u64 = 1024 * KB;
-const DB_DEFAULT_MEMORY_BUDGET_MB: u64 = 128;
+const DB_DEFAULT_MEMORY_BUDGET_MB: u64 = 1024;
 
 fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<dyn std::error::Error + Send + Sync>> {
 	io::Error::new(io::ErrorKind::Other, e)
@@ -39,15 +39,14 @@ pub struct Database {
 // TODO: docs
 #[derive(Default)]
 pub struct DatabaseConfig {
-	// Number of columns including the default column.
-	pub columns: Option<u8>,
+	pub columns: u32,
 	pub memory_budget_mb: Option<u64>,
 }
 
 impl DatabaseConfig {
-	pub fn with_columns(columns: u8) -> Self {
+	pub fn with_columns(columns: u32) -> Self {
 		Self {
-			columns: Some(columns),
+			columns,
 			memory_budget_mb: None,
 		}
 	}
@@ -59,13 +58,13 @@ impl DatabaseConfig {
 fn to_sled_config(config: &DatabaseConfig, path: &str) -> sled::Config {
 	let conf = sled::Config::default()
 		.path(path)
-		.cache_capacity(config.memory_budget() / 2)
+		.cache_capacity(config.memory_budget())
 		.flush_every_ms(Some(2_000)); // TODO: a random constant
 	// .snapshot_after_ops(100_000);
 	conf
 }
 
-fn col_name(col: u8) -> String {
+fn col_name(col: u32) -> String {
 	format!("col{}", col)
 }
 
@@ -74,7 +73,7 @@ impl Database {
 		let conf = to_sled_config(config, path);
 
 		let db = conf.open()?;
-		let num_columns = config.columns.unwrap_or(1);
+		let num_columns = config.columns;
 		let columns = (0..num_columns)
 			.map(|i| db.open_tree(col_name(i).as_bytes()))
 			.collect::<sled::Result<Vec<_>>>()?;
@@ -86,15 +85,20 @@ impl Database {
 		})
 	}
 
-	/// The number of non-default column families.
-	pub fn num_columns(&self) -> u8 {
-		self.columns.len() as u8 - 1
+	/// The database path.
+	pub fn path(&self) -> &str {
+		&self.path
+	}
+
+	/// The number of column families.
+	pub fn num_columns(&self) -> u32 {
+		self.columns.len() as u32
 	}
 
 	/// Drop a column family.
 	pub fn drop_column(&mut self) -> io::Result<()> {
 		if let Some(col) = self.columns.pop() {
-			let name = col_name(self.columns.len() as u8);
+			let name = col_name(self.num_columns());
 			drop(col);
 			self.db.drop_tree(name.as_bytes()).map_err(other_io_err)?;
 		}
@@ -103,48 +107,34 @@ impl Database {
 
 	/// Add a column family.
 	pub fn add_column(&mut self) -> io::Result<()> {
-		let col = self.columns.len() as u8;
+		let col = self.num_columns();
 		let name = col_name(col);
 		let tree = self.db.open_tree(name.as_bytes()).map_err(other_io_err)?;
 		self.columns.push(tree);
 		Ok(())
 	}
+}
 
-	fn to_sled_column(col: Option<u32>) -> u8 {
-		col.map_or(0, |c| (c + 1) as u8)
+impl parity_util_mem::MallocSizeOf for Database {
+	fn size_of(&self, _ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
+		// TODO
+		(DB_DEFAULT_MEMORY_BUDGET_MB * MB) as usize
 	}
 }
 
 impl KeyValueDB for Database {
-	fn get(&self, col: Option<u32>, key: &[u8]) -> io::Result<Option<DBValue>> {
-		let col = Self::to_sled_column(col);
+	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		self.columns[col as usize]
 			.get(key)
-			.map(|maybe| maybe.map(|ivec| DBValue::from_slice(ivec.as_ref())))
+			.map(|maybe| maybe.map(|ivec| ivec.to_vec()))
 			.map_err(other_io_err)
 	}
 
-	fn get_by_prefix(&self, col: Option<u32>, prefix: &[u8]) -> Option<Box<[u8]>> {
+	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>> {
 		self.iter_from_prefix(col, prefix).next().map(|(_, v)| v)
-		// TODO: an optimized version below works only
-		// in the case of prefix.len() < key.len()
-		//
-		// let col = Self::to_sled_column(col);
-		// self.columns[col as usize]
-		// 	.get_gt(prefix)
-		// 	.ok() // ignore errors
-		// 	.and_then(|maybe| maybe.and_then(|(k, v)| {
-		// 		if k.as_ref().starts_with(prefix) {
-		// 			Some(Box::from(v.as_ref()))
-		// 		} else {
-		// 			None
-		// 		}
-		// 	}))
 	}
 
 	fn write_buffered(&self, tr: DBTransaction) {
-		// REVIEW: not sure if it's semantically correct
-		//         to apply an ACID transaction here
 		let result = self.write(tr);
 		if result.is_err() {
 			warn!(target: "kvdb-sled", "transaction has failed")
@@ -161,12 +151,11 @@ impl KeyValueDB for Database {
 				for op in &tr.ops {
 					match op {
 						DBOp::Insert { col, key, value } => {
-							let col = Self::to_sled_column(*col);
-							columns[col as usize].insert(key.as_ref(), value.as_ref())?;
+							let val = AsRef::<[u8]>::as_ref(&value);
+							columns[*col as usize].insert(key.as_ref(), val)?;
 						},
 						DBOp::Delete { col, key } => {
-							let col = Self::to_sled_column(*col);
-							columns[col as usize].remove(key.as_ref())?;
+							columns[*col as usize].remove(key.as_ref())?;
 						}
 					}
 				}
@@ -178,12 +167,11 @@ impl KeyValueDB for Database {
 					for op in &tr.ops {
 						match op {
 							DBOp::Insert { col, key, value } => {
-								let col = Self::to_sled_column(*col);
-								columns[col as usize].insert(key.as_ref(), value.as_ref())?;
+								let val = AsRef::<[u8]>::as_ref(&value);
+								columns[*col as usize].insert(key.as_ref(), val)?;
 							},
 							DBOp::Delete { col, key } => {
-								let col = Self::to_sled_column(*col);
-								columns[col as usize].remove(key.as_ref())?;
+								columns[*col as usize].remove(key.as_ref())?;
 							}
 						}
 					}
@@ -202,25 +190,23 @@ impl KeyValueDB for Database {
 		Ok(())
 	}
 
-	fn iter<'a>(&'a self, col: Option<u32>) -> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
-		let col = Self::to_sled_column(col);
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
 		let iter = DatabaseIter {
 			inner: self.columns[col as usize].iter(),
 		};
 		Box::new(iter.into_iter())
 	}
 
-	fn iter_from_prefix<'a>(&'a self, col: Option<u32>, prefix: &'a [u8])
+	fn iter_from_prefix<'a>(&'a self, col: u32, prefix: &'a [u8])
 		-> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
 	{
-		let col = Self::to_sled_column(col);
 		let iter = DatabaseIter {
 			inner: self.columns[col as usize].scan_prefix(prefix),
 		};
 		Box::new(iter.into_iter())
 	}
 
-	fn restore(&self, new_db: &str) -> io::Result<()> {
+	fn restore(&self, _new_db: &str) -> io::Result<()> {
 		unimplemented!("TODO")
 	}
 }
@@ -249,8 +235,58 @@ impl Drop for Database {
 
 #[cfg(test)]
 mod tests {
-	use tempdir::TempDir;
 	use super::*;
+	use kvdb_shared_tests as st;
+	use std::io::{self, Read};
+	use tempdir::TempDir;
+
+	fn create(columns: u32) -> io::Result<Database> {
+		let tempdir = TempDir::new("")?;
+		let config = DatabaseConfig::with_columns(columns);
+		Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))
+	}
+
+	#[test]
+	fn get_fails_with_non_existing_column() -> io::Result<()> {
+		let db = create(1)?;
+		st::test_get_fails_with_non_existing_column(&db)
+	}
+
+	#[test]
+	fn put_and_get() -> io::Result<()> {
+		let db = create(1)?;
+		st::test_put_and_get(&db)
+	}
+
+	#[test]
+	fn delete_and_get() -> io::Result<()> {
+		let db = create(1)?;
+		st::test_delete_and_get(&db)
+	}
+
+	#[test]
+	fn iter() -> io::Result<()> {
+		let db = create(1)?;
+		st::test_iter(&db)
+	}
+
+	#[test]
+	fn iter_from_prefix() -> io::Result<()> {
+		let db = create(1)?;
+		st::test_iter_from_prefix(&db)
+	}
+
+	#[test]
+	fn complex() -> io::Result<()> {
+		let db = create(1)?;
+		st::test_complex(&db)
+	}
+
+	#[test]
+	fn stats() -> io::Result<()> {
+		let db = create(3)?;
+		st::test_io_stats(&db)
+	}
 
 	#[test]
 	fn add_columns() {
@@ -298,77 +334,5 @@ mod tests {
 			let db = Database::open(&config, &tempdir).unwrap();
 			assert_eq!(db.num_columns(), 0);
 		}
-	}
-
-	#[test]
-	fn write_clears_buffered_ops() {
-		let tempdir = TempDir::new("sled-test-write_clears_buffered_ops").unwrap().path().to_str().unwrap().to_owned();
-		let config = DatabaseConfig::default();
-		let db = Database::open(&config, &tempdir).unwrap();
-
-		let mut batch = db.transaction();
-		batch.put(None, b"foo", b"bar");
-		db.write_buffered(batch);
-
-		let mut batch = db.transaction();
-		batch.put(None, b"foo", b"baz");
-		db.write(batch).unwrap();
-
-		assert_eq!(db.get(None, b"foo").unwrap().unwrap().as_ref(), b"baz");
-	}
-
-	#[test]
-	fn test_db() {
-		let tempdir = TempDir::new("sled-test-write_clears_buffered_ops").unwrap().path().to_str().unwrap().to_owned();
-		let config = DatabaseConfig::default();
-		let db = Database::open(&config, &tempdir).unwrap();
-		let key1 = b"02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc";
-		let key2 = b"03c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc";
-		let key3 = b"01c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc";
-
-		let mut batch = db.transaction();
-		batch.put(None, key1, b"cat");
-		batch.put(None, key2, b"dog");
-		db.write(batch).unwrap();
-
-		assert_eq!(&*db.get(None, key1).unwrap().unwrap(), b"cat");
-
-		let contents: Vec<_> = db.iter(None).into_iter().collect();
-		assert_eq!(contents.len(), 2);
-		assert!(contents[0].0.to_vec() == key1.to_vec());
-		assert_eq!(&*contents[0].1, b"cat");
-		assert_eq!(contents[1].0.to_vec(), key2.to_vec());
-		assert_eq!(&*contents[1].1, b"dog");
-
-		let mut batch = db.transaction();
-		batch.delete(None, key1);
-		db.write(batch).unwrap();
-
-		assert!(db.get(None, key1).unwrap().is_none());
-
-		let mut batch = db.transaction();
-		batch.put(None, key1, b"cat");
-		db.write(batch).unwrap();
-
-		let mut transaction = db.transaction();
-		transaction.put(None, key3, b"elephant");
-		transaction.delete(None, key1);
-		db.write(transaction).unwrap();
-		assert!(db.get(None, key1).unwrap().is_none());
-		assert_eq!(&*db.get(None, key3).unwrap().unwrap(), b"elephant");
-
-		assert_eq!(&*db.get_by_prefix(None, key3).unwrap(), b"elephant");
-		assert_eq!(&*db.get_by_prefix(None, key2).unwrap(), b"dog");
-
-		let mut transaction = db.transaction();
-		transaction.put(None, key1, b"horse");
-		transaction.delete(None, key3);
-		db.write_buffered(transaction);
-		assert!(db.get(None, key3).unwrap().is_none());
-		assert_eq!(&*db.get(None, key1).unwrap().unwrap(), b"horse");
-
-		db.flush().unwrap();
-		assert!(db.get(None, key3).unwrap().is_none());
-		assert_eq!(&*db.get(None, key1).unwrap().unwrap(), b"horse");
 	}
 }
