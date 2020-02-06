@@ -564,6 +564,36 @@ impl<T: MallocSizeOf> MallocSizeOf for parking_lot::RwLock<T> {
 	}
 }
 
+/// Implement notion of 0 allocation size for some type(s).
+///
+/// if used for generics, by default it will require that generaic arguments
+/// should implement `MallocSizeOf`. This can be avoided with passing "any: "
+/// in front of type list.
+///
+/// ```rust
+/// use parity_util_mem::{malloc_size, malloc_size_of_is_0};
+///
+/// struct Data<P> {
+/// 	phantom: std::marker::PhantomData<P>,
+/// }
+///
+/// malloc_size_of_is_0!(any: Data<P>);
+///
+/// // MallocSizeOf is NOT implemented for [u8; 333]
+/// assert_eq!(malloc_size(&Data::<[u8; 333]> { phantom: std::marker::PhantomData }), 0);
+/// ```
+///
+/// and when no "any: "
+///
+/// use parity_util_mem::{malloc_size, malloc_size_of_is_0};
+///
+/// struct Data<T> { pub T }
+///
+/// // generic argument (`T`) must be `impl MallocSizeOf`
+/// malloc_size_of_is_0!(Data<u8>);
+///
+/// assert_eq!(malloc_size(&Data(0u8), 0);
+/// ```
 #[macro_export]
 macro_rules! malloc_size_of_is_0(
 	($($ty:ty),+) => (
