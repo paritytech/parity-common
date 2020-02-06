@@ -28,7 +28,6 @@ pub mod ecdh;
 pub mod ecies;
 pub mod error;
 
-pub use self::ec_math_utils::public_is_valid;
 pub use self::ecdsa_signature::{recover, sign, verify_address, verify_public, Signature};
 pub use self::error::Error;
 pub use self::extended_keys::{Derivation, DerivationError, ExtendedKeyPair, ExtendedPublic, ExtendedSecret};
@@ -42,14 +41,18 @@ use lazy_static::lazy_static;
 pub use ethereum_types::{Address, Public};
 pub type Message = H256;
 
+/// The number -1 encoded as a secret key
+const MINUS_ONE_KEY: &'static [u8] = &[
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc,
+	0xe6, 0xaf, 0x48, 0xa0, 0x3b, 0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
+];
+
 lazy_static! {
-	pub static ref SECP256K1: secp256k1::Secp256k1 = secp256k1::Secp256k1::new();
+	static ref SECP256K1: secp256k1::Secp256k1<secp256k1::All> = secp256k1::Secp256k1::new();
 }
 
 /// Generates new keypair.
 pub trait Generator {
-	type Error;
-
 	/// Should be called to generate new keypair.
-	fn generate(&mut self) -> Result<KeyPair, Self::Error>;
+	fn generate(&mut self) -> KeyPair;
 }

@@ -27,7 +27,7 @@ const ENC_VERSION: u8 = 0x04;
 ///
 /// Authenticated data may be empty.
 pub fn encrypt(public: &Public, auth_data: &[u8], plain: &[u8]) -> Result<Vec<u8>, Error> {
-	let r = Random.generate()?;
+	let r = Random.generate();
 	let z = ecdh::agree(r.secret(), public)?;
 	let mut key = [0u8; 32];
 	kdf(&z, &[0u8; 0], &mut key);
@@ -122,7 +122,7 @@ mod tests {
 
 	#[test]
 	fn ecies_shared() {
-		let kp = Random.generate().unwrap();
+		let kp = Random.generate();
 		let message = b"So many books, so little time";
 
 		let shared = b"shared";

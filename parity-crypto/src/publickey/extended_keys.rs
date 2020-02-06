@@ -84,7 +84,7 @@ pub struct ExtendedSecret {
 impl ExtendedSecret {
 	/// New extended key from given secret and chain code.
 	pub fn with_code(secret: Secret, chain_code: H256) -> ExtendedSecret {
-		ExtendedSecret { secret: secret, chain_code: chain_code }
+		ExtendedSecret { secret, chain_code }
 	}
 
 	/// New extended key from given secret with the random chain code.
@@ -93,7 +93,7 @@ impl ExtendedSecret {
 	}
 
 	/// New extended key from given secret.
-	/// Chain code will be derived from the secret itself (in a deterministic way).
+	/// Chain code will be derived from the secret itself (deterministically).
 	pub fn new(secret: Secret) -> ExtendedSecret {
 		let chain_code = derivation::chain_code(*secret);
 		ExtendedSecret::with_code(secret, chain_code)
@@ -263,10 +263,9 @@ mod derivation {
 		let mut data = vec![0u8; 33 + T::len()];
 
 		let sec_private =
-			SecretKey::from_slice(&SECP256K1, private_key.as_bytes()).expect("Caller should provide valid private key");
-		let sec_public =
-			PublicKey::from_secret_key(&SECP256K1, &sec_private).expect("Caller should provide valid private key");
-		let public_serialized = sec_public.serialize_vec(&SECP256K1, true);
+			SecretKey::from_slice(private_key.as_bytes()).expect("Caller should provide valid private key");
+		let sec_public = PublicKey::from_secret_key(&SECP256K1, &sec_private);
+		let public_serialized = sec_public.serialize();
 
 		// curve point (compressed public key) --  index
 		//             0.33                    --  33..end
@@ -319,8 +318,8 @@ mod derivation {
 		let mut public_sec_raw = [0u8; 65];
 		public_sec_raw[0] = 4;
 		public_sec_raw[1..65].copy_from_slice(public_key.as_bytes());
-		let public_sec = PublicKey::from_slice(&SECP256K1, &public_sec_raw).map_err(|_| Error::InvalidPoint)?;
-		let public_serialized = public_sec.serialize_vec(&SECP256K1, true);
+		let public_sec = PublicKey::from_slice(&public_sec_raw).map_err(|_| Error::InvalidPoint)?;
+		let public_serialized = public_sec.serialize();
 
 		let mut data = vec![0u8; 33 + T::len()];
 		// curve point (compressed public key) --  index
@@ -339,16 +338,15 @@ mod derivation {
 		if *CURVE_ORDER <= new_private.into_uint() {
 			return Err(Error::MissingIndex);
 		}
-		let new_private_sec = SecretKey::from_slice(&SECP256K1, new_private.as_bytes()).expect(
+		let new_private_sec = SecretKey::from_slice(new_private.as_bytes()).expect(
 			"Private key belongs to the field [0..CURVE_ORDER) (checked above); So initializing can never fail; qed",
 		);
-		let mut new_public = PublicKey::from_secret_key(&SECP256K1, &new_private_sec)
-			.expect("Valid private key produces valid public key");
+		let mut new_public = PublicKey::from_secret_key(&SECP256K1, &new_private_sec);
 
 		// Adding two points on the elliptic curves (combining two public keys)
-		new_public.add_assign(&SECP256K1, &public_sec).expect("Addition of two valid points produce valid point");
+		new_public = new_public.combine(&public_sec).expect("Addition of two valid points produce valid point");
 
-		let serialized = new_public.serialize_vec(&SECP256K1, false);
+		let serialized = new_public.serialize_uncompressed();
 
 		Ok((H512::from_slice(&serialized[1..65]), new_chain_code))
 	}
@@ -367,9 +365,9 @@ mod derivation {
 	}
 
 	pub fn point(secret: H256) -> Result<H512, Error> {
-		let sec = SecretKey::from_slice(&SECP256K1, secret.as_bytes()).map_err(|_| Error::InvalidPoint)?;
-		let public_sec = PublicKey::from_secret_key(&SECP256K1, &sec).map_err(|_| Error::InvalidPoint)?;
-		let serialized = public_sec.serialize_vec(&SECP256K1, false);
+		let sec = SecretKey::from_slice(secret.as_bytes()).map_err(|_| Error::InvalidPoint)?;
+		let public_sec = PublicKey::from_secret_key(&SECP256K1, &sec);
+		let serialized = public_sec.serialize_uncompressed();
 		Ok(H512::from_slice(&serialized[1..65]))
 	}
 
@@ -490,7 +488,7 @@ mod tests {
 	}
 
 	#[test]
-	fn match_() {
+	fn test_key_derivation() {
 		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let extended_secret = ExtendedSecret::with_code(secret.clone(), H256::from_low_u64_be(1));
 		let extended_public = ExtendedPublic::from_secret(&extended_secret).expect("Extended public should be created");
