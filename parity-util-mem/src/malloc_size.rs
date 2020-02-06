@@ -575,6 +575,16 @@ macro_rules! malloc_size_of_is_0(
                 }
             }
         )+
+	);
+	(any: $($ty:ident<$($gen:ident),+>),+) => (
+        $(
+        impl<$($gen),+> $crate::MallocSizeOf for $ty<$($gen),+> {
+            #[inline(always)]
+            fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
+                0
+            }
+        }
+        )+
     );
     ($($ty:ident<$($gen:ident),+>),+) => (
         $(
@@ -585,7 +595,7 @@ macro_rules! malloc_size_of_is_0(
             }
         }
         )+
-    );
+	);
 );
 
 malloc_size_of_is_0!(bool, char, str);
@@ -762,5 +772,17 @@ mod tests {
 		}
 		// ~36 per value
 		assert!(crate::malloc_size(&set) > 3000);
+	}
+
+	#[test]
+	fn special_malloc_size_of_0() {
+		struct Data<P> {
+			phantom: std::marker::PhantomData<P>,
+		}
+
+		malloc_size_of_is_0!(any: Data<P>);
+
+		// MallocSizeOf is not implemented for [u8; 333]
+		assert_eq!(crate::malloc_size(&Data::<[u8; 333]> { phantom: std::marker::PhantomData }), 0);
 	}
 }
