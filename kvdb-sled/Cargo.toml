@@ -9,7 +9,7 @@ license = "GPL-3.0"
 edition = "2018"
 
 [dependencies]
-sled = "0.29.1"
+sled = "0.31.0"
 kvdb = { version = "0.1" }
 log = "0.4.8"
 
