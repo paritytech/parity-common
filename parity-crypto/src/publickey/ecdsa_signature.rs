@@ -20,7 +20,10 @@ use super::{public_to_address, Address, Error, Message, Public, Secret, SECP256K
 use ethereum_types::{H256, H520};
 use rustc_hex::{FromHex, ToHex};
 use secp256k1::key::{PublicKey, SecretKey};
-use secp256k1::{Error as SecpError, Message as SecpMessage, RecoverableSignature, RecoveryId};
+use secp256k1::{
+	recovery::{RecoverableSignature, RecoveryId},
+	Error as SecpError, Message as SecpMessage,
+};
 use std::cmp::PartialEq;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -208,12 +211,12 @@ impl DerefMut for Signature {
 }
 
 /// Signs message with the given secret key.
-/// Returns the corresponding signature
+/// Returns the corresponding signature.
 pub fn sign(secret: &Secret, message: &Message) -> Result<Signature, Error> {
 	let context = &SECP256K1;
-	let sec = SecretKey::from_slice(context, secret.as_ref())?;
-	let s = context.sign_recoverable(&SecpMessage::from_slice(&message[..])?, &sec)?;
-	let (rec_id, data) = s.serialize_compact(context);
+	let sec = SecretKey::from_slice(secret.as_ref())?;
+	let s = context.sign_recoverable(&SecpMessage::from_slice(&message[..])?, &sec);
+	let (rec_id, data) = s.serialize_compact();
 	let mut data_arr = [0; 65];
 
 	// no need to check if s is low, it always is
@@ -225,9 +228,8 @@ pub fn sign(secret: &Secret, message: &Message) -> Result<Signature, Error> {
 /// Performs verification of the signature for the given message with corresponding public key
 pub fn verify_public(public: &Public, signature: &Signature, message: &Message) -> Result<bool, Error> {
 	let context = &SECP256K1;
-	let rsig =
-		RecoverableSignature::from_compact(context, &signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
-	let sig = rsig.to_standard(context);
+	let rsig = RecoverableSignature::from_compact(&signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
+	let sig = rsig.to_standard();
 
 	let pdata: [u8; 65] = {
 		let mut temp = [4u8; 65];
@@ -235,7 +237,7 @@ pub fn verify_public(public: &Public, signature: &Signature, message: &Message) 
 		temp
 	};
 
-	let publ = PublicKey::from_slice(context, &pdata)?;
+	let publ = PublicKey::from_slice(&pdata)?;
 	match context.verify(&SecpMessage::from_slice(&message[..])?, &sig, &publ) {
 		Ok(_) => Ok(true),
 		Err(SecpError::IncorrectSignature) => Ok(false),
@@ -253,10 +255,9 @@ pub fn verify_address(address: &Address, signature: &Signature, message: &Messag
 /// Recovers the public key from the signature for the message
 pub fn recover(signature: &Signature, message: &Message) -> Result<Public, Error> {
 	let context = &SECP256K1;
-	let rsig =
-		RecoverableSignature::from_compact(context, &signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
+	let rsig = RecoverableSignature::from_compact(&signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
 	let pubkey = context.recover(&SecpMessage::from_slice(&message[..])?, &rsig)?;
-	let serialized = pubkey.serialize_vec(context, false);
+	let serialized = pubkey.serialize_uncompressed();
 
 	let mut public = Public::default();
 	public.as_bytes_mut().copy_from_slice(&serialized[1..65]);
@@ -272,9 +273,9 @@ mod tests {
 	#[test]
 	fn vrs_conversion() {
 		// given
-		let keypair = Random.generate().unwrap();
-		let message = Message::default();
-		let signature = sign(keypair.secret(), &message).unwrap();
+		let keypair = Random.generate();
+		let message = Message::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap();
+		let signature = sign(keypair.secret(), &message).expect("can sign a non-zero message");
 
 		// when
 		let vrs = signature.clone().into_electrum();
@@ -286,9 +287,9 @@ mod tests {
 
 	#[test]
 	fn signature_to_and_from_str() {
-		let keypair = Random.generate().unwrap();
-		let message = Message::default();
-		let signature = sign(keypair.secret(), &message).unwrap();
+		let keypair = Random.generate();
+		let message = Message::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap();
+		let signature = sign(keypair.secret(), &message).expect("can sign a non-zero message");
 		let string = format!("{}", signature);
 		let deserialized = Signature::from_str(&string).unwrap();
 		assert_eq!(signature, deserialized);
@@ -296,25 +297,25 @@ mod tests {
 
 	#[test]
 	fn sign_and_recover_public() {
-		let keypair = Random.generate().unwrap();
-		let message = Message::default();
+		let keypair = Random.generate();
+		let message = Message::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap();
 		let signature = sign(keypair.secret(), &message).unwrap();
 		assert_eq!(keypair.public(), &recover(&signature, &message).unwrap());
 	}
 
 	#[test]
 	fn sign_and_verify_public() {
-		let keypair = Random.generate().unwrap();
-		let message = Message::default();
-		let signature = sign(keypair.secret(), &message).unwrap();
+		let keypair = Random.generate();
+		let message = Message::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap();
+		let signature = sign(keypair.secret(), &message).expect("can sign a non-zero message");
 		assert!(verify_public(keypair.public(), &signature, &message).unwrap());
 	}
 
 	#[test]
 	fn sign_and_verify_address() {
-		let keypair = Random.generate().unwrap();
-		let message = Message::default();
-		let signature = sign(keypair.secret(), &message).unwrap();
+		let keypair = Random.generate();
+		let message = Message::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap();
+		let signature = sign(keypair.secret(), &message).expect("can sign a non-zero message");
 		assert!(verify_address(&keypair.address(), &signature, &message).unwrap());
 	}
 }

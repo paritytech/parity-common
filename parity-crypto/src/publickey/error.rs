@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Module specific errors
+//! Module specific errors.
 
 use crate::error::SymmError;
 use std::{error::Error as StdError, fmt, result};
