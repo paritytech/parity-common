@@ -1,6 +1,6 @@
 [package]
 name = "parity-util-mem"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "Collection of memory related utilities"
