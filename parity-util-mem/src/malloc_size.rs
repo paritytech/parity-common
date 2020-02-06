@@ -566,35 +566,35 @@ impl<T: MallocSizeOf> MallocSizeOf for parking_lot::RwLock<T> {
 
 #[macro_export]
 macro_rules! malloc_size_of_is_0(
-    ($($ty:ty),+) => (
-        $(
-            impl $crate::MallocSizeOf for $ty {
-                #[inline(always)]
-                fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
-                    0
-                }
-            }
-        )+
+	($($ty:ty),+) => (
+		$(
+			impl $crate::MallocSizeOf for $ty {
+				#[inline(always)]
+				fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
+					0
+				}
+			}
+		)+
 	);
 	(any: $($ty:ident<$($gen:ident),+>),+) => (
-        $(
-        impl<$($gen),+> $crate::MallocSizeOf for $ty<$($gen),+> {
-            #[inline(always)]
-            fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
-                0
-            }
-        }
-        )+
-    );
-    ($($ty:ident<$($gen:ident),+>),+) => (
-        $(
-        impl<$($gen: $crate::MallocSizeOf),+> $crate::MallocSizeOf for $ty<$($gen),+> {
-            #[inline(always)]
-            fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
-                0
-            }
-        }
-        )+
+		$(
+		impl<$($gen),+> $crate::MallocSizeOf for $ty<$($gen),+> {
+			#[inline(always)]
+			fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
+				0
+			}
+		}
+		)+
+	);
+	($($ty:ident<$($gen:ident),+>),+) => (
+		$(
+		impl<$($gen: $crate::MallocSizeOf),+> $crate::MallocSizeOf for $ty<$($gen),+> {
+			#[inline(always)]
+			fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
+				0
+			}
+		}
+		)+
 	);
 );
 
