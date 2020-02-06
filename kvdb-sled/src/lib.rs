@@ -237,13 +237,14 @@ impl Drop for Database {
 mod tests {
 	use super::*;
 	use kvdb_shared_tests as st;
-	use std::io::{self, Read};
+	use std::io;
 	use tempdir::TempDir;
 
 	fn create(columns: u32) -> io::Result<Database> {
 		let tempdir = TempDir::new("")?;
 		let config = DatabaseConfig::with_columns(columns);
 		Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))
+			.map_err(other_io_err)
 	}
 
 	#[test]
