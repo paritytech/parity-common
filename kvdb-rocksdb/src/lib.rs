@@ -498,7 +498,7 @@ impl Database {
 		// We're not using "Prefix Seek" mode, so the iterator will return
 		// keys not starting with the given prefix as well,
 		// see https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes
-		optional.into_iter().flat_map(identity).filter(move |(k, _)| k.starts_with(prefix))
+		optional.into_iter().flat_map(identity).take_while(move |(k, _)| k.starts_with(prefix))
 	}
 
 	/// Close the database

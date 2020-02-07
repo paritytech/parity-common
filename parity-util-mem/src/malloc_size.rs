@@ -455,6 +455,31 @@ where
 	}
 }
 
+impl<T> MallocShallowSizeOf for rstd::collections::BTreeSet<T> {
+	fn shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		if ops.has_malloc_enclosing_size_of() {
+			// See implementation for HashSet how this works.
+			self.iter().next().map_or(0, |t| unsafe { ops.malloc_enclosing_size_of(t) })
+		} else {
+			// An estimate.
+			self.len() * (size_of::<T>() + size_of::<usize>())
+		}
+	}
+}
+
+impl<T> MallocSizeOf for rstd::collections::BTreeSet<T>
+where
+	T: MallocSizeOf,
+{
+	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+		let mut n = self.shallow_size_of(ops);
+		for k in self.iter() {
+			n += k.size_of(ops);
+		}
+		n
+	}
+}
+
 // PhantomData is always 0.
 impl<T> MallocSizeOf for rstd::marker::PhantomData<T> {
 	fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
@@ -539,28 +564,68 @@ impl<T: MallocSizeOf> MallocSizeOf for parking_lot::RwLock<T> {
 	}
 }
 
+/// Implement notion of 0 allocation size for some type(s).
+///
+/// if used for generics, by default it will require that generaic arguments
+/// should implement `MallocSizeOf`. This can be avoided with passing "any: "
+/// in front of type list.
+///
+/// ```rust
+/// use parity_util_mem::{malloc_size, malloc_size_of_is_0};
+///
+/// struct Data<P> {
+/// 	phantom: std::marker::PhantomData<P>,
+/// }
+///
+/// malloc_size_of_is_0!(any: Data<P>);
+///
+/// // MallocSizeOf is NOT implemented for [u8; 333]
+/// assert_eq!(malloc_size(&Data::<[u8; 333]> { phantom: std::marker::PhantomData }), 0);
+/// ```
+///
+/// and when no "any: "
+///
+/// use parity_util_mem::{malloc_size, malloc_size_of_is_0};
+///
+/// struct Data<T> { pub T }
+///
+/// // generic argument (`T`) must be `impl MallocSizeOf`
+/// malloc_size_of_is_0!(Data<u8>);
+///
+/// assert_eq!(malloc_size(&Data(0u8), 0);
+/// ```
 #[macro_export]
 macro_rules! malloc_size_of_is_0(
-    ($($ty:ty),+) => (
-        $(
-            impl $crate::MallocSizeOf for $ty {
-                #[inline(always)]
-                fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
-                    0
-                }
-            }
-        )+
-    );
-    ($($ty:ident<$($gen:ident),+>),+) => (
-        $(
-        impl<$($gen: $crate::MallocSizeOf),+> $crate::MallocSizeOf for $ty<$($gen),+> {
-            #[inline(always)]
-            fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
-                0
-            }
-        }
-        )+
-    );
+	($($ty:ty),+) => (
+		$(
+			impl $crate::MallocSizeOf for $ty {
+				#[inline(always)]
+				fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
+					0
+				}
+			}
+		)+
+	);
+	(any: $($ty:ident<$($gen:ident),+>),+) => (
+		$(
+		impl<$($gen),+> $crate::MallocSizeOf for $ty<$($gen),+> {
+			#[inline(always)]
+			fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
+				0
+			}
+		}
+		)+
+	);
+	($($ty:ident<$($gen:ident),+>),+) => (
+		$(
+		impl<$($gen: $crate::MallocSizeOf),+> $crate::MallocSizeOf for $ty<$($gen),+> {
+			#[inline(always)]
+			fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
+				0
+			}
+		}
+		)+
+	);
 );
 
 malloc_size_of_is_0!(bool, char, str);
@@ -676,6 +741,7 @@ malloc_size_of_is_0!(std::time::Duration);
 mod tests {
 	use crate::{allocators::new_malloc_size_ops, MallocSizeOf, MallocSizeOfOps};
 	use smallvec::SmallVec;
+	use std::collections::BTreeSet;
 	use std::mem;
 	impl_smallvec!(3);
 
@@ -726,5 +792,27 @@ mod tests {
 		let mut ops = new_malloc_size_ops();
 		let expected_min_allocs = mem::size_of::<String>() * 4 + "ÖWL".len() + "COW".len() + "PIG".len() + "DUCK".len();
 		assert!(v.size_of(&mut ops) >= expected_min_allocs);
+	}
+
+	#[test]
+	fn btree_set() {
+		let mut set = BTreeSet::new();
+		for t in 0..100 {
+			set.insert(vec![t]);
+		}
+		// ~36 per value
+		assert!(crate::malloc_size(&set) > 3000);
+	}
+
+	#[test]
+	fn special_malloc_size_of_0() {
+		struct Data<P> {
+			phantom: std::marker::PhantomData<P>,
+		}
+
+		malloc_size_of_is_0!(any: Data<P>);
+
+		// MallocSizeOf is not implemented for [u8; 333]
+		assert_eq!(crate::malloc_size(&Data::<[u8; 333]> { phantom: std::marker::PhantomData }), 0);
 	}
 }

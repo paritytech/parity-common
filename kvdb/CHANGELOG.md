@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog].
 ### Breaking
 - Removed `write_buffered` and `flush` methods. [#313](https://github.com/paritytech/parity-common/pull/313) 
 
+## [0.4.0] - 2019-01-06
+- Bump parking_lot to 0.10. [#332](https://github.com/paritytech/parity-common/pull/332)
+
+## [0.3.1] - 2019-01-06
+- Updated features and feature dependencies. [#307](https://github.com/paritytech/parity-common/pull/307)
+
 ## [0.3.0] - 2020-01-03
 - I/O statistics API. [#294](https://github.com/paritytech/parity-common/pull/294)
 - Removed `KeyValueDBHandler` trait. [#304](https://github.com/paritytech/parity-common/pull/304)

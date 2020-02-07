@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Key pair (public + secrect) description
+//! Key pair (public + secret) description.
 
 use super::{Address, Error, Public, Secret, SECP256K1};
 use crate::Keccak256;
@@ -48,14 +48,14 @@ impl KeyPair {
 	/// Create a pair from secret key
 	pub fn from_secret(secret: Secret) -> Result<KeyPair, Error> {
 		let context = &SECP256K1;
-		let s: key::SecretKey = key::SecretKey::from_slice(context, &secret[..])?;
-		let pub_key = key::PublicKey::from_secret_key(context, &s)?;
-		let serialized = pub_key.serialize_vec(context, false);
+		let s: key::SecretKey = key::SecretKey::from_slice(&secret[..])?;
+		let pub_key = key::PublicKey::from_secret_key(context, &s);
+		let serialized = pub_key.serialize_uncompressed();
 
 		let mut public = Public::default();
 		public.as_bytes_mut().copy_from_slice(&serialized[1..65]);
 
-		let keypair = KeyPair { secret: secret, public: public };
+		let keypair = KeyPair { secret, public };
 
 		Ok(keypair)
 	}
@@ -67,8 +67,7 @@ impl KeyPair {
 
 	/// Copies a pair from another one
 	pub fn from_keypair(sec: key::SecretKey, publ: key::PublicKey) -> Self {
-		let context = &SECP256K1;
-		let serialized = publ.serialize_vec(context, false);
+		let serialized = publ.serialize_uncompressed();
 		let secret = Secret::from(sec);
 		let mut public = Public::default();
 		public.as_bytes_mut().copy_from_slice(&serialized[1..65]);

@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog].
 ### Breaking
 - Updated to the new `kvdb` interface. [#313](https://github.com/paritytech/parity-common/pull/313) 
 
+## [0.4.0] - 2019-02-05
+- Bump parking_lot to 0.10. [#332](https://github.com/paritytech/parity-common/pull/332)
+
+## [0.3.1] - 2019-01-06
+- Updated features and feature dependencies. [#307](https://github.com/paritytech/parity-common/pull/307)
+
 ## [0.3.0] - 2019-01-03
 - InMemory key-value database now can report memory used (via `MallocSizeOf`). [#292](https://github.com/paritytech/parity-common/pull/292)
 

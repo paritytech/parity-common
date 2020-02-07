@@ -9,6 +9,16 @@ The format is based on [Keep a Changelog].
 - Updated to the new `kvdb` interface. [#313](https://github.com/paritytech/parity-common/pull/313) 
 
 
+## [0.5.0] - 2019-02-05
+- Bump parking_lot to 0.10. [#332](https://github.com/paritytech/parity-common/pull/332
+
+## [0.4.2] - 2019-02-04
+### Fixes
+- Fixed `iter_from_prefix` being slow. [#326](https://github.com/paritytech/parity-common/pull/326)
+
+## [0.4.1] - 2019-01-06
+- Updated features and feature dependencies. [#307](https://github.com/paritytech/parity-common/pull/307)
+
 ## [0.4.0] - 2019-01-03
 - Add I/O statistics for RocksDB. [#294](https://github.com/paritytech/parity-common/pull/294)
 - Support querying memory footprint via `MallocSizeOf` trait. [#292](https://github.com/paritytech/parity-common/pull/292)
