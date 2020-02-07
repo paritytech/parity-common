@@ -585,6 +585,7 @@ impl<T: MallocSizeOf> MallocSizeOf for parking_lot::RwLock<T> {
 ///
 /// and when no "any: "
 ///
+/// ```rust
 /// use parity_util_mem::{malloc_size, malloc_size_of_is_0};
 ///
 /// struct Data<T> { pub T }
