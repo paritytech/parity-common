@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.5.1] - 2019-02-05
+- Add different mode for malloc_size_of_is_0 macro dealing with generics #334. [#332](https://github.com/paritytech/parity-common/pull/334)
+
+## [0.5.0] - 2019-02-05
+- Bump parking_lot to 0.10. [#332](https://github.com/paritytech/parity-common/pull/332)
+
 ## [0.4.2] - 2020-02-04
 - Implementation of `MallocSizeOf` for `BTreeSet`. [#325](https://github.com/paritytech/parity-common/pull/325)
 - Split off implementation of `MallocSizeOf` for `primitive-types`. [#323](https://github.com/paritytech/parity-common/pull/323)
