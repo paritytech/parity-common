@@ -588,12 +588,12 @@ impl<T: MallocSizeOf> MallocSizeOf for parking_lot::RwLock<T> {
 /// ```rust
 /// use parity_util_mem::{malloc_size, malloc_size_of_is_0};
 ///
-/// struct Data<T>(pub T)
+/// struct Data<T>(pub T);
 ///
 /// // generic argument (`T`) must be `impl MallocSizeOf`
 /// malloc_size_of_is_0!(Data<u8>);
 ///
-/// assert_eq!(malloc_size(&Data(0u8), 0);
+/// assert_eq!(malloc_size(&Data(0u8)), 0);
 /// ```
 #[macro_export]
 macro_rules! malloc_size_of_is_0(
