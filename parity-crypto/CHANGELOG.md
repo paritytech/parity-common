@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.5.0] - 2020-01-08
+## [0.5.0] - 2020-02-08
 - Remove `inv()` from `SecretKey` (breaking) (https://github.com/paritytech/parity-common/pull/258)
 - `Generate::generate()` does not return error (https://github.com/paritytech/parity-common/pull/258)
 - `Secp256k1` is no longer exported (https://github.com/paritytech/parity-common/pull/258)
