@@ -13,4 +13,4 @@ The format is based on [Keep a Changelog].
 - Remove `public_is_valid()` as it is now impossible to create invalid public keys (https://github.com/paritytech/parity-common/pull/258)
 - 0-valued `Secp::Message`s are disallowed (signatures on them are forgeable for all keys) (https://github.com/paritytech/parity-common/pull/258) 
 - Switch to upstream `rust-secp256k1` at v0.17.2 (https://github.com/paritytech/parity-common/pull/258)
-- remove unused dependency `rustc_hex` (https://github.com/paritytech/parity-common/pull/337)
+- make `rustc_hex` dependency optional (https://github.com/paritytech/parity-common/pull/337)
