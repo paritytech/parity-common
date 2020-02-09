@@ -325,12 +325,16 @@ fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
 	// Set cache size as recommended by
 	// https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
 	let cache_size = config.memory_budget() / 3;
-	block_opts.set_lru_cache(cache_size);
-	// "index and filter blocks will be stored in block cache, together with all other data blocks."
-	// See: https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#indexes-and-filter-blocks
-	block_opts.set_cache_index_and_filter_blocks(true);
-	// Don't evict L0 filter/index blocks from the cache
-	block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
+	if cache_size == 0 {
+		block_opts.disable_cache()
+	} else {
+		block_opts.set_lru_cache(cache_size);
+		// "index and filter blocks will be stored in block cache, together with all other data blocks."
+		// See: https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#indexes-and-filter-blocks
+		block_opts.set_cache_index_and_filter_blocks(true);
+		// Don't evict L0 filter/index blocks from the cache
+		block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
+	}
 	block_opts.set_bloom_filter(10, true);
 
 	block_opts
