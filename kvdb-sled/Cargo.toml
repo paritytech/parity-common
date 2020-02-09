@@ -16,4 +16,4 @@ parity-util-mem = { version = "0.5", default-features = false }
 
 [dev-dependencies]
 tempdir = "0.3.7"
-kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.2" }
+kvdb-shared-tests = { version = "0.2" }

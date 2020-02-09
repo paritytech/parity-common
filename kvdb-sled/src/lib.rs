@@ -69,7 +69,11 @@ fn col_name(col: u32) -> String {
 }
 
 impl Database {
-	pub fn open(config: &DatabaseConfig, path: &str) -> sled::Result<Database> {
+	pub fn open(config: &DatabaseConfig, path: &str) -> io::Result<Database> {
+		Database::open_with_sled_error(config, path).map_err(other_io_err)
+	}
+
+	fn open_with_sled_error(config: &DatabaseConfig, path: &str) -> sled::Result<Database> {
 		let conf = to_sled_config(config, path);
 
 		let db = conf.open()?;
@@ -254,7 +258,6 @@ mod tests {
 		let tempdir = TempDir::new("")?;
 		let config = DatabaseConfig::with_columns(columns);
 		Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))
-			.map_err(other_io_err)
 	}
 
 	#[test]
