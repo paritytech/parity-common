@@ -236,7 +236,11 @@ impl MallocSizeOf for DBAndColumns {
 	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
 		let mut total = self.column_names.size_of(ops)
 			// we have at least one column always, so we can call property on it
-			+ self.static_property_or_warn(0, "rocksdb.block-cache-usage");
+			+ self.db
+				.property_int_value_cf(self.cf(0), "rocksdb.block-cache-usage")
+				.unwrap_or(Some(0))
+				.map(|x| x as usize)
+				.unwrap_or(0);
 
 		for v in 0..self.column_names.len() {
 			total += self.static_property_or_warn(v, "rocksdb.estimate-table-readers-mem");
@@ -325,12 +329,16 @@ fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
 	// Set cache size as recommended by
 	// https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
 	let cache_size = config.memory_budget() / 3;
-	block_opts.set_lru_cache(cache_size);
-	// "index and filter blocks will be stored in block cache, together with all other data blocks."
-	// See: https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#indexes-and-filter-blocks
-	block_opts.set_cache_index_and_filter_blocks(true);
-	// Don't evict L0 filter/index blocks from the cache
-	block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
+	if cache_size == 0 {
+		block_opts.disable_cache()
+	} else {
+		block_opts.set_lru_cache(cache_size);
+		// "index and filter blocks will be stored in block cache, together with all other data blocks."
+		// See: https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#indexes-and-filter-blocks
+		block_opts.set_cache_index_and_filter_blocks(true);
+		// Don't evict L0 filter/index blocks from the cache
+		block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
+	}
 	block_opts.set_bloom_filter(10, true);
 
 	block_opts
