@@ -18,6 +18,10 @@ pub extern crate alloc as alloc_;
 #[doc(hidden)]
 pub use core as core_;
 
+#[cfg(all(feature = "libc", not(target_os = "unknown")))]
+#[doc(hidden)]
+pub use libc;
+
 // This disables a warning for unused #[macro_use(..)]
 // which is incorrect since the compiler does not check
 // for all available configurations.
@@ -33,6 +37,10 @@ pub use static_assertions::const_assert;
 #[cfg(feature = "byteorder")]
 #[doc(hidden)]
 pub use byteorder;
+
+#[cfg(not(feature = "libc"))]
+#[doc(hidden)]
+pub mod libc {}
 
 #[cfg(feature = "rustc-hex")]
 #[doc(hidden)]
