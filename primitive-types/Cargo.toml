@@ -18,6 +18,7 @@ impl-rlp = { version = "0.2", path = "impls/rlp", default-features = false, opti
 default = ["std"]
 std = ["uint/std", "fixed-hash/std", "impl-codec/std"]
 byteorder = ["fixed-hash/byteorder"]
+libc = ["fixed-hash/libc"]
 rustc-hex = ["fixed-hash/rustc-hex"]
 serde = ["std", "impl-serde"]
 codec = ["impl-codec"]
