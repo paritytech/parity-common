@@ -37,7 +37,7 @@ pub struct Database {
 }
 
 // TODO: docs
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct DatabaseConfig {
 	pub columns: u32,
 	pub memory_budget_mb: Option<u64>,
