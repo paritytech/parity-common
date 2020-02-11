@@ -198,9 +198,10 @@ impl KeyValueDB for Database {
 	}
 
 	fn flush(&self) -> io::Result<()> {
-		for tree in &self.columns {
-			tree.flush().map_err(other_io_err)?;
-		}
+		// TODO: leads to a deadlock?
+		// for tree in &self.columns {
+		// 	tree.flush().map_err(other_io_err)?;
+		// }
 		Ok(())
 	}
 
