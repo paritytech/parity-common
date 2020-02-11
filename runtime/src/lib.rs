@@ -1,4 +1,4 @@
-// Copyright 2015-2019 Parity Technologies (UK) Ltd.
+// Copyright 2015-2020 Parity Technologies (UK) Ltd.
 // This file is part of Parity Ethereum.
 
 // Parity Ethereum is free software: you can redistribute it and/or modify
@@ -259,28 +259,5 @@ impl RuntimeHandle {
 	pub fn close(mut self) {
 		let _ =
 			self.close.take().expect("Close is taken only in `close` and `drop`. `close` is consuming; qed").send(());
-	}
-}
-
-#[cfg(test)]
-mod test {
-	use super::Runtime;
-	use futures::{Future, Stream};
-	use tokio::fs::read_dir;
-
-	#[test]
-	fn read_current_dir() {
-		let fut = read_dir(".")
-			.flatten_stream()
-			.for_each(|dir| {
-				println!("{:?}", dir.path());
-				Ok(())
-			})
-			.map_err(|err| {
-				eprintln!("Error: {:?}", err);
-				()
-			});
-		let runtime = Runtime::with_thread_count(1);
-		runtime.executor().spawn(fut)
 	}
 }
