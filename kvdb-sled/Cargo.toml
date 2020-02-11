@@ -9,7 +9,7 @@ license = "GPL-3.0"
 edition = "2018"
 
 [dependencies]
-sled = { version = "0.31.0", default-features = false, features = ["io_uring"] }
+sled = { version = "0.31.0" }
 kvdb = { version = "0.4" }
 log = "0.4.8"
 parity-util-mem = { version = "0.5", default-features = false }
