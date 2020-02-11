@@ -38,7 +38,7 @@ script:
   - cargo check --all --tests
   - cargo check --all --benches
   - cargo build --all
-  - cargo test --all --exclude uint --exclude fixed-hash
+  - cargo test --all --exclude uint --exclude fixed-hash --exclude parity-crypto
   - if [ "$TRAVIS_RUST_VERSION" == "nightly" ]; then
     cd contract-address/ && cargo test --features=external_doc && cd ..;
     fi
@@ -48,6 +48,7 @@ script:
   - cd keccak-hash/ && cargo test --no-default-features && cd ..
   - cd plain_hasher/ && cargo test --no-default-features && cargo check --benches && cd ..
   - cd parity-bytes/ && cargo test --no-default-features && cd ..
+  - cd parity-crypto/ && cargo test --all-features && cd ..
   - cd parity-util-mem/ && cargo test --features=estimate-heapsize && cd ..
   - cd parity-util-mem/ && cargo test --features=jemalloc-global && cd ..
   - cd parity-util-mem/ && cargo test --features=mimalloc-global && cd ..
