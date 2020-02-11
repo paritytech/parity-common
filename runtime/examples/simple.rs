@@ -36,6 +36,6 @@ fn main() {
 		});
 	let runtime = Runtime::with_default_thread_count();
 	runtime.executor().spawn(fut);
-	let timeout = Duration::from_secs(10);
+	let timeout = Duration::from_secs(3);
 	park_timeout(timeout);
 }
