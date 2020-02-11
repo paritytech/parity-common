@@ -261,3 +261,26 @@ impl RuntimeHandle {
 			self.close.take().expect("Close is taken only in `close` and `drop`. `close` is consuming; qed").send(());
 	}
 }
+
+#[cfg(test)]
+mod test {
+	use super::Runtime;
+	use futures::{Future, Stream};
+	use tokio::fs::read_dir;
+
+	#[test]
+	fn read_current_dir() {
+		let fut = read_dir(".")
+			.flatten_stream()
+			.for_each(|dir| {
+				println!("{:?}", dir.path());
+				Ok(())
+			})
+			.map_err(|err| {
+				eprintln!("Error: {:?}", err);
+				()
+			});
+		let runtime = Runtime::with_thread_count(1);
+		runtime.executor().spawn(fut)
+	}
+}
