@@ -18,7 +18,6 @@
 
 use futures::{future, Future, IntoFuture};
 use std::sync::mpsc;
-use std::time::{Duration, Instant};
 use std::{fmt, thread};
 pub use tokio::runtime::{Builder as TokioRuntimeBuilder, Runtime as TokioRuntime, TaskExecutor};
 pub use tokio::timer::Delay;
@@ -111,35 +110,12 @@ impl fmt::Debug for Mode {
 	}
 }
 
-/// Returns a future which runs `f` until `duration` has elapsed, at which
-/// time `on_timeout` is run and the future resolves.
-fn timeout<F, R, T>(f: F, duration: Duration, on_timeout: T) -> impl Future<Item = (), Error = ()> + Send + 'static
-where
-	T: FnOnce() -> () + Send + 'static,
-	F: FnOnce() -> R + Send + 'static,
-	R: IntoFuture<Item = (), Error = ()> + Send + 'static,
-	R::Future: Send + 'static,
-{
-	let future = future::lazy(f);
-	let timeout = Delay::new(Instant::now() + duration).then(move |_| {
-		on_timeout();
-		Ok(())
-	});
-	future.select(timeout).then(|_| Ok(()))
-}
-
 #[derive(Debug, Clone)]
 pub struct Executor {
 	inner: Mode,
 }
 
 impl Executor {
-	/// Executor for existing runtime.
-	#[deprecated(note = "Exists only to connect with current JSONRPC implementation")]
-	pub fn new(executor: TaskExecutor) -> Self {
-		Executor { inner: Mode::Tokio(executor) }
-	}
-
 	/// Synchronous executor, used for tests.
 	#[cfg(any(test, feature = "test-helpers"))]
 	pub fn new_sync() -> Self {
@@ -166,47 +142,6 @@ impl Executor {
 			Mode::ThreadPerFuture => {
 				thread::spawn(move || {
 					let _ = r.into_future().wait();
-				});
-			}
-		}
-	}
-
-	/// Spawn a new future returned by the given closure.
-	pub fn spawn_fn<F, R>(&self, f: F)
-	where
-		F: FnOnce() -> R + Send + 'static,
-		R: IntoFuture<Item = (), Error = ()> + Send + 'static,
-		R::Future: Send + 'static,
-	{
-		match self.inner {
-			Mode::Tokio(ref executor) => executor.spawn(future::lazy(f)),
-			Mode::Sync => {
-				let _ = future::lazy(f).wait();
-			}
-			Mode::ThreadPerFuture => {
-				thread::spawn(move || {
-					let _ = f().into_future().wait();
-				});
-			}
-		}
-	}
-
-	/// Spawn a new future and wait for it or for a timeout to occur.
-	pub fn spawn_with_timeout<F, R, T>(&self, f: F, duration: Duration, on_timeout: T)
-	where
-		T: FnOnce() -> () + Send + 'static,
-		F: FnOnce() -> R + Send + 'static,
-		R: IntoFuture<Item = (), Error = ()> + Send + 'static,
-		R::Future: Send + 'static,
-	{
-		match self.inner {
-			Mode::Tokio(ref executor) => executor.spawn(timeout(f, duration, on_timeout)),
-			Mode::Sync => {
-				let _ = timeout(f, duration, on_timeout).wait();
-			}
-			Mode::ThreadPerFuture => {
-				thread::spawn(move || {
-					let _ = timeout(f, duration, on_timeout).wait();
 				});
 			}
 		}

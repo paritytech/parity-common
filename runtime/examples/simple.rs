@@ -22,7 +22,7 @@ use std::thread::park_timeout;
 use std::time::Duration;
 use tokio::fs::read_dir;
 
-/// Read current directory in future, which is executed in the created runtime
+/// Read current directory in a future, which is executed in the created runtime
 fn main() {
 	let fut = read_dir(".")
 		.flatten_stream()
