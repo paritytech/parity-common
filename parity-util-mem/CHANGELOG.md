@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
-- License changed from GPL3 to dual MIT/Apache2. [#343](https://github.com/paritytech/parity-common/pull/342)
+- License changed from GPL3 to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)
 
 ## [0.5.1] - 2019-02-05
 - Add different mode for malloc_size_of_is_0 macro dealing with generics #334. [#332](https://github.com/paritytech/parity-common/pull/334)
