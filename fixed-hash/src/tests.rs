@@ -1,3 +1,11 @@
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 construct_fixed_hash! { pub struct H32(4); }
 construct_fixed_hash! { pub struct H64(8); }
 construct_fixed_hash! { pub struct H128(16); }
