@@ -2,7 +2,7 @@
 name = "impl-codec"
 version = "0.4.2"
 authors = ["Parity Technologies <admin@parity.io>"]
-license = "Apache-2.0/MIT"
+license = "MIT/Apache2.0"
 homepage = "https://github.com/paritytech/parity-common"
 description = "Parity Codec serialization support for uint and fixed hash."
 edition = "2018"
