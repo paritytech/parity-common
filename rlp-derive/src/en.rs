@@ -15,12 +15,7 @@ pub fn impl_encodable(ast: &syn::DeriveInput) -> TokenStream {
 		_ => panic!("#[derive(RlpEncodable)] is only defined for structs."),
 	};
 
-	let stmts: Vec<_> = body
-		.fields
-		.iter()
-		.enumerate()
-		.map(|(i, field)| encodable_field(i, field))
-		.collect();
+	let stmts: Vec<_> = body.fields.iter().enumerate().map(|(i, field)| encodable_field(i, field)).collect();
 	let name = &ast.ident;
 
 	let stmts_len = stmts.len();
@@ -89,27 +84,15 @@ fn encodable_field(index: usize, field: &syn::Field) -> TokenStream {
 
 	match field.ty {
 		syn::Type::Path(ref path) => {
-			let top_segment = path
-				.path
-				.segments
-				.first()
-				.expect("there must be at least 1 segment");
+			let top_segment = path.path.segments.first().expect("there must be at least 1 segment");
 			let ident = &top_segment.ident;
 			if &ident.to_string() == "Vec" {
 				let inner_ident = match top_segment.arguments {
 					syn::PathArguments::AngleBracketed(ref angle) => {
-						let ty = angle
-							.args
-							.first()
-							.expect("Vec has only one angle bracketed type; qed");
+						let ty = angle.args.first().expect("Vec has only one angle bracketed type; qed");
 						match *ty {
 							syn::GenericArgument::Type(syn::Type::Path(ref path)) => {
-								&path
-									.path
-									.segments
-									.first()
-									.expect("there must be at least 1 segment")
-									.ident
+								&path.path.segments.first().expect("there must be at least 1 segment").ident
 							}
 							_ => panic!("rlp_derive not supported"),
 						}

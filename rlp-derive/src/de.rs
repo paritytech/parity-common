@@ -16,19 +16,11 @@ struct ParseQuotes {
 }
 
 fn decodable_parse_quotes() -> ParseQuotes {
-	ParseQuotes {
-		single: quote! { rlp.val_at },
-		list: quote! { rlp.list_at },
-		takes_index: true,
-	}
+	ParseQuotes { single: quote! { rlp.val_at }, list: quote! { rlp.list_at }, takes_index: true }
 }
 
 fn decodable_wrapper_parse_quotes() -> ParseQuotes {
-	ParseQuotes {
-		single: quote! { rlp.as_val },
-		list: quote! { rlp.as_list },
-		takes_index: false,
-	}
+	ParseQuotes { single: quote! { rlp.as_val }, list: quote! { rlp.as_list }, takes_index: false }
 }
 
 pub fn impl_decodable(ast: &syn::DeriveInput) -> TokenStream {
@@ -42,12 +34,8 @@ pub fn impl_decodable(ast: &syn::DeriveInput) -> TokenStream {
 		.fields
 		.iter()
 		.enumerate()
-		.map(|(i, field)| decodable_field(
-			i,
-			field,
-			decodable_parse_quotes(),
-			&mut default_attribute_encountered,
-		)).collect();
+		.map(|(i, field)| decodable_field(i, field, decodable_parse_quotes(), &mut default_attribute_encountered))
+		.collect();
 	let name = &ast.ident;
 
 	let impl_block = quote! {
@@ -81,12 +69,7 @@ pub fn impl_decodable_wrapper(ast: &syn::DeriveInput) -> TokenStream {
 		if fields.len() == 1 {
 			let field = fields.first().expect("fields.len() == 1; qed");
 			let mut default_attribute_encountered = false;
-			decodable_field(
-				0,
-				field,
-				decodable_wrapper_parse_quotes(),
-				&mut default_attribute_encountered,
-			)
+			decodable_field(0, field, decodable_wrapper_parse_quotes(), &mut default_attribute_encountered)
 		} else {
 			panic!("#[derive(RlpEncodableWrapper)] is only defined for structs with one field.")
 		}
@@ -140,7 +123,7 @@ fn decodable_field(
 			panic!("only 1 #[rlp(default)] attribute is allowed in a struct")
 		}
 		match attr.parse_args() {
-			Ok(proc_macro2::TokenTree::Ident(ident)) if ident.to_string() == "default" => {},
+			Ok(proc_macro2::TokenTree::Ident(ident)) if ident.to_string() == "default" => {}
 			_ => panic!("only #[rlp(default)] attribute is supported"),
 		}
 		*default_attribute_encountered = true;
@@ -151,12 +134,7 @@ fn decodable_field(
 
 	match field.ty {
 		syn::Type::Path(ref path) => {
-			let ident = &path
-				.path
-				.segments
-				.first()
-				.expect("there must be at least 1 segment")
-				.ident;
+			let ident = &path.path.segments.first().expect("there must be at least 1 segment").ident;
 			let ident_type = ident.to_string();
 			if &ident_type == "Vec" {
 				if quotes.takes_index {
