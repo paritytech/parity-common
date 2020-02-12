@@ -4,7 +4,7 @@ version = "0.5.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "Crypto utils used by ethstore and network."
-license = "GPL-3.0"
+license = "MIT/Apache-2.0"
 autobenches = false
 edition = "2018"
 
