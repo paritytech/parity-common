@@ -4,7 +4,7 @@ version = "0.8.2"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "In-memory patricia trie operations"
 repository = "https://github.com/paritytech/parity-common"
-license = "GPL-3.0"
+license = "MIT/Apache2.0"
 edition = "2018"
 
 [dependencies]

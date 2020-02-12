@@ -2,7 +2,7 @@
 name = "impl-rlp"
 version = "0.2.1"
 authors = ["Parity Technologies <admin@parity.io>"]
-license = "Apache-2.0/MIT"
+license = "MIT/Apache2.0"
 homepage = "https://github.com/paritytech/parity-common"
 description = "RLP serialization support for uint and fixed hash."
 edition = "2018"

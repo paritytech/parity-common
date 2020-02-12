@@ -1,18 +1,10 @@
-// Copyright 2015-2020 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 mod iter;
 mod stats;
@@ -236,7 +228,11 @@ impl MallocSizeOf for DBAndColumns {
 	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
 		let mut total = self.column_names.size_of(ops)
 			// we have at least one column always, so we can call property on it
-			+ self.static_property_or_warn(0, "rocksdb.block-cache-usage");
+			+ self.db
+				.property_int_value_cf(self.cf(0), "rocksdb.block-cache-usage")
+				.unwrap_or(Some(0))
+				.map(|x| x as usize)
+				.unwrap_or(0);
 
 		for v in 0..self.column_names.len() {
 			total += self.static_property_or_warn(v, "rocksdb.estimate-table-readers-mem");
@@ -325,12 +321,16 @@ fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
 	// Set cache size as recommended by
 	// https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
 	let cache_size = config.memory_budget() / 3;
-	block_opts.set_lru_cache(cache_size);
-	// "index and filter blocks will be stored in block cache, together with all other data blocks."
-	// See: https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#indexes-and-filter-blocks
-	block_opts.set_cache_index_and_filter_blocks(true);
-	// Don't evict L0 filter/index blocks from the cache
-	block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
+	if cache_size == 0 {
+		block_opts.disable_cache()
+	} else {
+		block_opts.set_lru_cache(cache_size);
+		// "index and filter blocks will be stored in block cache, together with all other data blocks."
+		// See: https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#indexes-and-filter-blocks
+		block_opts.set_cache_index_and_filter_blocks(true);
+		// Don't evict L0 filter/index blocks from the cache
+		block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
+	}
 	block_opts.set_bloom_filter(10, true);
 
 	block_opts

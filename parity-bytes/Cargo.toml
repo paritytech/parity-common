@@ -4,7 +4,7 @@ version = "0.1.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "byte utilities for Parity"
-license = "GPL-3.0"
+license = "MIT/Apache2.0"
 edition = "2018"
 
 [dependencies]
