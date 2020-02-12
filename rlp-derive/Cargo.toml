@@ -8,7 +8,6 @@ homepage = "http://parity.io"
 edition = "2018"
 
 [lib]
-name = "rlp_derive"
 proc-macro = true
 
 [dependencies]
