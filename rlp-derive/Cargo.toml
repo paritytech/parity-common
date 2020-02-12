@@ -1,5 +1,5 @@
 [package]
-name = "rlp_derive"
+name = "rlp-derive"
 version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT/Apache-2.0"
