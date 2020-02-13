@@ -5,8 +5,9 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- License changed from GPL3 to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)
 ### Breaking
-- Updated to the new `kvdb` interface. [#313](https://github.com/paritytech/parity-common/pull/313) 
+- Updated to the new `kvdb` interface. [#313](https://github.com/paritytech/parity-common/pull/313)
 
 ## [0.4.0] - 2019-02-05
 - Bump parking_lot to 0.10. [#332](https://github.com/paritytech/parity-common/pull/332)
@@ -20,7 +21,6 @@ The format is based on [Keep a Changelog].
 ## [0.2.0] - 2019-12-19
 ### Fixed
 - `iter_from_prefix` behaviour synced with the `kvdb-rocksdb`
-
 ### Changed
 - Default column support removed from the API
   - Column argument type changed from `Option<u32>` to `u32`
