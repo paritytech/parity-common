@@ -1,6 +1,6 @@
 # Changelog
 
-The format is based on [Keep a Changelog]. 
+The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
@@ -9,4 +9,4 @@ The format is based on [Keep a Changelog].
 
 ## [0.4.1] - 2019-10-24
 ### Dependencies
-- Updated dependencies (https://github.com/paritytech/parity-common/pull/239)
+- Updated dependencies. [#239](https://github.com/paritytech/parity-common/pull/239)

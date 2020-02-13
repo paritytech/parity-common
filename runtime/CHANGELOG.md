@@ -8,4 +8,4 @@ The format is based on [Keep a Changelog].
 
 ## [0.1.1] - 2019-11-25
 ### Changed
-- Moved to parity common repo, prepared for publishing (https://github.com/paritytech/parity-common/pull/271)
+- Moved to parity common repo, prepared for publishing. [#271](https://github.com/paritytech/parity-common/pull/271)

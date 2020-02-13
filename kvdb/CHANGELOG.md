@@ -22,10 +22,10 @@ The format is based on [Keep a Changelog].
 - Default column support removed from the API
   - Column argument type changed from `Option<u32>` to `u32`
   - Migration `None` -> unsupported, `Some(0)` -> `0`, `Some(1)` -> `1`, etc.
-- Remove `ElasticArray` and change `DBValue` to be a type alias for `Vec<u8>` and add a `DBKey` backed by a `SmallVec`.  (See [PR #282](https://github.com/paritytech/parity-common/pull/282/files))
+- Remove `ElasticArray` and change `DBValue` to be a type alias for `Vec<u8>` and add a `DBKey` backed by a `SmallVec`.  [#282](https://github.com/paritytech/parity-common/pull/282)
 
 ## [0.1.1] - 2019-10-24
 ### Dependencies
-- Updated dependencies (https://github.com/paritytech/parity-common/pull/239)
+- Updated dependencies. [#239](https://github.com/paritytech/parity-common/pull/239)
 ### Changed
-- Migrated to 2018 edition (https://github.com/paritytech/parity-common/pull/205)
+- Migrated to 2018 edition. [#205](https://github.com/paritytech/parity-common/pull/205)

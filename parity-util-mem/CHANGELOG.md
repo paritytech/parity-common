@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog].
 - License changed from GPL3 to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)
 
 ## [0.5.1] - 2019-02-05
-- Add different mode for malloc_size_of_is_0 macro dealing with generics #334. [#332](https://github.com/paritytech/parity-common/pull/334)
+- Add different mode for malloc_size_of_is_0 macro dealing with generics. [#334](https://github.com/paritytech/parity-common/pull/334)
 
 ## [0.5.0] - 2019-02-05
 - Bump parking_lot to 0.10. [#332](https://github.com/paritytech/parity-common/pull/332)
@@ -27,8 +27,8 @@ The format is based on [Keep a Changelog].
 - Added default implementation of `MallocSizeOf` for tuples up to 12. [#300](https://github.com/paritytech/parity-common/pull/300)
 
 ## [0.3.0] - 2019-12-19
-- Remove `MallocSizeOf` impls for `ElasticArray` and implement it for `SmallVec` (32 and 36). (See [PR #282](https://github.com/paritytech/parity-common/pull/282/files))
+- Remove `MallocSizeOf` impls for `ElasticArray` and implement it for `SmallVec` (32 and 36). [#282](https://github.com/paritytech/parity-common/pull/282)
 
 ## [0.2.1] - 2019-10-24
 ### Dependencies
-- Updated dependencies (https://github.com/paritytech/parity-common/pull/239)
+- Updated dependencies. [#239](https://github.com/paritytech/parity-common/pull/239)
