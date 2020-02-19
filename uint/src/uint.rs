@@ -38,6 +38,21 @@ pub enum FromDecStrErr {
 	InvalidLength,
 }
 
+impl std::fmt::Display for FromDecStrErr {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}",
+			match self {
+				FromDecStrErr::InvalidCharacter => "a character is not in the range 0-9",
+				FromDecStrErr::InvalidLength => "the number is too large for the type",
+			}
+		)
+	}
+}
+
+impl std::error::Error for FromDecStrErr {}
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_map_from {
