@@ -24,9 +24,10 @@ fn decodable_wrapper_parse_quotes() -> ParseQuotes {
 }
 
 pub fn impl_decodable(ast: &syn::DeriveInput) -> TokenStream {
-	let body = match ast.data {
-		syn::Data::Struct(ref s) => s,
-		_ => panic!("#[derive(RlpDecodable)] is only defined for structs."),
+	let body = if let syn::Data::Struct(s) = &ast.data {
+		s
+	} else {
+		panic!("#[derive(RlpDecodable)] is only defined for structs.");
 	};
 
 	let mut default_attribute_encountered = false;
@@ -59,9 +60,10 @@ pub fn impl_decodable(ast: &syn::DeriveInput) -> TokenStream {
 }
 
 pub fn impl_decodable_wrapper(ast: &syn::DeriveInput) -> TokenStream {
-	let body = match ast.data {
-		syn::Data::Struct(ref s) => s,
-		_ => panic!("#[derive(RlpDecodableWrapper)] is only defined for structs."),
+	let body = if let syn::Data::Struct(s) = &ast.data {
+		s
+	} else {
+		panic!("#[derive(RlpDecodableWrapper)] is only defined for structs.");
 	};
 
 	let stmt = {
@@ -98,20 +100,21 @@ pub fn impl_decodable_wrapper(ast: &syn::DeriveInput) -> TokenStream {
 }
 
 fn decodable_field(
-	index: usize,
+	mut index: usize,
 	field: &syn::Field,
 	quotes: ParseQuotes,
 	default_attribute_encountered: &mut bool,
 ) -> TokenStream {
-	let id = match field.ident {
-		Some(ref ident) => quote! { #ident },
-		None => {
-			let index: syn::Index = index.into();
-			quote! { #index }
-		}
+	let id = if let Some(ident) = &field.ident {
+		quote! { #ident }
+	} else {
+		let index = syn::Index::from(index);
+		quote! { #index }
 	};
 
-	let index = index - *default_attribute_encountered as usize;
+	if *default_attribute_encountered {
+		index -= 1;
+	}
 	let index = quote! { #index };
 
 	let single = quotes.single;
@@ -123,7 +126,7 @@ fn decodable_field(
 			panic!("only 1 #[rlp(default)] attribute is allowed in a struct")
 		}
 		match attr.parse_args() {
-			Ok(proc_macro2::TokenTree::Ident(ident)) if ident.to_string() == "default" => {}
+			Ok(proc_macro2::TokenTree::Ident(ident)) if ident == "default" => {}
 			_ => panic!("only #[rlp(default)] attribute is supported"),
 		}
 		*default_attribute_encountered = true;
@@ -132,32 +135,29 @@ fn decodable_field(
 		false
 	};
 
-	match field.ty {
-		syn::Type::Path(ref path) => {
-			let ident = &path.path.segments.first().expect("there must be at least 1 segment").ident;
-			let ident_type = ident.to_string();
-			if &ident_type == "Vec" {
-				if quotes.takes_index {
-					if default {
-						quote! { #id: #list(#index).unwrap_or_default(), }
-					} else {
-						quote! { #id: #list(#index)?, }
-					}
+	if let syn::Type::Path(path) = &field.ty {
+		let ident = &path.path.segments.first().expect("there must be at least 1 segment").ident;
+		let ident_type = ident.to_string();
+		if ident_type == "Vec" {
+			if quotes.takes_index {
+				if default {
+					quote! { #id: #list(#index).unwrap_or_default(), }
 				} else {
-					quote! { #id: #list()?, }
+					quote! { #id: #list(#index)?, }
 				}
 			} else {
-				if quotes.takes_index {
-					if default {
-						quote! { #id: #single(#index).unwrap_or_default(), }
-					} else {
-						quote! { #id: #single(#index)?, }
-					}
-				} else {
-					quote! { #id: #single()?, }
-				}
+				quote! { #id: #list()?, }
 			}
+		} else if quotes.takes_index {
+			if default {
+				quote! { #id: #single(#index).unwrap_or_default(), }
+			} else {
+				quote! { #id: #single(#index)?, }
+			}
+		} else {
+			quote! { #id: #single()?, }
 		}
-		_ => panic!("rlp_derive not supported"),
+	} else {
+		panic!("rlp_derive not supported");
 	}
 }
