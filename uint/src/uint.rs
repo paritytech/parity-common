@@ -38,6 +38,7 @@ pub enum FromDecStrErr {
 	InvalidLength,
 }
 
+#[cfg(feature = "std")]
 impl std::fmt::Display for FromDecStrErr {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(
@@ -51,6 +52,7 @@ impl std::fmt::Display for FromDecStrErr {
 	}
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for FromDecStrErr {}
 
 #[macro_export]
