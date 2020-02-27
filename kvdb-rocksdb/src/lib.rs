@@ -724,7 +724,7 @@ impl Database {
 	/// Get RocksDB statistics.
 	pub fn get_statistics(&self) -> HashMap<String, stats::RocksDbStatsValue> {
 		if let Some(stats) = self.opts.get_statistics() {
-			stats::parse_rocksdb_stats(stats)
+			stats::parse_rocksdb_stats(&stats)
 		} else {
 			HashMap::new()
 		}
@@ -1003,6 +1003,23 @@ mod tests {
 		let mut c = DatabaseConfig::with_columns(3);
 		c.memory_budget = [(0, 10), (1, 15), (2, 20)].iter().cloned().collect();
 		assert_eq!(c.memory_budget(), 45 * MB, "total budget is the sum of the column budget");
+	}
+
+	#[test]
+	fn test_stats_parser() {
+		let raw = r#"rocksdb.row.cache.hit COUNT : 1
+rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.000000 COUNT : 0 SUM : 15
+"#;
+		let stats = stats::parse_rocksdb_stats(raw);
+		assert_eq!(stats["row.cache.hit"].count, 1);
+		assert!(stats["row.cache.hit"].times.is_none());
+		assert_eq!(stats["db.get.micros"].count, 0);
+		let get_times = stats["db.get.micros"].times.unwrap();
+		assert_eq!(get_times.sum, 15);
+		assert_eq!(get_times.p50, 2.0);
+		assert_eq!(get_times.p95, 3.0);
+		assert_eq!(get_times.p99, 4.0);
+		assert_eq!(get_times.p100, 5.0);
 	}
 
 	#[test]

@@ -12,7 +12,7 @@ use std::str::FromStr;
 use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 use std::time::Instant;
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub struct RawDbStats {
 	pub reads: u64,
 	pub writes: u64,
@@ -22,7 +22,7 @@ pub struct RawDbStats {
 	pub cache_hit_count: u64,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct RocksDbStatsTimeValue {
 	/// 50% percentile
 	pub p50: f64,
@@ -35,13 +35,13 @@ pub struct RocksDbStatsTimeValue {
 	pub sum: u64,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct RocksDbStatsValue {
 	pub count: u64,
 	pub times: Option<RocksDbStatsTimeValue>,
 }
 
-pub fn parse_rocksdb_stats(stats: String) -> HashMap<String, RocksDbStatsValue> {
+pub fn parse_rocksdb_stats(stats: &str) -> HashMap<String, RocksDbStatsValue> {
 	stats.lines().map(|line| parse_rocksdb_stats_row(line.splitn(2, ' '))).collect()
 }
 
