@@ -7,10 +7,10 @@
 // except according to those terms.
 
 use parking_lot::RwLock;
-use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
-use std::time::Instant;
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
+use std::time::Instant;
 
 #[derive(Default)]
 pub struct RawDbStats {
@@ -42,9 +42,7 @@ pub struct RocksDbStatsValue {
 }
 
 pub fn parse_rocksdb_stats(stats: String) -> HashMap<String, RocksDbStatsValue> {
-	stats.lines()
-		.map(|line| parse_rocksdb_stats_row(line.splitn(2, ' ')))
-		.collect()
+	stats.lines().map(|line| parse_rocksdb_stats_row(line.splitn(2, ' '))).collect()
 }
 
 fn parse_rocksdb_stats_row<'a>(mut iter: impl Iterator<Item = &'a str>) -> (String, RocksDbStatsValue) {
@@ -68,11 +66,8 @@ fn parse_rocksdb_stats_row<'a>(mut iter: impl Iterator<Item = &'a str>) -> (Stri
 			p100: f64::from_str(values.get(7).expect(PROOF)).expect(PROOF),
 			sum: u64::from_str(values.get(11).expect(PROOF)).expect(PROOF),
 		};
-		RocksDbStatsValue {
-			count: u64::from_str(values.get(9).expect(PROOF)).expect(PROOF),
-			times: Some(times),
-		}
-	 };
+		RocksDbStatsValue { count: u64::from_str(values.get(9).expect(PROOF)).expect(PROOF), times: Some(times) }
+	};
 	(key, value)
 }
 
@@ -97,11 +92,7 @@ struct OverallDbStats {
 
 impl OverallDbStats {
 	fn new() -> Self {
-		OverallDbStats {
-			stats: RawDbStats::default(),
-			last_taken: Instant::now(),
-			started: Instant::now(),
-		}
+		OverallDbStats { stats: RawDbStats::default(), last_taken: Instant::now(), started: Instant::now() }
 	}
 }
 

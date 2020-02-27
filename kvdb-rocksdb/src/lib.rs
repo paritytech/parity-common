@@ -770,9 +770,7 @@ impl KeyValueDB for Database {
 
 	fn io_stats(&self, kind: kvdb::IoStatsKind) -> kvdb::IoStats {
 		let rocksdb_stats = self.get_statistics();
-		let cache_hit_count = rocksdb_stats.get("block.cache.hit")
-			.map(|s| s.count)
-			.unwrap_or(0u64);
+		let cache_hit_count = rocksdb_stats.get("block.cache.hit").map(|s| s.count).unwrap_or(0u64);
 		let overall_stats = self.stats.overall();
 		let old_cache_hit_count = overall_stats.raw.cache_hit_count;
 
