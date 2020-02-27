@@ -167,7 +167,7 @@ pub struct DatabaseConfig {
 	pub columns: u32,
 	/// Specify the maximum number of info/debug log files to be kept.
 	pub keep_log_file_num: i32,
-	/// Enable RocksDB statistics.
+	/// Enable native RocksDB statistics.
 	/// Disabled by default.
 	///
 	/// It can have a negative performance impact up to 10% according to
