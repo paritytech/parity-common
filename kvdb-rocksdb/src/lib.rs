@@ -722,8 +722,12 @@ impl Database {
 	}
 
 	/// Get RocksDB statistics.
-	pub fn get_statistics(&self) -> Option<String> {
-		self.opts.get_statistics()
+	pub fn get_statistics(&self) -> HashMap<String, stats::RocksDbStatsValue> {
+		if let Some(stats) = self.opts.get_statistics() {
+			stats::parse_rocksdb_stats(stats)
+		} else {
+			HashMap::new()
+		}
 	}
 }
 
@@ -1009,9 +1013,7 @@ mod tests {
 			.expect("rocksdb creates a LOG file");
 		let mut settings = String::new();
 		let statistics = db.get_statistics();
-		assert!(statistics.is_some(), "statistics are enabled");
-		let statistics = statistics.unwrap();
-		assert!(statistics.contains("block.cache.hit"));
+		assert!(statistics.contains_key("block.cache.hit"));
 
 		rocksdb_log.read_to_string(&mut settings).unwrap();
 		// Check column count
