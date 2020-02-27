@@ -267,6 +267,8 @@ pub struct Database {
 	config: DatabaseConfig,
 	path: String,
 	#[ignore_malloc_size_of = "insignificant"]
+	opts: Options,
+	#[ignore_malloc_size_of = "insignificant"]
 	write_opts: WriteOptions,
 	#[ignore_malloc_size_of = "insignificant"]
 	read_opts: ReadOptions,
@@ -304,6 +306,8 @@ fn is_corrupted(err: &Error) -> bool {
 fn generate_options(config: &DatabaseConfig) -> Options {
 	let mut opts = Options::default();
 
+	opts.set_report_bg_io_stats(true);
+	opts.enable_statistics();
 	opts.set_use_fsync(false);
 	opts.create_if_missing(true);
 	opts.set_max_open_files(config.max_open_files);
@@ -409,6 +413,7 @@ impl Database {
 			flushing: RwLock::new((0..config.columns).map(|_| HashMap::new()).collect()),
 			flushing_lock: Mutex::new(false),
 			path: path.to_owned(),
+			opts,
 			read_opts,
 			write_opts,
 			block_opts,
@@ -715,6 +720,11 @@ impl Database {
 			None => Ok(()),
 		}
 	}
+
+	/// Get RocksDB statistics.
+	pub fn get_statistics(&self) -> Option<String> {
+		self.opts.get_statistics()
+	}
 }
 
 // duplicate declaration of methods here to avoid trait import in certain existing cases
@@ -994,10 +1004,15 @@ mod tests {
 		cfg.memory_budget = [(0, 30), (1, 300)].iter().cloned().collect();
 
 		let db_path = TempDir::new("config_test").expect("the OS can create tmp dirs");
-		let _db = Database::open(&cfg, db_path.path().to_str().unwrap()).expect("can open a db");
+		let db = Database::open(&cfg, db_path.path().to_str().unwrap()).expect("can open a db");
 		let mut rocksdb_log = std::fs::File::open(format!("{}/LOG", db_path.path().to_str().unwrap()))
 			.expect("rocksdb creates a LOG file");
 		let mut settings = String::new();
+		let statistics = db.get_statistics();
+		assert!(statistics.is_some(), "statistics are enabled");
+		let statistics = statistics.unwrap();
+		assert!(statistics.contains("block.cache.hit"));
+
 		rocksdb_log.read_to_string(&mut settings).unwrap();
 		// Check column count
 		assert!(settings.contains("Options for column family [default]"), "no default col");
