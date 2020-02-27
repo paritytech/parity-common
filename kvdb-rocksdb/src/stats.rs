@@ -12,14 +12,17 @@ use std::time::Instant;
 use std::collections::HashMap;
 use std::str::FromStr;
 
+#[derive(Default)]
 pub struct RawDbStats {
 	pub reads: u64,
 	pub writes: u64,
 	pub bytes_written: u64,
 	pub bytes_read: u64,
 	pub transactions: u64,
+	pub cache_hit_count: u64,
 }
 
+#[derive(Default, Debug)]
 pub struct RocksDbStatsTimeValue {
 	/// 50% percentile
 	pub p50: f64,
@@ -32,6 +35,7 @@ pub struct RocksDbStatsTimeValue {
 	pub sum: u64,
 }
 
+#[derive(Default, Debug)]
 pub struct RocksDbStatsValue {
 	pub count: u64,
 	pub times: Option<RocksDbStatsTimeValue>,
@@ -80,6 +84,7 @@ impl RawDbStats {
 			bytes_written: self.bytes_written + other.bytes_written,
 			bytes_read: self.bytes_read + other.bytes_written,
 			transactions: self.transactions + other.transactions,
+			cache_hit_count: self.cache_hit_count + other.cache_hit_count,
 		}
 	}
 }
@@ -93,7 +98,7 @@ struct OverallDbStats {
 impl OverallDbStats {
 	fn new() -> Self {
 		OverallDbStats {
-			stats: RawDbStats { reads: 0, writes: 0, bytes_written: 0, bytes_read: 0, transactions: 0 },
+			stats: RawDbStats::default(),
 			last_taken: Instant::now(),
 			started: Instant::now(),
 		}
@@ -106,6 +111,7 @@ pub struct RunningDbStats {
 	bytes_written: AtomicU64,
 	bytes_read: AtomicU64,
 	transactions: AtomicU64,
+	cache_hit_count: AtomicU64,
 	overall: RwLock<OverallDbStats>,
 }
 
@@ -122,6 +128,7 @@ impl RunningDbStats {
 			writes: 0.into(),
 			bytes_written: 0.into(),
 			transactions: 0.into(),
+			cache_hit_count: 0.into(),
 			overall: OverallDbStats::new().into(),
 		}
 	}
@@ -146,6 +153,10 @@ impl RunningDbStats {
 		self.transactions.fetch_add(val, AtomicOrdering::Relaxed);
 	}
 
+	pub fn tally_cache_hit_count(&self, val: u64) {
+		self.cache_hit_count.fetch_add(val, AtomicOrdering::Relaxed);
+	}
+
 	fn take_current(&self) -> RawDbStats {
 		RawDbStats {
 			reads: self.reads.swap(0, AtomicOrdering::Relaxed),
@@ -153,6 +164,7 @@ impl RunningDbStats {
 			bytes_written: self.bytes_written.swap(0, AtomicOrdering::Relaxed),
 			bytes_read: self.bytes_read.swap(0, AtomicOrdering::Relaxed),
 			transactions: self.transactions.swap(0, AtomicOrdering::Relaxed),
+			cache_hit_count: self.cache_hit_count.swap(0, AtomicOrdering::Relaxed),
 		}
 	}
 
@@ -163,6 +175,7 @@ impl RunningDbStats {
 			bytes_written: self.bytes_written.load(AtomicOrdering::Relaxed),
 			bytes_read: self.bytes_read.load(AtomicOrdering::Relaxed),
 			transactions: self.transactions.load(AtomicOrdering::Relaxed),
+			cache_hit_count: self.cache_hit_count.load(AtomicOrdering::Relaxed),
 		}
 	}
 

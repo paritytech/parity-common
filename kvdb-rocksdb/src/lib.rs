@@ -769,6 +769,15 @@ impl KeyValueDB for Database {
 	}
 
 	fn io_stats(&self, kind: kvdb::IoStatsKind) -> kvdb::IoStats {
+		let rocksdb_stats = self.get_statistics();
+		let cache_hit_count = rocksdb_stats.get("block.cache.hit")
+			.map(|s| s.count)
+			.unwrap_or(0u64);
+		let overall_stats = self.stats.overall();
+		let old_cache_hit_count = overall_stats.raw.cache_hit_count;
+
+		self.stats.tally_cache_hit_count(cache_hit_count - old_cache_hit_count);
+
 		let taken_stats = match kind {
 			kvdb::IoStatsKind::Overall => self.stats.overall(),
 			kvdb::IoStatsKind::SincePrevious => self.stats.since_previous(),
@@ -781,7 +790,7 @@ impl KeyValueDB for Database {
 		stats.transactions = taken_stats.raw.transactions;
 		stats.bytes_written = taken_stats.raw.bytes_written;
 		stats.bytes_read = taken_stats.raw.bytes_read;
-
+		stats.cache_reads = taken_stats.raw.cache_hit_count;
 		stats.started = taken_stats.started;
 		stats.span = taken_stats.started.elapsed();
 
