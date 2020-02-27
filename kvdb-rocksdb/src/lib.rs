@@ -167,6 +167,12 @@ pub struct DatabaseConfig {
 	pub columns: u32,
 	/// Specify the maximum number of info/debug log files to be kept.
 	pub keep_log_file_num: i32,
+	/// Enable RocksDB statistics.
+	/// Disabled by default.
+	///
+	/// It can have a negative performance impact up to 10% according to
+	/// https://github.com/facebook/rocksdb/wiki/Statistics.
+	pub enable_statistics: bool,
 }
 
 impl DatabaseConfig {
@@ -215,6 +221,7 @@ impl Default for DatabaseConfig {
 			compaction: CompactionProfile::default(),
 			columns: 1,
 			keep_log_file_num: 1,
+			enable_statistics: false,
 		}
 	}
 }
@@ -307,7 +314,9 @@ fn generate_options(config: &DatabaseConfig) -> Options {
 	let mut opts = Options::default();
 
 	opts.set_report_bg_io_stats(true);
-	opts.enable_statistics();
+	if config.enable_statistics {
+		opts.enable_statistics();
+	}
 	opts.set_use_fsync(false);
 	opts.create_if_missing(true);
 	opts.set_max_open_files(config.max_open_files);
@@ -868,6 +877,7 @@ mod tests {
 			compaction: CompactionProfile::default(),
 			columns: 11,
 			keep_log_file_num: 1,
+			enable_statistics: false,
 		};
 
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
@@ -1025,7 +1035,7 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 	#[test]
 	fn rocksdb_settings() {
 		const NUM_COLS: usize = 2;
-		let mut cfg = DatabaseConfig::with_columns(NUM_COLS as u32);
+		let mut cfg = DatabaseConfig { enable_statistics: true, ..DatabaseConfig::with_columns(NUM_COLS as u32) };
 		cfg.max_open_files = 123; // is capped by the OS fd limit (typically 1024)
 		cfg.compaction.block_size = 323232;
 		cfg.compaction.initial_file_size = 102030;
