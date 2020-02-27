@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 - License changed from GPL3 to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)
+- Added `get_statistics` method and `enable_statistics` config parameter. [#347](https://github.com/paritytech/parity-common/pull/347)
 
 ## [0.5.0] - 2019-02-05
 - Bump parking_lot to 0.10. [#332](https://github.com/paritytech/parity-common/pull/332)
