@@ -160,6 +160,12 @@ pub struct DatabaseConfig {
 	pub columns: u32,
 	/// Specify the maximum number of info/debug log files to be kept.
 	pub keep_log_file_num: i32,
+	/// Enable native RocksDB statistics.
+	/// Disabled by default.
+	///
+	/// It can have a negative performance impact up to 10% according to
+	/// https://github.com/facebook/rocksdb/wiki/Statistics.
+	pub enable_statistics: bool,
 }
 
 impl DatabaseConfig {
@@ -208,6 +214,7 @@ impl Default for DatabaseConfig {
 			compaction: CompactionProfile::default(),
 			columns: 1,
 			keep_log_file_num: 1,
+			enable_statistics: false,
 		}
 	}
 }
@@ -260,6 +267,8 @@ pub struct Database {
 	config: DatabaseConfig,
 	path: String,
 	#[ignore_malloc_size_of = "insignificant"]
+	opts: Options,
+	#[ignore_malloc_size_of = "insignificant"]
 	write_opts: WriteOptions,
 	#[ignore_malloc_size_of = "insignificant"]
 	read_opts: ReadOptions,
@@ -290,6 +299,10 @@ fn is_corrupted(err: &Error) -> bool {
 fn generate_options(config: &DatabaseConfig) -> Options {
 	let mut opts = Options::default();
 
+	opts.set_report_bg_io_stats(true);
+	if config.enable_statistics {
+		opts.enable_statistics();
+	}
 	opts.set_use_fsync(false);
 	opts.create_if_missing(true);
 	opts.set_max_open_files(config.max_open_files);
@@ -392,6 +405,7 @@ impl Database {
 			db: RwLock::new(Some(DBAndColumns { db, column_names })),
 			config: config.clone(),
 			path: path.to_owned(),
+			opts,
 			read_opts,
 			write_opts,
 			block_opts,
@@ -592,6 +606,15 @@ impl Database {
 			None => Ok(()),
 		}
 	}
+
+	/// Get RocksDB statistics.
+	pub fn get_statistics(&self) -> HashMap<String, stats::RocksDbStatsValue> {
+		if let Some(stats) = self.opts.get_statistics() {
+			stats::parse_rocksdb_stats(&stats)
+		} else {
+			HashMap::new()
+		}
+	}
 }
 
 // duplicate declaration of methods here to avoid trait import in certain existing cases
@@ -624,6 +647,13 @@ impl KeyValueDB for Database {
 	}
 
 	fn io_stats(&self, kind: kvdb::IoStatsKind) -> kvdb::IoStats {
+		let rocksdb_stats = self.get_statistics();
+		let cache_hit_count = rocksdb_stats.get("block.cache.hit").map(|s| s.count).unwrap_or(0u64);
+		let overall_stats = self.stats.overall();
+		let old_cache_hit_count = overall_stats.raw.cache_hit_count;
+
+		self.stats.tally_cache_hit_count(cache_hit_count - old_cache_hit_count);
+
 		let taken_stats = match kind {
 			kvdb::IoStatsKind::Overall => self.stats.overall(),
 			kvdb::IoStatsKind::SincePrevious => self.stats.since_previous(),
@@ -636,7 +666,7 @@ impl KeyValueDB for Database {
 		stats.transactions = taken_stats.raw.transactions;
 		stats.bytes_written = taken_stats.raw.bytes_written;
 		stats.bytes_read = taken_stats.raw.bytes_read;
-
+		stats.cache_reads = taken_stats.raw.cache_hit_count;
 		stats.started = taken_stats.started;
 		stats.span = taken_stats.started.elapsed();
 
@@ -709,6 +739,7 @@ mod tests {
 			compaction: CompactionProfile::default(),
 			columns: 11,
 			keep_log_file_num: 1,
+			enable_statistics: false,
 		};
 
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
@@ -845,19 +876,39 @@ mod tests {
 	}
 
 	#[test]
+	fn test_stats_parser() {
+		let raw = r#"rocksdb.row.cache.hit COUNT : 1
+rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.000000 COUNT : 0 SUM : 15
+"#;
+		let stats = stats::parse_rocksdb_stats(raw);
+		assert_eq!(stats["row.cache.hit"].count, 1);
+		assert!(stats["row.cache.hit"].times.is_none());
+		assert_eq!(stats["db.get.micros"].count, 0);
+		let get_times = stats["db.get.micros"].times.unwrap();
+		assert_eq!(get_times.sum, 15);
+		assert_eq!(get_times.p50, 2.0);
+		assert_eq!(get_times.p95, 3.0);
+		assert_eq!(get_times.p99, 4.0);
+		assert_eq!(get_times.p100, 5.0);
+	}
+
+	#[test]
 	fn rocksdb_settings() {
 		const NUM_COLS: usize = 2;
-		let mut cfg = DatabaseConfig::with_columns(NUM_COLS as u32);
+		let mut cfg = DatabaseConfig { enable_statistics: true, ..DatabaseConfig::with_columns(NUM_COLS as u32) };
 		cfg.max_open_files = 123; // is capped by the OS fd limit (typically 1024)
 		cfg.compaction.block_size = 323232;
 		cfg.compaction.initial_file_size = 102030;
 		cfg.memory_budget = [(0, 30), (1, 300)].iter().cloned().collect();
 
 		let db_path = TempDir::new("config_test").expect("the OS can create tmp dirs");
-		let _db = Database::open(&cfg, db_path.path().to_str().unwrap()).expect("can open a db");
+		let db = Database::open(&cfg, db_path.path().to_str().unwrap()).expect("can open a db");
 		let mut rocksdb_log = std::fs::File::open(format!("{}/LOG", db_path.path().to_str().unwrap()))
 			.expect("rocksdb creates a LOG file");
 		let mut settings = String::new();
+		let statistics = db.get_statistics();
+		assert!(statistics.contains_key("block.cache.hit"));
+
 		rocksdb_log.read_to_string(&mut settings).unwrap();
 		// Check column count
 		assert!(settings.contains("Options for column family [default]"), "no default col");

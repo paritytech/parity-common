@@ -10,9 +10,10 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 pub fn impl_encodable(ast: &syn::DeriveInput) -> TokenStream {
-	let body = match ast.data {
-		syn::Data::Struct(ref s) => s,
-		_ => panic!("#[derive(RlpEncodable)] is only defined for structs."),
+	let body = if let syn::Data::Struct(s) = &ast.data {
+		s
+	} else {
+		panic!("#[derive(RlpEncodable)] is only defined for structs.");
 	};
 
 	let stmts: Vec<_> = body.fields.iter().enumerate().map(|(i, field)| encodable_field(i, field)).collect();
@@ -38,9 +39,10 @@ pub fn impl_encodable(ast: &syn::DeriveInput) -> TokenStream {
 }
 
 pub fn impl_encodable_wrapper(ast: &syn::DeriveInput) -> TokenStream {
-	let body = match ast.data {
-		syn::Data::Struct(ref s) => s,
-		_ => panic!("#[derive(RlpEncodableWrapper)] is only defined for structs."),
+	let body = if let syn::Data::Struct(s) = &ast.data {
+		s
+	} else {
+		panic!("#[derive(RlpEncodableWrapper)] is only defined for structs.");
 	};
 
 	let stmt = {
@@ -72,38 +74,37 @@ pub fn impl_encodable_wrapper(ast: &syn::DeriveInput) -> TokenStream {
 }
 
 fn encodable_field(index: usize, field: &syn::Field) -> TokenStream {
-	let ident = match field.ident {
-		Some(ref ident) => quote! { #ident },
-		None => {
-			let index: syn::Index = index.into();
-			quote! { #index }
-		}
+	let ident = if let Some(ident) = &field.ident {
+		quote! { #ident }
+	} else {
+		let index = syn::Index::from(index);
+		quote! { #index }
 	};
 
 	let id = quote! { self.#ident };
 
-	match field.ty {
-		syn::Type::Path(ref path) => {
-			let top_segment = path.path.segments.first().expect("there must be at least 1 segment");
-			let ident = &top_segment.ident;
-			if &ident.to_string() == "Vec" {
-				let inner_ident = match top_segment.arguments {
-					syn::PathArguments::AngleBracketed(ref angle) => {
-						let ty = angle.args.first().expect("Vec has only one angle bracketed type; qed");
-						match *ty {
-							syn::GenericArgument::Type(syn::Type::Path(ref path)) => {
-								&path.path.segments.first().expect("there must be at least 1 segment").ident
-							}
-							_ => panic!("rlp_derive not supported"),
-						}
+	if let syn::Type::Path(path) = &field.ty {
+		let top_segment = path.path.segments.first().expect("there must be at least 1 segment");
+		let ident = &top_segment.ident;
+		if ident == "Vec" {
+			let inner_ident = {
+				if let syn::PathArguments::AngleBracketed(angle) = &top_segment.arguments {
+					if let syn::GenericArgument::Type(syn::Type::Path(path)) =
+						angle.args.first().expect("Vec has only one angle bracketed type; qed")
+					{
+						&path.path.segments.first().expect("there must be at least 1 segment").ident
+					} else {
+						panic!("rlp_derive not supported");
 					}
-					_ => unreachable!("Vec has only one angle bracketed type; qed"),
-				};
-				quote! { stream.append_list::<#inner_ident, _>(&#id); }
-			} else {
-				quote! { stream.append(&#id); }
-			}
+				} else {
+					unreachable!("Vec has only one angle bracketed type; qed")
+				}
+			};
+			quote! { stream.append_list::<#inner_ident, _>(&#id); }
+		} else {
+			quote! { stream.append(&#id); }
 		}
-		_ => panic!("rlp_derive not supported"),
+	} else {
+		panic!("rlp_derive not supported");
 	}
 }
