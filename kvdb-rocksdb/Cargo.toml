@@ -31,3 +31,7 @@ ethereum-types = { path = "../ethereum-types" }
 kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.2" }
 rand = "0.7.2"
 tempdir = "0.3.7"
+keccak-hash = { path = "../keccak-hash" }
+sysinfo = "0.9"
+ctrlc = "3.1.4"
+time = "0.1"
