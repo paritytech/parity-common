@@ -1,0 +1,19 @@
+[package]
+name = "parity-runtime"
+version = "0.1.1"
+authors = ["Parity Technologies <admin@parity.io>"]
+edition = "2018"
+
+description = "Tokio runtime wrapper"
+license = "GPL-3.0"
+readme = "README.md"
+homepage = "https://www.parity.io/"
+keywords = ["parity", "runtime", "tokio"]
+include = ["Cargo.toml", "src/**/*.rs", "README.md", "CHANGELOG.md"]
+
+[dependencies]
+futures = "0.1"
+tokio = "0.1.22"
+
+[features]
+test-helpers = []

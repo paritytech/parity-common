@@ -6,8 +6,12 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.6.0] - 2019-02-28
+- License changed from GPL3 to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)
+- Added `get_statistics` method and `enable_statistics` config parameter. [#347](https://github.com/paritytech/parity-common/pull/347)
+
 ## [0.5.0] - 2019-02-05
-- Bump parking_lot to 0.10. [#332](https://github.com/paritytech/parity-common/pull/332
+- Bump parking_lot to 0.10. [#332](https://github.com/paritytech/parity-common/pull/332)
 
 ## [0.4.2] - 2019-02-04
 ### Fixes
@@ -21,10 +25,10 @@ The format is based on [Keep a Changelog].
 - Support querying memory footprint via `MallocSizeOf` trait. [#292](https://github.com/paritytech/parity-common/pull/292)
 
 ## [0.3.0] - 2019-12-19
-- Use `get_pinned` API to save one allocation for each call to `get()` (See [PR #274](https://github.com/paritytech/parity-common/pull/274) for details)
-- Rename `drop_column` to `remove_last_column` (See [PR #274](https://github.com/paritytech/parity-common/pull/274) for details)
-- Rename `get_cf` to `cf` (See [PR #274](https://github.com/paritytech/parity-common/pull/274) for details)
-- Default column support removed from the API (See [PR #278](https://github.com/paritytech/parity-common/pull/278) for details)
+- Use `get_pinned` API to save one allocation for each call to `get()`. [#274](https://github.com/paritytech/parity-common/pull/274)
+- Rename `drop_column` to `remove_last_column`. [#274](https://github.com/paritytech/parity-common/pull/274)
+- Rename `get_cf` to `cf`. [#274](https://github.com/paritytech/parity-common/pull/274)
+- Default column support removed from the API. [#278](https://github.com/paritytech/parity-common/pull/278)
   - Column argument type changed from `Option<u32>` to `u32`
   - Migration
     - Column index `None` -> unsupported, `Some(0)` -> `0`, `Some(1)` -> `1`, etc.
@@ -32,16 +36,16 @@ The format is based on [Keep a Changelog].
   - `DatabaseConfig::default()` defaults to 1 column
   - `Database::with_columns` still accepts `u32`, but panics if `0` is provided
   - `Database::open` panics if configuration with 0 columns is provided
-- Add `num_keys(col)` to get an estimate of the number of keys in a column (See [PR #285](https://github.com/paritytech/parity-common/pull/285)).
-- Remove `ElasticArray` and use the new `DBValue` (alias for `Vec<u8>`) and `DBKey` types from `kvdb`. (See [PR #282](https://github.com/paritytech/parity-common/pull/282/files))
+- Add `num_keys(col)` to get an estimate of the number of keys in a column. [#285](https://github.com/paritytech/parity-common/pull/285)
+- Remove `ElasticArray` and use the new `DBValue` (alias for `Vec<u8>`) and `DBKey` types from `kvdb`. [#282](https://github.com/paritytech/parity-common/pull/282)
 
 ## [0.2.0] - 2019-11-28
-- Switched away from using [parity-rocksdb](https://crates.io/crates/parity-rocksdb) in favour of upstream [rust-rocksdb](https://crates.io/crates/rocksdb) (see [PR #257](https://github.com/paritytech/parity-common/pull/257) for details)
-- Revamped configuration handling, allowing per-column memory budgeting (see [PR #256](https://github.com/paritytech/parity-common/pull/256) for details)
+- Switched away from using [parity-rocksdb](https://crates.io/crates/parity-rocksdb) in favour of upstream [rust-rocksdb](https://crates.io/crates/rocksdb). [#257](https://github.com/paritytech/parity-common/pull/257)
+- Revamped configuration handling, allowing per-column memory budgeting. [#256](https://github.com/paritytech/parity-common/pull/256)
 ### Dependencies
 - rust-rocksdb v0.13
 
 ## [0.1.6] - 2019-10-24
-- Updated to 2018 edition idioms (https://github.com/paritytech/parity-common/pull/237)
+- Updated to 2018 edition idioms. [#237](https://github.com/paritytech/parity-common/pull/237)
 ### Dependencies
-- Updated dependencies (https://github.com/paritytech/parity-common/pull/239)
+- Updated dependencies. [#239](https://github.com/paritytech/parity-common/pull/239)

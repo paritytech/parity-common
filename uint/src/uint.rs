@@ -1,4 +1,4 @@
-// Copyright 2015-2017 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -37,6 +37,23 @@ pub enum FromDecStrErr {
 	/// Value does not fit into type
 	InvalidLength,
 }
+
+#[cfg(feature = "std")]
+impl std::fmt::Display for FromDecStrErr {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}",
+			match self {
+				FromDecStrErr::InvalidCharacter => "a character is not in the range 0-9",
+				FromDecStrErr::InvalidLength => "the number is too large for the type",
+			}
+		)
+	}
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for FromDecStrErr {}
 
 #[macro_export]
 #[doc(hidden)]
