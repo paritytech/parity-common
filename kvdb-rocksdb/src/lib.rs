@@ -15,6 +15,7 @@ use parity_util_mem::MallocSizeOf;
 use parking_lot::{Mutex, MutexGuard, RwLock};
 use rocksdb::{
 	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB,
+	DBCompressionType,
 };
 
 use crate::iter::KeyValuePair;
@@ -207,7 +208,16 @@ impl DatabaseConfig {
 		opts.set_block_based_table_factory(block_opts);
 		opts.optimize_level_style_compaction(column_mem_budget);
 		opts.set_target_file_size_base(self.compaction.initial_file_size);
-		opts.set_compression_per_level(&[]);
+		opts.set_compression_per_level(&[
+			DBCompressionType::None,
+			DBCompressionType::None,
+			DBCompressionType::Zstd,
+			DBCompressionType::Zstd,
+			DBCompressionType::Zstd,
+			DBCompressionType::Zstd,
+			DBCompressionType::Zstd,
+			DBCompressionType::Zstd,
+		]);
 
 		opts
 	}
@@ -317,6 +327,7 @@ fn generate_options(config: &DatabaseConfig) -> Options {
 	if config.enable_statistics {
 		opts.enable_statistics();
 	}
+	opts.set_compression_type(DBCompressionType::Zstd);
 	opts.set_use_fsync(false);
 	opts.create_if_missing(true);
 	opts.set_max_open_files(config.max_open_files);
@@ -330,6 +341,8 @@ fn generate_options(config: &DatabaseConfig) -> Options {
 /// Generate the block based options for RocksDB, based on the given `DatabaseConfig`.
 fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
 	let mut block_opts = BlockBasedOptions::default();
+	block_opts.set_format_version(5);
+	block_opts.set_index_block_restart_interval(16);
 	block_opts.set_block_size(config.compaction.block_size);
 	// Set cache size as recommended by
 	// https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
@@ -344,7 +357,7 @@ fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
 		// Don't evict L0 filter/index blocks from the cache
 		block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
 	}
-	block_opts.set_bloom_filter(10, true);
+	block_opts.set_bloom_filter(15, false);
 
 	block_opts
 }
@@ -463,11 +476,11 @@ impl Database {
 							match *state {
 								KeyState::Delete => {
 									bytes += key.len();
-									batch.delete_cf(cf, key).map_err(other_io_err)?
+									batch.delete_cf(cf, key);
 								}
 								KeyState::Insert(ref value) => {
 									bytes += key.len() + value.len();
-									batch.put_cf(cf, key, value).map_err(other_io_err)?
+									batch.put_cf(cf, key, value);
 								}
 							};
 						}
@@ -525,12 +538,12 @@ impl Database {
 					match op {
 						DBOp::Insert { col: _, key, value } => {
 							stats_total_bytes += key.len() + value.len();
-							batch.put_cf(cf, &key, &value).map_err(other_io_err)?
+							batch.put_cf(cf, &key, &value);
 						}
 						DBOp::Delete { col: _, key } => {
 							// We count deletes as writes.
 							stats_total_bytes += key.len();
-							batch.delete_cf(cf, &key).map_err(other_io_err)?
+							batch.delete_cf(cf, &key);
 						}
 					};
 				}
@@ -1083,12 +1096,10 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 		assert!(settings.contains("target_file_size_base: 67108864"));
 
 		// Check compression settings
-		let snappy_compression = settings.matches("Options.compression: Snappy").collect::<Vec<_>>().len();
-		// All columns use Snappy
-		assert_eq!(snappy_compression, NUM_COLS + 1);
+		assert!(settings.contains("Options.compression: ZSTD"));
 		// …even for L7
-		let snappy_bottommost = settings.matches("Options.bottommost_compression: Disabled").collect::<Vec<_>>().len();
-		assert_eq!(snappy_bottommost, NUM_COLS + 1);
+		let bottommost = settings.matches("Options.bottommost_compression: Disabled").collect::<Vec<_>>().len();
+		assert_eq!(bottommost, NUM_COLS + 1);
 
 		// 7 levels
 		let levels = settings.matches("Options.num_levels: 7").collect::<Vec<_>>().len();
@@ -1097,7 +1108,8 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 		// Don't fsync every store
 		assert!(settings.contains("Options.use_fsync: 0"));
 
-		// We're using the old format
-		assert!(settings.contains("format_version: 2"));
+		// We're using the format 5
+		let format_versions = settings.matches("format_version: 5").collect::<Vec<_>>().len();
+		assert_eq!(format_versions, NUM_COLS);
 	}
 }

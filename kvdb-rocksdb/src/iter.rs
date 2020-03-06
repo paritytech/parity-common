@@ -123,12 +123,10 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 	fn iter(&self, col: u32, read_opts: &ReadOptions) -> Self::Iterator {
 		self.db
 			.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::Start)
-			.expect("iterator params are valid; qed")
 	}
 
 	fn iter_from_prefix(&self, col: u32, prefix: &[u8], read_opts: &ReadOptions) -> Self::Iterator {
 		self.db
 			.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::From(prefix, Direction::Forward))
-			.expect("iterator params are valid; qed")
 	}
 }
