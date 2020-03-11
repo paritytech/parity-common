@@ -183,13 +183,19 @@ impl KeyValueDB for Database {
 					write_to_columns!(tr, columns)
 				})
 			},
+			[c1, c2, c3, c4, c5, c6, c7, c8, c9, c10] => {
+				(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10).transaction(|(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10)| {
+					let columns = [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10];
+					write_to_columns!(tr, columns)
+				})
+			},
 			[c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11] => {
 				(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11).transaction(|(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11)| {
 					let columns = [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11];
 					write_to_columns!(tr, columns)
 				})
 			},
-			_ => panic!("only 1, 9 and 11 columns are supported ATM, given {}", self.columns.len()),
+			_ => panic!("only 1 and 9 ... 11 columns are supported ATM, given {}", self.columns.len()),
 		};
 		result.map_err(|_| other_io_err("transaction has failed"))
 	}
