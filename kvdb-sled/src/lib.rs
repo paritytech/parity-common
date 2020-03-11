@@ -132,6 +132,26 @@ impl parity_util_mem::MallocSizeOf for Database {
 	}
 }
 
+macro_rules! write_to_columns {
+	($tr:expr, $columns:expr) => {{
+		for op in &$tr.ops {
+			match op {
+				DBOp::Insert { col, key, value } => {
+					let column = $columns[*col as usize];
+					let val = AsRef::<[u8]>::as_ref(&value);
+					column.insert(key.as_ref(), val)?;
+				},
+				DBOp::Delete { col, key } => {
+					let column = $columns[*col as usize];
+					column.remove(key.as_ref())?;
+				}
+			}
+		}
+
+		Ok(())
+	}}
+}
+
 impl KeyValueDB for Database {
 	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let column = self.column(col)?;
@@ -156,43 +176,20 @@ impl KeyValueDB for Database {
 		// see https://github.com/spacejam/sled/issues/382#issuecomment-526548082
 		// TODO: implement for more sizes via macro
 		let result = match &self.columns[..] {
-			[c1] => c1.transaction(|c1| {
-				let columns = [c1];
-				for op in &tr.ops {
-					match op {
-						DBOp::Insert { col, key, value } => {
-							let column = columns[*col as usize];
-							let val = AsRef::<[u8]>::as_ref(&value);
-							column.insert(key.as_ref(), val)?;
-						},
-						DBOp::Delete { col, key } => {
-							let column = columns[*col as usize];
-							column.remove(key.as_ref())?;
-						}
-					}
-				}
-				Ok(())
-			}),
+			[c1] => c1.transaction(|c1| write_to_columns!(tr, [c1])),
 			[c1, c2, c3, c4, c5, c6, c7, c8, c9] => {
 				(c1, c2, c3, c4, c5, c6, c7, c8, c9).transaction(|(c1, c2, c3, c4, c5, c6, c7, c8, c9)| {
 					let columns = [c1, c2, c3, c4, c5, c6, c7, c8, c9];
-					for op in &tr.ops {
-						match op {
-							DBOp::Insert { col, key, value } => {
-								let column = columns[*col as usize];
-								let val = AsRef::<[u8]>::as_ref(&value);
-								column.insert(key.as_ref(), val)?;
-							},
-							DBOp::Delete { col, key } => {
-								let column = columns[*col as usize];
-								column.remove(key.as_ref())?;
-							}
-						}
-					}
-					Ok(())
+					write_to_columns!(tr, columns)
 				})
 			},
-			_ => panic!("only 1 and 9 columns are supported ATM, given {}", self.columns.len()),
+			[c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11] => {
+				(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11).transaction(|(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11)| {
+					let columns = [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11];
+					write_to_columns!(tr, columns)
+				})
+			},
+			_ => panic!("only 1, 9 and 11 columns are supported ATM, given {}", self.columns.len()),
 		};
 		result.map_err(|_| other_io_err("transaction has failed"))
 	}
