@@ -103,6 +103,11 @@ mod usable_size {
 				pub fn malloc_usable_size(ptr: *const c_void) -> usize;
 			}
 
+		} else if #[cfg(target_os = "linux-android")] {
+			// dummy allocator
+			pub unsafe extern "C" fn malloc_usable_size(_ptr: *const c_void) -> usize {
+				0
+			}
 		} else {
 			// default allocator for non linux or windows system use estimate
 			pub unsafe extern "C" fn malloc_usable_size(_ptr: *const c_void) -> usize {
