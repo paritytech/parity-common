@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 - License changed from GPL3 to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)
-- Remove dependency on parity-bytes.  [#351](https://github.com/paritytech/parity-common/pull/351)
+- Remove dependency on parity-bytes. [#351](https://github.com/paritytech/parity-common/pull/351)
 
 ## [0.4.0] - 2019-01-06
 - Bump parking_lot to 0.10. [#332](https://github.com/paritytech/parity-common/pull/332)
