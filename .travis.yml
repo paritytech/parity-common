@@ -19,12 +19,12 @@ matrix:
       script:
         - cross test --target=aarch64-linux-android -p parity-util-mem
     - os: osx
-      osx_image: xcode11.2
+      osx_image: xcode11.3
       addons:
         chrome: stable
         firefox: latest
       install:
-        - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.1/install.sh | sh
+        - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | sh
         - source ~/.nvm/nvm.sh
         - nvm install --lts
         - npm install -g chromedriver
