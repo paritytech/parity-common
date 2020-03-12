@@ -96,7 +96,7 @@ mod usable_size {
 				mimalloc_sys::mi_usable_size(ptr as *mut _)
 			}
 
-		} else if #[cfg(target_os = "linux")] {
+		} else if #[cfg(any(target_os = "linux", target_os = "android"))] {
 
 			/// Linux call system allocator (currently malloc).
 			extern "C" {
