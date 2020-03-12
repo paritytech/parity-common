@@ -95,7 +95,12 @@ mod usable_size {
 				// but requires a mut pointer in the API
 				mimalloc_sys::mi_usable_size(ptr as *mut _)
 			}
-
+		} else if #[cfg(target_os = "android")] {
+	
+			// dummy allocator
+			pub unsafe extern "C" fn malloc_usable_size(_ptr: *const c_void) -> usize {
+				0
+			}
 		} else if #[cfg(target_os = "linux")] {
 
 			/// Linux call system allocator (currently malloc).
@@ -103,15 +108,10 @@ mod usable_size {
 				pub fn malloc_usable_size(ptr: *const c_void) -> usize;
 			}
 
-		} else if #[cfg(target_os = "android")] {
-			// dummy allocator
-			pub unsafe extern "C" fn malloc_usable_size(_ptr: *const c_void) -> usize {
-				0
-			}
 		} else {
 			// default allocator for non linux or windows system use estimate
 			pub unsafe extern "C" fn malloc_usable_size(_ptr: *const c_void) -> usize {
-				unreachable!("estimate heapsize or feature allocator needed")
+				0
 			}
 
 		}
