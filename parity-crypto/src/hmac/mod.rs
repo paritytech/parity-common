@@ -1,23 +1,18 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 use std::marker::PhantomData;
 use std::ops::Deref;
 
-use digest::generic_array::{GenericArray, typenum::{U32, U64}};
+use digest::generic_array::{
+	typenum::{U32, U64},
+	GenericArray,
+};
 use hmac::{Hmac, Mac as _};
 use zeroize::Zeroize;
 
@@ -52,7 +47,7 @@ pub struct SigKey<T>(KeyInner, PhantomData<T>);
 struct DisposableBox(Box<[u8]>);
 
 impl std::fmt::Debug for DisposableBox {
-	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{:?}", &self.0.as_ref())
 	}
 }
@@ -77,19 +72,13 @@ enum KeyInner {
 
 impl SigKey<Sha256> {
 	pub fn sha256(key: &[u8]) -> SigKey<Sha256> {
-		SigKey(
-			KeyInner::Sha256(DisposableBox::from_slice(key)),
-			PhantomData
-		)
+		SigKey(KeyInner::Sha256(DisposableBox::from_slice(key)), PhantomData)
 	}
 }
 
 impl SigKey<Sha512> {
 	pub fn sha512(key: &[u8]) -> SigKey<Sha512> {
-		SigKey(
-			KeyInner::Sha512(DisposableBox::from_slice(key)),
-			PhantomData
-		)
+		SigKey(KeyInner::Sha512(DisposableBox::from_slice(key)), PhantomData)
 	}
 }
 
@@ -111,23 +100,14 @@ enum SignerInner {
 impl<T> Signer<T> {
 	pub fn with(key: &SigKey<T>) -> Signer<T> {
 		match &key.0 {
-			KeyInner::Sha256(key_bytes) => {
-				Signer(
-					SignerInner::Sha256(
-						Hmac::<sha2::Sha256>::new_varkey(&key_bytes.0)
-							.expect("always returns Ok; qed")
-					),
-					PhantomData
-				)
-			},
-			KeyInner::Sha512(key_bytes) => {
-				Signer(
-					SignerInner::Sha512(
-						Hmac::<sha2::Sha512>::new_varkey(&key_bytes.0)
-							.expect("always returns Ok; qed")
-					), PhantomData
-				)
-			},
+			KeyInner::Sha256(key_bytes) => Signer(
+				SignerInner::Sha256(Hmac::<sha2::Sha256>::new_varkey(&key_bytes.0).expect("always returns Ok; qed")),
+				PhantomData,
+			),
+			KeyInner::Sha512(key_bytes) => Signer(
+				SignerInner::Sha512(Hmac::<sha2::Sha512>::new_varkey(&key_bytes.0).expect("always returns Ok; qed")),
+				PhantomData,
+			),
 		}
 	}
 
@@ -151,19 +131,13 @@ pub struct VerifyKey<T>(KeyInner, PhantomData<T>);
 
 impl VerifyKey<Sha256> {
 	pub fn sha256(key: &[u8]) -> VerifyKey<Sha256> {
-		VerifyKey(
-			KeyInner::Sha256(DisposableBox::from_slice(key)),
-			PhantomData
-		)
+		VerifyKey(KeyInner::Sha256(DisposableBox::from_slice(key)), PhantomData)
 	}
 }
 
 impl VerifyKey<Sha512> {
 	pub fn sha512(key: &[u8]) -> VerifyKey<Sha512> {
-		VerifyKey(
-			KeyInner::Sha512(DisposableBox::from_slice(key)),
-			PhantomData
-		)
+		VerifyKey(KeyInner::Sha512(DisposableBox::from_slice(key)), PhantomData)
 	}
 }
 
@@ -171,17 +145,15 @@ impl VerifyKey<Sha512> {
 pub fn verify<T>(key: &VerifyKey<T>, data: &[u8], sig: &[u8]) -> bool {
 	match &key.0 {
 		KeyInner::Sha256(key_bytes) => {
-			let mut ctx = Hmac::<sha2::Sha256>::new_varkey(&key_bytes.0)
-				.expect("always returns Ok; qed");
+			let mut ctx = Hmac::<sha2::Sha256>::new_varkey(&key_bytes.0).expect("always returns Ok; qed");
 			ctx.input(data);
 			ctx.verify(sig).is_ok()
-		},
+		}
 		KeyInner::Sha512(key_bytes) => {
-			let mut ctx = Hmac::<sha2::Sha512>::new_varkey(&key_bytes.0)
-				.expect("always returns Ok; qed");
+			let mut ctx = Hmac::<sha2::Sha512>::new_varkey(&key_bytes.0).expect("always returns Ok; qed");
 			ctx.input(data);
 			ctx.verify(sig).is_ok()
-		},
+		}
 	}
 }
 

@@ -7,7 +7,7 @@ Provides macros to construct custom fixed-size hash types.
 Simple 256 bit (32 bytes) hash type.
 
 ```rust
-#[macro_use] extern crate fixed_hash;
+use fixed_hash::construct_fixed_hash;
 
 construct_fixed_hash! {
     /// My 256 bit hash type.
@@ -30,9 +30,6 @@ assert_eq!(H160::from(H256::zero()), H160::zero());
 It is possible to add attributes to your types, for example to make them serializable.
 
 ```rust
-extern crate serde;
-#[macro_use] extern crate serde_derive;
-
 construct_fixed_hash!{
     /// My serializable hash type.
     #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]

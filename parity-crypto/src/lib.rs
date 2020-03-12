@@ -1,32 +1,26 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 //! Crypto utils used by ethstore and network.
 
 pub mod aes;
-pub mod error;
-pub mod scrypt;
 pub mod digest;
+pub mod error;
 pub mod hmac;
 pub mod pbkdf2;
+#[cfg(feature = "publickey")]
+pub mod publickey;
+pub mod scrypt;
 
 pub use crate::error::Error;
 
-use tiny_keccak::Keccak;
 use subtle::ConstantTimeEq;
+use tiny_keccak::{Hasher, Keccak};
 
 pub const KEY_LENGTH: usize = 32;
 pub const KEY_ITERATIONS: usize = 10240;
@@ -36,12 +30,17 @@ pub const KEY_LENGTH_AES: usize = KEY_LENGTH / 2;
 pub const DEFAULT_MAC: [u8; 2] = [0, 0];
 
 pub trait Keccak256<T> {
-	fn keccak256(&self) -> T where T: Sized;
+	fn keccak256(&self) -> T
+	where
+		T: Sized;
 }
 
-impl<T> Keccak256<[u8; 32]> for T where T: AsRef<[u8]> {
+impl<T> Keccak256<[u8; 32]> for T
+where
+	T: AsRef<[u8]>,
+{
 	fn keccak256(&self) -> [u8; 32] {
-		let mut keccak = Keccak::new_keccak256();
+		let mut keccak = Keccak::v256();
 		let mut result = [0u8; 32];
 		keccak.update(self.as_ref());
 		keccak.finalize(&mut result);

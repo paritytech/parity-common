@@ -1,16 +1,16 @@
 [package]
 description = "Generic transaction pool."
 name = "transaction-pool"
-version = "2.0.0"
-license = "GPL-3.0"
+version = "2.0.2"
+license = "MIT/Apache2.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 edition = "2018"
 
 [dependencies]
-log = "0.4"
-smallvec = "0.6"
+log = "0.4.8"
+smallvec = "0.6.10"
 trace-time = { path = "../trace-time", version = "0.1" }
 
 [dev-dependencies]
-ethereum-types = { version = "0.7", path = "../ethereum-types" }
+ethereum-types = { version = "0.8.0", path = "../ethereum-types" }

@@ -1,4 +1,4 @@
-// Copyright 2015-2017 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -11,23 +11,30 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[doc(hidden)]
-pub extern crate byteorder;
+pub use byteorder;
 
 // Re-export libcore using an alias so that the macros can work without
 // requiring `extern crate core` downstream.
 #[doc(hidden)]
-pub extern crate core as core_;
+pub use core as core_;
 
 #[doc(hidden)]
-pub extern crate rustc_hex;
+pub use rustc_hex;
 
-#[cfg(feature="quickcheck")]
+#[cfg(feature = "quickcheck")]
 #[doc(hidden)]
-pub extern crate quickcheck;
+pub use qc;
 
-extern crate crunchy;
+#[cfg(feature = "quickcheck")]
+#[doc(hidden)]
+pub use rand;
+
+#[doc(hidden)]
+pub use static_assertions;
+
 pub use crunchy::unroll;
 
 #[macro_use]
+#[rustfmt::skip]
 mod uint;
 pub use crate::uint::*;

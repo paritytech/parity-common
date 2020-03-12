@@ -6,11 +6,15 @@ members = [
 	"kvdb",
 	"kvdb-memorydb",
 	"kvdb-rocksdb",
+	"kvdb-shared-tests",
+	"kvdb-web",
 	"parity-bytes",
 	"parity-crypto",
 	"parity-path",
 	"plain_hasher",
 	"rlp",
+	"rlp-derive",
+	"runtime",
 	"transaction-pool",
 	"trace-time",
 	"triehash",
@@ -19,4 +23,5 @@ members = [
 	"primitive-types",
 	"ethereum-types",
 	"ethbloom",
+	"parity-util-mem/derive"
 ]

@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -8,11 +8,13 @@
 
 //! RLP serialization support for uint and fixed hash.
 
-#[doc(hidden)]
-pub extern crate rlp;
+#![cfg_attr(not(feature = "std"), no_std)]
 
 #[doc(hidden)]
-pub extern crate core as core_;
+pub use rlp;
+
+#[doc(hidden)]
+pub use core as core_;
 
 /// Add RLP serialization support to an integer created by `construct_uint!`.
 #[macro_export]
@@ -40,7 +42,7 @@ macro_rules! impl_uint_rlp {
 				})
 			}
 		}
-	}
+	};
 }
 
 /// Add RLP serialization support to a fixed-sized hash type created by `construct_fixed_hash!`.
@@ -66,5 +68,5 @@ macro_rules! impl_fixed_hash_rlp {
 				})
 			}
 		}
-	}
+	};
 }

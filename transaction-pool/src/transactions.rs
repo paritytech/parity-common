@@ -1,46 +1,29 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 use std::{fmt, mem};
 
-use smallvec::SmallVec;
 use log::warn;
+use smallvec::SmallVec;
 
 use crate::{
-	ready::{Ready, Readiness},
-	scoring::{self, Scoring},
 	pool::Transaction,
+	ready::{Readiness, Ready},
+	scoring::{self, Scoring},
 };
 
 #[derive(Debug)]
 pub enum AddResult<T, S> {
 	Ok(T),
 	TooCheapToEnter(T, S),
-	TooCheap {
-		old: T,
-		new: T,
-	},
-	Replaced {
-		old: T,
-		new: T,
-	},
-	PushedOut {
-		old: T,
-		new: T,
-	},
+	TooCheap { old: T, new: T },
+	Replaced { old: T, new: T },
+	PushedOut { old: T, new: T },
 }
 
 /// Represents all transactions from a particular sender ordered by nonce.
@@ -54,10 +37,7 @@ pub struct Transactions<T, S: Scoring<T>> {
 
 impl<T, S: Scoring<T>> Default for Transactions<T, S> {
 	fn default() -> Self {
-		Transactions {
-			transactions: Default::default(),
-			scores: Default::default(),
-		}
+		Transactions { transactions: Default::default(), scores: Default::default() }
 	}
 }
 
@@ -70,7 +50,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		self.transactions.len()
 	}
 
-	pub fn iter(&self) -> ::std::slice::Iter<Transaction<T>> {
+	pub fn iter(&self) -> ::std::slice::Iter<'_, Transaction<T>> {
 		self.transactions.iter()
 	}
 
@@ -96,7 +76,12 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		})
 	}
 
-	fn push_cheapest_transaction(&mut self, tx: Transaction<T>, scoring: &S, max_count: usize) -> AddResult<Transaction<T>, S::Score> {
+	fn push_cheapest_transaction(
+		&mut self,
+		tx: Transaction<T>,
+		scoring: &S,
+		max_count: usize,
+	) -> AddResult<Transaction<T>, S::Score> {
 		let index = self.transactions.len();
 		if index == max_count && !scoring.should_ignore_sender_limit(&tx) {
 			let min_score = self.scores[index - 1].clone();
@@ -122,16 +107,13 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 
 		// Insert at the end.
 		if index == self.transactions.len() {
-			return self.push_cheapest_transaction(new, scoring, max_count)
+			return self.push_cheapest_transaction(new, scoring, max_count);
 		}
 
 		// Decide if the transaction should replace some other.
 		match scoring.choose(&self.transactions[index], &new) {
 			// New transaction should be rejected
-			scoring::Choice::RejectNew => AddResult::TooCheap {
-				old: self.transactions[index].clone(),
-				new,
-			},
+			scoring::Choice::RejectNew => AddResult::TooCheap { old: self.transactions[index].clone(), new },
 			// New transaction should be kept along with old ones.
 			scoring::Choice::InsertNew => {
 				self.transactions.insert(index, new.clone());
@@ -141,26 +123,24 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 				if self.transactions.len() > max_count {
 					let old = self.transactions.pop().expect("len is non-zero");
 					self.scores.pop();
-					scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::RemovedAt(self.transactions.len()));
+					scoring.update_scores(
+						&self.transactions,
+						&mut self.scores,
+						scoring::Change::RemovedAt(self.transactions.len()),
+					);
 
-					AddResult::PushedOut {
-						old,
-						new,
-					}
+					AddResult::PushedOut { old, new }
 				} else {
 					AddResult::Ok(new)
 				}
-			},
+			}
 			// New transaction is replacing some other transaction already in the queue.
 			scoring::Choice::ReplaceOld => {
 				let old = mem::replace(&mut self.transactions[index], new.clone());
 				scoring.update_scores(&self.transactions, &mut self.scores, scoring::Change::ReplacedAt(index));
 
-				AddResult::Replaced {
-					old,
-					new,
-				}
-			},
+				AddResult::Replaced { old, new }
+			}
 		}
 	}
 
@@ -170,7 +150,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 			Err(_) => {
 				warn!("Attempting to remove non-existent transaction {:?}", tx);
 				return false;
-			},
+			}
 		};
 
 		self.transactions.remove(index);
@@ -191,7 +171,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 			match ready.is_ready(tx) {
 				Readiness::Stale => {
 					first_non_stalled += 1;
-				},
+				}
 				Readiness::Ready | Readiness::Future => break,
 			}
 		}
@@ -207,7 +187,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 		for _ in 0..first_non_stalled {
 			self.scores.pop();
 			result.push(
-				self.transactions.pop().expect("first_non_stalled is never greater than transactions.len(); qed")
+				self.transactions.pop().expect("first_non_stalled is never greater than transactions.len(); qed"),
 			);
 		}
 

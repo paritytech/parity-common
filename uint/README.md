@@ -2,7 +2,7 @@
 
 ## Description
 
-Provides facilities to construct big unsigned integer types.
+Provides facilities to construct big unsigned integer types which use no allocations (stack-based, fixed bit length).
 If you want to use a predefined `U128`, `U256` or `U512` type, take a look at the [`primitive-types`](https://github.com/paritytech/parity-common/tree/master/primitive-types) or [`ethereum-types`](https://github.com/paritytech/parity-common/tree/master/ethereum-types) crate.
 
 The focus on the provided big unsigned integer types is performance and cross-platform availability.
@@ -16,11 +16,26 @@ In your `Cargo.toml` paste
 uint = "0.8"
 ```
 
+Import the macro
+
+```
+use uint::construct_uint;
+```
+
+If you're using pre-edition Rust in your main file
+
+```
+#[macro_use]
+extern crate uint;
+```
+
 Construct your own big unsigned integer type as follows.
 
 ```
 // U1024 with 1024 bits consisting of 16 x 64-bit words
-construct_uint!(U1024; 16);
+construct_uint! {
+	pub struct U1024(16);
+}
 ```
 
 ## Tests

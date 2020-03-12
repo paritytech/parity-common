@@ -1,28 +1,17 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[macro_use]
-extern crate crunchy;
+use core::hash::Hasher;
 
-#[cfg(feature = "std")]
-extern crate core;
+use crunchy::unroll;
 
-use core::hash;
 /// Hasher that just takes 8 bytes of the provided value.
 /// May only be used for keys which are 32 bytes.
 #[derive(Default)]
@@ -30,7 +19,7 @@ pub struct PlainHasher {
 	prefix: u64,
 }
 
-impl hash::Hasher for PlainHasher {
+impl Hasher for PlainHasher {
 	#[inline]
 	fn finish(&self) -> u64 {
 		self.prefix
@@ -57,8 +46,7 @@ impl hash::Hasher for PlainHasher {
 
 #[cfg(test)]
 mod tests {
-	use core::hash::Hasher;
-	use super::PlainHasher;
+	use super::*;
 
 	#[test]
 	fn it_works() {

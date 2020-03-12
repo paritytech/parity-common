@@ -5,35 +5,55 @@ branches:
 matrix:
   include:
     - os: linux
-# without this line
-# travis downgrades the image to trusty somehow
-# which doesn't have C11 support
-# see https://travis-ci.org/paritytech/parity-common/jobs/557850274
-      dist: xenial
       rust: stable
+      before_script:
+        - rustup component add rustfmt
     - os: linux
-      dist: xenial
       rust: beta
     - os: linux
-      dist: xenial
       rust: nightly
+      script:
+        - cargo check --all --benches
     - os: osx
-      osx_image: xcode11
+      osx_image: xcode11.2
+      addons:
+        chrome: stable
+        firefox: latest
+      install:
+        - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.1/install.sh | sh
+        - source ~/.nvm/nvm.sh
+        - nvm install --lts
+        - npm install -g chromedriver
+        - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        - which chromedriver
       rust: stable
   allow_failures:
     - rust: nightly
+install:
+  - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 script:
-  - cargo check --all --tests
-  - cargo build --all
-  - cargo test --all --exclude uint --exclude fixed-hash
-  - if [ "$TRAVIS_RUST_VERSION" == "nightly" ]; then
-    cd parity-bytes/ && cargo build --no-default-features && cd ..;
-    cd fixed-hash/ && cargo test --no-default-features --features="rustc-hex,byteorder" && cd ..;
-    cd keccak-hash/ && cargo test --no-default-features && cd ..;
+  - if [ "$TRAVIS_RUST_VERSION" == "stable" ] && [ "$TRAVIS_OS_NAME" == "linux" ]; then
+    cargo fmt -- --check;
     fi
-  - cd fixed-hash/ && cargo test --all-features && cd ..
-  - cd uint/ && cargo test --features=std,quickcheck --release && cd ..
-  - cd plain_hasher/ && cargo test --no-default-features && cd ..
+  - cargo check --all --tests
+  - cargo check --all --benches
+  - cargo build --all
+  - cargo test --all --exclude uint --exclude fixed-hash --exclude parity-crypto
+  - if [ "$TRAVIS_RUST_VERSION" == "nightly" ]; then
+    cd contract-address/ && cargo test --features=external_doc && cd ..;
+    fi
+  - cd ethbloom/ && cargo test --no-default-features --features="rustc-hex" && cargo check --benches && cd ..
+  - cd fixed-hash/ && cargo test --all-features && cargo test --no-default-features --features="byteorder,rustc-hex" && cd ..
+  - cd uint/ && cargo test --all-features && cargo test --no-default-features && cd ..
+  - cd keccak-hash/ && cargo test --no-default-features && cd ..
+  - cd plain_hasher/ && cargo test --no-default-features && cargo check --benches && cd ..
+  - cd parity-bytes/ && cargo test --no-default-features && cd ..
+  - cd parity-crypto/ && cargo test --all-features && cd ..
   - cd parity-util-mem/ && cargo test --features=estimate-heapsize && cd ..
   - cd parity-util-mem/ && cargo test --features=jemalloc-global && cd ..
   - cd parity-util-mem/ && cargo test --features=mimalloc-global && cd ..
+  - cd parity-util-mem/ && cargo test --no-default-features --features=dlmalloc-global && cd ..
+  - cd rlp/ && cargo test --no-default-features && cargo check --benches && cd ..
+  - cd triehash/ && cargo check --benches && cd ..
+  - cd kvdb-web/ && wasm-pack test --headless --firefox && cd ..
+

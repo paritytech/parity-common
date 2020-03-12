@@ -1,4 +1,4 @@
-// Copyright 2019 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -6,10 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate ethereum_types;
-extern crate serde_json;
-
-use ethereum_types::{U256, U512, H160, H256};
+use ethereum_types::{H160, H256, U256, U512};
 use serde_json as ser;
 
 macro_rules! test {
@@ -42,7 +39,7 @@ macro_rules! test {
 			assert!(ser::from_str::<$name>("\"10\"").unwrap_err().is_data());
 			assert!(ser::from_str::<$name>("\"0\"").unwrap_err().is_data());
 		}
-	}
+	};
 }
 
 test!(U256, test_u256);
@@ -54,9 +51,9 @@ fn test_large_values() {
 		ser::to_string_pretty(&!U256::zero()).unwrap(),
 		"\"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\""
 	);
-	assert!(
-		ser::from_str::<U256>("\"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"").unwrap_err().is_data()
-	);
+	assert!(ser::from_str::<U256>("\"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"")
+		.unwrap_err()
+		.is_data());
 }
 
 #[test]
@@ -97,9 +94,15 @@ fn test_h256() {
 
 #[test]
 fn test_invalid() {
-	assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000\"").unwrap_err().is_data());
-	assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000g\"").unwrap_err().is_data());
-	assert!(ser::from_str::<H256>("\"0x00000000000000000000000000000000000000000000000000000000000000000\"").unwrap_err().is_data());
+	assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000\"")
+		.unwrap_err()
+		.is_data());
+	assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000g\"")
+		.unwrap_err()
+		.is_data());
+	assert!(ser::from_str::<H256>("\"0x00000000000000000000000000000000000000000000000000000000000000000\"")
+		.unwrap_err()
+		.is_data());
 	assert!(ser::from_str::<H256>("\"\"").unwrap_err().is_data());
 	assert!(ser::from_str::<H256>("\"0\"").unwrap_err().is_data());
 	assert!(ser::from_str::<H256>("\"10\"").unwrap_err().is_data());

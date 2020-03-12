@@ -1,18 +1,10 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 //! General bytes-related utilities.
 //!
@@ -20,39 +12,24 @@
 //! as
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(not(feature = "std"), feature(alloc))]
 
 #[cfg(not(feature = "std"))]
-#[macro_use]
 extern crate alloc;
 
-#[cfg(feature = "std")]
-extern crate core;
-
-use core::{
-	cmp::min,
-	fmt,
-	ops::{Deref, DerefMut},
-};
-
 #[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-
-#[cfg(feature = "std")]
-use std::vec::Vec;
-
-#[cfg(not(feature = "std"))]
-use alloc::string::String;
+use alloc::{format, string::String, vec::Vec};
+use core::{cmp::min, fmt, ops};
 
 /// Slice pretty print helper
-pub struct PrettySlice<'a> (&'a [u8]);
+pub struct PrettySlice<'a>(&'a [u8]);
 
 impl<'a> fmt::Debug for PrettySlice<'a> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		for i in 0..self.0.len() {
-			match i > 0 {
-				true => { write!(f, "·{:02x}", self.0[i])?; },
-				false => { write!(f, "{:02x}", self.0[i])?; },
+			if i > 0 {
+				write!(f, "·{:02x}", self.0[i])?;
+			} else {
+				write!(f, "{:02x}", self.0[i])?;
 			}
 		}
 		Ok(())
@@ -60,7 +37,7 @@ impl<'a> fmt::Debug for PrettySlice<'a> {
 }
 
 impl<'a> fmt::Display for PrettySlice<'a> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		for i in 0..self.0.len() {
 			write!(f, "{:02x}", self.0[i])?;
 		}
@@ -72,7 +49,7 @@ impl<'a> fmt::Display for PrettySlice<'a> {
 /// defaults cannot otherwise be avoided.
 pub trait ToPretty {
 	/// Convert a type into a derivative form in order to make `format!` print it prettily.
-	fn pretty(&self) -> PrettySlice;
+	fn pretty(&self) -> PrettySlice<'_>;
 	/// Express the object as a hex string.
 	fn to_hex(&self) -> String {
 		format!("{}", self.pretty())
@@ -80,7 +57,7 @@ pub trait ToPretty {
 }
 
 impl<T: AsRef<[u8]>> ToPretty for T {
-	fn pretty(&self) -> PrettySlice {
+	fn pretty(&self) -> PrettySlice<'_> {
 		PrettySlice(self.as_ref())
 	}
 }
@@ -90,7 +67,7 @@ pub enum BytesRef<'a> {
 	/// This is a reference to a vector
 	Flexible(&'a mut Bytes),
 	/// This is a reference to a slice
-	Fixed(&'a mut [u8])
+	Fixed(&'a mut [u8]),
 }
 
 impl<'a> BytesRef<'a> {
@@ -106,20 +83,18 @@ impl<'a> BytesRef<'a> {
 				data.resize(offset, 0);
 				data.extend_from_slice(input);
 				wrote
-			},
+			}
 			BytesRef::Fixed(ref mut data) if offset < data.len() => {
 				let max = min(data.len() - offset, input.len());
-				for i in 0..max {
-					data[offset + i] = input[i];
-				}
+				data[offset..(max + offset)].copy_from_slice(&input[..max]);
 				max
-			},
-			_ => 0
+			}
+			_ => 0,
 		}
 	}
 }
 
-impl<'a> Deref for BytesRef<'a> {
+impl<'a> ops::Deref for BytesRef<'a> {
 	type Target = [u8];
 
 	fn deref(&self) -> &[u8] {
@@ -130,7 +105,7 @@ impl<'a> Deref for BytesRef<'a> {
 	}
 }
 
-impl <'a> DerefMut for BytesRef<'a> {
+impl<'a> ops::DerefMut for BytesRef<'a> {
 	fn deref_mut(&mut self) -> &mut [u8] {
 		match *self {
 			BytesRef::Flexible(ref mut bytes) => bytes,
@@ -145,6 +120,8 @@ pub type Bytes = Vec<u8>;
 #[cfg(test)]
 mod tests {
 	use super::BytesRef;
+	#[cfg(not(feature = "std"))]
+	use alloc::vec;
 
 	#[test]
 	fn should_write_bytes_to_fixed_bytesref() {

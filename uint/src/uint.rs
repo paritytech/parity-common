@@ -1,4 +1,4 @@
-// Copyright 2015-2017 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -38,6 +38,23 @@ pub enum FromDecStrErr {
 	InvalidLength,
 }
 
+#[cfg(feature = "std")]
+impl std::fmt::Display for FromDecStrErr {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}",
+			match self {
+				FromDecStrErr::InvalidCharacter => "a character is not in the range 0-9",
+				FromDecStrErr::InvalidLength => "the number is too large for the type",
+			}
+		)
+	}
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for FromDecStrErr {}
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_map_from {
@@ -47,7 +64,7 @@ macro_rules! impl_map_from {
 				From::from(value as $to)
 			}
 		}
-	}
+	};
 }
 
 #[macro_export]
@@ -61,49 +78,55 @@ macro_rules! impl_try_from_for_primitive {
 			fn try_from(u: $from) -> $crate::core_::result::Result<$to, &'static str> {
 				let $from(arr) = u;
 				if !u.fits_word() || arr[0] > <$to>::max_value() as u64 {
-					Err(concat!("integer overflow when casting to ", stringify!($to)))
+					Err(concat!(
+						"integer overflow when casting to ",
+						stringify!($to)
+					))
 				} else {
 					Ok(arr[0] as $to)
 				}
 			}
 		}
-	}
+	};
 }
 
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_overflowing_binop {
-	($name:ident, $n_words: tt, $self_expr: expr, $other: expr, $fn:expr) => ({
+	($name:ident, $n_words: tt, $self_expr: expr, $other: expr, $fn:expr) => {{
+		use $crate::core_ as core;
 		let $name(ref me) = $self_expr;
 		let $name(ref you) = $other;
 
-		let mut ret = unsafe { $crate::core_::mem::uninitialized() };
+		let mut ret = [0u64; $n_words];
 		let ret_ptr = &mut ret as *mut [u64; $n_words] as *mut u64;
 		let mut carry = 0u64;
+		$crate::static_assertions::const_assert!(
+			core::isize::MAX as usize / core::mem::size_of::<u64>() > $n_words
+		);
 
+		// `unroll!` is recursive, but doesn’t use `$crate::unroll`, so we need to ensure that it
+		// is in scope unqualified.
+		use $crate::unroll;
 		unroll! {
 			for i in 0..$n_words {
-				use $crate::core_::ptr;
+				use core::ptr;
 
 				if carry != 0 {
 					let (res1, overflow1) = ($fn)(me[i], you[i]);
 					let (res2, overflow2) = ($fn)(res1, carry);
 
 					unsafe {
-						ptr::write(
-							ret_ptr.offset(i as _),
-							res2
-						);
+						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
+						*ret_ptr.offset(i as _) = res2
 					}
 					carry = (overflow1 as u8 + overflow2 as u8) as u64;
 				} else {
 					let (res, overflow) = ($fn)(me[i], you[i]);
 
 					unsafe {
-						ptr::write(
-							ret_ptr.offset(i as _),
-							res
-						);
+						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
+						*ret_ptr.offset(i as _) = res
 					}
 
 					carry = overflow as u64;
@@ -112,68 +135,72 @@ macro_rules! uint_overflowing_binop {
 		}
 
 		($name(ret), carry > 0)
-	})
+		}};
 }
 
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_full_mul_reg {
 	($name:ident, 8, $self_expr:expr, $other:expr) => {
-		uint_full_mul_reg!($name, 8, $self_expr, $other, |a, b| a != 0 || b != 0);
+		$crate::uint_full_mul_reg!($name, 8, $self_expr, $other, |a, b| a != 0 || b != 0);
 	};
 	($name:ident, $n_words:tt, $self_expr:expr, $other:expr) => {
-		uint_full_mul_reg!($name, $n_words, $self_expr, $other, |_, _| true);
+		$crate::uint_full_mul_reg!($name, $n_words, $self_expr, $other, |_, _| true);
 	};
-	($name:ident, $n_words:tt, $self_expr:expr, $other:expr, $check:expr) => ({{
-		#![allow(unused_assignments)]
+	($name:ident, $n_words:tt, $self_expr:expr, $other:expr, $check:expr) => {{
+		{
+			#![allow(unused_assignments)]
 
-		let $name(ref me) = $self_expr;
-		let $name(ref you) = $other;
-		let mut ret = [0u64; $n_words * 2];
+			let $name(ref me) = $self_expr;
+			let $name(ref you) = $other;
+			let mut ret = [0u64; $n_words * 2];
 
-		unroll! {
-			for i in 0..$n_words {
-				let mut carry = 0u64;
-				let b = you[i];
+			use $crate::unroll;
+			unroll! {
+				for i in 0..$n_words {
+					let mut carry = 0u64;
+					let b = you[i];
 
-				unroll! {
-					for j in 0..$n_words {
-						if $check(me[j], carry) {
-							let a = me[j];
+					unroll! {
+						for j in 0..$n_words {
+							if $check(me[j], carry) {
+								let a = me[j];
 
-							let (hi, low) = Self::split_u128(a as u128 * b as u128);
+								let (hi, low) = Self::split_u128(a as u128 * b as u128);
 
-							let overflow = {
-								let existing_low = &mut ret[i + j];
-								let (low, o) = low.overflowing_add(*existing_low);
-								*existing_low = low;
-								o
-							};
+								let overflow = {
+									let existing_low = &mut ret[i + j];
+									let (low, o) = low.overflowing_add(*existing_low);
+									*existing_low = low;
+									o
+								};
 
-							carry = {
-								let existing_hi = &mut ret[i + j + 1];
-								let hi = hi + overflow as u64;
-								let (hi, o0) = hi.overflowing_add(carry);
-								let (hi, o1) = hi.overflowing_add(*existing_hi);
-								*existing_hi = hi;
+								carry = {
+									let existing_hi = &mut ret[i + j + 1];
+									let hi = hi + overflow as u64;
+									let (hi, o0) = hi.overflowing_add(carry);
+									let (hi, o1) = hi.overflowing_add(*existing_hi);
+									*existing_hi = hi;
 
-								(o0 | o1) as u64
+									(o0 | o1) as u64
+								}
 							}
 						}
 					}
 				}
 			}
-		}
 
-		ret
-	}});
+			ret
+		}
+	}};
 }
 
 #[macro_export]
 #[doc(hidden)]
 macro_rules! uint_overflowing_mul {
-	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => ({
-		let ret: [u64; $n_words * 2] = uint_full_mul_reg!($name, $n_words, $self_expr, $other);
+	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => {{
+		let ret: [u64; $n_words * 2] =
+			$crate::uint_full_mul_reg!($name, $n_words, $self_expr, $other);
 
 		// The safety of this is enforced by the compiler
 		let ret: [[u64; $n_words]; 2] = unsafe { $crate::core_::mem::transmute(ret) };
@@ -181,6 +208,7 @@ macro_rules! uint_overflowing_mul {
 		// The compiler WILL NOT inline this if you remove this annotation.
 		#[inline(always)]
 		fn any_nonzero(arr: &[u64; $n_words]) -> bool {
+			use $crate::unroll;
 			unroll! {
 				for i in 0..$n_words {
 					if arr[i] != 0 {
@@ -193,25 +221,21 @@ macro_rules! uint_overflowing_mul {
 		}
 
 		($name(ret[0]), any_nonzero(&ret[1]))
-	})
+	}};
 }
 
 #[macro_export]
 #[doc(hidden)]
 macro_rules! overflowing {
-	($op: expr, $overflow: expr) => (
-		{
-			let (overflow_x, overflow_overflow) = $op;
-			$overflow |= overflow_overflow;
-			overflow_x
-		}
-	);
-	($op: expr) => (
-		{
-			let (overflow_x, _overflow_overflow) = $op;
-			overflow_x
-		}
-	);
+	($op: expr, $overflow: expr) => {{
+		let (overflow_x, overflow_overflow) = $op;
+		$overflow |= overflow_overflow;
+		overflow_x
+	}};
+	($op: expr) => {{
+		let (overflow_x, _overflow_overflow) = $op;
+		overflow_x
+	}};
 }
 
 #[macro_export]
@@ -220,8 +244,8 @@ macro_rules! panic_on_overflow {
 	($name: expr) => {
 		if $name {
 			panic!("arithmetic operation overflow")
-		}
-	}
+			}
+	};
 }
 
 #[macro_export]
@@ -234,7 +258,7 @@ macro_rules! impl_mul_from {
 			fn mul(self, other: $other) -> $name {
 				let bignum: $name = other.into();
 				let (result, overflow) = self.overflowing_mul(bignum);
-				panic_on_overflow!(overflow);
+				$crate::panic_on_overflow!(overflow);
 				result
 			}
 		}
@@ -245,7 +269,7 @@ macro_rules! impl_mul_from {
 			fn mul(self, other: &'a $other) -> $name {
 				let bignum: $name = (*other).into();
 				let (result, overflow) = self.overflowing_mul(bignum);
-				panic_on_overflow!(overflow);
+				$crate::panic_on_overflow!(overflow);
 				result
 			}
 		}
@@ -256,7 +280,7 @@ macro_rules! impl_mul_from {
 			fn mul(self, other: &'a $other) -> $name {
 				let bignum: $name = (*other).into();
 				let (result, overflow) = self.overflowing_mul(bignum);
-				panic_on_overflow!(overflow);
+				$crate::panic_on_overflow!(overflow);
 				result
 			}
 		}
@@ -267,7 +291,7 @@ macro_rules! impl_mul_from {
 			fn mul(self, other: $other) -> $name {
 				let bignum: $name = other.into();
 				let (result, overflow) = self.overflowing_mul(bignum);
-				panic_on_overflow!(overflow);
+				$crate::panic_on_overflow!(overflow);
 				result
 			}
 		}
@@ -278,7 +302,7 @@ macro_rules! impl_mul_from {
 				*self = result
 			}
 		}
-	}
+	};
 }
 
 #[macro_export]
@@ -290,7 +314,7 @@ macro_rules! impl_mul_for_primitive {
 
 			fn mul(self, other: $other) -> $name {
 				let (result, carry) = self.overflowing_mul_u64(other as u64);
-				panic_on_overflow!(carry > 0);
+				$crate::panic_on_overflow!(carry > 0);
 				result
 			}
 		}
@@ -300,7 +324,7 @@ macro_rules! impl_mul_for_primitive {
 
 			fn mul(self, other: &'a $other) -> $name {
 				let (result, carry) = self.overflowing_mul_u64(*other as u64);
-				panic_on_overflow!(carry > 0);
+				$crate::panic_on_overflow!(carry > 0);
 				result
 			}
 		}
@@ -310,7 +334,7 @@ macro_rules! impl_mul_for_primitive {
 
 			fn mul(self, other: &'a $other) -> $name {
 				let (result, carry) = self.overflowing_mul_u64(*other as u64);
-				panic_on_overflow!(carry > 0);
+				$crate::panic_on_overflow!(carry > 0);
 				result
 			}
 		}
@@ -320,7 +344,7 @@ macro_rules! impl_mul_for_primitive {
 
 			fn mul(self, other: $other) -> $name {
 				let (result, carry) = self.overflowing_mul_u64(other as u64);
-				panic_on_overflow!(carry > 0);
+				$crate::panic_on_overflow!(carry > 0);
 				result
 			}
 		}
@@ -331,17 +355,17 @@ macro_rules! impl_mul_for_primitive {
 				*self = result
 			}
 		}
-	}
+	};
 }
 
 #[macro_export]
 macro_rules! construct_uint {
 	( $(#[$attr:meta])* $visibility:vis struct $name:ident (1); ) => {
-		construct_uint!{ @construct $(#[$attr])* $visibility struct $name (1); }
+		$crate::construct_uint!{ @construct $(#[$attr])* $visibility struct $name (1); }
 	};
 
 	( $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_words:tt ); ) => {
-			construct_uint! { @construct $(#[$attr])* $visibility struct $name ($n_words); }
+			$crate::construct_uint! { @construct $(#[$attr])* $visibility struct $name ($n_words); }
 
 			impl $crate::core_::convert::From<u128> for $name {
 				fn from(value: u128) -> $name {
@@ -364,7 +388,7 @@ macro_rules! construct_uint {
 			impl $name {
 				/// Low 2 words (u128)
 				#[inline]
-				pub fn low_u128(&self) -> u128 {
+				pub const fn low_u128(&self) -> u128 {
 					let &$name(ref arr) = self;
 					((arr[1] as u128) << 64) + arr[0] as u128
 				}
@@ -424,9 +448,11 @@ macro_rules! construct_uint {
 		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 		$visibility struct $name (pub [u64; $n_words]);
 
-		impl AsRef<$name> for $name {
-			fn as_ref(&self) -> &$name {
-				&self
+		/// Get a reference to the underlying little-endian words.
+		impl AsRef<[u64]> for $name {
+			#[inline]
+			fn as_ref(&self) -> &[u64] {
+				&self.0
 			}
 		}
 
@@ -464,14 +490,14 @@ macro_rules! construct_uint {
 
 			/// Conversion to u32
 			#[inline]
-			pub fn low_u32(&self) -> u32 {
+			pub const fn low_u32(&self) -> u32 {
 				let &$name(ref arr) = self;
 				arr[0] as u32
 			}
 
 			/// Low word (u64)
 			#[inline]
-			pub fn low_u64(&self) -> u64 {
+			pub const fn low_u64(&self) -> u64 {
 				let &$name(ref arr) = self;
 				arr[0]
 			}
@@ -551,7 +577,7 @@ macro_rules! construct_uint {
 			///
 			/// Panics if `index` exceeds the bit width of the number.
 			#[inline]
-			pub fn bit(&self, index: usize) -> bool {
+			pub const fn bit(&self, index: usize) -> bool {
 				let &$name(ref arr) = self;
 				arr[index / 64] & (1 << (index % 64)) != 0
 			}
@@ -592,7 +618,7 @@ macro_rules! construct_uint {
 			///
 			/// Panics if `index` exceeds the byte width of the number.
 			#[inline]
-			pub fn byte(&self, index: usize) -> u8 {
+			pub const fn byte(&self, index: usize) -> u8 {
 				let &$name(ref arr) = self;
 				(arr[index / 8] >> (((index % 8)) * 8)) as u8
 			}
@@ -633,8 +659,8 @@ macro_rules! construct_uint {
 
 			/// Zero (additive identity) of this type.
 			#[inline]
-			pub fn zero() -> Self {
-				From::from(0u64)
+			pub const fn zero() -> Self {
+				Self([0; $n_words])
 			}
 
 			/// One (multiplicative identity) of this type.
@@ -816,7 +842,7 @@ macro_rules! construct_uint {
 				self.div_mod_knuth(other, n, m)
 			}
 
-			/// Fast exponentation by squaring
+			/// Fast exponentiation by squaring
 			/// https://en.wikipedia.org/wiki/Exponentiation_by_squaring
 			///
 			/// # Panics
@@ -847,7 +873,7 @@ macro_rules! construct_uint {
 				x * y
 			}
 
-			/// Fast exponentation by squaring. Returns result and overflow flag.
+			/// Fast exponentiation by squaring. Returns result and overflow flag.
 			pub fn overflowing_pow(self, expon: Self) -> (Self, bool) {
 				if expon.is_zero() { return (Self::one(), false) }
 
@@ -861,22 +887,22 @@ macro_rules! construct_uint {
 
 				while n > u_one {
 					if is_even(&n) {
-						x = overflowing!(x.overflowing_mul(x), overflow);
+						x = $crate::overflowing!(x.overflowing_mul(x), overflow);
 						n = n >> 1usize;
 					} else {
-						y = overflowing!(x.overflowing_mul(y), overflow);
-						x = overflowing!(x.overflowing_mul(x), overflow);
+						y = $crate::overflowing!(x.overflowing_mul(y), overflow);
+						x = $crate::overflowing!(x.overflowing_mul(x), overflow);
 						n = (n - u_one) >> 1usize;
 					}
 				}
-				let res = overflowing!(x.overflowing_mul(y), overflow);
+				let res = $crate::overflowing!(x.overflowing_mul(y), overflow);
 				(res, overflow)
 			}
 
 			/// Add with overflow.
 			#[inline(always)]
 			pub fn overflowing_add(self, other: $name) -> ($name, bool) {
-				uint_overflowing_binop!(
+				$crate::uint_overflowing_binop!(
 					$name,
 					$n_words,
 					self,
@@ -904,7 +930,7 @@ macro_rules! construct_uint {
 			/// Subtraction which underflows and returns a flag if it does.
 			#[inline(always)]
 			pub fn overflowing_sub(self, other: $name) -> ($name, bool) {
-				uint_overflowing_binop!(
+				$crate::uint_overflowing_binop!(
 					$name,
 					$n_words,
 					self,
@@ -932,7 +958,7 @@ macro_rules! construct_uint {
 			/// Multiply with overflow, returning a flag if it does.
 			#[inline(always)]
 			pub fn overflowing_mul(self, other: $name) -> ($name, bool) {
-				uint_overflowing_mul!($name, $n_words, self, other)
+				$crate::uint_overflowing_mul!($name, $n_words, self, other)
 			}
 
 			/// Multiplication which saturates at the maximum value..
@@ -1057,18 +1083,18 @@ macro_rules! construct_uint {
 			}
 
 			#[inline(always)]
-			fn mul_u64(a: u64, b: u64, carry: u64) -> (u64, u64) {
-				let (hi, lo) = Self::split_u128(u128::from(a) * u128::from(b) + u128::from(carry));
+			const fn mul_u64(a: u64, b: u64, carry: u64) -> (u64, u64) {
+				let (hi, lo) = Self::split_u128(a as u128 * b as u128 + carry as u128);
 				(lo, hi)
 			}
 
 			#[inline(always)]
-			fn split(a: u64) -> (u64, u64) {
+			const fn split(a: u64) -> (u64, u64) {
 				(a >> 32, a & 0xFFFF_FFFF)
 			}
 
 			#[inline(always)]
-			fn split_u128(a: u128) -> (u64, u64) {
+			const fn split_u128(a: u128) -> (u64, u64) {
 				((a >> 64) as _, (a & 0xFFFFFFFFFFFFFFFF) as _)
 			}
 
@@ -1154,10 +1180,10 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl_map_from!($name, u8, u64);
-		impl_map_from!($name, u16, u64);
-		impl_map_from!($name, u32, u64);
-		impl_map_from!($name, usize, u64);
+		$crate::impl_map_from!($name, u8, u64);
+		$crate::impl_map_from!($name, u16, u64);
+		$crate::impl_map_from!($name, u32, u64);
+		$crate::impl_map_from!($name, usize, u64);
 
 		impl $crate::core_::convert::From<i64> for $name {
 			fn from(value: i64) -> $name {
@@ -1168,10 +1194,10 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl_map_from!($name, i8, i64);
-		impl_map_from!($name, i16, i64);
-		impl_map_from!($name, i32, i64);
-		impl_map_from!($name, isize, i64);
+		$crate::impl_map_from!($name, i8, i64);
+		$crate::impl_map_from!($name, i16, i64);
+		$crate::impl_map_from!($name, i32, i64);
+		$crate::impl_map_from!($name, isize, i64);
 
 		// Converts from big endian representation.
 		impl<'a> $crate::core_::convert::From<&'a [u8]> for $name {
@@ -1180,23 +1206,23 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl_try_from_for_primitive!($name, u8);
-		impl_try_from_for_primitive!($name, u16);
-		impl_try_from_for_primitive!($name, u32);
-		impl_try_from_for_primitive!($name, usize);
-		impl_try_from_for_primitive!($name, u64);
-		impl_try_from_for_primitive!($name, i8);
-		impl_try_from_for_primitive!($name, i16);
-		impl_try_from_for_primitive!($name, i32);
-		impl_try_from_for_primitive!($name, isize);
-		impl_try_from_for_primitive!($name, i64);
+		$crate::impl_try_from_for_primitive!($name, u8);
+		$crate::impl_try_from_for_primitive!($name, u16);
+		$crate::impl_try_from_for_primitive!($name, u32);
+		$crate::impl_try_from_for_primitive!($name, usize);
+		$crate::impl_try_from_for_primitive!($name, u64);
+		$crate::impl_try_from_for_primitive!($name, i8);
+		$crate::impl_try_from_for_primitive!($name, i16);
+		$crate::impl_try_from_for_primitive!($name, i32);
+		$crate::impl_try_from_for_primitive!($name, isize);
+		$crate::impl_try_from_for_primitive!($name, i64);
 
 		impl<T> $crate::core_::ops::Add<T> for $name where T: Into<$name> {
 			type Output = $name;
 
 			fn add(self, other: T) -> $name {
 				let (result, overflow) = self.overflowing_add(other.into());
-				panic_on_overflow!(overflow);
+				$crate::panic_on_overflow!(overflow);
 				result
 			}
 		}
@@ -1212,7 +1238,7 @@ macro_rules! construct_uint {
 		impl $crate::core_::ops::AddAssign<$name> for $name {
 			fn add_assign(&mut self, other: $name) {
 				let (result, overflow) = self.overflowing_add(other);
-				panic_on_overflow!(overflow);
+				$crate::panic_on_overflow!(overflow);
 				*self = result
 			}
 		}
@@ -1223,7 +1249,7 @@ macro_rules! construct_uint {
 			#[inline]
 			fn sub(self, other: T) -> $name {
 				let (result, overflow) = self.overflowing_sub(other.into());
-				panic_on_overflow!(overflow);
+				$crate::panic_on_overflow!(overflow);
 				result
 			}
 		}
@@ -1239,23 +1265,23 @@ macro_rules! construct_uint {
 		impl $crate::core_::ops::SubAssign<$name> for $name {
 			fn sub_assign(&mut self, other: $name) {
 				let (result, overflow) = self.overflowing_sub(other);
-				panic_on_overflow!(overflow);
+				$crate::panic_on_overflow!(overflow);
 				*self = result
 			}
 		}
 
 		// all other impls
-		impl_mul_from!($name, $name);
-		impl_mul_for_primitive!($name, u8);
-		impl_mul_for_primitive!($name, u16);
-		impl_mul_for_primitive!($name, u32);
-		impl_mul_for_primitive!($name, u64);
-		impl_mul_for_primitive!($name, usize);
-		impl_mul_for_primitive!($name, i8);
-		impl_mul_for_primitive!($name, i16);
-		impl_mul_for_primitive!($name, i32);
-		impl_mul_for_primitive!($name, i64);
-		impl_mul_for_primitive!($name, isize);
+		$crate::impl_mul_from!($name, $name);
+		$crate::impl_mul_for_primitive!($name, u8);
+		$crate::impl_mul_for_primitive!($name, u16);
+		$crate::impl_mul_for_primitive!($name, u32);
+		$crate::impl_mul_for_primitive!($name, u64);
+		$crate::impl_mul_for_primitive!($name, usize);
+		$crate::impl_mul_for_primitive!($name, i8);
+		$crate::impl_mul_for_primitive!($name, i16);
+		$crate::impl_mul_for_primitive!($name, i32);
+		$crate::impl_mul_for_primitive!($name, i64);
+		$crate::impl_mul_for_primitive!($name, isize);
 
 		impl<T> $crate::core_::ops::Div<T> for $name where T: Into<$name> {
 			type Output = $name;
@@ -1524,10 +1550,10 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl_std_for_uint!($name, $n_words);
+		$crate::impl_std_for_uint!($name, $n_words);
 		// `$n_words * 8` because macro expects bytes and
 		// uints use 64 bit (8 byte) words
-		impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
+		$crate::impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
 	}
 }
 
@@ -1556,14 +1582,14 @@ macro_rules! impl_std_for_uint {
 				s.parse().unwrap()
 			}
 		}
-	}
+	};
 }
 
 #[cfg(not(feature = "std"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_std_for_uint {
-	($name: ident, $n_words: tt) => {}
+	($name: ident, $n_words: tt) => {};
 }
 
 #[cfg(feature = "quickcheck")]
@@ -1571,11 +1597,12 @@ macro_rules! impl_std_for_uint {
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_uint {
 	($uint: ty, $n_bytes: tt) => {
-		impl $crate::quickcheck::Arbitrary for $uint {
-			fn arbitrary<G: $crate::quickcheck::Gen>(g: &mut G) -> Self {
+		impl $crate::qc::Arbitrary for $uint {
+			fn arbitrary<G: $crate::qc::Gen>(g: &mut G) -> Self {
 				let mut res = [0u8; $n_bytes];
 
-				let p = g.next_f64();
+				use $crate::rand::Rng;
+				let p: f64 = $crate::rand::rngs::OsRng.gen();
 				// make it more likely to generate smaller numbers that
 				// don't use up the full $n_bytes
 				let range =
@@ -1596,12 +1623,12 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 				res.as_ref().into()
 			}
 		}
-	}
+	};
 }
 
 #[cfg(not(feature = "quickcheck"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_uint {
-	($uint: ty, $n_bytes: tt) => {}
+	($uint: ty, $n_bytes: tt) => {};
 }

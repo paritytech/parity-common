@@ -1,18 +1,10 @@
-// Copyright 2015-2019 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 //! default allocator management
 //! Features are:
@@ -41,89 +33,85 @@
 //!	 - jemalloc: compile error
 //!	 - mimalloc: compile error (until https://github.com/microsoft/mimalloc/pull/32 is merged)
 
-
-use malloc_size::{MallocSizeOfOps, VoidPtrToSizeFn, MallocSizeOf};
 #[cfg(feature = "std")]
-use malloc_size::MallocUnconditionalSizeOf;
-#[cfg(feature = "std")]
-use std::os::raw::c_void;
+use crate::malloc_size::MallocUnconditionalSizeOf;
+use crate::malloc_size::{MallocSizeOf, MallocSizeOfOps, VoidPtrToSizeFn};
 #[cfg(not(feature = "std"))]
 use core::ffi::c_void;
+#[cfg(feature = "std")]
+use std::os::raw::c_void;
 
 mod usable_size {
 
 	use super::*;
 
-cfg_if! {
+	cfg_if::cfg_if! {
 
-	if #[cfg(any(
-		target_arch = "wasm32",
-		feature = "estimate-heapsize",
-		feature = "weealloc-global",
-		feature = "dlmalloc-global",
-	))] {
+		if #[cfg(any(
+			target_arch = "wasm32",
+			feature = "estimate-heapsize",
+			feature = "weealloc-global",
+			feature = "dlmalloc-global",
+		))] {
 
-		// do not try system allocator
+			// do not try system allocator
 
-		/// Warning this is for compatibility only.
-		/// This function does panic: `estimate-heapsize` feature needs to be activated
-		/// to avoid this function call.
-		pub unsafe extern "C" fn malloc_usable_size(_ptr: *const c_void) -> usize {
-			unreachable!("estimate heapsize only")
-		}
-
-	} else if #[cfg(target_os = "windows")] {
-
-		// default windows allocator
-		extern crate winapi;
-
-		use self::winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
-
-		/// Get the size of a heap block.
-		/// Call windows allocator through `winapi` crate
-		pub unsafe extern "C" fn malloc_usable_size(mut ptr: *const c_void) -> usize {
-
-			let heap = GetProcessHeap();
-
-			if HeapValidate(heap, 0, ptr) == 0 {
-				ptr = *(ptr as *const *const c_void).offset(-1);
+			/// Warning this is for compatibility only.
+			/// This function does panic: `estimate-heapsize` feature needs to be activated
+			/// to avoid this function call.
+			pub unsafe extern "C" fn malloc_usable_size(_ptr: *const c_void) -> usize {
+				unreachable!("estimate heapsize only")
 			}
 
-			HeapSize(heap, 0, ptr) as usize
-		}
+		} else if #[cfg(target_os = "windows")] {
 
-	} else if #[cfg(feature = "jemalloc-global")] {
+			use winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
 
-		/// Use of jemalloc usable size C function through jemallocator crate call.
-		pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
-			jemallocator::usable_size(ptr)
-		}
+			/// Get the size of a heap block.
+			/// Call windows allocator through `winapi` crate
+			pub unsafe extern "C" fn malloc_usable_size(mut ptr: *const c_void) -> usize {
 
-	} else if #[cfg(feature = "mimalloc-global")] {
+				let heap = GetProcessHeap();
 
-		/// Use of mimalloc usable size C function through mimalloc_sys crate call.
-		pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
-			// mimalloc doesn't actually mutate the value ptr points to,
-			// but requires a mut pointer in the API
-			mimalloc_sys::mi_usable_size(ptr as *mut _)
-		}
+				if HeapValidate(heap, 0, ptr) == 0 {
+					ptr = *(ptr as *const *const c_void).offset(-1);
+				}
 
-	} else if #[cfg(target_os = "linux")] {
+				HeapSize(heap, 0, ptr) as usize
+			}
 
-		/// Linux call system allocator (currently malloc).
-		extern "C" {
-			pub fn malloc_usable_size(ptr: *const c_void) -> usize;
-		}
+		} else if #[cfg(feature = "jemalloc-global")] {
 
-	} else {
-		// default allocator for non linux or windows system use estimate
-		pub unsafe extern "C" fn malloc_usable_size(_ptr: *const c_void) -> usize {
-			unreachable!("estimate heapsize or feature allocator needed")
+			/// Use of jemalloc usable size C function through jemallocator crate call.
+			pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
+				jemallocator::usable_size(ptr)
+			}
+
+		} else if #[cfg(feature = "mimalloc-global")] {
+
+			/// Use of mimalloc usable size C function through mimalloc_sys crate call.
+			pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
+				// mimalloc doesn't actually mutate the value ptr points to,
+				// but requires a mut pointer in the API
+				mimalloc_sys::mi_usable_size(ptr as *mut _)
+			}
+
+		} else if #[cfg(target_os = "linux")] {
+
+			/// Linux call system allocator (currently malloc).
+			extern "C" {
+				pub fn malloc_usable_size(ptr: *const c_void) -> usize;
+			}
+
+		} else {
+			// default allocator for non linux or windows system use estimate
+			pub unsafe extern "C" fn malloc_usable_size(_ptr: *const c_void) -> usize {
+				unreachable!("estimate heapsize or feature allocator needed")
+			}
+
 		}
 
 	}
-
-}
 
 	/// No enclosing function defined.
 	#[inline]
@@ -134,11 +122,7 @@ cfg_if! {
 
 /// Get a new instance of a MallocSizeOfOps
 pub fn new_malloc_size_ops() -> MallocSizeOfOps {
-	MallocSizeOfOps::new(
-		usable_size::malloc_usable_size,
-		usable_size::new_enclosing_size_fn(),
-		None,
-	)
+	MallocSizeOfOps::new(usable_size::malloc_usable_size, usable_size::new_enclosing_size_fn(), None)
 }
 
 /// Extension methods for `MallocSizeOf` trait, do not implement
@@ -154,7 +138,7 @@ pub trait MallocSizeOfExt: MallocSizeOf {
 	}
 }
 
-impl<T: MallocSizeOf> MallocSizeOfExt for T { }
+impl<T: MallocSizeOf> MallocSizeOfExt for T {}
 
 #[cfg(feature = "std")]
 impl<T: MallocSizeOf> MallocSizeOf for std::sync::Arc<T> {

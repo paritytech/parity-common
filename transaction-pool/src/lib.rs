@@ -1,18 +1,10 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 //! Generic Transaction Pool
 //!
@@ -51,7 +43,7 @@
 //! 1. The pool groups transactions from particular sender together
 //!    and stores them ordered by `Scoring` within that group
 //!    i.e. `HashMap<Sender, Vec<Transaction>>`.
-//! 2. Additionaly we maintain the best and the worst transaction from each sender
+//! 2. Additionally we maintain the best and the worst transaction from each sender
 //!    (by `Scoring` not `priority`) ordered by `priority`.
 //!    It means that we can easily identify the best transaction inside the entire pool
 //!    and the worst transaction.
@@ -86,9 +78,9 @@ pub mod scoring;
 pub use self::error::Error;
 pub use self::listener::{Listener, NoopListener};
 pub use self::options::Options;
-pub use self::pool::{Pool, PendingIterator, UnorderedIterator, Transaction};
-pub use self::ready::{Ready, Readiness};
-pub use self::replace::{ShouldReplace, ReplaceTransaction};
+pub use self::pool::{PendingIterator, Pool, Transaction, UnorderedIterator};
+pub use self::ready::{Readiness, Ready};
+pub use self::replace::{ReplaceTransaction, ShouldReplace};
 pub use self::scoring::Scoring;
 pub use self::status::{LightStatus, Status};
 pub use self::verifier::Verifier;

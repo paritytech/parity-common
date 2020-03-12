@@ -1,16 +1,24 @@
 [package]
 name = "plain_hasher"
 description = "Hasher for 32-byte keys."
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Parity Technologies <admin@parity.io>"]
-license = "MIT"
+license = "MIT/Apache2.0"
 keywords = ["hash", "hasher"]
 homepage = "https://github.com/paritytech/parity-common"
-categories = [ "no-std"]
+categories = ["no-std"]
+edition = "2018"
 
 [dependencies]
-crunchy = { version = "0.2.1", default-features = false }
+crunchy = { version = "0.2.2", default-features = false }
+
+[dev-dependencies]
+criterion = "0.3.0"
 
 [features]
 default = ["std"]
 std = ["crunchy/std"]
+
+[[bench]]
+name = "bench"
+harness = false

@@ -1,8 +1,16 @@
-construct_fixed_hash!{ struct H32(4); }
-construct_fixed_hash!{ struct H64(8); }
-construct_fixed_hash!{ struct H128(16); }
-construct_fixed_hash!{ struct H160(20); }
-construct_fixed_hash!{ struct H256(32); }
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
+construct_fixed_hash! { pub struct H32(4); }
+construct_fixed_hash! { pub struct H64(8); }
+construct_fixed_hash! { pub struct H128(16); }
+construct_fixed_hash! { pub struct H160(20); }
+construct_fixed_hash! { pub struct H256(32); }
 
 impl_fixed_hash_conversions!(H256, H160);
 
@@ -153,26 +161,14 @@ mod to_low_u64 {
 
 	#[test]
 	fn smaller_size() {
-		assert_eq!(
-			H32::from([0x01, 0x23, 0x45, 0x67]).to_low_u64_be(),
-			0x0123_4567
-		);
-		assert_eq!(
-			H32::from([0x01, 0x23, 0x45, 0x67]).to_low_u64_le(),
-			0x6745_2301_0000_0000
-		);
+		assert_eq!(H32::from([0x01, 0x23, 0x45, 0x67]).to_low_u64_be(), 0x0123_4567);
+		assert_eq!(H32::from([0x01, 0x23, 0x45, 0x67]).to_low_u64_le(), 0x6745_2301_0000_0000);
 	}
 
 	#[test]
 	fn equal_size() {
-		assert_eq!(
-			H64::from([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF]).to_low_u64_le(),
-			0xEFCD_AB89_6745_2301
-		);
-		assert_eq!(
-			H64::from([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF]).to_low_u64_be(),
-			0x0123_4567_89AB_CDEF
-		)
+		assert_eq!(H64::from([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF]).to_low_u64_le(), 0xEFCD_AB89_6745_2301);
+		assert_eq!(H64::from([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF]).to_low_u64_be(), 0x0123_4567_89AB_CDEF)
 	}
 
 	#[test]
@@ -205,14 +201,8 @@ mod from_low_u64 {
 
 	#[test]
 	fn smaller_size() {
-		assert_eq!(
-			H32::from_low_u64_be(0x0123_4567_89AB_CDEF),
-			H32::from([0x01, 0x23, 0x45, 0x67])
-		);
-		assert_eq!(
-			H32::from_low_u64_le(0x0123_4567_89AB_CDEF),
-			H32::from([0xEF, 0xCD, 0xAB, 0x89])
-		);
+		assert_eq!(H32::from_low_u64_be(0x0123_4567_89AB_CDEF), H32::from([0x01, 0x23, 0x45, 0x67]));
+		assert_eq!(H32::from_low_u64_le(0x0123_4567_89AB_CDEF), H32::from([0xEF, 0xCD, 0xAB, 0x89]));
 	}
 
 	#[test]
@@ -250,29 +240,26 @@ mod from_low_u64 {
 #[cfg(feature = "rand")]
 mod rand {
 	use super::*;
-	use rand::{SeedableRng, XorShiftRng};
+	use ::rand::{rngs::StdRng, SeedableRng};
 
 	#[test]
 	fn random() {
-		let default_seed = <XorShiftRng as SeedableRng>::Seed::default();
-		let mut rng = XorShiftRng::from_seed(default_seed);
-		assert_eq!(
-			H32::random_using(&mut rng),
-			H32::from([0x43, 0xCA, 0x64, 0xED])
-		);
+		let default_seed = <StdRng as SeedableRng>::Seed::default();
+		let mut rng = StdRng::from_seed(default_seed);
+		assert_eq!(H32::random_using(&mut rng), H32::from([0x76, 0xa0, 0x40, 0x53]));
 	}
 
 	#[test]
 	fn randomize() {
-		let default_seed = <XorShiftRng as SeedableRng>::Seed::default();
-		let mut rng = XorShiftRng::from_seed(default_seed);
+		let default_seed = <StdRng as SeedableRng>::Seed::default();
+		let mut rng = StdRng::from_seed(default_seed);
 		assert_eq!(
 			{
 				let mut ret = H32::zero();
 				ret.randomize_using(&mut rng);
 				ret
 			},
-			H32::from([0x43, 0xCA, 0x64, 0xED])
+			H32::from([0x76, 0xa0, 0x40, 0x53])
 		)
 	}
 }
@@ -283,7 +270,7 @@ mod from_str {
 
 	#[test]
 	fn valid() {
-		use core_::str::FromStr;
+		use crate::core_::str::FromStr;
 
 		assert_eq!(
 			H64::from_str("0123456789ABCDEF").unwrap(),
@@ -293,19 +280,19 @@ mod from_str {
 
 	#[test]
 	fn empty_str() {
-		use core_::str::FromStr;
+		use crate::core_::str::FromStr;
 		assert!(H64::from_str("").is_err())
 	}
 
 	#[test]
 	fn invalid_digits() {
-		use core_::str::FromStr;
+		use crate::core_::str::FromStr;
 		assert!(H64::from_str("Hello, World!").is_err())
 	}
 
 	#[test]
 	fn too_many_digits() {
-		use core_::str::FromStr;
+		use crate::core_::str::FromStr;
 		assert!(H64::from_str("0123456789ABCDEF0").is_err())
 	}
 }
@@ -313,14 +300,13 @@ mod from_str {
 #[test]
 fn from_h160_to_h256() {
 	let h160 = H160::from([
-		0xEF, 0x2D, 0x6D, 0x19, 0x40, 0x84, 0xC2, 0xDE, 0x36, 0xE0, 0xDA, 0xBF, 0xCE, 0x45, 0xD0,
-		0x46, 0xB3, 0x7D, 0x11, 0x06,
+		0xEF, 0x2D, 0x6D, 0x19, 0x40, 0x84, 0xC2, 0xDE, 0x36, 0xE0, 0xDA, 0xBF, 0xCE, 0x45, 0xD0, 0x46, 0xB3, 0x7D,
+		0x11, 0x06,
 	]);
 	let h256 = H256::from(h160);
 	let expected = H256::from([
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xEF, 0x2D, 0x6D,
-		0x19, 0x40, 0x84, 0xC2, 0xDE, 0x36, 0xE0, 0xDA, 0xBF, 0xCE, 0x45, 0xD0, 0x46, 0xB3, 0x7D,
-		0x11, 0x06,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xEF, 0x2D, 0x6D, 0x19, 0x40, 0x84,
+		0xC2, 0xDE, 0x36, 0xE0, 0xDA, 0xBF, 0xCE, 0x45, 0xD0, 0x46, 0xB3, 0x7D, 0x11, 0x06,
 	]);
 	assert_eq!(h256, expected);
 }

@@ -1,4 +1,4 @@
-// Copyright 2015-2017 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -6,7 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::fmt;
+use core::fmt;
+#[cfg(feature = "std")]
 use std::error::Error as StdError;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -36,6 +37,7 @@ pub enum DecoderError {
 	Custom(&'static str),
 }
 
+#[cfg(feature = "std")]
 impl StdError for DecoderError {
 	fn description(&self) -> &str {
 		"builder error"

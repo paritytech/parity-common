@@ -1,23 +1,18 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 use std::marker::PhantomData;
 use std::ops::Deref;
 
-use digest::generic_array::{GenericArray, typenum::{U20, U32, U64}};
+use digest::generic_array::{
+	typenum::{U20, U32, U64},
+	GenericArray,
+};
 use sha2::Digest as RDigest;
 
 /// The message digest.
@@ -74,7 +69,7 @@ pub struct Hasher<T>(Inner, PhantomData<T>);
 enum Inner {
 	Sha256(sha2::Sha256),
 	Sha512(sha2::Sha512),
-	Ripemd160(ripemd160::Ripemd160)
+	Ripemd160(ripemd160::Ripemd160),
 }
 
 impl Hasher<Sha256> {
@@ -98,29 +93,17 @@ impl Hasher<Ripemd160> {
 impl<T> Hasher<T> {
 	pub fn update(&mut self, data: &[u8]) {
 		match self.0 {
-			Inner::Sha256(ref mut ctx) => {
-				ctx.input(data)
-			},
-			Inner::Sha512(ref mut ctx) => {
-				ctx.input(data)
-			},
-			Inner::Ripemd160(ref mut ctx) => {
-				ctx.input(data)
-			}
+			Inner::Sha256(ref mut ctx) => ctx.input(data),
+			Inner::Sha512(ref mut ctx) => ctx.input(data),
+			Inner::Ripemd160(ref mut ctx) => ctx.input(data),
 		}
 	}
 
 	pub fn finish(self) -> Digest<T> {
 		match self.0 {
-			Inner::Sha256(ctx) => {
-				Digest(InnerDigest::Sha256(ctx.result()), PhantomData)
-			},
-			Inner::Sha512(ctx) => {
-				Digest(InnerDigest::Sha512(ctx.result()), PhantomData)
-			},
-			Inner::Ripemd160(ctx) => {
-				Digest(InnerDigest::Ripemd160(ctx.result()), PhantomData)
-			}
+			Inner::Sha256(ctx) => Digest(InnerDigest::Sha256(ctx.result()), PhantomData),
+			Inner::Sha512(ctx) => Digest(InnerDigest::Sha512(ctx.result()), PhantomData),
+			Inner::Ripemd160(ctx) => Digest(InnerDigest::Ripemd160(ctx.result()), PhantomData),
 		}
 	}
 }

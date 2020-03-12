@@ -1,4 +1,16 @@
-use crate::{U64, U128, U256, U512};
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
+use crate::{U128, U256, U512, U64};
+use fixed_hash::*;
+use impl_rlp::impl_fixed_hash_rlp;
+#[cfg(feature = "serialize")]
+use impl_serde::impl_fixed_hash_serde;
 
 pub trait BigEndianHash {
 	type Uint;
@@ -7,30 +19,35 @@ pub trait BigEndianHash {
 	fn into_uint(&self) -> Self::Uint;
 }
 
-construct_fixed_hash!{ pub struct H32(4); }
+construct_fixed_hash! { pub struct H32(4); }
 impl_fixed_hash_rlp!(H32, 4);
-#[cfg(feature = "serialize")] impl_fixed_hash_serde!(H32, 4);
+#[cfg(feature = "serialize")]
+impl_fixed_hash_serde!(H32, 4);
 
-construct_fixed_hash!{ pub struct H64(8); }
+construct_fixed_hash! { pub struct H64(8); }
 impl_fixed_hash_rlp!(H64, 8);
-#[cfg(feature = "serialize")] impl_fixed_hash_serde!(H64, 8);
+#[cfg(feature = "serialize")]
+impl_fixed_hash_serde!(H64, 8);
 
-construct_fixed_hash!{ pub struct H128(16); }
+construct_fixed_hash! { pub struct H128(16); }
 impl_fixed_hash_rlp!(H128, 16);
-#[cfg(feature = "serialize")] impl_fixed_hash_serde!(H128, 16);
+#[cfg(feature = "serialize")]
+impl_fixed_hash_serde!(H128, 16);
 
 pub use primitive_types::H160;
 pub use primitive_types::H256;
 
-construct_fixed_hash!{ pub struct H264(33); }
+construct_fixed_hash! { pub struct H264(33); }
 impl_fixed_hash_rlp!(H264, 33);
-#[cfg(feature = "serialize")] impl_fixed_hash_serde!(H264, 33);
+#[cfg(feature = "serialize")]
+impl_fixed_hash_serde!(H264, 33);
 
 pub use primitive_types::H512;
 
-construct_fixed_hash!{ pub struct H520(65); }
+construct_fixed_hash! { pub struct H520(65); }
 impl_fixed_hash_rlp!(H520, 65);
-#[cfg(feature = "serialize")] impl_fixed_hash_serde!(H520, 65);
+#[cfg(feature = "serialize")]
+impl_fixed_hash_serde!(H520, 65);
 
 macro_rules! impl_uint_conversions {
 	($hash: ident, $uint: ident) => {
@@ -47,7 +64,7 @@ macro_rules! impl_uint_conversions {
 				$uint::from(self.as_ref() as &[u8])
 			}
 		}
-	}
+	};
 }
 
 impl_uint_conversions!(H64, U64);
@@ -87,7 +104,10 @@ mod tests {
 			(H256::from_low_u64_be(16), "0x0000000000000000000000000000000000000000000000000000000000000010"),
 			(H256::from_low_u64_be(1_000), "0x00000000000000000000000000000000000000000000000000000000000003e8"),
 			(H256::from_low_u64_be(100_000), "0x00000000000000000000000000000000000000000000000000000000000186a0"),
-			(H256::from_low_u64_be(u64::max_value()), "0x000000000000000000000000000000000000000000000000ffffffffffffffff"),
+			(
+				H256::from_low_u64_be(u64::max_value()),
+				"0x000000000000000000000000000000000000000000000000ffffffffffffffff",
+			),
 		];
 
 		for (number, expected) in tests {
@@ -98,9 +118,15 @@ mod tests {
 
 	#[test]
 	fn test_serialize_invalid() {
-		assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000\"").unwrap_err().is_data());
-		assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000g\"").unwrap_err().is_data());
-		assert!(ser::from_str::<H256>("\"0x00000000000000000000000000000000000000000000000000000000000000000\"").unwrap_err().is_data());
+		assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000\"")
+			.unwrap_err()
+			.is_data());
+		assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000g\"")
+			.unwrap_err()
+			.is_data());
+		assert!(ser::from_str::<H256>("\"0x00000000000000000000000000000000000000000000000000000000000000000\"")
+			.unwrap_err()
+			.is_data());
 		assert!(ser::from_str::<H256>("\"\"").unwrap_err().is_data());
 		assert!(ser::from_str::<H256>("\"0\"").unwrap_err().is_data());
 		assert!(ser::from_str::<H256>("\"10\"").unwrap_err().is_data());

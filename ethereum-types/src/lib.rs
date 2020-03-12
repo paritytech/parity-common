@@ -1,30 +1,19 @@
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 #![cfg_attr(not(feature = "std"), no_std)]
-
-#[cfg(feature = "std")]
-extern crate core;
-#[macro_use]
-extern crate uint as uint_crate;
-#[macro_use]
-extern crate fixed_hash;
-extern crate ethbloom;
-extern crate primitive_types;
-
-#[cfg(feature = "serialize")]
-#[macro_use]
-extern crate impl_serde;
-
-#[macro_use]
-extern crate impl_rlp;
-
-#[cfg(test)]
-extern crate serde_json;
 
 mod hash;
 mod uint;
 
-pub use uint::{U64, U128, U256, U512};
-pub use hash::{BigEndianHash, H32, H64, H128, H160, H256, H264, H512, H520};
 pub use ethbloom::{Bloom, BloomRef, Input as BloomInput};
+pub use hash::{BigEndianHash, H128, H160, H256, H264, H32, H512, H520, H64};
+pub use uint::{FromDecStrErr, U128, U256, U512, U64};
 
 pub type Address = H160;
 pub type Secret = H256;
