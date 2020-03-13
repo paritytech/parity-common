@@ -208,9 +208,9 @@ pub fn test_delete_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 		(&[1u8][..], [true, true, true, false, false, false, false, true, true, true]),
 		// edge
 		(&[1u8, 255, 255][..], [true, true, true, true, true, true, false, true, true, true]),
-		// none 1 
+		// none 1
 		(&[1, 2][..], [true, true, true, true, true, true, true, true, true, true]),
-		// none 2 
+		// none 2
 		(&[8][..], [true, true, true, true, true, true, true, true, true, true]),
 		// all
 		(&[][..], [false, false, false, false, false, false, false, false, false, false]),
