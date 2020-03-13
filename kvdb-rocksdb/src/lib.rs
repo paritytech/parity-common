@@ -484,8 +484,16 @@ impl Database {
 					for (c, column) in self.flushing_prefix.read().iter().enumerate() {
 						for prefix in column.iter() {
 							let cf = cfs.cf(c);
-							let end_range = end_prefix(&prefix[..]);
-							batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?
+							if prefix.len() > 0 {
+								let end_range = end_prefix(&prefix[..]);
+								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
+							} else {
+								// delete the whole column
+								let end_range = &[255u8];
+								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
+								batch.delete_cf(cf, &end_range[..]).map_err(other_io_err)?;
+								batch.delete_cf(cf, &[]).map_err(other_io_err)?;
+							}
 						}
 					}
 				}
@@ -553,8 +561,16 @@ impl Database {
 							batch.delete_cf(cf, &key).map_err(other_io_err)?
 						}
 						DBOp::DeletePrefix { col: _, prefix } => {
-							let end_range = end_prefix(&prefix[..]);
-							batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?
+							if prefix.len() > 0 {
+								let end_range = end_prefix(&prefix[..]);
+								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
+							} else {
+								// delete the whole column
+								let end_range = &[255u8];
+								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
+								batch.delete_cf(cf, &end_range[..]).map_err(other_io_err)?;
+								batch.delete_cf(cf, &[]).map_err(other_io_err)?;
+							}
 						}
 					};
 				}
@@ -852,43 +868,57 @@ mod tests {
 	#[test]
 	fn get_fails_with_non_existing_column() -> io::Result<()> {
 		let db = create(1)?;
-		st::test_get_fails_with_non_existing_column(&db)
+		st::test_get_fails_with_non_existing_column(&db)?;
+		Ok(())
 	}
 
 	#[test]
 	fn put_and_get() -> io::Result<()> {
 		let db = create(1)?;
-		st::test_put_and_get(&db)
+		st::test_put_and_get(&db)?;
+		Ok(())
 	}
 
 	#[test]
 	fn delete_and_get() -> io::Result<()> {
 		let db = create(1)?;
-		st::test_delete_and_get(&db)
+		st::test_delete_and_get(&db)?;
+		Ok(())
+	}
+
+	#[test]
+	fn delete_prefix() -> io::Result<()> {
+		let db = create(st::NB_DELETE_PREFIX_TESTS)?;
+		st::test_delete_prefix(&db)?;
+		Ok(())
 	}
 
 	#[test]
 	fn iter() -> io::Result<()> {
 		let db = create(1)?;
-		st::test_iter(&db)
+		st::test_iter(&db)?;
+		Ok(())
 	}
 
 	#[test]
 	fn iter_from_prefix() -> io::Result<()> {
 		let db = create(1)?;
-		st::test_iter_from_prefix(&db)
+		st::test_iter_from_prefix(&db)?;
+		Ok(())
 	}
 
 	#[test]
 	fn complex() -> io::Result<()> {
 		let db = create(1)?;
-		st::test_complex(&db)
+		st::test_complex(&db)?;
+		Ok(())
 	}
 
 	#[test]
 	fn stats() -> io::Result<()> {
 		let db = create(3)?;
-		st::test_io_stats(&db)
+		st::test_io_stats(&db)?;
+		Ok(())
 	}
 
 	#[test]

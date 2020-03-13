@@ -132,36 +132,49 @@ mod tests {
 	#[test]
 	fn get_fails_with_non_existing_column() -> io::Result<()> {
 		let db = create(1);
-		st::test_get_fails_with_non_existing_column(&db)
+		st::test_get_fails_with_non_existing_column(&db)?;
+		Ok(())
 	}
 
 	#[test]
 	fn put_and_get() -> io::Result<()> {
 		let db = create(1);
-		st::test_put_and_get(&db)
+		st::test_put_and_get(&db)?;
+		Ok(())
 	}
 
 	#[test]
 	fn delete_and_get() -> io::Result<()> {
 		let db = create(1);
-		st::test_delete_and_get(&db)
+		st::test_delete_and_get(&db)?;
+		Ok(())
+	}
+
+	#[test]
+	fn delete_prefix() -> io::Result<()> {
+		let db = create(st::NB_DELETE_PREFIX_TESTS);
+		st::test_delete_prefix(&db)?;
+		Ok(())
 	}
 
 	#[test]
 	fn iter() -> io::Result<()> {
 		let db = create(1);
-		st::test_iter(&db)
+		st::test_iter(&db)?;
+		Ok(())
 	}
 
 	#[test]
 	fn iter_from_prefix() -> io::Result<()> {
 		let db = create(1);
-		st::test_iter_from_prefix(&db)
+		st::test_iter_from_prefix(&db)?;
+		Ok(())
 	}
 
 	#[test]
 	fn complex() -> io::Result<()> {
 		let db = create(1);
-		st::test_complex(&db)
+		st::test_complex(&db)?;
+		Ok(())
 	}
 }

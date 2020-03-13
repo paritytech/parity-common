@@ -171,6 +171,62 @@ pub fn test_io_stats(db: &dyn KeyValueDB) -> io::Result<()> {
 	Ok(())
 }
 
+pub const NB_DELETE_PREFIX_TESTS: u32 = 5;
+
+/// A test for `KeyValueDB::delete_prefix`.
+pub fn test_delete_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
+	let keys = [
+		&[][..],
+		&[0u8][..],
+		&[0, 1][..],
+		&[1][..],
+		&[1, 0][..],
+		&[1, 255][..],
+		&[1, 255, 255][..],
+		&[2][..],
+		&[2, 0][..],
+		&[2, 255][..],
+	];
+	let init_db = |ix: u32| -> io::Result<()> {
+		let mut batch = db.transaction();
+		for (i, key) in keys.iter().enumerate() {
+			batch.put(ix, key, &[i as u8]);
+		}
+		db.write(batch)?;
+		db.flush()
+	};
+	let check_db = |ix: u32, content: [bool; 10]| -> io::Result<()> {
+		let mut state = [true; 10];
+		for (c, key) in keys.iter().enumerate() {
+			state[c] = db.get(ix, key)?.is_some();
+		}
+		assert_eq!(state, content, "at {}", ix);
+		Ok(())
+	};
+	let tests: [_; NB_DELETE_PREFIX_TESTS as usize] = [
+		// standard
+		(&[1u8][..], [true, true, true, false, false, false, false, true, true, true]),
+		// edge
+		(&[1u8, 255, 255][..], [true, true, true, true, true, true, false, true, true, true]),
+		// none 1 
+		(&[1, 2][..], [true, true, true, true, true, true, true, true, true, true]),
+		// none 2 
+		(&[8][..], [true, true, true, true, true, true, true, true, true, true]),
+		// all
+		(&[][..], [false, false, false, false, false, false, false, false, false, false]),
+	];
+	for (ix, test) in tests.iter().enumerate() {
+		let ix = ix as u32;
+		init_db(ix)?;
+		let mut batch = db.transaction();
+		batch.delete_prefix(ix, test.0);
+		db.write(batch)?;
+		check_db(ix, test.1)?;
+	}
+
+	Ok(())
+}
+
 /// A complex test.
 pub fn test_complex(db: &dyn KeyValueDB) -> io::Result<()> {
 	let key1 = b"02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc";
