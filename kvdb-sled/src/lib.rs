@@ -57,10 +57,10 @@ impl DatabaseConfig {
 
 fn to_sled_config(config: &DatabaseConfig, path: &str) -> sled::Config {
 	let conf = sled::Config::default()
+		.use_compression(true)
 		.path(path)
 		.cache_capacity(config.memory_budget())
 		.flush_every_ms(Some(2_000)); // TODO: a random constant
-	// .snapshot_after_ops(100_000);
 	conf
 }
 
