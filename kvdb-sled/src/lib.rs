@@ -16,16 +16,19 @@
 
 //! KeyValueDB implementation for sled database.
 
-use kvdb::{KeyValueDB, DBTransaction, DBValue, DBOp};
-use std::io;
-use sled::Transactional as _;
+use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
 use log::warn;
+use sled::Transactional as _;
+use std::io;
 
 const KB: u64 = 1024;
 const MB: u64 = 1024 * KB;
 const DB_DEFAULT_MEMORY_BUDGET_MB: u64 = 1024;
 
-fn other_io_err<E>(e: E) -> io::Error where E: Into<Box<dyn std::error::Error + Send + Sync>> {
+fn other_io_err<E>(e: E) -> io::Error
+where
+	E: Into<Box<dyn std::error::Error + Send + Sync>>,
+{
 	io::Error::new(io::ErrorKind::Other, e)
 }
 
@@ -45,10 +48,7 @@ pub struct DatabaseConfig {
 
 impl DatabaseConfig {
 	pub fn with_columns(columns: u32) -> Self {
-		Self {
-			columns,
-			memory_budget_mb: None,
-		}
+		Self { columns, memory_budget_mb: None }
 	}
 	pub fn memory_budget(&self) -> u64 {
 		self.memory_budget_mb.unwrap_or(DB_DEFAULT_MEMORY_BUDGET_MB) * MB
@@ -78,15 +78,10 @@ impl Database {
 
 		let db = conf.open()?;
 		let num_columns = config.columns;
-		let columns = (0..num_columns)
-			.map(|i| db.open_tree(col_name(i).as_bytes()))
-			.collect::<sled::Result<Vec<_>>>()?;
+		let columns =
+			(0..num_columns).map(|i| db.open_tree(col_name(i).as_bytes())).collect::<sled::Result<Vec<_>>>()?;
 
-		Ok(Database {
-			db,
-			columns,
-			path: path.to_string(),
-		})
+		Ok(Database { db, columns, path: path.to_string() })
 	}
 
 	/// The database path.
@@ -119,9 +114,7 @@ impl Database {
 	}
 
 	fn column(&self, col: u32) -> io::Result<&sled::Tree> {
-		self.columns
-			.get(col as usize)
-			.ok_or_else(|| other_io_err("kvdb column index is out of bounds"))
+		self.columns.get(col as usize).ok_or_else(|| other_io_err("kvdb column index is out of bounds"))
 	}
 }
 
@@ -135,9 +128,7 @@ impl parity_util_mem::MallocSizeOf for Database {
 impl KeyValueDB for Database {
 	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let column = self.column(col)?;
-		column.get(key)
-			.map(|maybe| maybe.map(|ivec| ivec.to_vec()))
-			.map_err(other_io_err)
+		column.get(key).map(|maybe| maybe.map(|ivec| ivec.to_vec())).map_err(other_io_err)
 	}
 
 	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>> {
@@ -152,77 +143,45 @@ impl KeyValueDB for Database {
 	}
 
 	fn write(&self, tr: DBTransaction) -> io::Result<()> {
-		// FIXME: sled currently support transactions only on tuples of trees,
-		// see https://github.com/spacejam/sled/issues/382#issuecomment-526548082
-		// TODO: implement for more sizes via macro
-		let result = match &self.columns[..] {
-			[c1] => c1.transaction(|c1| {
-				let columns = [c1];
-				for op in &tr.ops {
-					match op {
-						DBOp::Insert { col, key, value } => {
-							let column = columns[*col as usize];
-							let val = AsRef::<[u8]>::as_ref(&value);
-							column.insert(key.as_ref(), val)?;
-						},
-						DBOp::Delete { col, key } => {
-							let column = columns[*col as usize];
-							column.remove(key.as_ref())?;
-						}
+		let result = self.columns[..].transaction(|columns| {
+			for op in &tr.ops {
+				match op {
+					DBOp::Insert { col, key, value } => {
+						let column = &columns[*col as usize];
+						let val = AsRef::<[u8]>::as_ref(&value);
+						column.insert(key.as_ref(), val)?;
+					}
+					DBOp::Delete { col, key } => {
+						let column = &columns[*col as usize];
+						column.remove(key.as_ref())?;
 					}
 				}
-				Ok(())
-			}),
-			[c1, c2, c3, c4, c5, c6, c7, c8, c9] => {
-				(c1, c2, c3, c4, c5, c6, c7, c8, c9).transaction(|(c1, c2, c3, c4, c5, c6, c7, c8, c9)| {
-					let columns = [c1, c2, c3, c4, c5, c6, c7, c8, c9];
-					for op in &tr.ops {
-						match op {
-							DBOp::Insert { col, key, value } => {
-								let column = columns[*col as usize];
-								let val = AsRef::<[u8]>::as_ref(&value);
-								column.insert(key.as_ref(), val)?;
-							},
-							DBOp::Delete { col, key } => {
-								let column = columns[*col as usize];
-								column.remove(key.as_ref())?;
-							}
-						}
-					}
-					Ok(())
-				})
-			},
-			_ => panic!("only 1 and 9 columns are supported ATM, given {}", self.columns.len()),
-		};
-		result.map_err(|_| other_io_err("transaction has failed"))
+			}
+			Ok(()) as sled::transaction::ConflictableTransactionResult<(), sled::Error>
+		});
+		result.map_err(|_| other_io_err("sled transaction has failed"))
 	}
 
 	fn flush(&self) -> io::Result<()> {
-		// TODO: leads to a deadlock?
-		// for tree in &self.columns {
-		// 	tree.flush().map_err(other_io_err)?;
-		// }
 		Ok(())
 	}
 
-	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a> {
-		let iter = DatabaseIter {
-			inner: self.columns[col as usize].iter(),
-		};
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
+		let iter = DatabaseIter { inner: self.columns[col as usize].iter() };
 		Box::new(iter.into_iter())
 	}
 
-	fn iter_from_prefix<'a>(&'a self, col: u32, prefix: &'a [u8])
-		-> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'a>
-	{
-		let iter = DatabaseIter {
-			inner: self.columns[col as usize].scan_prefix(prefix),
-		};
+	fn iter_from_prefix<'a>(
+		&'a self,
+		col: u32,
+		prefix: &'a [u8],
+	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
+		let iter = DatabaseIter { inner: self.columns[col as usize].scan_prefix(prefix) };
 		Box::new(iter.into_iter())
 	}
 
 	fn restore(&self, _new_db: &str) -> io::Result<()> {
-		unimplemented!("TODO")
+		todo!()
 	}
 }
 
