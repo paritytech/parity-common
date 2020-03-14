@@ -159,7 +159,7 @@ impl KeyValueDB for Database {
 			}
 			Ok(()) as sled::transaction::ConflictableTransactionResult<(), sled::Error>
 		});
-		result.map_err(|_| other_io_err("sled transaction has failed"))
+		result.map_err(other_io_err)
 	}
 
 	fn flush(&self) -> io::Result<()> {
