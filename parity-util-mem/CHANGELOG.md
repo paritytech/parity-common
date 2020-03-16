@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.5.3] - 2020-03-13
+## [0.6.0] - 2020-03-13
 - Updated dependencies. [#361](https://github.com/paritytech/parity-common/pull/361)
 
 ## [0.5.2] - 2020-03-13

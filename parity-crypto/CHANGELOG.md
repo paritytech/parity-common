@@ -6,8 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.5.1] - 2020-03-16
+## [0.6.0] - 2020-03-16
 - License changed from GPL3 to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)
+- Updated dependencies. [#361](https://github.com/paritytech/parity-common/pull/361)
 
 ## [0.5.0] - 2020-02-08
 - Remove `inv()` from `SecretKey` (breaking). [#258](https://github.com/paritytech/parity-common/pull/258)

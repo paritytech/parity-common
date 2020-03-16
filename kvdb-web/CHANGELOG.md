@@ -6,8 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.4.1] - 2020-03-16
+## [0.5.0] - 2020-03-16
 - License changed from GPL3 to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)
+- Updated dependencies. [#361](https://github.com/paritytech/parity-common/pull/361)
 
 ## [0.4.0] - 2019-02-05
 - Bump parking_lot to 0.10. [#332](https://github.com/paritytech/parity-common/pull/332)
