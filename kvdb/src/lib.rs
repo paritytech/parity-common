@@ -8,7 +8,6 @@
 
 //! Key-Value store abstraction.
 
-use bytes::Bytes;
 use smallvec::SmallVec;
 use std::io;
 
@@ -73,7 +72,7 @@ impl DBTransaction {
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
-	pub fn put_vec(&mut self, col: u32, key: &[u8], value: Bytes) {
+	pub fn put_vec(&mut self, col: u32, key: &[u8], value: Vec<u8>) {
 		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value });
 	}
 
