@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+## [0.6.3] - 2020-03-16
 - Removed `libc` feature. [#317](https://github.com/paritytech/parity-common/pull/317)
 
 ## [0.6.2] - 2019-01-03
