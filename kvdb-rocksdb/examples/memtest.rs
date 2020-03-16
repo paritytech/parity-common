@@ -15,7 +15,7 @@
 // along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
 // This program starts writing random data to the database with 100 (COLUMN_COUNT)
-// columns and never stops until interrapted.
+// columns and never stops until interrupted.
 
 use ethereum_types::H256;
 use keccak_hash::keccak;
