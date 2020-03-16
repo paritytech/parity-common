@@ -6,7 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.5.2] - 2019-03-13
+## [0.6.0] - 2020-03-13
+- Updated dependencies. [#361](https://github.com/paritytech/parity-common/pull/361)
+
+## [0.5.2] - 2020-03-13
 - License changed from GPL3 to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)
 - Updated mimalloc dependency. [#352](https://github.com/paritytech/parity-common/pull/352)
 - Use malloc for `usable_size` on Android. [#355](https://github.com/paritytech/parity-common/pull/355)
