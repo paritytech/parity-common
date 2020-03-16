@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog].
 
 ## [0.4.5] - 2020-03-16
 ### Dependencies
-- Updated dependencies
+- Updated dependencies. [#361](https://github.com/paritytech/parity-common/pull/361)
 
 ## [0.4.4] - 2019-11-20
 ### Added
