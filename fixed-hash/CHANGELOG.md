@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.5.3] - 2020-03-16
+## [0.6.0] - 2020-03-16
 - Removed `libc` feature. [#317](https://github.com/paritytech/parity-common/pull/317)
 - License changed from MIT to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)
 

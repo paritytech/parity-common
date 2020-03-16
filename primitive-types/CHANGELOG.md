@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.6.3] - 2020-03-16
+## [0.7.0] - 2020-03-16
 - Removed `libc` feature. [#317](https://github.com/paritytech/parity-common/pull/317)
 
 ## [0.6.2] - 2019-01-03
