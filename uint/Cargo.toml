@@ -2,7 +2,7 @@
 description = "Large fixed-size integer arithmetic"
 homepage = "http://parity.io"
 repository = "https://github.com/paritytech/parity-common"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 name = "uint"
 version = "0.8.2"
 authors = ["Parity Technologies <admin@parity.io>"]

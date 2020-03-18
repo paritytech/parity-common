@@ -3,7 +3,7 @@ name = "impl-serde"
 version = "0.3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
 description = "Serde serialization support for uint and fixed hash."
 
