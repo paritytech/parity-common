@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+### Breaking
+- Prevent multiple versions from being linked into the same program. [#363](https://github.com/paritytech/parity-common/pull/363)
 
 ## [0.6.0] - 2020-03-13
 - Updated dependencies. [#361](https://github.com/paritytech/parity-common/pull/361)
