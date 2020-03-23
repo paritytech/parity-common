@@ -2,6 +2,10 @@
 
 Collection of memory related utilities.
 
+## WARNING
+
+Defining a global allocator outside of this library is only safe for no-std environments or when `estimate-heapsize` is used.
+
 ## Features
 
 - estimate-heapsize : Do not use allocator, but `size_of` or `size_of_val`.
