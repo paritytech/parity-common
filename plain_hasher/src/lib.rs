@@ -30,17 +30,18 @@ impl Hasher for PlainHasher {
 	fn write(&mut self, bytes: &[u8]) {
 		debug_assert!(bytes.len() == 32);
 		let mut bytes_ptr = bytes.as_ptr();
-		let mut prefix_ptr = &mut self.prefix as *mut u64 as *mut u8;
+		let mut prefix_bytes = self.prefix.to_le_bytes();
 
 		unroll! {
 			for _i in 0..8 {
 				unsafe {
-					*prefix_ptr ^= (*bytes_ptr ^ *bytes_ptr.offset(8)) ^ (*bytes_ptr.offset(16) ^ *bytes_ptr.offset(24));
+					prefix_bytes[_i] ^= (*bytes_ptr ^ *bytes_ptr.offset(8)) ^ (*bytes_ptr.offset(16) ^ *bytes_ptr.offset(24));
 					bytes_ptr = bytes_ptr.offset(1);
-					prefix_ptr = prefix_ptr.offset(1);
 				}
 			}
 		}
+
+		self.prefix = u64::from_le_bytes(prefix_bytes);
 	}
 }
 
