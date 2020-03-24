@@ -9,6 +9,9 @@ edition = "2018"
 
 # Prevent multiple versions from being linked into the same program.
 links = "parity-util-mem-ban-duplicates"
+# `links` requires a build script to be present:
+# https://doc.rust-lang.org/cargo/reference/build-scripts.html#the-links-manifest-key
+# so we use an empty build script
 build = "build.rs"
 
 [dependencies]
