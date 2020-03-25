@@ -7,6 +7,13 @@ description = "Collection of memory related utilities"
 license = "MIT OR Apache-2.0"
 edition = "2018"
 
+# Prevent multiple versions from being linked into the same program.
+links = "parity-util-mem-ban-duplicates"
+# `links` requires a build script to be present:
+# https://doc.rust-lang.org/cargo/reference/build-scripts.html#the-links-manifest-key
+# so we use an empty build script
+build = "build.rs"
+
 [dependencies]
 cfg-if = "0.1.10"
 dlmalloc = { version = "0.1.3", features = ["global"], optional = true }
