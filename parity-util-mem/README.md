@@ -4,7 +4,17 @@ Collection of memory related utilities.
 
 ## WARNING
 
-Defining a global allocator outside of this library is only safe for no-std environments or when `estimate-heapsize` is used.
+When `parity-util-mem` is used as a dependency with any of the global allocator features enabled,
+it must be the sole place where a global allocator is defined.
+The only exception to this rule is when used in a `no_std` context or when the `estimate-heapsize` feature is used.
+
+Because of that, it must be present in the dependency tree with a single version.
+Starting from version 0.7, having duplicate versions of `parity-util-mem` will lead
+to a compile-time error. It still will be possible to have 0.6 and 0.7 versions in the same binary though.
+
+Unless heeded you risk UB; see discussion in [issue 364].
+
+[issue 364]: https://github.com/paritytech/parity-common/issues/364
 
 ## Features
 
