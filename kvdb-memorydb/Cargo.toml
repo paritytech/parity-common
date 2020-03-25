@@ -4,7 +4,7 @@ version = "0.5.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "A key-value in-memory database that implements the  `KeyValueDB` trait"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 edition = "2018"
 
 [dependencies]
