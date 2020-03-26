@@ -171,7 +171,8 @@ pub fn test_io_stats(db: &dyn KeyValueDB) -> io::Result<()> {
 	Ok(())
 }
 
-pub const NB_DELETE_PREFIX_TESTS: u32 = 5;
+/// The number of columns required to run `test_delete_prefix`.
+pub const DELETE_PREFIX_NUM_COLUMNS: u32 = 5;
 
 /// A test for `KeyValueDB::delete_prefix`.
 pub fn test_delete_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
