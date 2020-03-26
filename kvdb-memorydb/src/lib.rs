@@ -70,7 +70,7 @@ impl KeyValueDB for InMemory {
 				DBOp::DeletePrefix { col, prefix } => {
 					if let Some(col) = columns.get_mut(&col) {
 						use std::ops::Bound;
-						if prefix.len() == 0 {
+						if prefix.is_empty() {
 							col.clear();
 						} else {
 							let start_range = Bound::Included(prefix.to_vec());

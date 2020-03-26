@@ -115,17 +115,6 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	/// Write a transaction of changes to the backing store.
 	fn write(&self, transaction: DBTransaction) -> io::Result<()>;
 
-	/// Delete all prefixed key (do not delete buffered values and
-	/// do not support atomic operation in a transaction).
-	fn delete_prefix(&self, col: u32, prefix: &[u8]) -> io::Result<()> {
-		// default unefficient implementation.
-		let mut transaction = DBTransaction::new();
-		self.iter_from_prefix(col, prefix).for_each(|(key, _)| {
-			transaction.delete_prefix(col, &key[..]);
-		});
-		self.write(transaction)
-	}
-
 	/// Iterate over the data for a given column.
 	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
 
