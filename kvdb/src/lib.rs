@@ -88,7 +88,6 @@ impl DBTransaction {
 	pub fn delete_prefix(&mut self, col: u32, prefix: &[u8]) {
 		self.ops.push(DBOp::DeletePrefix { col, prefix: DBKey::from_slice(prefix) });
 	}
-
 }
 
 /// Generic key-value database.
