@@ -21,24 +21,24 @@ cfg_if::cfg_if! {
 		not(target_os = "windows"),
 		not(target_arch = "wasm32")
 	))] {
-		#[global_allocator]
 		/// Global allocator
+		#[global_allocator]
 		pub static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 	} else if #[cfg(feature = "dlmalloc-global")] {
-		#[global_allocator]
 		/// Global allocator
+		#[global_allocator]
 		pub static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
 	} else if #[cfg(feature = "weealloc-global")] {
-		#[global_allocator]
 		/// Global allocator
+		#[global_allocator]
 		pub static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 	} else if #[cfg(all(
 			feature = "mimalloc-global",
 			not(target_arch = "wasm32")
 		))] {
-		#[global_allocator]
 		/// Global allocator
-		pub static ALLOC: mimallocator::Mimalloc = mimallocator::Mimalloc;
+		#[global_allocator]
+		pub static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 	} else {
 		// default allocator used
 	}

@@ -3,12 +3,12 @@ name = "kvdb-memorydb"
 version = "0.5.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
-description = "A key-value in-memory database that implements the `KeyValueDB` trait"
-license = "MIT/Apache-2.0"
+description = "A key-value in-memory database that implements the  `KeyValueDB` trait"
+license = "MIT OR Apache-2.0"
 edition = "2018"
 
 [dependencies]
-parity-util-mem = { path = "../parity-util-mem", version = "0.5", default-features = false, features = ["std"] }
+parity-util-mem = { path = "../parity-util-mem", version = "0.6", default-features = false, features = ["std"] }
 parking_lot = "0.10.0"
 kvdb = { version = "0.5", path = "../kvdb" }
 

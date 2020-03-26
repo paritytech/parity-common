@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB, end_prefix};
+use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
 use parity_util_mem::MallocSizeOf;
 use parking_lot::RwLock;
 use std::{
@@ -52,7 +52,7 @@ impl KeyValueDB for InMemory {
 		}
 	}
 
-	fn write_buffered(&self, transaction: DBTransaction) {
+	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
 		let mut columns = self.columns.write();
 		let ops = transaction.ops;
 		for op in ops {
@@ -74,7 +74,7 @@ impl KeyValueDB for InMemory {
 							col.clear();
 						} else {
 							let start_range = Bound::Included(prefix.to_vec());
-							let end_range = Bound::Excluded(end_prefix(&prefix[..]));
+							let end_range = Bound::Excluded(kvdb::end_prefix(&prefix[..]));
 							let keys: Vec<_> = col.range((start_range, end_range))
 								.map(|(k, _)| k.clone())
 								.collect();
@@ -86,9 +86,6 @@ impl KeyValueDB for InMemory {
 				},
 			}
 		}
-	}
-
-	fn flush(&self) -> io::Result<()> {
 		Ok(())
 	}
 

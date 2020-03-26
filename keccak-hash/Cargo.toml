@@ -1,16 +1,16 @@
 [package]
 name = "keccak-hash"
-version = "0.4.1"
+version = "0.5.0"
 description = "`keccak-hash` is a set of utility functions to facilitate working with Keccak hashes (256/512 bits long)."
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 readme = "README.md"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 edition = "2018"
 
 [dependencies]
 tiny-keccak = { version = "2.0", features = ["keccak"] }
-primitive-types = { path = "../primitive-types", version = "0.6", default-features = false }
+primitive-types = { path = "../primitive-types", version = "0.7", default-features = false }
 
 [dev-dependencies]
 tempdir = "0.3.7"

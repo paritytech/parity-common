@@ -4,7 +4,7 @@ version = "0.3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
 description = "Shared tests for kvdb functionality, to be executed against actual implementations"
-license = "MIT/Apache2.0"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 kvdb = { path = "../kvdb", version = "0.5" }

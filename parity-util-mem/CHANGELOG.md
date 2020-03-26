@@ -5,7 +5,16 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+### Breaking
+- Prevent multiple versions from being linked into the same program. [#363](https://github.com/paritytech/parity-common/pull/363)
+
+## [0.6.0] - 2020-03-13
+- Updated dependencies. [#361](https://github.com/paritytech/parity-common/pull/361)
+
+## [0.5.2] - 2020-03-13
 - License changed from GPL3 to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)
+- Updated mimalloc dependency. [#352](https://github.com/paritytech/parity-common/pull/352)
+- Use malloc for `usable_size` on Android. [#355](https://github.com/paritytech/parity-common/pull/355)
 
 ## [0.5.1] - 2019-02-05
 - Add different mode for malloc_size_of_is_0 macro dealing with generics. [#334](https://github.com/paritytech/parity-common/pull/334)

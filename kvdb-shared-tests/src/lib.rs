@@ -17,7 +17,7 @@ pub fn test_put_and_get(db: &dyn KeyValueDB) -> io::Result<()> {
 
 	let mut transaction = db.transaction();
 	transaction.put(0, key1, b"horse");
-	db.write_buffered(transaction);
+	db.write(transaction)?;
 	assert_eq!(&*db.get(0, key1)?.unwrap(), b"horse");
 	Ok(())
 }
@@ -28,12 +28,12 @@ pub fn test_delete_and_get(db: &dyn KeyValueDB) -> io::Result<()> {
 
 	let mut transaction = db.transaction();
 	transaction.put(0, key1, b"horse");
-	db.write_buffered(transaction);
+	db.write(transaction)?;
 	assert_eq!(&*db.get(0, key1)?.unwrap(), b"horse");
 
 	let mut transaction = db.transaction();
 	transaction.delete(0, key1);
-	db.write_buffered(transaction);
+	db.write(transaction)?;
 	assert!(db.get(0, key1)?.is_none());
 	Ok(())
 }
@@ -49,7 +49,7 @@ pub fn test_get_fails_with_non_existing_column(db: &dyn KeyValueDB) -> io::Resul
 pub fn test_write_clears_buffered_ops(db: &dyn KeyValueDB) -> io::Result<()> {
 	let mut batch = db.transaction();
 	batch.put(0, b"foo", b"bar");
-	db.write_buffered(batch);
+	db.write(batch)?;
 
 	assert_eq!(db.get(0, b"foo")?.unwrap(), b"bar");
 
@@ -69,7 +69,7 @@ pub fn test_iter(db: &dyn KeyValueDB) -> io::Result<()> {
 	let mut transaction = db.transaction();
 	transaction.put(0, key1, key1);
 	transaction.put(0, key2, key2);
-	db.write_buffered(transaction);
+	db.write(transaction)?;
 
 	let contents: Vec<_> = db.iter(0).into_iter().collect();
 	assert_eq!(contents.len(), 2);
@@ -193,7 +193,7 @@ pub fn test_delete_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 			batch.put(ix, key, &[i as u8]);
 		}
 		db.write(batch)?;
-		db.flush()
+		Ok(())
 	};
 	let check_db = |ix: u32, content: [bool; 10]| -> io::Result<()> {
 		let mut state = [true; 10];
@@ -280,11 +280,10 @@ pub fn test_complex(db: &dyn KeyValueDB) -> io::Result<()> {
 	let mut transaction = db.transaction();
 	transaction.put(0, key1, b"horse");
 	transaction.delete(0, key3);
-	db.write_buffered(transaction);
+	db.write(transaction)?;
 	assert!(db.get(0, key3)?.is_none());
 	assert_eq!(&*db.get(0, key1)?.unwrap(), b"horse");
 
-	db.flush()?;
 	assert!(db.get(0, key3)?.is_none());
 	assert_eq!(&*db.get(0, key1)?.unwrap(), b"horse");
 	Ok(())
