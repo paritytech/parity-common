@@ -153,16 +153,11 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 /// Return for a start inclusive prefix, the non inclusive end.
 pub fn end_prefix(prefix: &[u8]) -> Vec<u8> {
 	let mut end_range = prefix.to_vec();
-	loop {
-		if end_range.len() == 0 {
-			return end_range;
-		}
-		let end_index = end_range.len() - 1;
-		if end_range[end_index] < u8::max_value() {
-			end_range[end_index] = end_range[end_index] + 1;
-			return end_range;
-		} else {
-			end_range.pop();
-		};
-	};
+	while let Some(0xff) = end_range.last() {
+		end_range.pop();
+	}
+	if let Some(byte) = end_range.last_mut() {
+		*byte += 1;
+	}
+	end_range
 }
