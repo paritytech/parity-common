@@ -126,6 +126,9 @@ pub fn test_iter_from_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 	Ok(())
 }
 
+/// The number of columns required to run `test_io_stats`.
+pub const IOSTATS_NUM_COLUMNS: u32 = 3;
+
 /// A test for `KeyValueDB::io_stats`.
 /// Assumes that the `db` has at least 3 columns.
 pub fn test_io_stats(db: &dyn KeyValueDB) -> io::Result<()> {
@@ -204,7 +207,7 @@ pub fn test_delete_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 		assert_eq!(state, content, "at {}", ix);
 		Ok(())
 	};
-	let tests: [_; NB_DELETE_PREFIX_TESTS as usize] = [
+	let tests: [_; DELETE_PREFIX_NUM_COLUMNS as usize] = [
 		// standard
 		(&[1u8][..], [true, true, true, false, false, false, false, true, true, true]),
 		// edge

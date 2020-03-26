@@ -719,7 +719,7 @@ mod tests {
 
 	#[test]
 	fn delete_prefix() -> io::Result<()> {
-		let db = create(st::NB_DELETE_PREFIX_TESTS)?;
+		let db = create(st::DELETE_PREFIX_NUM_COLUMNS)?;
 		st::test_delete_prefix(&db)
 	}
 
@@ -743,7 +743,7 @@ mod tests {
 
 	#[test]
 	fn stats() -> io::Result<()> {
-		let db = create(3)?;
+		let db = create(st::IOSTATS_NUM_COLUMNS)?;
 		st::test_io_stats(&db)
 	}
 

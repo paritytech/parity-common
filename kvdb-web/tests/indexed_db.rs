@@ -41,7 +41,7 @@ async fn delete_and_get() {
 
 #[wasm_bindgen_test]
 async fn delete_prefix() {
-	let db = open_db(st::NB_DELETE_PREFIX_TESTS, "delete_prefix").await;
+	let db = open_db(st::DELETE_PREFIX_NUM_COLUMNS, "delete_prefix").await;
 	st::test_delete_prefix(&db).unwrap()
 }
 
