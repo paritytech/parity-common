@@ -84,7 +84,7 @@ impl DBTransaction {
 		self.ops.push(DBOp::Delete { col, key: DBKey::from_slice(key) });
 	}
 
-	/// Delete value by key.
+	/// Delete all values with the given key prefix.
 	pub fn delete_prefix(&mut self, col: u32, prefix: &[u8]) {
 		self.ops.push(DBOp::DeletePrefix { col, prefix: DBKey::from_slice(prefix) });
 	}
