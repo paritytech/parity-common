@@ -5,8 +5,13 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+### Breaking
+- Updated to the new `kvdb` interface. [#313](https://github.com/paritytech/parity-common/pull/313)
 
-## [0.6.0] - 2019-02-28
+## [0.7.0] - 2020-03-16
+- Updated dependencies. [#361](https://github.com/paritytech/parity-common/pull/361)
+
+## [0.6.0] - 2020-02-28
 - License changed from GPL3 to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)
 - Added `get_statistics` method and `enable_statistics` config parameter. [#347](https://github.com/paritytech/parity-common/pull/347)
 
