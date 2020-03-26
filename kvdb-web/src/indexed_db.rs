@@ -10,7 +10,7 @@
 
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
-use web_sys::{Event, IdbCursorWithValue, IdbDatabase, IdbOpenDbRequest, IdbRequest, IdbTransactionMode, IdbKeyRange};
+use web_sys::{Event, IdbCursorWithValue, IdbDatabase, IdbKeyRange, IdbOpenDbRequest, IdbRequest, IdbTransactionMode};
 
 use futures::channel;
 use futures::prelude::*;
