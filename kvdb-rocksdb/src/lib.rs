@@ -449,7 +449,7 @@ impl Database {
 								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
 							} else {
 								// delete every values in the column
-								let end_range = &[255u8];
+								let end_range = &[u8::max_value()];
 								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
 								batch.delete_cf(cf, &end_range[..]).map_err(other_io_err)?;
 								batch.delete_cf(cf, &[]).map_err(other_io_err)?;

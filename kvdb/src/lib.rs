@@ -139,6 +139,7 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 }
 
 /// Return for a start inclusive prefix, the non inclusive end.
+/// This assume key are ordered in a lexicographical order.
 pub fn end_prefix(prefix: &[u8]) -> Vec<u8> {
 	let mut end_range = prefix.to_vec();
 	while let Some(0xff) = end_range.last() {
@@ -148,4 +149,21 @@ pub fn end_prefix(prefix: &[u8]) -> Vec<u8> {
 		*byte += 1;
 	}
 	end_range
+}
+
+#[cfg(test)]
+mod test {
+	use super::end_prefix;
+
+	#[test]
+	fn end_prefix_test() {
+		assert_eq!(end_prefix(&[5, 6, 7]), vec![5, 6, 8]);
+		assert_eq!(end_prefix(&[5, 6, 255]), vec![5, 7]);
+		// this is incorrect as the result is before start
+		assert_ne!(end_prefix(&[5, 255, 255]), vec![5, 255]);
+		// this is correct ([5, 255] will not be deleted because
+		// it is before start).
+		assert_eq!(end_prefix(&[5, 255, 255]), vec![6]);
+		assert_eq!(end_prefix(&[255, 255, 255]), vec![]);
+	}
 }
