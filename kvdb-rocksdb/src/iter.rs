@@ -30,6 +30,8 @@ pub struct ReadGuardedIterator<'a, I, T> {
 	// We store the upper bound here
 	// to make sure it lives at least as long as the iterator.
 	// See https://github.com/rust-rocksdb/rust-rocksdb/pull/309.
+	// TODO: remove this once https://github.com/rust-rocksdb/rust-rocksdb/pull/377
+	// is merged and released.
 	#[allow(dead_code)]
 	upper_bound_prefix: Option<Box<[u8]>>,
 }
