@@ -139,7 +139,7 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 }
 
 /// Return for a start inclusive prefix, the non inclusive end.
-/// This assume key are ordered in a lexicographical order.
+/// This assumes the key bytes are ordered in lexicographical order.
 pub fn end_prefix(prefix: &[u8]) -> Vec<u8> {
 	let mut end_range = prefix.to_vec();
 	while let Some(0xff) = end_range.last() {
