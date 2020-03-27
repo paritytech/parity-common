@@ -444,13 +444,13 @@ impl Database {
 							batch.delete_cf(cf, &key).map_err(other_io_err)?
 						}
 						DBOp::DeletePrefix { col: _, prefix } => {
-							if prefix.len() > 0 {
+							if !prefix.is_empty() {
 								let end_range = kvdb::end_prefix(&prefix[..]);
 								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
 							} else {
 								// Deletes all values in the column.
 								let end_range = &[u8::max_value()];
-								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
+								batch.delete_range_cf(cf, &[], &end_range[..]).map_err(other_io_err)?;
 								batch.delete_cf(cf, &end_range[..]).map_err(other_io_err)?;
 							}
 						}

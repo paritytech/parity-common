@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog].
 ## [Unreleased]
 ### Breaking
 - Removed `write_buffered` and `flush` methods. [#313](https://github.com/paritytech/parity-common/pull/313)
+- Introduce a new `DeletePrefix` database operation. [#360](https://github.com/paritytech/parity-common/pull/360)
 
 ## [0.5.0] - 2020-03-16
 - License changed from GPL3 to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)

@@ -86,7 +86,7 @@ impl DBTransaction {
 
 	/// Delete all values with the given key prefix.
 	/// Using an empty prefix here will remove all keys
-	/// (all keys starts with the empty prefix).
+	/// (all keys start with the empty prefix).
 	pub fn delete_prefix(&mut self, col: u32, prefix: &[u8]) {
 		self.ops.push(DBOp::DeletePrefix { col, prefix: DBKey::from_slice(prefix) });
 	}
