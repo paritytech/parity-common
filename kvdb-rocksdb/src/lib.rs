@@ -448,7 +448,7 @@ impl Database {
 								let end_range = kvdb::end_prefix(&prefix[..]);
 								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
 							} else {
-								// Delete all values in the column.
+								// Deletes all values in the column.
 								let end_range = &[u8::max_value()];
 								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
 								batch.delete_cf(cf, &end_range[..]).map_err(other_io_err)?;
