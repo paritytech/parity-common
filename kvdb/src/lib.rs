@@ -85,6 +85,8 @@ impl DBTransaction {
 	}
 
 	/// Delete all values with the given key prefix.
+	/// Using an empty prefix here will remove all keys
+	/// (all keys starts with the empty prefix).
 	pub fn delete_prefix(&mut self, col: u32, prefix: &[u8]) {
 		self.ops.push(DBOp::DeletePrefix { col, prefix: DBKey::from_slice(prefix) });
 	}
@@ -159,11 +161,15 @@ mod test {
 	fn end_prefix_test() {
 		assert_eq!(end_prefix(&[5, 6, 7]), vec![5, 6, 8]);
 		assert_eq!(end_prefix(&[5, 6, 255]), vec![5, 7]);
-		// this is incorrect as the result is before start
+		// This is not equal as the result is before start.
 		assert_ne!(end_prefix(&[5, 255, 255]), vec![5, 255]);
-		// this is correct ([5, 255] will not be deleted because
+		// This is equal ([5, 255] will not be deleted because
 		// it is before start).
 		assert_eq!(end_prefix(&[5, 255, 255]), vec![6]);
 		assert_eq!(end_prefix(&[255, 255, 255]), vec![]);
+
+		assert_eq!(end_prefix(&[0x00, 0xff]), vec![0x01]);
+		assert_eq!(end_prefix(&[0xff]), vec![]);
+		assert_eq!(end_prefix(&[]), vec![]);
 	}
 }
