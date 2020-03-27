@@ -1,6 +1,6 @@
 [package]
 name = "kvdb-shared-tests"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
 description = "Shared tests for kvdb functionality, to be executed against actual implementations"

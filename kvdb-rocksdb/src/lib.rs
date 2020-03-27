@@ -443,6 +443,17 @@ impl Database {
 							stats_total_bytes += key.len();
 							batch.delete_cf(cf, &key).map_err(other_io_err)?
 						}
+						DBOp::DeletePrefix { col: _, prefix } => {
+							if prefix.len() > 0 {
+								let end_range = kvdb::end_prefix(&prefix[..]);
+								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
+							} else {
+								// Deletes all values in the column.
+								let end_range = &[u8::max_value()];
+								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
+								batch.delete_cf(cf, &end_range[..]).map_err(other_io_err)?;
+							}
+						}
 					};
 				}
 				self.stats.tally_bytes_written(stats_total_bytes as u64);
@@ -706,6 +717,12 @@ mod tests {
 	}
 
 	#[test]
+	fn delete_prefix() -> io::Result<()> {
+		let db = create(st::DELETE_PREFIX_NUM_COLUMNS)?;
+		st::test_delete_prefix(&db)
+	}
+
+	#[test]
 	fn iter() -> io::Result<()> {
 		let db = create(1)?;
 		st::test_iter(&db)
@@ -725,7 +742,7 @@ mod tests {
 
 	#[test]
 	fn stats() -> io::Result<()> {
-		let db = create(3)?;
+		let db = create(st::IOSTATS_NUM_COLUMNS)?;
 		st::test_io_stats(&db)
 	}
 

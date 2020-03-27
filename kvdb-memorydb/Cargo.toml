@@ -13,4 +13,4 @@ parking_lot = "0.10.0"
 kvdb = { version = "0.5", path = "../kvdb" }
 
 [dev-dependencies]
-kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.2" }
+kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.3" }

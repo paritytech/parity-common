@@ -35,6 +35,7 @@ pub struct DBTransaction {
 pub enum DBOp {
 	Insert { col: u32, key: DBKey, value: DBValue },
 	Delete { col: u32, key: DBKey },
+	DeletePrefix { col: u32, prefix: DBKey },
 }
 
 impl DBOp {
@@ -43,6 +44,7 @@ impl DBOp {
 		match *self {
 			DBOp::Insert { ref key, .. } => key,
 			DBOp::Delete { ref key, .. } => key,
+			DBOp::DeletePrefix { ref prefix, .. } => prefix,
 		}
 	}
 
@@ -51,6 +53,7 @@ impl DBOp {
 		match *self {
 			DBOp::Insert { col, .. } => col,
 			DBOp::Delete { col, .. } => col,
+			DBOp::DeletePrefix { col, .. } => col,
 		}
 	}
 }
@@ -79,6 +82,13 @@ impl DBTransaction {
 	/// Delete value by key.
 	pub fn delete(&mut self, col: u32, key: &[u8]) {
 		self.ops.push(DBOp::Delete { col, key: DBKey::from_slice(key) });
+	}
+
+	/// Delete all values with the given key prefix.
+	/// Using an empty prefix here will remove all keys
+	/// (all keys starts with the empty prefix).
+	pub fn delete_prefix(&mut self, col: u32, prefix: &[u8]) {
+		self.ops.push(DBOp::DeletePrefix { col, prefix: DBKey::from_slice(prefix) });
 	}
 }
 
@@ -127,5 +137,39 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	/// may impede the performance and might be off by default).
 	fn io_stats(&self, _kind: IoStatsKind) -> IoStats {
 		IoStats::empty()
+	}
+}
+
+/// For a given start prefix (inclusive), returns the correct end prefix (non-inclusive).
+/// This assumes the key bytes are ordered in lexicographical order.
+pub fn end_prefix(prefix: &[u8]) -> Vec<u8> {
+	let mut end_range = prefix.to_vec();
+	while let Some(0xff) = end_range.last() {
+		end_range.pop();
+	}
+	if let Some(byte) = end_range.last_mut() {
+		*byte += 1;
+	}
+	end_range
+}
+
+#[cfg(test)]
+mod test {
+	use super::end_prefix;
+
+	#[test]
+	fn end_prefix_test() {
+		assert_eq!(end_prefix(&[5, 6, 7]), vec![5, 6, 8]);
+		assert_eq!(end_prefix(&[5, 6, 255]), vec![5, 7]);
+		// This is not equal as the result is before start.
+		assert_ne!(end_prefix(&[5, 255, 255]), vec![5, 255]);
+		// This is equal ([5, 255] will not be deleted because
+		// it is before start).
+		assert_eq!(end_prefix(&[5, 255, 255]), vec![6]);
+		assert_eq!(end_prefix(&[255, 255, 255]), vec![]);
+
+		assert_eq!(end_prefix(&[0x00, 0xff]), vec![0x01]);
+		assert_eq!(end_prefix(&[0xff]), vec![]);
+		assert_eq!(end_prefix(&[]), vec![]);
 	}
 }

@@ -34,11 +34,12 @@ features = [
 	'EventTarget',
 	'IdbCursor',
 	'IdbCursorWithValue',
+	'IdbKeyRange',
 	'DomStringList',
 ]
 
 [dev-dependencies]
 console_log = "0.1.2"
-kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.2" }
+kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.3" }
 wasm-bindgen-test = "0.3.4"
 wasm-bindgen-futures = "0.4.4"

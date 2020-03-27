@@ -67,6 +67,21 @@ impl KeyValueDB for InMemory {
 						col.remove(&*key);
 					}
 				}
+				DBOp::DeletePrefix { col, prefix } => {
+					if let Some(col) = columns.get_mut(&col) {
+						use std::ops::Bound;
+						if prefix.is_empty() {
+							col.clear();
+						} else {
+							let start_range = Bound::Included(prefix.to_vec());
+							let end_range = Bound::Excluded(kvdb::end_prefix(&prefix[..]));
+							let keys: Vec<_> = col.range((start_range, end_range)).map(|(k, _)| k.clone()).collect();
+							for key in keys.into_iter() {
+								col.remove(&key[..]);
+							}
+						}
+					}
+				}
 			}
 		}
 		Ok(())
@@ -125,6 +140,12 @@ mod tests {
 	fn delete_and_get() -> io::Result<()> {
 		let db = create(1);
 		st::test_delete_and_get(&db)
+	}
+
+	#[test]
+	fn delete_prefix() -> io::Result<()> {
+		let db = create(st::DELETE_PREFIX_NUM_COLUMNS);
+		st::test_delete_prefix(&db)
 	}
 
 	#[test]

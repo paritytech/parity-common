@@ -10,7 +10,7 @@
 
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
-use web_sys::{Event, IdbCursorWithValue, IdbDatabase, IdbOpenDbRequest, IdbRequest, IdbTransactionMode};
+use web_sys::{Event, IdbCursorWithValue, IdbDatabase, IdbKeyRange, IdbOpenDbRequest, IdbRequest, IdbTransactionMode};
 
 use futures::channel;
 use futures::prelude::*;
@@ -155,6 +155,19 @@ pub fn idb_commit_transaction(idb: &IdbDatabase, txn: &DBTransaction, columns: u
 				let res = object_stores[column].delete(key_js.as_ref());
 				if let Err(err) = res {
 					warn!("error deleting key from col_{}: {:?}", column, err);
+				}
+			}
+			DBOp::DeletePrefix { col, prefix } => {
+				let column = *col as usize;
+				// Convert rust bytes to js arrays
+				let prefix_js_start = Uint8Array::from(prefix.as_ref());
+				let prefix_js_end = Uint8Array::from(prefix.as_ref());
+
+				let range = IdbKeyRange::bound(prefix_js_start.as_ref(), prefix_js_end.as_ref())
+					.expect("Starting and ending at same value is valid bound; qed");
+				let res = object_stores[column].delete(range.as_ref());
+				if let Err(err) = res {
+					warn!("error deleting prefix from col_{}: {:?}", column, err);
 				}
 			}
 		}
