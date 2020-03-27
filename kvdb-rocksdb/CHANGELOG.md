@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog].
 ## [Unreleased]
 ### Breaking
 - Updated to the new `kvdb` interface. [#313](https://github.com/paritytech/parity-common/pull/313)
+- Rename and optimize prefix iteration. [#361](https://github.com/paritytech/parity-common/pull/361)
 
 ## [0.7.0] - 2020-03-16
 - Updated dependencies. [#361](https://github.com/paritytech/parity-common/pull/361)

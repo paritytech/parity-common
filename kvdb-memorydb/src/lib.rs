@@ -97,7 +97,7 @@ impl KeyValueDB for InMemory {
 		}
 	}
 
-	fn iter_from_prefix<'a>(
+	fn iter_with_prefix<'a>(
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
@@ -155,9 +155,9 @@ mod tests {
 	}
 
 	#[test]
-	fn iter_from_prefix() -> io::Result<()> {
+	fn iter_with_prefix() -> io::Result<()> {
 		let db = create(1);
-		st::test_iter_from_prefix(&db)
+		st::test_iter_with_prefix(&db)
 	}
 
 	#[test]

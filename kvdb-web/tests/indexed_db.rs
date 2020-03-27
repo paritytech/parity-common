@@ -52,9 +52,9 @@ async fn iter() {
 }
 
 #[wasm_bindgen_test]
-async fn iter_from_prefix() {
-	let db = open_db(1, "iter_from_prefix").await;
-	st::test_iter_from_prefix(&db).unwrap()
+async fn iter_with_prefix() {
+	let db = open_db(1, "iter_with_prefix").await;
+	st::test_iter_with_prefix(&db).unwrap()
 }
 
 #[wasm_bindgen_test]

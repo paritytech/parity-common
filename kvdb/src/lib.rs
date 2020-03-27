@@ -119,8 +119,8 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	/// Iterate over the data for a given column.
 	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
 
-	/// Iterate over the data for a given column, starting from a given prefix.
-	fn iter_from_prefix<'a>(
+	/// Iterate over the data for a given column, all starting with a given prefix.
+	fn iter_with_prefix<'a>(
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
@@ -170,6 +170,7 @@ mod test {
 
 		assert_eq!(end_prefix(&[0x00, 0xff]), vec![0x01]);
 		assert_eq!(end_prefix(&[0xff]), vec![]);
+		assert_eq!(end_prefix(b"0"), b"1".to_vec());
 		assert_eq!(end_prefix(&[]), vec![]);
 	}
 }
