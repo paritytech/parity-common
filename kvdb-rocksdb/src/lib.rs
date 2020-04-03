@@ -518,20 +518,20 @@ impl Database {
 			let mut read_opts = ReadOptions::default();
 			read_opts.set_verify_checksums(false);
 			let end_prefix = kvdb::end_prefix(prefix).into_boxed_slice();
-			// SAFETY: the end_prefix lives as long as the iterator
-			// See `ReadGuardedIterator` definition for more details.
-			unsafe {
-				read_opts.set_iterate_upper_bound(&end_prefix);
+			// rocksdb doesn't work with an empty upper bound
+			if !end_prefix.is_empty() {
+				// SAFETY: the end_prefix lives as long as the iterator
+				// See `ReadGuardedIterator` definition for more details.
+				unsafe {
+					read_opts.set_iterate_upper_bound(&end_prefix);
+				}
 			}
-			let guarded = iter::ReadGuardedIterator::new_with_prefix(read_lock, col, prefix, end_prefix, &self.read_opts);
+			let guarded = iter::ReadGuardedIterator::new_with_prefix(read_lock, col, prefix, end_prefix, &read_opts);
 			Some(guarded)
 		} else {
 			None
 		};
-		// We're not using "Prefix Seek" mode, so the iterator will return
-		// keys not starting with the given prefix as well,
-		// see https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes
-		optional.into_iter().flat_map(identity).take_while(move |(k, _)| k.starts_with(prefix))
+		optional.into_iter().flat_map(identity)
 	}
 
 	/// Close the database
