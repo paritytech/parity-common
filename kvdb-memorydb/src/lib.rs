@@ -74,8 +74,11 @@ impl KeyValueDB for InMemory {
 							col.clear();
 						} else {
 							let start_range = Bound::Included(prefix.to_vec());
-							let end_range = Bound::Excluded(kvdb::end_prefix(&prefix[..]));
-							let keys: Vec<_> = col.range((start_range, end_range)).map(|(k, _)| k.clone()).collect();
+							let keys: Vec<_> = if let Some(end_range) = kvdb::end_prefix(&prefix[..]) {
+								col.range((start_range, Bound::Excluded(end_range))).map(|(k, _)| k.clone()).collect()
+							} else {
+								col.range((start_range, Bound::Unbounded)).map(|(k, _)| k.clone()).collect()
+							};
 							for key in keys.into_iter() {
 								col.remove(&key[..]);
 							}

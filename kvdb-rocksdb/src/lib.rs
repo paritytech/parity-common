@@ -443,15 +443,22 @@ impl Database {
 							stats_total_bytes += key.len();
 							batch.delete_cf(cf, &key).map_err(other_io_err)?
 						}
-						DBOp::DeletePrefix { col: _, prefix } => {
+						DBOp::DeletePrefix { col, prefix } => {
 							if prefix.len() > 0 {
-								let end_range = kvdb::end_prefix(&prefix[..]);
-								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
+								if let Some(end_range) = kvdb::end_prefix(&prefix[..]) {
+									batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
+								} else {
+									for (key, _) in self.iter_from_prefix(col, &prefix[..]) {
+										batch.delete_cf(cf, &key[..]).map_err(other_io_err)?;
+									}
+								}
 							} else {
 								// Deletes all values in the column.
 								let end_range = &[u8::max_value()];
 								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
-								batch.delete_cf(cf, &end_range[..]).map_err(other_io_err)?;
+								for (key, _) in self.iter_from_prefix(col, &end_range[..]) {
+									batch.delete_cf(cf, &key[..]).map_err(other_io_err)?;
+								}
 							}
 						}
 					};
