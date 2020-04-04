@@ -98,10 +98,7 @@ where
 	/// Creates a new `ReadGuardedIterator` that maps `RwLock<RocksDB>` to `RwLock<DBIterator>`,
 	/// where `DBIterator` iterates over all keys.
 	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: u32, read_opts: &ReadOptions) -> Self {
-		Self {
-			inner: Self::new_inner(read_lock, |db| db.iter(col, read_opts)),
-			upper_bound_prefix: None,
-		}
+		Self { inner: Self::new_inner(read_lock, |db| db.iter(col, read_opts)), upper_bound_prefix: None }
 	}
 
 	/// Creates a new `ReadGuardedIterator` that maps `RwLock<RocksDB>` to `RwLock<DBIterator>`,
