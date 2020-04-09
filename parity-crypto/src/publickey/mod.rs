@@ -34,7 +34,15 @@ pub use ethereum_types::{Address, Public};
 pub type Message = H256;
 
 use secp256k1::ThirtyTwoByteHash;
-pub struct ZeroesAllowedMessage(H256);
+
+/// In ethereum we allow public key recovery from a signature + message pair
+/// where the message is all-zeroes. This conflicts with the best practise of
+/// not allowing such values and so in order to avoid breaking consensus we need
+/// this to work around it. The `ZeroesAllowedType` wraps an `H256` that can be
+/// converted to a `[u8; 32]` which in turn can be cast to a
+/// `secp256k1::Message` by the `ThirtyTwoByteHash` and satisfy the API for
+/// `recover()`.
+struct ZeroesAllowedMessage(H256);
 impl ThirtyTwoByteHash for ZeroesAllowedMessage {
 	fn into_32(self) -> [u8; 32] {
 		self.0.to_fixed_bytes()
