@@ -247,7 +247,7 @@ pub fn verify_address(address: &Address, signature: &Signature, message: &Messag
 /// Recovers the public key from the signature for the message
 pub fn recover(signature: &Signature, message: &Message) -> Result<Public, Error> {
 	let context = &SECP256K1;
-	let secp_msg = ZeroesAllowedMessage(message.clone());
+	let secp_msg = ZeroesAllowedMessage(*message);
 	let rsig = RecoverableSignature::from_compact(&signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
 	let pubkey = context.recover(&secp_msg.into(), &rsig)?;
 	let serialized = pubkey.serialize_uncompressed();
