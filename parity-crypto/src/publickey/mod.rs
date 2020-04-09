@@ -34,7 +34,7 @@ pub use ethereum_types::{Address, Public};
 pub type Message = H256;
 
 use secp256k1::ThirtyTwoByteHash;
-pub struct ZeroesAllowedMessage(pub H256);
+pub struct ZeroesAllowedMessage(H256);
 impl ThirtyTwoByteHash for ZeroesAllowedMessage {
 	fn into_32(self) -> [u8; 32] {
 		self.0.to_fixed_bytes()
