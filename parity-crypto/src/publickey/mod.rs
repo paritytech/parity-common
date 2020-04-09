@@ -33,6 +33,14 @@ use lazy_static::lazy_static;
 pub use ethereum_types::{Address, Public};
 pub type Message = H256;
 
+use secp256k1::ThirtyTwoByteHash;
+pub struct ZeroesAllowedMessage(pub H256);
+impl ThirtyTwoByteHash for ZeroesAllowedMessage {
+	fn into_32(self) -> [u8; 32] {
+		self.0.to_fixed_bytes()
+	}
+}
+
 /// The number -1 encoded as a secret key
 const MINUS_ONE_KEY: &'static [u8] = &[
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc,

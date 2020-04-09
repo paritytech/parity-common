@@ -8,7 +8,7 @@
 
 //! Signature based on ECDSA, algorithm's description: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 
-use super::{public_to_address, Address, Error, Message, Public, Secret, SECP256K1};
+use super::{public_to_address, Address, Error, Message, Public, Secret, SECP256K1, ZeroesAllowedMessage};
 use ethereum_types::{H256, H520};
 use rustc_hex::{FromHex, ToHex};
 use secp256k1::key::{PublicKey, SecretKey};
@@ -247,8 +247,9 @@ pub fn verify_address(address: &Address, signature: &Signature, message: &Messag
 /// Recovers the public key from the signature for the message
 pub fn recover(signature: &Signature, message: &Message) -> Result<Public, Error> {
 	let context = &SECP256K1;
+	let secp_msg = ZeroesAllowedMessage(message.clone());
 	let rsig = RecoverableSignature::from_compact(&signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
-	let pubkey = context.recover(&SecpMessage::from_slice(&message[..])?, &rsig)?;
+	let pubkey = context.recover(&secp_msg.into(), &rsig)?;
 	let serialized = pubkey.serialize_uncompressed();
 
 	let mut public = Public::default();
@@ -258,8 +259,9 @@ pub fn recover(signature: &Signature, message: &Message) -> Result<Public, Error
 
 #[cfg(test)]
 mod tests {
-	use super::super::{Generator, Message, Random};
-	use super::{recover, sign, verify_address, verify_public, Signature};
+	use super::super::{Generator, Message, Random, SECP256K1};
+	use super::{recover, sign, verify_address, verify_public, Signature, ZeroesAllowedMessage};
+	use secp256k1::SecretKey;
 	use std::str::FromStr;
 
 	#[test]
@@ -293,6 +295,26 @@ mod tests {
 		let message = Message::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap();
 		let signature = sign(keypair.secret(), &message).unwrap();
 		assert_eq!(keypair.public(), &recover(&signature, &message).unwrap());
+	}
+
+	#[test]
+	fn sign_and_recover_public_works_with_zeroed_messages() {
+		let keypair = Random.generate();
+		let zero_message = Message::zero();
+		let signature = {
+			let context = &SECP256K1;
+			let sec = SecretKey::from_slice(keypair.secret().as_ref()).unwrap();
+			let secp_msg = ZeroesAllowedMessage(zero_message);
+			let s = context.sign_recoverable(&secp_msg.into(), &sec);
+			let (rec_id, data) = s.serialize_compact();
+			let mut data_arr = [0; 65];
+
+			// no need to check if s is low, it always is
+			data_arr[0..64].copy_from_slice(&data[0..64]);
+			data_arr[64] = rec_id.to_i32() as u8;
+			Signature(data_arr)
+		};
+		assert_eq!(keypair.public(), &recover(&signature, &zero_message).unwrap());
 	}
 
 	#[test]
