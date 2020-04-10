@@ -46,6 +46,9 @@ pub fn keccak256(data: &mut [u8]) {
 }
 
 /// Computes in-place keccak256 hash of `data[range]`.
+///
+/// The `range` argument specifies a subslice of `data` in bytes to be hashed.
+/// The resulting hash will be written back to `data`.
 /// # Panics
 ///
 /// If `range` is out of bounds.
@@ -75,6 +78,9 @@ pub fn keccak512(data: &mut [u8]) {
 }
 
 /// Computes in-place keccak512 hash of `data[range]`.
+///
+/// The `range` argument specifies a subslice of `data` in bytes to be hashed.
+/// The resulting hash will be written back to `data`.
 /// # Panics
 ///
 /// If `range` is out of bounds.
