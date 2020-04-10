@@ -57,6 +57,7 @@ pub fn keccak256(data: &mut [u8]) {
 ///
 /// ```
 /// let mut data = [1u8; 32];
+/// // Hash the first 8 bytes of `data` and write the result, 32 bytes, to `data`.
 /// keccak_hash::keccak256_range(&mut data, 0..8);
 /// let expected = [
 ///     0x54, 0x84, 0x4f, 0x69, 0xb4, 0xda, 0x4b, 0xb4, 0xa9, 0x9f, 0x24, 0x59, 0xb5, 0x11, 0xd4, 0x42,
