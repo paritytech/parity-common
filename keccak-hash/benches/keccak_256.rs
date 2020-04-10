@@ -22,12 +22,20 @@ pub fn keccak_256_with_empty_input(c: &mut Criterion) {
 }
 
 pub fn keccak_256_with_typical_input(c: &mut Criterion) {
-	let data: Vec<u8> = From::from("some medium length string with important information");
-	c.bench_function("keccak_256_with_typical_input", |b| {
-		b.iter(|| {
-			let _out = keccak(black_box(&data));
-		})
-	});
+	let mut data: Vec<u8> = From::from("some medium length string with important information");
+	let len = data.len();
+	let mut group = c.benchmark_group("keccak_256_with_typical_input");
+	group.bench_function("regular", |b| b.iter(|| {
+		let _out = keccak(black_box(&data));
+	}));
+	group.bench_function("inplace", |b| b.iter(|| {
+		keccak_hash::keccak256(black_box(&mut data[..]));
+	}));
+	group.bench_function("inplace_range", |b| b.iter(|| {
+		keccak_hash::keccak256_range(black_box(&mut data[..]), 0..len);
+	}));
+
+	group.finish();
 }
 
 pub fn keccak_256_with_large_input(c: &mut Criterion) {
