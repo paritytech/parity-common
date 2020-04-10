@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.5.1] - 2020-03-16
+## [0.5.1] - 2020-04-10
 - Added `keccak256_range` and `keccak512_range` functions. [#370](https://github.com/paritytech/parity-common/pull/370)
 
 ## [0.5.0] - 2020-03-16
