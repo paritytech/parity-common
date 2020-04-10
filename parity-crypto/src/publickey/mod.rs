@@ -21,8 +21,7 @@ pub mod ecies;
 pub mod error;
 
 pub use self::ecdsa_signature::{
-	recover, recover_allowing_all_zero_message, sign, verify_address, verify_public,
-	Signature
+	recover, recover_allowing_all_zero_message, sign, verify_address, verify_public, Signature,
 };
 pub use self::error::Error;
 pub use self::extended_keys::{Derivation, DerivationError, ExtendedKeyPair, ExtendedPublic, ExtendedSecret};
