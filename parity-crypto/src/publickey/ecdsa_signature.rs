@@ -8,7 +8,7 @@
 
 //! Signature based on ECDSA, algorithm's description: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 
-use super::{public_to_address, Address, Error, Message, Public, Secret, SECP256K1};
+use super::{public_to_address, Address, Error, Message, Public, Secret, ZeroesAllowedMessage, SECP256K1};
 use ethereum_types::{H256, H520};
 use rustc_hex::{FromHex, ToHex};
 use secp256k1::key::{PublicKey, SecretKey};
@@ -246,21 +246,55 @@ pub fn verify_address(address: &Address, signature: &Signature, message: &Messag
 
 /// Recovers the public key from the signature for the message
 pub fn recover(signature: &Signature, message: &Message) -> Result<Public, Error> {
-	let context = &SECP256K1;
 	let rsig = RecoverableSignature::from_compact(&signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
-	let pubkey = context.recover(&SecpMessage::from_slice(&message[..])?, &rsig)?;
+	let pubkey = &SECP256K1.recover(&SecpMessage::from_slice(&message[..])?, &rsig)?;
 	let serialized = pubkey.serialize_uncompressed();
-
 	let mut public = Public::default();
+	public.as_bytes_mut().copy_from_slice(&serialized[1..65]);
+	Ok(public)
+}
+
+/// Recovers the public key from the signature for the given message.
+/// This version of `recover()` allows for all-zero messages, which is necessary
+/// for ethereum but is otherwise highly discouraged. Use with caution.
+pub fn recover_allowing_all_zero_message(
+	signature: &Signature,
+	message: ZeroesAllowedMessage,
+) -> Result<Public, Error> {
+	let rsig = RecoverableSignature::from_compact(&signature[0..64], RecoveryId::from_i32(signature[64] as i32)?)?;
+	let pubkey = &SECP256K1.recover(&message.into(), &rsig)?;
+	let serialized = pubkey.serialize_uncompressed();
+	let mut public = Public::zero();
 	public.as_bytes_mut().copy_from_slice(&serialized[1..65]);
 	Ok(public)
 }
 
 #[cfg(test)]
 mod tests {
-	use super::super::{Generator, Message, Random};
-	use super::{recover, sign, verify_address, verify_public, Signature};
+	use super::super::{Generator, Message, Random, SECP256K1};
+	use super::{
+		recover, recover_allowing_all_zero_message, sign, verify_address, verify_public, Secret, Signature,
+		ZeroesAllowedMessage,
+	};
+	use secp256k1::SecretKey;
 	use std::str::FromStr;
+
+	// Copy of `sign()` that allows signing all-zero Messages.
+	// Note: this is for *tests* only. DO NOT USE UNLESS YOU NEED IT.
+	fn sign_zero_message(secret: &Secret) -> Signature {
+		let context = &SECP256K1;
+		let sec = SecretKey::from_slice(secret.as_ref()).unwrap();
+		// force an all-zero message into a secp `Message` bypassing the validity check.
+		let zero_msg = ZeroesAllowedMessage(Message::zero());
+		let s = context.sign_recoverable(&zero_msg.into(), &sec);
+		let (rec_id, data) = s.serialize_compact();
+		let mut data_arr = [0; 65];
+
+		// no need to check if s is low, it always is
+		data_arr[0..64].copy_from_slice(&data[0..64]);
+		data_arr[64] = rec_id.to_i32() as u8;
+		Signature(data_arr)
+	}
 
 	#[test]
 	fn vrs_conversion() {
@@ -293,6 +327,22 @@ mod tests {
 		let message = Message::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap();
 		let signature = sign(keypair.secret(), &message).unwrap();
 		assert_eq!(keypair.public(), &recover(&signature, &message).unwrap());
+	}
+
+	#[test]
+	fn sign_and_recover_public_fails_with_zeroed_messages() {
+		let keypair = Random.generate();
+		let signature = sign_zero_message(keypair.secret());
+		let zero_message = Message::zero();
+		assert!(&recover(&signature, &zero_message).is_err());
+	}
+
+	#[test]
+	fn recover_allowing_all_zero_message_can_recover_from_all_zero_messages() {
+		let keypair = Random.generate();
+		let signature = sign_zero_message(keypair.secret());
+		let zero_message = ZeroesAllowedMessage(Message::zero());
+		assert_eq!(keypair.public(), &recover_allowing_all_zero_message(&signature, zero_message).unwrap())
 	}
 
 	#[test]
