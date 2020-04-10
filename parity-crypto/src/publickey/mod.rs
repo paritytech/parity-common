@@ -20,7 +20,10 @@ pub mod ecdh;
 pub mod ecies;
 pub mod error;
 
-pub use self::ecdsa_signature::{recover, sign, verify_address, verify_public, Signature};
+pub use self::ecdsa_signature::{
+	recover, recover_allowing_all_zero_message, sign, verify_address, verify_public,
+	Signature
+};
 pub use self::error::Error;
 pub use self::extended_keys::{Derivation, DerivationError, ExtendedKeyPair, ExtendedPublic, ExtendedSecret};
 pub use self::keypair::{public_to_address, KeyPair};
@@ -42,7 +45,7 @@ use secp256k1::ThirtyTwoByteHash;
 /// converted to a `[u8; 32]` which in turn can be cast to a
 /// `secp256k1::Message` by the `ThirtyTwoByteHash` and satisfy the API for
 /// `recover()`.
-struct ZeroesAllowedMessage(H256);
+pub struct ZeroesAllowedMessage(H256);
 impl ThirtyTwoByteHash for ZeroesAllowedMessage {
 	fn into_32(self) -> [u8; 32] {
 		self.0.to_fixed_bytes()
