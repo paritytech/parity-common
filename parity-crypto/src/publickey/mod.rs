@@ -44,7 +44,7 @@ use secp256k1::ThirtyTwoByteHash;
 /// converted to a `[u8; 32]` which in turn can be cast to a
 /// `secp256k1::Message` by the `ThirtyTwoByteHash` and satisfy the API for
 /// `recover()`.
-pub struct ZeroesAllowedMessage(H256);
+pub struct ZeroesAllowedMessage(pub H256);
 impl ThirtyTwoByteHash for ZeroesAllowedMessage {
 	fn into_32(self) -> [u8; 32] {
 		self.0.to_fixed_bytes()
