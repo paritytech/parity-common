@@ -66,7 +66,7 @@ mod usable_size {
 		} else if #[cfg(target_os = "windows")] {
 
 			use winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
-            use winapi::ctypes::c_void as winapi_c_void;
+			use winapi::ctypes::c_void as winapi_c_void;
 
 			/// Get the size of a heap block.
 			/// Call windows allocator through `winapi` crate
