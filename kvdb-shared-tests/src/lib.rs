@@ -80,8 +80,8 @@ pub fn test_iter(db: &dyn KeyValueDB) -> io::Result<()> {
 	Ok(())
 }
 
-/// A test for `KeyValueDB::iter_from_prefix`.
-pub fn test_iter_from_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
+/// A test for `KeyValueDB::iter_with_prefix`.
+pub fn test_iter_with_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 	let key1 = b"0";
 	let key2 = b"ab";
 	let key3 = b"abc";
@@ -95,7 +95,7 @@ pub fn test_iter_from_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 	db.write(batch)?;
 
 	// empty prefix
-	let contents: Vec<_> = db.iter_from_prefix(0, b"").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"").into_iter().collect();
 	assert_eq!(contents.len(), 4);
 	assert_eq!(&*contents[0].0, key1);
 	assert_eq!(&*contents[1].0, key2);
@@ -103,31 +103,31 @@ pub fn test_iter_from_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 	assert_eq!(&*contents[3].0, key4);
 
 	// prefix a
-	let contents: Vec<_> = db.iter_from_prefix(0, b"a").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"a").into_iter().collect();
 	assert_eq!(contents.len(), 3);
 	assert_eq!(&*contents[0].0, key2);
 	assert_eq!(&*contents[1].0, key3);
 	assert_eq!(&*contents[2].0, key4);
 
 	// prefix abc
-	let contents: Vec<_> = db.iter_from_prefix(0, b"abc").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"abc").into_iter().collect();
 	assert_eq!(contents.len(), 2);
 	assert_eq!(&*contents[0].0, key3);
 	assert_eq!(&*contents[1].0, key4);
 
 	// prefix abcde
-	let contents: Vec<_> = db.iter_from_prefix(0, b"abcde").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"abcde").into_iter().collect();
 	assert_eq!(contents.len(), 0);
 
 	// prefix 0
-	let contents: Vec<_> = db.iter_from_prefix(0, b"0").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"0").into_iter().collect();
 	assert_eq!(contents.len(), 1);
 	assert_eq!(&*contents[0].0, key1);
 	Ok(())
 }
 
 /// The number of columns required to run `test_io_stats`.
-pub const IOSTATS_NUM_COLUMNS: u32 = 3;
+pub const IO_STATS_NUM_COLUMNS: u32 = 3;
 
 /// A test for `KeyValueDB::io_stats`.
 /// Assumes that the `db` has at least 3 columns.
@@ -256,7 +256,7 @@ pub fn test_complex(db: &dyn KeyValueDB) -> io::Result<()> {
 	assert_eq!(contents[1].0.to_vec(), key2.to_vec());
 	assert_eq!(&*contents[1].1, b"dog");
 
-	let mut prefix_iter = db.iter_from_prefix(0, b"04c0");
+	let mut prefix_iter = db.iter_with_prefix(0, b"04c0");
 	assert_eq!(*prefix_iter.next().unwrap().1, b"caterpillar"[..]);
 	assert_eq!(*prefix_iter.next().unwrap().1, b"beef"[..]);
 	assert_eq!(*prefix_iter.next().unwrap().1, b"fish"[..]);

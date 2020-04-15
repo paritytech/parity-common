@@ -113,12 +113,12 @@ impl KeyValueDB for Database {
 	}
 
 	// NOTE: clones the whole db
-	fn iter_from_prefix<'a>(
+	fn iter_with_prefix<'a>(
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
 	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
-		self.in_memory.iter_from_prefix(col, prefix)
+		self.in_memory.iter_with_prefix(col, prefix)
 	}
 
 	// NOTE: not supported
