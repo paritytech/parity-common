@@ -107,12 +107,12 @@ where
 		read_lock: RwLockReadGuard<'a, Option<T>>,
 		col: u32,
 		prefix: &[u8],
-		upper_bound: Box<[u8]>,
+		upper_bound: Option<Box<[u8]>>,
 		read_opts: &ReadOptions,
 	) -> Self {
 		Self {
 			inner: Self::new_inner(read_lock, |db| db.iter_with_prefix(col, prefix, read_opts)),
-			upper_bound_prefix: Some(upper_bound),
+			upper_bound_prefix: upper_bound,
 		}
 	}
 

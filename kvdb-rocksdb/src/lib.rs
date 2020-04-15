@@ -448,7 +448,7 @@ impl Database {
 								if let Some(end_range) = kvdb::end_prefix(&prefix[..]) {
 									batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
 								} else {
-									for (key, _) in self.iter_from_prefix(col, &prefix[..]) {
+									for (key, _) in self.iter_with_prefix(col, &prefix[..]) {
 										batch.delete_cf(cf, &key[..]).map_err(other_io_err)?;
 									}
 								}
@@ -456,7 +456,7 @@ impl Database {
 								// Deletes all values in the column.
 								let end_range = &[u8::max_value()];
 								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
-								for (key, _) in self.iter_from_prefix(col, &end_range[..]) {
+								for (key, _) in self.iter_with_prefix(col, &end_range[..]) {
 									batch.delete_cf(cf, &key[..]).map_err(other_io_err)?;
 								}
 							}
@@ -524,15 +524,16 @@ impl Database {
 		let optional = if read_lock.is_some() {
 			let mut read_opts = ReadOptions::default();
 			read_opts.set_verify_checksums(false);
-			let end_prefix = kvdb::end_prefix(prefix).into_boxed_slice();
 			// rocksdb doesn't work with an empty upper bound
-			if !end_prefix.is_empty() {
+			let end_prefix = kvdb::end_prefix(prefix).map(|end_prefix| {
+				let end_prefix = end_prefix.into_boxed_slice();
 				// SAFETY: the end_prefix lives as long as the iterator
 				// See `ReadGuardedIterator` definition for more details.
 				unsafe {
 					read_opts.set_iterate_upper_bound(&end_prefix);
 				}
-			}
+				end_prefix
+			});
 			let guarded = iter::ReadGuardedIterator::new_with_prefix(read_lock, col, prefix, end_prefix, &read_opts);
 			Some(guarded)
 		} else {
