@@ -9,8 +9,8 @@ it must be the sole place where a global allocator is defined.
 The only exception to this rule is when used in a `no_std` context or when the `estimate-heapsize` feature is used.
 
 Because of that, it must be present in the dependency tree with a single version.
-Starting from version 0.7, having duplicate versions of `parity-util-mem` will lead
-to a compile-time error. It still will be possible to have 0.6 and 0.7 versions in the same binary though.
+Starting from version 0.6.1, having duplicate versions of `parity-util-mem` will lead
+to a compile-time error. It still will be possible to have 0.5 and 0.6.1 versions in the same binary though.
 
 Unless heeded you risk UB; see discussion in [issue 364].
 
