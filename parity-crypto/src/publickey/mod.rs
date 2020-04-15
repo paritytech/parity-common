@@ -20,7 +20,9 @@ pub mod ecdh;
 pub mod ecies;
 pub mod error;
 
-pub use self::ecdsa_signature::{recover, sign, verify_address, verify_public, Signature};
+pub use self::ecdsa_signature::{
+	recover, recover_allowing_all_zero_message, sign, verify_address, verify_public, Signature,
+};
 pub use self::error::Error;
 pub use self::extended_keys::{Derivation, DerivationError, ExtendedKeyPair, ExtendedPublic, ExtendedSecret};
 pub use self::keypair::{public_to_address, KeyPair};
@@ -32,6 +34,22 @@ use lazy_static::lazy_static;
 
 pub use ethereum_types::{Address, Public};
 pub type Message = H256;
+
+use secp256k1::ThirtyTwoByteHash;
+
+/// In ethereum we allow public key recovery from a signature + message pair
+/// where the message is all-zeroes. This conflicts with the best practise of
+/// not allowing such values and so in order to avoid breaking consensus we need
+/// this to work around it. The `ZeroesAllowedType` wraps an `H256` that can be
+/// converted to a `[u8; 32]` which in turn can be cast to a
+/// `secp256k1::Message` by the `ThirtyTwoByteHash` and satisfy the API for
+/// `recover()`.
+pub struct ZeroesAllowedMessage(pub H256);
+impl ThirtyTwoByteHash for ZeroesAllowedMessage {
+	fn into_32(self) -> [u8; 32] {
+		self.0.to_fixed_bytes()
+	}
+}
 
 /// The number -1 encoded as a secret key
 const MINUS_ONE_KEY: &'static [u8] = &[

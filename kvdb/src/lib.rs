@@ -86,7 +86,7 @@ impl DBTransaction {
 
 	/// Delete all values with the given key prefix.
 	/// Using an empty prefix here will remove all keys
-	/// (all keys starts with the empty prefix).
+	/// (all keys start with the empty prefix).
 	pub fn delete_prefix(&mut self, col: u32, prefix: &[u8]) {
 		self.ops.push(DBOp::DeletePrefix { col, prefix: DBKey::from_slice(prefix) });
 	}
@@ -119,8 +119,9 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	/// Iterate over the data for a given column.
 	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
 
-	/// Iterate over the data for a given column, starting from a given prefix.
-	fn iter_from_prefix<'a>(
+	/// Iterate over the data for a given column, returning all key/value pairs
+	/// where the key starts with the given prefix.
+	fn iter_with_prefix<'a>(
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
@@ -175,5 +176,6 @@ mod test {
 		assert_eq!(end_prefix(&[0x00, 0xff]), Some(vec![0x01]));
 		assert_eq!(end_prefix(&[0xff]), None);
 		assert_eq!(end_prefix(&[]), None);
+		assert_eq!(end_prefix(b"0"), Some(b"1".to_vec()));
 	}
 }

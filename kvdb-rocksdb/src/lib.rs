@@ -444,7 +444,7 @@ impl Database {
 							batch.delete_cf(cf, &key).map_err(other_io_err)?
 						}
 						DBOp::DeletePrefix { col, prefix } => {
-							if prefix.len() > 0 {
+							if !prefix.is_empty() {
 								if let Some(end_range) = kvdb::end_prefix(&prefix[..]) {
 									batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
 								} else {
@@ -499,7 +499,7 @@ impl Database {
 
 	/// Get value by partial key. Prefix size should match configured prefix size.
 	pub fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>> {
-		self.iter_from_prefix(col, prefix).next().map(|(_, v)| v)
+		self.iter_with_prefix(col, prefix).next().map(|(_, v)| v)
 	}
 
 	/// Iterator over the data in the given database column index.
@@ -519,18 +519,26 @@ impl Database {
 	/// Iterator over data in the `col` database column index matching the given prefix.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
-	fn iter_from_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
+	fn iter_with_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
 		let read_lock = self.db.read();
 		let optional = if read_lock.is_some() {
-			let guarded = iter::ReadGuardedIterator::new_from_prefix(read_lock, col, prefix, &self.read_opts);
+			let mut read_opts = ReadOptions::default();
+			read_opts.set_verify_checksums(false);
+			let end_prefix = kvdb::end_prefix(prefix).into_boxed_slice();
+			// rocksdb doesn't work with an empty upper bound
+			if !end_prefix.is_empty() {
+				// SAFETY: the end_prefix lives as long as the iterator
+				// See `ReadGuardedIterator` definition for more details.
+				unsafe {
+					read_opts.set_iterate_upper_bound(&end_prefix);
+				}
+			}
+			let guarded = iter::ReadGuardedIterator::new_with_prefix(read_lock, col, prefix, end_prefix, &read_opts);
 			Some(guarded)
 		} else {
 			None
 		};
-		// We're not using "Prefix Seek" mode, so the iterator will return
-		// keys not starting with the given prefix as well,
-		// see https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes
-		optional.into_iter().flat_map(identity).take_while(move |(k, _)| k.starts_with(prefix))
+		optional.into_iter().flat_map(identity)
 	}
 
 	/// Close the database
@@ -655,8 +663,8 @@ impl KeyValueDB for Database {
 		Box::new(unboxed.into_iter())
 	}
 
-	fn iter_from_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> Box<dyn Iterator<Item = KeyValuePair> + 'a> {
-		let unboxed = Database::iter_from_prefix(self, col, prefix);
+	fn iter_with_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> Box<dyn Iterator<Item = KeyValuePair> + 'a> {
+		let unboxed = Database::iter_with_prefix(self, col, prefix);
 		Box::new(unboxed.into_iter())
 	}
 
@@ -736,9 +744,9 @@ mod tests {
 	}
 
 	#[test]
-	fn iter_from_prefix() -> io::Result<()> {
+	fn iter_with_prefix() -> io::Result<()> {
 		let db = create(1)?;
-		st::test_iter_from_prefix(&db)
+		st::test_iter_with_prefix(&db)
 	}
 
 	#[test]
@@ -749,7 +757,7 @@ mod tests {
 
 	#[test]
 	fn stats() -> io::Result<()> {
-		let db = create(st::IOSTATS_NUM_COLUMNS)?;
+		let db = create(st::IO_STATS_NUM_COLUMNS)?;
 		st::test_io_stats(&db)
 	}
 

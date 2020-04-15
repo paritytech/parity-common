@@ -5,7 +5,9 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
-### Breaking
+
+## [0.6.1] - 2020-04-15
+- Fix compilation on Windows for no-std. [#375](https://github.com/paritytech/parity-common/pull/375)
 - Prevent multiple versions from being linked into the same program. [#363](https://github.com/paritytech/parity-common/pull/363)
 
 ## [0.6.0] - 2020-03-13

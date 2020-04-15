@@ -40,7 +40,7 @@ script:
     cargo fmt -- --check;
     fi
   - cargo check --workspace --tests --benches
-  - cargo test --all --exclude uint --exclude fixed-hash --exclude parity-crypto
+  - cargo test --workspace --exclude uint --exclude fixed-hash --exclude parity-crypto
   - if [ "$TRAVIS_RUST_VERSION" == "nightly" ]; then
     cd contract-address/ && cargo test --features=external_doc && cd ..;
     fi
