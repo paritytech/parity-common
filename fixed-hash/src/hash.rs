@@ -665,8 +665,8 @@ macro_rules! impl_arbitrary_for_fixed_hash {
 	( $name:ident ) => {
 		impl $crate::arbitrary::Arbitrary for $name {
 			fn arbitrary(u: &mut $crate::arbitrary::Unstructured<'_>) -> $crate::arbitrary::Result<Self> {
-				let mut res = [0u8; $crate::core_::mem::size_of::<Self>()];
-				u.fill_buffer(&mut res)?;
+				let mut res = Self::zero();
+				u.fill_buffer(&mut res.0)?;
 				Ok(Self::from(res))
 			}
 		}
