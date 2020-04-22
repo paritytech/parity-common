@@ -22,3 +22,4 @@ serde_json = "1.0.41"
 default = ["std", "serialize"]
 std = ["uint-crate/std", "fixed-hash/std", "ethbloom/std", "primitive-types/std"]
 serialize = ["std", "impl-serde", "primitive-types/serde", "ethbloom/serialize"]
+arbitrary = ["std", "serialize", "fixed-hash/arbitrary"]
