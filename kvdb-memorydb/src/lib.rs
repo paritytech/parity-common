@@ -52,7 +52,7 @@ impl KeyValueDB for InMemory {
 		}
 	}
 
-	fn write_buffered(&self, transaction: DBTransaction) {
+	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
 		let mut columns = self.columns.write();
 		let ops = transaction.ops;
 		for op in ops {
@@ -67,11 +67,23 @@ impl KeyValueDB for InMemory {
 						col.remove(&*key);
 					}
 				}
+				DBOp::DeletePrefix { col, prefix } => {
+					if let Some(col) = columns.get_mut(&col) {
+						use std::ops::Bound;
+						if prefix.is_empty() {
+							col.clear();
+						} else {
+							let start_range = Bound::Included(prefix.to_vec());
+							let end_range = Bound::Excluded(kvdb::end_prefix(&prefix[..]));
+							let keys: Vec<_> = col.range((start_range, end_range)).map(|(k, _)| k.clone()).collect();
+							for key in keys.into_iter() {
+								col.remove(&key[..]);
+							}
+						}
+					}
+				}
 			}
 		}
-	}
-
-	fn flush(&self) -> io::Result<()> {
 		Ok(())
 	}
 
@@ -85,7 +97,7 @@ impl KeyValueDB for InMemory {
 		}
 	}
 
-	fn iter_from_prefix<'a>(
+	fn iter_with_prefix<'a>(
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
@@ -131,15 +143,21 @@ mod tests {
 	}
 
 	#[test]
+	fn delete_prefix() -> io::Result<()> {
+		let db = create(st::DELETE_PREFIX_NUM_COLUMNS);
+		st::test_delete_prefix(&db)
+	}
+
+	#[test]
 	fn iter() -> io::Result<()> {
 		let db = create(1);
 		st::test_iter(&db)
 	}
 
 	#[test]
-	fn iter_from_prefix() -> io::Result<()> {
+	fn iter_with_prefix() -> io::Result<()> {
 		let db = create(1);
-		st::test_iter_from_prefix(&db)
+		st::test_iter_with_prefix(&db)
 	}
 
 	#[test]

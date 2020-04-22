@@ -12,8 +12,7 @@
 //!
 //! Note: this crate does not use "Prefix Seek" mode which means that the prefix iterator
 //! will return keys not starting with the given prefix as well (as long as `key >= prefix`).
-//! To work around this we filter the data returned by rocksdb to ensure that
-//! all data yielded by the iterator does start with the given prefix.
+//! To work around this we set an upper bound to the prefix successor.
 //! See https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes for details.
 
 use crate::DBAndColumns;
@@ -28,6 +27,13 @@ pub type KeyValuePair = (Box<[u8]>, Box<[u8]>);
 /// Iterator with built-in synchronization.
 pub struct ReadGuardedIterator<'a, I, T> {
 	inner: OwningHandle<UnsafeStableAddress<'a, Option<T>>, DerefWrapper<Option<I>>>,
+	// We store the upper bound here
+	// to make sure it lives at least as long as the iterator.
+	// See https://github.com/rust-rocksdb/rust-rocksdb/pull/309.
+	// TODO: remove this once https://github.com/rust-rocksdb/rust-rocksdb/pull/377
+	// is merged and released.
+	#[allow(dead_code)]
+	upper_bound_prefix: Option<Box<[u8]>>,
 }
 
 // We can't implement `StableAddress` for a `RwLockReadGuard`
@@ -81,8 +87,8 @@ pub trait IterationHandler {
 	/// Create an `Iterator` over a `ColumnFamily` corresponding to the passed index. Takes a
 	/// reference to a `ReadOptions` to allow configuration of the new iterator (see
 	/// https://github.com/facebook/rocksdb/blob/master/include/rocksdb/options.h#L1169).
-	/// The iterator starts from the first key having the provided `prefix`.
-	fn iter_from_prefix(&self, col: u32, prefix: &[u8], read_opts: &ReadOptions) -> Self::Iterator;
+	/// The `Iterator` iterates over keys which start with the provided `prefix`.
+	fn iter_with_prefix(&self, col: u32, prefix: &[u8], read_opts: &ReadOptions) -> Self::Iterator;
 }
 
 impl<'a, T> ReadGuardedIterator<'a, <&'a T as IterationHandler>::Iterator, T>
@@ -92,18 +98,22 @@ where
 	/// Creates a new `ReadGuardedIterator` that maps `RwLock<RocksDB>` to `RwLock<DBIterator>`,
 	/// where `DBIterator` iterates over all keys.
 	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: u32, read_opts: &ReadOptions) -> Self {
-		Self { inner: Self::new_inner(read_lock, |db| db.iter(col, read_opts)) }
+		Self { inner: Self::new_inner(read_lock, |db| db.iter(col, read_opts)), upper_bound_prefix: None }
 	}
 
 	/// Creates a new `ReadGuardedIterator` that maps `RwLock<RocksDB>` to `RwLock<DBIterator>`,
-	/// where `DBIterator` iterates over keys >= prefix.
-	pub fn new_from_prefix(
+	/// where `DBIterator` iterates over keys which start with the given prefix.
+	pub fn new_with_prefix(
 		read_lock: RwLockReadGuard<'a, Option<T>>,
 		col: u32,
 		prefix: &[u8],
+		upper_bound: Box<[u8]>,
 		read_opts: &ReadOptions,
 	) -> Self {
-		Self { inner: Self::new_inner(read_lock, |db| db.iter_from_prefix(col, prefix, read_opts)) }
+		Self {
+			inner: Self::new_inner(read_lock, |db| db.iter_with_prefix(col, prefix, read_opts)),
+			upper_bound_prefix: Some(upper_bound),
+		}
 	}
 
 	fn new_inner(
@@ -125,7 +135,7 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 			.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::Start)
 	}
 
-	fn iter_from_prefix(&self, col: u32, prefix: &[u8], read_opts: &ReadOptions) -> Self::Iterator {
+	fn iter_with_prefix(&self, col: u32, prefix: &[u8], read_opts: &ReadOptions) -> Self::Iterator {
 		self.db
 			.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::From(prefix, Direction::Forward))
 	}

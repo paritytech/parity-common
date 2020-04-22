@@ -9,18 +9,22 @@ matrix:
       before_script:
         - rustup component add rustfmt
     - os: linux
-      rust: beta
-    - os: linux
       rust: nightly
       script:
-        - cargo check --all --benches
+        - cargo check --workspace --benches
+    - os: linux
+      rust: stable
+      install:
+        - cargo install cross
+      script:
+        - cross test --target=aarch64-linux-android -p parity-util-mem
     - os: osx
-      osx_image: xcode11.2
+      osx_image: xcode11.3
       addons:
         chrome: stable
         firefox: latest
       install:
-        - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.1/install.sh | sh
+        - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | sh
         - source ~/.nvm/nvm.sh
         - nvm install --lts
         - npm install -g chromedriver
@@ -32,13 +36,11 @@ matrix:
 install:
   - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 script:
-  - if [ "$TRAVIS_RUST_VERSION" == "stable" ] && [ "$TRAVIS_OS_NAME" == "linux" ]; then
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
     cargo fmt -- --check;
     fi
-  - cargo check --all --tests
-  - cargo check --all --benches
-  - cargo build --all
-  - cargo test --all --exclude uint --exclude fixed-hash --exclude parity-crypto
+  - cargo check --workspace --tests --benches
+  - cargo test --workspace --exclude uint --exclude fixed-hash --exclude parity-crypto
   - if [ "$TRAVIS_RUST_VERSION" == "nightly" ]; then
     cd contract-address/ && cargo test --features=external_doc && cd ..;
     fi

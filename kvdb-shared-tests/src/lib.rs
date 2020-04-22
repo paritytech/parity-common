@@ -17,7 +17,7 @@ pub fn test_put_and_get(db: &dyn KeyValueDB) -> io::Result<()> {
 
 	let mut transaction = db.transaction();
 	transaction.put(0, key1, b"horse");
-	db.write_buffered(transaction);
+	db.write(transaction)?;
 	assert_eq!(&*db.get(0, key1)?.unwrap(), b"horse");
 	Ok(())
 }
@@ -28,12 +28,12 @@ pub fn test_delete_and_get(db: &dyn KeyValueDB) -> io::Result<()> {
 
 	let mut transaction = db.transaction();
 	transaction.put(0, key1, b"horse");
-	db.write_buffered(transaction);
+	db.write(transaction)?;
 	assert_eq!(&*db.get(0, key1)?.unwrap(), b"horse");
 
 	let mut transaction = db.transaction();
 	transaction.delete(0, key1);
-	db.write_buffered(transaction);
+	db.write(transaction)?;
 	assert!(db.get(0, key1)?.is_none());
 	Ok(())
 }
@@ -49,7 +49,7 @@ pub fn test_get_fails_with_non_existing_column(db: &dyn KeyValueDB) -> io::Resul
 pub fn test_write_clears_buffered_ops(db: &dyn KeyValueDB) -> io::Result<()> {
 	let mut batch = db.transaction();
 	batch.put(0, b"foo", b"bar");
-	db.write_buffered(batch);
+	db.write(batch)?;
 
 	assert_eq!(db.get(0, b"foo")?.unwrap(), b"bar");
 
@@ -69,7 +69,7 @@ pub fn test_iter(db: &dyn KeyValueDB) -> io::Result<()> {
 	let mut transaction = db.transaction();
 	transaction.put(0, key1, key1);
 	transaction.put(0, key2, key2);
-	db.write_buffered(transaction);
+	db.write(transaction)?;
 
 	let contents: Vec<_> = db.iter(0).into_iter().collect();
 	assert_eq!(contents.len(), 2);
@@ -80,8 +80,8 @@ pub fn test_iter(db: &dyn KeyValueDB) -> io::Result<()> {
 	Ok(())
 }
 
-/// A test for `KeyValueDB::iter_from_prefix`.
-pub fn test_iter_from_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
+/// A test for `KeyValueDB::iter_with_prefix`.
+pub fn test_iter_with_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 	let key1 = b"0";
 	let key2 = b"ab";
 	let key3 = b"abc";
@@ -95,7 +95,7 @@ pub fn test_iter_from_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 	db.write(batch)?;
 
 	// empty prefix
-	let contents: Vec<_> = db.iter_from_prefix(0, b"").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"").into_iter().collect();
 	assert_eq!(contents.len(), 4);
 	assert_eq!(&*contents[0].0, key1);
 	assert_eq!(&*contents[1].0, key2);
@@ -103,28 +103,31 @@ pub fn test_iter_from_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 	assert_eq!(&*contents[3].0, key4);
 
 	// prefix a
-	let contents: Vec<_> = db.iter_from_prefix(0, b"a").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"a").into_iter().collect();
 	assert_eq!(contents.len(), 3);
 	assert_eq!(&*contents[0].0, key2);
 	assert_eq!(&*contents[1].0, key3);
 	assert_eq!(&*contents[2].0, key4);
 
 	// prefix abc
-	let contents: Vec<_> = db.iter_from_prefix(0, b"abc").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"abc").into_iter().collect();
 	assert_eq!(contents.len(), 2);
 	assert_eq!(&*contents[0].0, key3);
 	assert_eq!(&*contents[1].0, key4);
 
 	// prefix abcde
-	let contents: Vec<_> = db.iter_from_prefix(0, b"abcde").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"abcde").into_iter().collect();
 	assert_eq!(contents.len(), 0);
 
 	// prefix 0
-	let contents: Vec<_> = db.iter_from_prefix(0, b"0").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"0").into_iter().collect();
 	assert_eq!(contents.len(), 1);
 	assert_eq!(&*contents[0].0, key1);
 	Ok(())
 }
+
+/// The number of columns required to run `test_io_stats`.
+pub const IO_STATS_NUM_COLUMNS: u32 = 3;
 
 /// A test for `KeyValueDB::io_stats`.
 /// Assumes that the `db` has at least 3 columns.
@@ -171,6 +174,63 @@ pub fn test_io_stats(db: &dyn KeyValueDB) -> io::Result<()> {
 	Ok(())
 }
 
+/// The number of columns required to run `test_delete_prefix`.
+pub const DELETE_PREFIX_NUM_COLUMNS: u32 = 5;
+
+/// A test for `KeyValueDB::delete_prefix`.
+pub fn test_delete_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
+	let keys = [
+		&[][..],
+		&[0u8][..],
+		&[0, 1][..],
+		&[1][..],
+		&[1, 0][..],
+		&[1, 255][..],
+		&[1, 255, 255][..],
+		&[2][..],
+		&[2, 0][..],
+		&[2, 255][..],
+	];
+	let init_db = |ix: u32| -> io::Result<()> {
+		let mut batch = db.transaction();
+		for (i, key) in keys.iter().enumerate() {
+			batch.put(ix, key, &[i as u8]);
+		}
+		db.write(batch)?;
+		Ok(())
+	};
+	let check_db = |ix: u32, content: [bool; 10]| -> io::Result<()> {
+		let mut state = [true; 10];
+		for (c, key) in keys.iter().enumerate() {
+			state[c] = db.get(ix, key)?.is_some();
+		}
+		assert_eq!(state, content, "at {}", ix);
+		Ok(())
+	};
+	let tests: [_; DELETE_PREFIX_NUM_COLUMNS as usize] = [
+		// standard
+		(&[1u8][..], [true, true, true, false, false, false, false, true, true, true]),
+		// edge
+		(&[1u8, 255, 255][..], [true, true, true, true, true, true, false, true, true, true]),
+		// none 1
+		(&[1, 2][..], [true, true, true, true, true, true, true, true, true, true]),
+		// none 2
+		(&[8][..], [true, true, true, true, true, true, true, true, true, true]),
+		// all
+		(&[][..], [false, false, false, false, false, false, false, false, false, false]),
+	];
+	for (ix, test) in tests.iter().enumerate() {
+		let ix = ix as u32;
+		init_db(ix)?;
+		let mut batch = db.transaction();
+		batch.delete_prefix(ix, test.0);
+		db.write(batch)?;
+		check_db(ix, test.1)?;
+	}
+
+	Ok(())
+}
+
 /// A complex test.
 pub fn test_complex(db: &dyn KeyValueDB) -> io::Result<()> {
 	let key1 = b"02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc";
@@ -196,7 +256,7 @@ pub fn test_complex(db: &dyn KeyValueDB) -> io::Result<()> {
 	assert_eq!(contents[1].0.to_vec(), key2.to_vec());
 	assert_eq!(&*contents[1].1, b"dog");
 
-	let mut prefix_iter = db.iter_from_prefix(0, b"04c0");
+	let mut prefix_iter = db.iter_with_prefix(0, b"04c0");
 	assert_eq!(*prefix_iter.next().unwrap().1, b"caterpillar"[..]);
 	assert_eq!(*prefix_iter.next().unwrap().1, b"beef"[..]);
 	assert_eq!(*prefix_iter.next().unwrap().1, b"fish"[..]);
@@ -224,11 +284,10 @@ pub fn test_complex(db: &dyn KeyValueDB) -> io::Result<()> {
 	let mut transaction = db.transaction();
 	transaction.put(0, key1, b"horse");
 	transaction.delete(0, key3);
-	db.write_buffered(transaction);
+	db.write(transaction)?;
 	assert!(db.get(0, key3)?.is_none());
 	assert_eq!(&*db.get(0, key1)?.unwrap(), b"horse");
 
-	db.flush()?;
 	assert!(db.get(0, key3)?.is_none());
 	assert_eq!(&*db.get(0, key1)?.unwrap(), b"horse");
 	Ok(())

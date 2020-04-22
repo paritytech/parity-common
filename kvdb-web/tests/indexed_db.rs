@@ -40,15 +40,21 @@ async fn delete_and_get() {
 }
 
 #[wasm_bindgen_test]
+async fn delete_prefix() {
+	let db = open_db(st::DELETE_PREFIX_NUM_COLUMNS, "delete_prefix").await;
+	st::test_delete_prefix(&db).unwrap()
+}
+
+#[wasm_bindgen_test]
 async fn iter() {
 	let db = open_db(1, "iter").await;
 	st::test_iter(&db).unwrap()
 }
 
 #[wasm_bindgen_test]
-async fn iter_from_prefix() {
-	let db = open_db(1, "iter_from_prefix").await;
-	st::test_iter_from_prefix(&db).unwrap()
+async fn iter_with_prefix() {
+	let db = open_db(1, "iter_with_prefix").await;
+	st::test_iter_with_prefix(&db).unwrap()
 }
 
 #[wasm_bindgen_test]
@@ -66,7 +72,7 @@ async fn reopen_the_database_with_more_columns() {
 	// Write a value into the database
 	let mut batch = db.transaction();
 	batch.put(0, b"hello", b"world");
-	db.write_buffered(batch);
+	db.write(batch).unwrap();
 
 	assert_eq!(db.get(0, b"hello").unwrap().unwrap(), b"world");
 

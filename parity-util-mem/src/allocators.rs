@@ -66,6 +66,7 @@ mod usable_size {
 		} else if #[cfg(target_os = "windows")] {
 
 			use winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
+			use winapi::ctypes::c_void as winapi_c_void;
 
 			/// Get the size of a heap block.
 			/// Call windows allocator through `winapi` crate
@@ -73,11 +74,11 @@ mod usable_size {
 
 				let heap = GetProcessHeap();
 
-				if HeapValidate(heap, 0, ptr) == 0 {
+				if HeapValidate(heap, 0, ptr as *const winapi_c_void) == 0 {
 					ptr = *(ptr as *const *const c_void).offset(-1);
 				}
 
-				HeapSize(heap, 0, ptr) as usize
+				HeapSize(heap, 0, ptr as *const winapi_c_void) as usize
 			}
 
 		} else if #[cfg(feature = "jemalloc-global")] {
@@ -93,10 +94,10 @@ mod usable_size {
 			pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
 				// mimalloc doesn't actually mutate the value ptr points to,
 				// but requires a mut pointer in the API
-				mimalloc_sys::mi_usable_size(ptr as *mut _)
+				libmimalloc_sys::mi_usable_size(ptr as *mut _)
 			}
 
-		} else if #[cfg(target_os = "linux")] {
+		} else if #[cfg(any(target_os = "linux", target_os = "android"))] {
 
 			/// Linux call system allocator (currently malloc).
 			extern "C" {
