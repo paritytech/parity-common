@@ -29,6 +29,10 @@ pub use qc;
 #[doc(hidden)]
 pub use rand;
 
+#[cfg(feature = "arbitrary")]
+#[doc(hidden)]
+pub use arbitrary;
+
 #[doc(hidden)]
 pub use static_assertions;
 
