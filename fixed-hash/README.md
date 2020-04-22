@@ -64,3 +64,5 @@ fixed-hash = { version = "0.3", default-features = false }
     - Disabled by default.
 - `api-dummy`: Generate a dummy hash type for API documentation.
     - Enabled by default at `docs.rs`
+- `arbitrary`: Allow for creation of a hash from random unstructured input.
+    - Disabled by default.
