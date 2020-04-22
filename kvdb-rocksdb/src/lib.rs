@@ -324,6 +324,12 @@ fn generate_options(config: &DatabaseConfig) -> Options {
 	opts
 }
 
+fn generate_read_options() -> ReadOptions {
+	let mut read_opts = ReadOptions::default();
+	read_opts.set_verify_checksums(false);
+	read_opts
+}
+
 /// Generate the block based options for RocksDB, based on the given `DatabaseConfig`.
 fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
 	let mut block_opts = BlockBasedOptions::default();
@@ -372,8 +378,7 @@ impl Database {
 		let column_names: Vec<_> = (0..config.columns).map(|c| format!("col{}", c)).collect();
 
 		let write_opts = WriteOptions::default();
-		let mut read_opts = ReadOptions::default();
-		read_opts.set_verify_checksums(false);
+		let read_opts = generate_read_options();
 
 		let cf_descriptors: Vec<_> = (0..config.columns)
 			.map(|i| ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, i)))
@@ -458,12 +463,12 @@ impl Database {
 						DBOp::DeletePrefix { col: _, prefix } => {
 							if !prefix.is_empty() {
 								let end_range = kvdb::end_prefix(&prefix[..]);
-								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
+								batch.delete_range_cf(cf, &prefix[..], &end_range[..]);
 							} else {
 								// Deletes all values in the column.
 								let end_range = &[u8::max_value()];
-								batch.delete_range_cf(cf, &[][..], &end_range[..]).map_err(other_io_err)?;
-								batch.delete_cf(cf, &end_range[..]).map_err(other_io_err)?;
+								batch.delete_range_cf(cf, &[][..], &end_range[..]);
+								batch.delete_cf(cf, &end_range[..]);
 							}
 						}
 					};
@@ -513,7 +518,8 @@ impl Database {
 	pub fn iter<'a>(&'a self, col: u32) -> impl Iterator<Item = KeyValuePair> + 'a {
 		let read_lock = self.db.read();
 		let optional = if read_lock.is_some() {
-			let guarded = iter::ReadGuardedIterator::new(read_lock, col, &self.read_opts);
+			let read_opts = generate_read_options();
+			let guarded = iter::ReadGuardedIterator::new(read_lock, col, read_opts);
 			Some(guarded)
 		} else {
 			None
@@ -527,18 +533,13 @@ impl Database {
 	fn iter_with_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
 		let read_lock = self.db.read();
 		let optional = if read_lock.is_some() {
-			let mut read_opts = ReadOptions::default();
-			read_opts.set_verify_checksums(false);
-			let end_prefix = kvdb::end_prefix(prefix).into_boxed_slice();
+			let mut read_opts = generate_read_options();
+			let end_prefix = kvdb::end_prefix(prefix);
 			// rocksdb doesn't work with an empty upper bound
 			if !end_prefix.is_empty() {
-				// SAFETY: the end_prefix lives as long as the iterator
-				// See `ReadGuardedIterator` definition for more details.
-				unsafe {
-					read_opts.set_iterate_upper_bound(&end_prefix);
-				}
+				read_opts.set_iterate_upper_bound(end_prefix);
 			}
-			let guarded = iter::ReadGuardedIterator::new_with_prefix(read_lock, col, prefix, end_prefix, &read_opts);
+			let guarded = iter::ReadGuardedIterator::new_with_prefix(read_lock, col, prefix, read_opts);
 			Some(guarded)
 		} else {
 			None
