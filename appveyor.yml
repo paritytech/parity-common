@@ -5,8 +5,6 @@ environment:
 platform:
   - x86_64-pc-windows-msvc
 
-image: Visual Studio 2019
-
 # avoid running tests twice
 branches:
   only:
