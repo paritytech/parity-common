@@ -5,6 +5,8 @@ environment:
 platform:
   - x86_64-pc-windows-msvc
 
+image: Visual Studio 2017 Preview
+
 # avoid running tests twice
 branches:
   only:
