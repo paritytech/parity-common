@@ -69,5 +69,5 @@ see fuzz [README.md](fuzz/README.md)
 	- Enabled by default.
 - `quickcheck`: Enable quickcheck-style property testing
 	- Use with `cargo test --release --features=quickcheck`.
-- `arbitrary`: Allow for creation of an `uint` object from random unstructured input.
+- `arbitrary`: Allow for creation of an `uint` object from random unstructured input for use with fuzzers that use the `arbitrary` crate.
 	- Disabled by default.
