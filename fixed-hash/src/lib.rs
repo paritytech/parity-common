@@ -46,6 +46,10 @@ pub use rand;
 #[doc(hidden)]
 pub use quickcheck;
 
+#[cfg(feature = "arbitrary")]
+#[doc(hidden)]
+pub use arbitrary;
+
 #[macro_use]
 mod hash;
 

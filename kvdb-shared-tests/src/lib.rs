@@ -175,7 +175,7 @@ pub fn test_io_stats(db: &dyn KeyValueDB) -> io::Result<()> {
 }
 
 /// The number of columns required to run `test_delete_prefix`.
-pub const DELETE_PREFIX_NUM_COLUMNS: u32 = 5;
+pub const DELETE_PREFIX_NUM_COLUMNS: u32 = 7;
 
 /// A test for `KeyValueDB::delete_prefix`.
 pub fn test_delete_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
@@ -190,6 +190,7 @@ pub fn test_delete_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 		&[2][..],
 		&[2, 0][..],
 		&[2, 255][..],
+		&[255; 16][..],
 	];
 	let init_db = |ix: u32| -> io::Result<()> {
 		let mut batch = db.transaction();
@@ -199,8 +200,8 @@ pub fn test_delete_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 		db.write(batch)?;
 		Ok(())
 	};
-	let check_db = |ix: u32, content: [bool; 10]| -> io::Result<()> {
-		let mut state = [true; 10];
+	let check_db = |ix: u32, content: [bool; 11]| -> io::Result<()> {
+		let mut state = [true; 11];
 		for (c, key) in keys.iter().enumerate() {
 			state[c] = db.get(ix, key)?.is_some();
 		}
@@ -209,15 +210,19 @@ pub fn test_delete_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 	};
 	let tests: [_; DELETE_PREFIX_NUM_COLUMNS as usize] = [
 		// standard
-		(&[1u8][..], [true, true, true, false, false, false, false, true, true, true]),
+		(&[1u8][..], [true, true, true, false, false, false, false, true, true, true, true]),
 		// edge
-		(&[1u8, 255, 255][..], [true, true, true, true, true, true, false, true, true, true]),
+		(&[1u8, 255, 255][..], [true, true, true, true, true, true, false, true, true, true, true]),
 		// none 1
-		(&[1, 2][..], [true, true, true, true, true, true, true, true, true, true]),
+		(&[1, 2][..], [true, true, true, true, true, true, true, true, true, true, true]),
 		// none 2
-		(&[8][..], [true, true, true, true, true, true, true, true, true, true]),
+		(&[8][..], [true, true, true, true, true, true, true, true, true, true, true]),
+		// last value
+		(&[255, 255][..], [true, true, true, true, true, true, true, true, true, true, false]),
+		// last value, limit prefix
+		(&[255][..], [true, true, true, true, true, true, true, true, true, true, false]),
 		// all
-		(&[][..], [false, false, false, false, false, false, false, false, false, false]),
+		(&[][..], [false, false, false, false, false, false, false, false, false, false, false]),
 	];
 	for (ix, test) in tests.iter().enumerate() {
 		let ix = ix as u32;

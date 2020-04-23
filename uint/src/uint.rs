@@ -1554,6 +1554,7 @@ macro_rules! construct_uint {
 		// `$n_words * 8` because macro expects bytes and
 		// uints use 64 bit (8 byte) words
 		$crate::impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
+		$crate::impl_arbitrary_for_uint!($name, ($n_words * 8));
 	}
 }
 
@@ -1630,5 +1631,28 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_uint {
+	($uint: ty, $n_bytes: tt) => {};
+}
+
+
+#[cfg(feature = "arbitrary")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_arbitrary_for_uint {
+	($uint: ty, $n_bytes: tt) => {
+		impl $crate::arbitrary::Arbitrary for $uint {
+			fn arbitrary(u: &mut $crate::arbitrary::Unstructured<'_>) -> $crate::arbitrary::Result<Self> {
+				let mut res = [0u8; $n_bytes];
+				u.fill_buffer(&mut res)?;
+				Ok(Self::from(res))
+			}
+		}
+	};
+}
+
+#[cfg(not(feature = "arbitrary"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_arbitrary_for_uint {
 	($uint: ty, $n_bytes: tt) => {};
 }

@@ -26,6 +26,7 @@ default = ["std", "serialize", "rustc-hex"]
 std = ["fixed-hash/std", "crunchy/std"]
 serialize = ["std", "impl-serde"]
 rustc-hex = ["fixed-hash/rustc-hex"]
+arbitrary = ["fixed-hash/arbitrary"]
 
 [[bench]]
 name = "bloom"

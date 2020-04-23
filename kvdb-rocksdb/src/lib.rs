@@ -448,15 +448,16 @@ impl Database {
 							stats_total_bytes += key.len();
 							batch.delete_cf(cf, &key);
 						}
-						DBOp::DeletePrefix { col: _, prefix } => {
-							if !prefix.is_empty() {
-								let end_range = kvdb::end_prefix(&prefix[..]);
-								batch.delete_range_cf(cf, &prefix[..], &end_range[..]);
-							} else {
-								// Deletes all values in the column.
-								let end_range = &[u8::max_value()];
-								batch.delete_range_cf(cf, &[][..], &end_range[..]);
-								batch.delete_cf(cf, &end_range[..]);
+						DBOp::DeletePrefix { col, prefix } => {
+							let end_prefix = kvdb::end_prefix(&prefix[..]);
+							let no_end = end_prefix.is_none();
+							let end_range = end_prefix.unwrap_or_else(|| vec![u8::max_value(); 16]);
+							batch.delete_range_cf(cf, &prefix[..], &end_range[..]);
+							if no_end {
+								let prefix = if prefix.len() > end_range.len() { &prefix[..] } else { &end_range[..] };
+								for (key, _) in self.iter_with_prefix(col, prefix) {
+									batch.delete_cf(cf, &key[..]);
+								}
 							}
 						}
 					};
@@ -522,9 +523,8 @@ impl Database {
 		let read_lock = self.db.read();
 		let optional = if read_lock.is_some() {
 			let mut read_opts = generate_read_options();
-			let end_prefix = kvdb::end_prefix(prefix);
 			// rocksdb doesn't work with an empty upper bound
-			if !end_prefix.is_empty() {
+			if let Some(end_prefix) = kvdb::end_prefix(prefix) {
 				read_opts.set_iterate_upper_bound(end_prefix);
 			}
 			let guarded = iter::ReadGuardedIterator::new_with_prefix(read_lock, col, prefix, read_opts);

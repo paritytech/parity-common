@@ -316,6 +316,7 @@ macro_rules! construct_fixed_hash {
 		impl_cmp_for_fixed_hash!($name);
 		impl_rustc_hex_for_fixed_hash!($name);
 		impl_quickcheck_for_fixed_hash!($name);
+		impl_arbitrary_for_fixed_hash!($name);
 	}
 }
 
@@ -631,6 +632,42 @@ macro_rules! impl_quickcheck_for_fixed_hash {
 				let mut res = [0u8; $crate::core_::mem::size_of::<Self>()];
 				g.fill_bytes(&mut res[..Self::len_bytes()]);
 				Self::from(res)
+			}
+		}
+	};
+}
+
+// When the `arbitrary` feature is disabled.
+//
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `arbitrary` crate feature in
+// a user crate.
+#[cfg(not(feature = "arbitrary"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_arbitrary_for_fixed_hash {
+	( $name:ident ) => {};
+}
+
+// When the `arbitrary` feature is enabled.
+//
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `arbitrary` crate feature in
+// a user crate.
+#[cfg(feature = "arbitrary")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_arbitrary_for_fixed_hash {
+	( $name:ident ) => {
+		impl $crate::arbitrary::Arbitrary for $name {
+			fn arbitrary(u: &mut $crate::arbitrary::Unstructured<'_>) -> $crate::arbitrary::Result<Self> {
+				let mut res = Self::zero();
+				u.fill_buffer(&mut res.0)?;
+				Ok(Self::from(res))
 			}
 		}
 	};
