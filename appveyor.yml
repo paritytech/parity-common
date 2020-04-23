@@ -19,15 +19,15 @@ install:
   - rustc -vV
   - cargo -vV
 
-    #build_script:
-    #- cargo check --tests
-    #- cargo build --all
+build_script:
+  - cargo check --tests
+  - cargo build --all
 
 test_script:
-  - cargo test --release --all --exclude uint --exclude fixed-hash
-    #  - cd fixed-hash/ && cargo test --all-features && cd ..
-    #  - cd uint/ && cargo test --features=std,quickcheck --release && cd ..
-    #  - cd plain_hasher/ && cargo test --no-default-features && cd ..
-    #  - cd parity-util-mem/ && cargo test --no-default-features && cd ..
-    #  - cd parity-util-mem/ && cargo test --features=estimate-heapsize && cd ..
-    #  - cd parity-util-mem/ && cargo test && cd ..
+  - cargo test --all --exclude uint --exclude fixed-hash
+  - cd fixed-hash/ && cargo test --all-features && cd ..
+  - cd uint/ && cargo test --features=std,quickcheck --release && cd ..
+  - cd plain_hasher/ && cargo test --no-default-features && cd ..
+  - cd parity-util-mem/ && cargo test --no-default-features && cd ..
+  - cd parity-util-mem/ && cargo test --features=estimate-heapsize && cd ..
+  - cd parity-util-mem/ && cargo test && cd ..
