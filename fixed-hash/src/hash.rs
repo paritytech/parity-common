@@ -637,7 +637,7 @@ macro_rules! impl_quickcheck_for_fixed_hash {
 	};
 }
 
-// Implementation for disabled `arbitrary` crate support.
+// When the `arbitrary` features is disabled.
 //
 // # Note
 //
@@ -651,7 +651,7 @@ macro_rules! impl_arbitrary_for_fixed_hash {
 	( $name:ident ) => {};
 }
 
-// Implementation for enabled `arbitrary` crate support.
+// When the `arbitrary` features is enabled.
 //
 // # Note
 //
