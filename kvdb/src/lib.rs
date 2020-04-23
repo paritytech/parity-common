@@ -143,15 +143,19 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 
 /// For a given start prefix (inclusive), returns the correct end prefix (non-inclusive).
 /// This assumes the key bytes are ordered in lexicographical order.
-pub fn end_prefix(prefix: &[u8]) -> Vec<u8> {
+/// Since key length is not limited, for some case we return `None` because there is
+/// no bounded limit (every keys in the serie `[]`, `[255]`, `[255, 255]` ...).
+pub fn end_prefix(prefix: &[u8]) -> Option<Vec<u8>> {
 	let mut end_range = prefix.to_vec();
 	while let Some(0xff) = end_range.last() {
 		end_range.pop();
 	}
 	if let Some(byte) = end_range.last_mut() {
 		*byte += 1;
+		Some(end_range)
+	} else {
+		None
 	}
-	end_range
 }
 
 #[cfg(test)]
@@ -160,18 +164,18 @@ mod test {
 
 	#[test]
 	fn end_prefix_test() {
-		assert_eq!(end_prefix(&[5, 6, 7]), vec![5, 6, 8]);
-		assert_eq!(end_prefix(&[5, 6, 255]), vec![5, 7]);
+		assert_eq!(end_prefix(&[5, 6, 7]), Some(vec![5, 6, 8]));
+		assert_eq!(end_prefix(&[5, 6, 255]), Some(vec![5, 7]));
 		// This is not equal as the result is before start.
-		assert_ne!(end_prefix(&[5, 255, 255]), vec![5, 255]);
+		assert_ne!(end_prefix(&[5, 255, 255]), Some(vec![5, 255]));
 		// This is equal ([5, 255] will not be deleted because
 		// it is before start).
-		assert_eq!(end_prefix(&[5, 255, 255]), vec![6]);
-		assert_eq!(end_prefix(&[255, 255, 255]), vec![]);
+		assert_eq!(end_prefix(&[5, 255, 255]), Some(vec![6]));
+		assert_eq!(end_prefix(&[255, 255, 255]), None);
 
-		assert_eq!(end_prefix(&[0x00, 0xff]), vec![0x01]);
-		assert_eq!(end_prefix(&[0xff]), vec![]);
-		assert_eq!(end_prefix(b"0"), b"1".to_vec());
-		assert_eq!(end_prefix(&[]), vec![]);
+		assert_eq!(end_prefix(&[0x00, 0xff]), Some(vec![0x01]));
+		assert_eq!(end_prefix(&[0xff]), None);
+		assert_eq!(end_prefix(&[]), None);
+		assert_eq!(end_prefix(b"0"), Some(b"1".to_vec()));
 	}
 }
