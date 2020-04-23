@@ -25,3 +25,6 @@ members = [
 	"ethbloom",
 	"parity-util-mem/derive"
 ]
+
+[patch.crates-io]
+librocksdb-sys = { git = "https://github.com/aleksuss/rust-rocksdb", branch = "fix_win_build" }
