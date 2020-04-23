@@ -651,7 +651,7 @@ macro_rules! impl_arbitrary_for_fixed_hash {
 	( $name:ident ) => {};
 }
 
-// When the `arbitrary` features is enabled.
+// When the `arbitrary` feature is enabled.
 //
 // # Note
 //
