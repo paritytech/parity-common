@@ -444,12 +444,16 @@ impl Database {
 							batch.delete_cf(cf, &key).map_err(other_io_err)?
 						}
 						DBOp::DeletePrefix { col, prefix } => {
-							let iter_prefix_delete = |prefix: &[u8], batch: &mut WriteBatch| -> io::Result<()> {
-								for (key, _) in self.iter_with_prefix(col, &prefix[..]) {
+							let end_prefix = kvdb::end_prefix(&prefix[..]);
+							let no_end = end_prefix.is_none();
+							let end_range = end_prefix.unwrap_or_else(|| vec![u8::max_value(); 16]);
+							batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
+							if no_end {
+								let prefix = if prefix.len() > end_range.len() { &prefix[..] } else { &end_range[..] };
+								for (key, _) in self.iter_with_prefix(col, prefix) {
 									batch.delete_cf(cf, &key[..]).map_err(other_io_err)?;
 								}
-								Ok(())
-							};
+							}
 							if !prefix.is_empty() {
 								if let Some(end_range) = kvdb::end_prefix(&prefix[..]) {
 									batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
