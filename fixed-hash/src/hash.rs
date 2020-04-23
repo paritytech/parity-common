@@ -637,7 +637,7 @@ macro_rules! impl_quickcheck_for_fixed_hash {
 	};
 }
 
-// When the `arbitrary` features is disabled.
+// When the `arbitrary` feature is disabled.
 //
 // # Note
 //
