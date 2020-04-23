@@ -190,7 +190,7 @@ pub fn test_delete_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 		&[2][..],
 		&[2, 0][..],
 		&[2, 255][..],
-		&[255, 255][..],
+		&[255; 16][..],
 	];
 	let init_db = |ix: u32| -> io::Result<()> {
 		let mut batch = db.transaction();

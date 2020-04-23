@@ -454,7 +454,7 @@ impl Database {
 								}
 							} else {
 								// Deletes all values in the column.
-								let end_range = &[u8::max_value()];
+								let end_range = [u8::max_value(); 16];
 								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
 								for (key, _) in self.iter_with_prefix(col, &end_range[..]) {
 									batch.delete_cf(cf, &key[..]).map_err(other_io_err)?;
