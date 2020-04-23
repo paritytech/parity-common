@@ -454,18 +454,6 @@ impl Database {
 									batch.delete_cf(cf, &key[..]).map_err(other_io_err)?;
 								}
 							}
-							if !prefix.is_empty() {
-								if let Some(end_range) = kvdb::end_prefix(&prefix[..]) {
-									batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
-								} else {
-									iter_prefix_delete(&prefix[..], &mut batch)?;
-								}
-							} else {
-								// Deletes all values in the column.
-								let end_range = [u8::max_value(); 16];
-								batch.delete_range_cf(cf, &prefix[..], &end_range[..]).map_err(other_io_err)?;
-								iter_prefix_delete(&end_range[..], &mut batch)?;
-							}
 						}
 					};
 				}
