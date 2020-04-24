@@ -15,6 +15,7 @@ use parity_util_mem::MallocSizeOf;
 use parking_lot::{Mutex, MutexGuard, RwLock};
 use rocksdb::{
 	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB,
+	DBCompressionType,
 };
 
 use crate::iter::KeyValuePair;
@@ -208,6 +209,7 @@ impl DatabaseConfig {
 		opts.optimize_level_style_compaction(column_mem_budget);
 		opts.set_target_file_size_base(self.compaction.initial_file_size);
 		opts.set_compression_per_level(&[]);
+		opts.set_compression_type(DBCompressionType::None);
 
 		opts
 	}
@@ -454,20 +456,22 @@ impl Database {
 				let mut batch = WriteBatch::default();
 				let mut ops: usize = 0;
 				let mut bytes: usize = 0;
+				let mut seen_cfs = std::collections::HashSet::new();
 				mem::swap(&mut *self.overlay.write(), &mut *self.flushing.write());
 				{
 					for (c, column) in self.flushing.read().iter().enumerate() {
 						ops += column.len();
 						for (key, state) in column.iter() {
 							let cf = cfs.cf(c);
+							seen_cfs.insert(c);
 							match *state {
 								KeyState::Delete => {
 									bytes += key.len();
-									batch.delete_cf(cf, key).map_err(other_io_err)?
+									batch.delete_cf(cf, key);
 								}
 								KeyState::Insert(ref value) => {
 									bytes += key.len() + value.len();
-									batch.put_cf(cf, key, value).map_err(other_io_err)?
+									batch.put_cf(cf, key, value);
 								}
 							};
 						}
@@ -475,6 +479,9 @@ impl Database {
 				}
 
 				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))?;
+				for c in seen_cfs {
+					cfs.db.flush_cf(cfs.cf(c)).expect("flush failed");
+				}
 				self.stats.tally_transactions(1);
 				self.stats.tally_writes(ops as u64);
 				self.stats.tally_bytes_written(bytes as u64);
@@ -515,28 +522,32 @@ impl Database {
 				self.stats.tally_transactions(1);
 
 				let mut stats_total_bytes = 0;
-
+				let mut seen_cfs = std::collections::HashSet::new();
 				for op in ops {
 					// remove any buffered operation for this key
 					self.overlay.write()[op.col() as usize].remove(op.key());
 
 					let cf = cfs.cf(op.col() as usize);
-
+					seen_cfs.insert(op.col() as usize);
 					match op {
 						DBOp::Insert { col: _, key, value } => {
 							stats_total_bytes += key.len() + value.len();
-							batch.put_cf(cf, &key, &value).map_err(other_io_err)?
+							batch.put_cf(cf, &key, &value)
 						}
 						DBOp::Delete { col: _, key } => {
 							// We count deletes as writes.
 							stats_total_bytes += key.len();
-							batch.delete_cf(cf, &key).map_err(other_io_err)?
+							batch.delete_cf(cf, &key)
 						}
 					};
 				}
 				self.stats.tally_bytes_written(stats_total_bytes as u64);
 
-				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))
+				let r = check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts));
+				for c in seen_cfs {
+					cfs.db.flush_cf(cfs.cf(c)).expect("flush in write failed");
+				}
+				r
 			}
 			None => Err(other_io_err("Database is closed")),
 		}
@@ -607,8 +618,9 @@ impl Database {
 				overlay_data.sort();
 				overlay_data
 			};
-
-			let guarded = iter::ReadGuardedIterator::new(read_lock, col, &self.read_opts);
+			let mut read_opts = ReadOptions::default();
+			read_opts.set_verify_checksums(false);
+			let guarded = iter::ReadGuardedIterator::new(read_lock, col, read_opts);
 			Some(interleave_ordered(overlay_data, guarded))
 		} else {
 			None
@@ -622,7 +634,9 @@ impl Database {
 	fn iter_from_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
 		let read_lock = self.db.read();
 		let optional = if read_lock.is_some() {
-			let guarded = iter::ReadGuardedIterator::new_from_prefix(read_lock, col, prefix, &self.read_opts);
+			let mut read_opts = ReadOptions::default();
+			read_opts.set_verify_checksums(false);
+			let guarded = iter::ReadGuardedIterator::new_from_prefix(read_lock, col, prefix, read_opts);
 			Some(interleave_ordered(Vec::new(), guarded))
 		} else {
 			None
