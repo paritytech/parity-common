@@ -1120,13 +1120,8 @@ macro_rules! construct_uint {
 				let mut ret = [0; $n_words];
 				unsafe {
 					let ret_u8: &mut [u8; $n_words * 8] = $crate::core_::mem::transmute(&mut ret);
-					let mut ret_ptr = ret_u8.as_mut_ptr();
-					let mut slice_ptr = slice.as_ptr().offset(slice.len() as isize - 1);
-					for _ in 0..slice.len() {
-						*ret_ptr = *slice_ptr;
-						ret_ptr = ret_ptr.offset(1);
-						slice_ptr = slice_ptr.offset(-1);
-					}
+					ret_u8[0..slice.len()].copy_from_slice(slice);
+					ret_u8[0..slice.len()].reverse();
 				}
 
 				$name(ret)
