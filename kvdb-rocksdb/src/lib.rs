@@ -810,8 +810,7 @@ mod tests {
 		transaction.put(0, key1, b"horse");
 		db.write(transaction)?;
 
-		let mut config = DatabaseConfig::with_columns(1);
-		config.secondary_mode = true;
+		let config = DatabaseConfig { secondary_mode: true, ..DatabaseConfig::with_columns(1) };
 		let second_db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
 		assert_eq!(&*second_db.get(0, key1)?.unwrap(), b"horse");
 		Ok(())
