@@ -166,6 +166,13 @@ pub struct DatabaseConfig {
 	/// It can have a negative performance impact up to 10% according to
 	/// https://github.com/facebook/rocksdb/wiki/Statistics.
 	pub enable_statistics: bool,
+	/// Open the database in secondary mode
+	/// disabled by default
+	///
+	/// must be open with `max_open_files = -1`
+	/// may have negative performance on the secondary instance if the secondary instance applies log files
+	/// right before the primary instance performs a compaction
+	pub secondary_mode: bool,
 }
 
 impl DatabaseConfig {
@@ -215,6 +222,7 @@ impl Default for DatabaseConfig {
 			columns: 1,
 			keep_log_file_num: 1,
 			enable_statistics: false,
+			secondary_mode: false,
 		}
 	}
 }
@@ -305,7 +313,11 @@ fn generate_options(config: &DatabaseConfig) -> Options {
 	}
 	opts.set_use_fsync(false);
 	opts.create_if_missing(true);
-	opts.set_max_open_files(config.max_open_files);
+	if config.secondary_mode {
+		opts.set_max_open_files(-1)
+	} else {
+		opts.set_max_open_files(config.max_open_files);
+	}
 	opts.set_bytes_per_sync(1 * MB as u64);
 	opts.set_keep_log_file_num(1);
 	opts.increase_parallelism(cmp::max(1, num_cpus::get() as i32 / 2));
@@ -364,12 +376,38 @@ impl Database {
 		}
 
 		let column_names: Vec<_> = (0..config.columns).map(|c| format!("col{}", c)).collect();
-
 		let write_opts = WriteOptions::default();
 		let read_opts = generate_read_options();
 
+		let db = if config.secondary_mode {
+			Self::open_secondary(&opts, path, column_names.as_slice())?
+		} else {
+			let column_names: Vec<&str> = column_names.iter().map(|s| s.as_str()).collect();
+			Self::open_primary(&opts, path, config, column_names.as_slice(), &block_opts)?
+		};
+
+		Ok(Database {
+			db: RwLock::new(Some(DBAndColumns { db, column_names })),
+			config: config.clone(),
+			path: path.to_owned(),
+			opts,
+			read_opts,
+			write_opts,
+			block_opts,
+			stats: stats::RunningDbStats::new(),
+		})
+	}
+
+	/// Internal api to open a database in primary mode
+	fn open_primary(opts: &Options,
+					   path: &str,
+					   config: &DatabaseConfig,
+					   column_names: &[&str],
+					   block_opts: &BlockBasedOptions
+	) -> io::Result<rocksdb::DB> {
+
 		let cf_descriptors: Vec<_> = (0..config.columns)
-			.map(|i| ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, i)))
+			.map(|i| ColumnFamilyDescriptor::new(column_names[i as usize], config.column_config(&block_opts, i)))
 			.collect();
 
 		let db = match DB::open_cf_descriptors(&opts, path, cf_descriptors) {
@@ -390,7 +428,7 @@ impl Database {
 			ok => ok,
 		};
 
-		let db = match db {
+		Ok(match db {
 			Ok(db) => db,
 			Err(ref s) if is_corrupted(s) => {
 				warn!("DB corrupted: {}, attempting repair", s);
@@ -398,23 +436,28 @@ impl Database {
 
 				let cf_descriptors: Vec<_> = (0..config.columns)
 					.map(|i| {
-						ColumnFamilyDescriptor::new(&column_names[i as usize], config.column_config(&block_opts, i))
+						ColumnFamilyDescriptor::new(column_names[i as usize], config.column_config(&block_opts, i))
 					})
 					.collect();
 
 				DB::open_cf_descriptors(&opts, path, cf_descriptors).map_err(other_io_err)?
 			}
 			Err(s) => return Err(other_io_err(s)),
-		};
-		Ok(Database {
-			db: RwLock::new(Some(DBAndColumns { db, column_names })),
-			config: config.clone(),
-			path: path.to_owned(),
-			opts,
-			read_opts,
-			write_opts,
-			block_opts,
-			stats: stats::RunningDbStats::new(),
+		})
+	}
+
+	/// Internal api to open a database in secondary mode
+	fn open_secondary(opts: &Options, path: &str, column_names: &[String]) -> io::Result<rocksdb::DB> {
+		let db = DB::open_cf_as_secondary(&opts, path, path, column_names);
+
+		Ok(match db {
+			Ok(db) => db,
+			Err(ref s) if is_corrupted(s) => {
+				warn!("DB corrupted: {}, attempting repair", s);
+				DB::repair(&opts, path).map_err(other_io_err)?;
+				DB::open_cf_as_secondary(&opts, path, path, column_names).map_err(other_io_err)?
+			}
+			Err(s) => return Err(other_io_err(s)),
 		})
 	}
 
@@ -717,8 +760,9 @@ mod tests {
 	fn put_and_get() -> io::Result<()> {
 		let db = create(1)?;
 		st::test_put_and_get(&db)
-	}
 
+	}
+    
 	#[test]
 	fn delete_and_get() -> io::Result<()> {
 		let db = create(1)?;
@@ -756,6 +800,24 @@ mod tests {
 	}
 
 	#[test]
+	fn secondary_db_get() -> io::Result<()> {
+		let tempdir = TempDir::new("")?;
+		let config = DatabaseConfig::with_columns(1);
+		let db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
+
+		let key1 = b"key1";
+		let mut transaction = db.transaction();
+		transaction.put(0, key1, b"horse");
+		db.write(transaction)?;
+
+		let mut config = DatabaseConfig::with_columns(1);
+		config.secondary_mode = true;
+		let second_db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
+		assert_eq!(&*second_db.get(0, key1)?.unwrap(), b"horse");
+		Ok(())
+	}
+
+	#[test]
 	fn mem_tables_size() {
 		let tempdir = TempDir::new("").unwrap();
 
@@ -766,6 +828,7 @@ mod tests {
 			columns: 11,
 			keep_log_file_num: 1,
 			enable_statistics: false,
+			secondary_mode: false,
 		};
 
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
