@@ -680,6 +680,17 @@ impl Database {
 			HashMap::new()
 		}
 	}
+
+	/// Try to catch up a secondary instance of the database with
+	/// the primary instance by reading as much from the logs as possible
+	pub fn try_catch_up_with_primary(&self) -> io::Result<()> {
+		match self.db.read().as_ref() {
+			Some(DBAndColumns { db, .. }) => {
+				db.try_catch_up_with_primary().map_err(other_io_err)
+			},
+			None => Ok(())
+		}
+	}
 }
 
 // duplicate declaration of methods here to avoid trait import in certain existing cases
@@ -815,6 +826,25 @@ mod tests {
 		let config = DatabaseConfig { secondary_mode: true, ..DatabaseConfig::with_columns(1) };
 		let second_db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
 		assert_eq!(&*second_db.get(0, key1)?.unwrap(), b"horse");
+		Ok(())
+	}
+
+	#[test]
+	fn secondary_db_catch_up() -> io::Result<()> {
+		let tempdir = TempDir::new("")?;
+		let config = DatabaseConfig::with_columns(1);
+		let db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
+
+		let config = DatabaseConfig { secondary_mode: true, ..DatabaseConfig::with_columns(1) };
+		let second_db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
+
+		let mut transaction = db.transaction();
+		transaction.put(0, b"key1", b"mule");
+		transaction.put(0, b"key2", b"cat");
+		db.write(transaction)?;
+
+		second_db.try_catch_up_with_primary()?;
+		assert_eq!(&*second_db.get(0, b"key2")?.unwrap(), b"cat");
 		Ok(())
 	}
 
