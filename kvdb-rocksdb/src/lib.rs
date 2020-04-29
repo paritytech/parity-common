@@ -166,15 +166,15 @@ pub struct DatabaseConfig {
 	/// It can have a negative performance impact up to 10% according to
 	/// https://github.com/facebook/rocksdb/wiki/Statistics.
 	pub enable_statistics: bool,
-	/// Open the database as a secondary instance
-	/// secondary instances are read-only but kept up-to-date by tailing the rocksdb MANIFEST
+	/// Open the database as a secondary instance.
+	/// Secondary instances are read-only and kept updated by tailing the rocksdb MANIFEST.
 	/// It is up to the user to call `catch_up_with_primary()` manually to update the secondary db.
-	/// disabled by default
+	/// Disabled by default.
 	///
-	/// must be opened with `max_open_files = -1`
-	/// may have negative performance on the secondary instance if the secondary instance applies log files
-	/// right before the primary instance performs a compaction
-	/// more info: https://github.com/facebook/rocksdb/wiki/Secondary-instance
+	/// Must be opened with `max_open_files = -1`.
+	/// May have a negative performance impact on the secondary instance
+	/// if the secondary instance applies the logs before the primary instance performs a compaction.
+	/// More info: https://github.com/facebook/rocksdb/wiki/Secondary-instance
 	pub secondary: bool,
 }
 
@@ -683,7 +683,7 @@ impl Database {
 	}
 
 	/// Try to catch up a secondary instance of the database with
-	/// the primary instance by reading as much from the logs as possible
+	/// the primary instance by reading as much from the logs as possible.
 	pub fn try_catch_up_with_primary(&self) -> io::Result<()> {
 		match self.db.read().as_ref() {
 			Some(DBAndColumns { db, .. }) => db.try_catch_up_with_primary().map_err(other_io_err),
@@ -832,7 +832,7 @@ mod tests {
 		let tempdir = TempDir::new("")?;
 		let config = DatabaseConfig::with_columns(1);
 		let db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
-
+		db.try_catch_up_with_primary()?;
 		let config = DatabaseConfig { secondary: true, ..DatabaseConfig::with_columns(1) };
 		let second_db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
 
