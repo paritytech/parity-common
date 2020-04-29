@@ -225,7 +225,7 @@ impl Default for DatabaseConfig {
 			columns: 1,
 			keep_log_file_num: 1,
 			enable_statistics: false,
-			secondary_mode: false,
+			secondary: false,
 		}
 	}
 }
