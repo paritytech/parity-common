@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- Updated RocksDB to 6.7.3. [#379](https://github.com/paritytech/parity-common/pull/379)
 ### Breaking
 - Updated to the new `kvdb` interface. [#313](https://github.com/paritytech/parity-common/pull/313)
 - Rename and optimize prefix iteration. [#365](https://github.com/paritytech/parity-common/pull/365)
