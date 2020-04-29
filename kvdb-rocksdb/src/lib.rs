@@ -171,7 +171,7 @@ pub struct DatabaseConfig {
 	/// it is up to the user to call `catch_up_with_primary` function manually to get updated db
 	/// disabled by default
 	///
-	/// must be open with `max_open_files = -1`
+	/// must be opened with `max_open_files = -1`
 	/// may have negative performance on the secondary instance if the secondary instance applies log files
 	/// right before the primary instance performs a compaction
 	/// more info: https://github.com/facebook/rocksdb/wiki/Secondary-instance
