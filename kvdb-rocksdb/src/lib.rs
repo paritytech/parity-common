@@ -168,7 +168,7 @@ pub struct DatabaseConfig {
 	pub enable_statistics: bool,
 	/// Open the database as a secondary instance
 	/// secondary instances are read-only but kept up-to-date by tailing the rocksdb MANIFEST
-	/// it is up to the user to call `catch_up_with_primary` function manually to get updated db
+	/// It is up to the user to call `catch_up_with_primary()` manually to update the secondary db.
 	/// disabled by default
 	///
 	/// must be opened with `max_open_files = -1`
