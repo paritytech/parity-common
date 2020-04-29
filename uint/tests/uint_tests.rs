@@ -990,6 +990,12 @@ fn from_big_endian() {
 	let number = U256::from_big_endian(&source[..]);
 
 	assert_eq!(U256::from(1), number);
+
+	let number = U256::from_big_endian(&[]);
+	assert_eq!(U256::zero(), number);
+
+	let number = U256::from_big_endian(&[1]);
+	assert_eq!(U256::from(1), number);
 }
 
 #[test]

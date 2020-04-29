@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.7.1] - 2020-04-27
+- Added `arbitrary` feature. [#378](https://github.com/paritytech/parity-common/pull/378)
+
 ## [0.7.0] - 2020-03-16
 - Removed `libc` feature. [#317](https://github.com/paritytech/parity-common/pull/317)
 
