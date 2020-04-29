@@ -175,7 +175,7 @@ pub struct DatabaseConfig {
 	/// may have negative performance on the secondary instance if the secondary instance applies log files
 	/// right before the primary instance performs a compaction
 	/// more info: https://github.com/facebook/rocksdb/wiki/Secondary-instance
-	pub secondary_mode: bool,
+	pub secondary: bool,
 }
 
 impl DatabaseConfig {
@@ -316,7 +316,7 @@ fn generate_options(config: &DatabaseConfig) -> Options {
 	}
 	opts.set_use_fsync(false);
 	opts.create_if_missing(true);
-	if config.secondary_mode {
+	if config.secondary {
 		opts.set_max_open_files(-1)
 	} else {
 		opts.set_max_open_files(config.max_open_files);
@@ -382,7 +382,7 @@ impl Database {
 		let write_opts = WriteOptions::default();
 		let read_opts = generate_read_options();
 
-		let db = if config.secondary_mode {
+		let db = if config.secondary {
 			Self::open_secondary(&opts, path, column_names.as_slice())?
 		} else {
 			let column_names: Vec<&str> = column_names.iter().map(|s| s.as_str()).collect();
@@ -821,7 +821,7 @@ mod tests {
 		transaction.put(0, key1, b"horse");
 		db.write(transaction)?;
 
-		let config = DatabaseConfig { secondary_mode: true, ..DatabaseConfig::with_columns(1) };
+		let config = DatabaseConfig { secondary: true, ..DatabaseConfig::with_columns(1) };
 		let second_db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
 		assert_eq!(&*second_db.get(0, key1)?.unwrap(), b"horse");
 		Ok(())
@@ -833,7 +833,7 @@ mod tests {
 		let config = DatabaseConfig::with_columns(1);
 		let db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
 
-		let config = DatabaseConfig { secondary_mode: true, ..DatabaseConfig::with_columns(1) };
+		let config = DatabaseConfig { secondary: true, ..DatabaseConfig::with_columns(1) };
 		let second_db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
 
 		let mut transaction = db.transaction();
@@ -857,7 +857,7 @@ mod tests {
 			columns: 11,
 			keep_log_file_num: 1,
 			enable_statistics: false,
-			secondary_mode: false,
+			secondary: false,
 		};
 
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
