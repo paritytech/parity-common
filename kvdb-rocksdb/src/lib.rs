@@ -402,13 +402,13 @@ impl Database {
 	}
 
 	/// Internal api to open a database in primary mode
-	fn open_primary(opts: &Options,
-					   path: &str,
-					   config: &DatabaseConfig,
-					   column_names: &[&str],
-					   block_opts: &BlockBasedOptions
+	fn open_primary(
+		opts: &Options,
+		path: &str,
+		config: &DatabaseConfig,
+		column_names: &[&str],
+		block_opts: &BlockBasedOptions,
 	) -> io::Result<rocksdb::DB> {
-
 		let cf_descriptors: Vec<_> = (0..config.columns)
 			.map(|i| ColumnFamilyDescriptor::new(column_names[i as usize], config.column_config(&block_opts, i)))
 			.collect();
@@ -686,10 +686,8 @@ impl Database {
 	/// the primary instance by reading as much from the logs as possible
 	pub fn try_catch_up_with_primary(&self) -> io::Result<()> {
 		match self.db.read().as_ref() {
-			Some(DBAndColumns { db, .. }) => {
-				db.try_catch_up_with_primary().map_err(other_io_err)
-			},
-			None => Ok(())
+			Some(DBAndColumns { db, .. }) => db.try_catch_up_with_primary().map_err(other_io_err),
+			None => Ok(()),
 		}
 	}
 }
@@ -774,9 +772,8 @@ mod tests {
 	fn put_and_get() -> io::Result<()> {
 		let db = create(1)?;
 		st::test_put_and_get(&db)
-
 	}
-    
+
 	#[test]
 	fn delete_and_get() -> io::Result<()> {
 		let db = create(1)?;
