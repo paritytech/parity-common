@@ -174,7 +174,7 @@ pub struct DatabaseConfig {
 	///
 	/// Must be opened with `max_open_files = -1`.
 	/// May have a negative performance impact on the secondary instance
-	/// if the secondary instance applies the logs before the primary instance performs a compaction.
+	/// if the secondary instance reads and applies state changes before the primary instance compacts them.
 	/// More info: https://github.com/facebook/rocksdb/wiki/Secondary-instance
 	pub secondary: Option<String>,
 }
@@ -691,6 +691,24 @@ impl Database {
 
 	/// Try to catch up a secondary instance of the database with
 	/// the primary instance by reading as much from the logs as possible.
+	///
+	/// Guaranteed to have changes up to the the time that `try_catch_up_with_primary` is called.
+	///
+	/// Blocks until the MANIFEST file and any state changes in the corresponding Write-Ahead-Logs
+	/// are read and changes applied to the secondary instance.
+	///
+	/// If Write-Ahead-Logs have been purged by the primary instance, the secondary instance will
+	/// not be caught up until the logs are read again (this function is called) and
+	/// rocksdb is able to identify new Write-Ahead-Logs.
+	///
+	///
+	/// This method requires a lock on the MANIFEST file during which
+	/// no changes may be written to it by the primary instance.
+	///
+	/// If the secondary database is unable to catch up because of missing logs,
+	/// this method fails silently and no error is returned.
+	///
+	/// Calling this as primary will return an error.
 	pub fn try_catch_up_with_primary(&self) -> io::Result<()> {
 		match self.db.read().as_ref() {
 			Some(DBAndColumns { db, .. }) => db.try_catch_up_with_primary().map_err(other_io_err),
