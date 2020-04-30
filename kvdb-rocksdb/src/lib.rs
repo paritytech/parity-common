@@ -167,6 +167,7 @@ pub struct DatabaseConfig {
 	/// https://github.com/facebook/rocksdb/wiki/Statistics.
 	pub enable_statistics: bool,
 	/// Open the database as a secondary instance.
+	/// Specify a path for the secondary instance of the database.
 	/// Secondary instances are read-only and kept updated by tailing the rocksdb MANIFEST.
 	/// It is up to the user to call `catch_up_with_primary()` manually to update the secondary db.
 	/// Disabled by default.
@@ -175,7 +176,7 @@ pub struct DatabaseConfig {
 	/// May have a negative performance impact on the secondary instance
 	/// if the secondary instance applies the logs before the primary instance performs a compaction.
 	/// More info: https://github.com/facebook/rocksdb/wiki/Secondary-instance
-	pub secondary: bool,
+	pub secondary: Option<String>,
 }
 
 impl DatabaseConfig {
@@ -225,7 +226,7 @@ impl Default for DatabaseConfig {
 			columns: 1,
 			keep_log_file_num: 1,
 			enable_statistics: false,
-			secondary: false,
+			secondary: None,
 		}
 	}
 }
@@ -316,7 +317,7 @@ fn generate_options(config: &DatabaseConfig) -> Options {
 	}
 	opts.set_use_fsync(false);
 	opts.create_if_missing(true);
-	if config.secondary {
+	if config.secondary.is_some() {
 		opts.set_max_open_files(-1)
 	} else {
 		opts.set_max_open_files(config.max_open_files);
@@ -382,8 +383,8 @@ impl Database {
 		let write_opts = WriteOptions::default();
 		let read_opts = generate_read_options();
 
-		let db = if config.secondary {
-			Self::open_secondary(&opts, path, column_names.as_slice())?
+		let db = if let Some(secondary_path) = &config.secondary {
+			Self::open_secondary(&opts, path, secondary_path.as_str(), column_names.as_slice())?
 		} else {
 			let column_names: Vec<&str> = column_names.iter().map(|s| s.as_str()).collect();
 			Self::open_primary(&opts, path, config, column_names.as_slice(), &block_opts)?
@@ -401,7 +402,7 @@ impl Database {
 		})
 	}
 
-	/// Internal api to open a database in primary mode
+	/// Internal api to open a database in primary mode.
 	fn open_primary(
 		opts: &Options,
 		path: &str,
@@ -449,16 +450,22 @@ impl Database {
 		})
 	}
 
-	/// Internal api to open a database in secondary mode
-	fn open_secondary(opts: &Options, path: &str, column_names: &[String]) -> io::Result<rocksdb::DB> {
-		let db = DB::open_cf_as_secondary(&opts, path, path, column_names);
+	/// Internal api to open a database in secondary mode.
+	/// Secondary database needs a seperate path to store its own logs.
+	fn open_secondary(
+		opts: &Options,
+		path: &str,
+		secondary_path: &str,
+		column_names: &[String],
+	) -> io::Result<rocksdb::DB> {
+		let db = DB::open_cf_as_secondary(&opts, path, secondary_path, column_names);
 
 		Ok(match db {
 			Ok(db) => db,
 			Err(ref s) if is_corrupted(s) => {
 				warn!("DB corrupted: {}, attempting repair", s);
 				DB::repair(&opts, path).map_err(other_io_err)?;
-				DB::open_cf_as_secondary(&opts, path, path, column_names).map_err(other_io_err)?
+				DB::open_cf_as_secondary(&opts, path, secondary_path, column_names).map_err(other_io_err)?
 			}
 			Err(s) => return Err(other_io_err(s)),
 		})
@@ -812,29 +819,35 @@ mod tests {
 
 	#[test]
 	fn secondary_db_get() -> io::Result<()> {
-		let tempdir = TempDir::new("")?;
+		let primary = TempDir::new("")?;
 		let config = DatabaseConfig::with_columns(1);
-		let db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
+		let db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
 
 		let key1 = b"key1";
 		let mut transaction = db.transaction();
 		transaction.put(0, key1, b"horse");
 		db.write(transaction)?;
 
-		let config = DatabaseConfig { secondary: true, ..DatabaseConfig::with_columns(1) };
-		let second_db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
+		let config = DatabaseConfig {
+			secondary: TempDir::new("")?.path().to_str().map(|s| s.to_string()),
+			..DatabaseConfig::with_columns(1)
+		};
+		let second_db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
 		assert_eq!(&*second_db.get(0, key1)?.unwrap(), b"horse");
 		Ok(())
 	}
 
 	#[test]
 	fn secondary_db_catch_up() -> io::Result<()> {
-		let tempdir = TempDir::new("")?;
+		let primary = TempDir::new("")?;
 		let config = DatabaseConfig::with_columns(1);
-		let db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
+		let db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
 		db.try_catch_up_with_primary()?;
-		let config = DatabaseConfig { secondary: true, ..DatabaseConfig::with_columns(1) };
-		let second_db = Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))?;
+		let config = DatabaseConfig {
+			secondary: TempDir::new("")?.path().to_str().map(|s| s.to_string()),
+			..DatabaseConfig::with_columns(1)
+		};
+		let second_db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
 
 		let mut transaction = db.transaction();
 		transaction.put(0, b"key1", b"mule");
