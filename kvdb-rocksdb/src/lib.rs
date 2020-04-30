@@ -697,13 +697,10 @@ impl Database {
 	/// Blocks until the MANIFEST file and any state changes in the corresponding Write-Ahead-Logs
 	/// are read and changes applied to the secondary instance.
 	///
-	/// If Write-Ahead-Logs have been purged by the primary instance, the secondary instance will
-	/// not be caught up until the logs are read again (this function is called) and
-	/// rocksdb is able to identify new Write-Ahead-Logs.
-	///
-	///
-	/// This method requires a lock on the MANIFEST file during which
-	/// no changes may be written to it by the primary instance.
+	/// If Write-Ahead-Logs have been purged by the primary instance before the secondary
+	/// is able to open them, the secondary will not be caught up
+	/// until the logs are read again (this function is called) and rocksdb
+	/// is able to identify new Write-Ahead-Logs.
 	///
 	/// If the secondary database is unable to catch up because of missing logs,
 	/// this method fails silently and no error is returned.
