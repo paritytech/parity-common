@@ -870,7 +870,7 @@ mod tests {
 			columns: 11,
 			keep_log_file_num: 1,
 			enable_statistics: false,
-			secondary: false,
+			secondary: None,
 		};
 
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
