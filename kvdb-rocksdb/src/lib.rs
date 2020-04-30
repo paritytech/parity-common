@@ -842,7 +842,7 @@ mod tests {
 		let primary = TempDir::new("")?;
 		let config = DatabaseConfig::with_columns(1);
 		let db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
-		db.try_catch_up_with_primary()?;
+
 		let config = DatabaseConfig {
 			secondary: TempDir::new("")?.path().to_str().map(|s| s.to_string()),
 			..DatabaseConfig::with_columns(1)
