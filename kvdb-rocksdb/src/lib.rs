@@ -689,25 +689,23 @@ impl Database {
 		}
 	}
 
-	/// Try to catch up a secondary instance of the database with
-	/// the primary instance by reading as much from the logs as possible.
+	/// Try to catch up a secondary instance with
+	/// the primary by reading as much from the logs as possible.
 	///
 	/// Guaranteed to have changes up to the the time that `try_catch_up_with_primary` is called
-	/// and finishes succesfully.
+	/// if it finishes succesfully.
 	///
 	/// Blocks until the MANIFEST file and any state changes in the corresponding Write-Ahead-Logs
-	/// are read and changes applied to the secondary instance. If the manifest files are very large
+	/// are applied to the secondary instance. If the manifest files are very large
 	/// this method could take a long time.
 	///
 	/// If Write-Ahead-Logs have been purged by the primary instance before the secondary
 	/// is able to open them, the secondary will not be caught up
-	/// until the logs are read again (this function is called) and rocksdb
-	/// is able to identify new Write-Ahead-Logs.
+	/// until this function is called again and new Write-Ahead-Logs are identified.
 	///
-	/// If this is called as the primary is in the middle of a write, the secondary
-	/// will not be caught up.
+	/// If called while the primary is writing, the catch-up may fail.
 	///
-	/// If the secondary database is unable to catch up because of missing logs,
+	/// If the secondary is unable to catch up because of missing logs,
 	/// this method fails silently and no error is returned.
 	///
 	/// Calling this as primary will return an error.
