@@ -7,11 +7,11 @@ The format is based on [Keep a Changelog].
 ## [Unreleased]
 
 ## [0.8.0] - 2020-05-01
-- Added Secondary Instance API. [#384](https://github.com/paritytech/parity-common/pull/384) 
 - Updated RocksDB to 6.7.3. [#379](https://github.com/paritytech/parity-common/pull/379)
 ### Breaking
 - Updated to the new `kvdb` interface. [#313](https://github.com/paritytech/parity-common/pull/313)
 - Rename and optimize prefix iteration. [#365](https://github.com/paritytech/parity-common/pull/365)
+- Added Secondary Instance API. [#384](https://github.com/paritytech/parity-common/pull/384) 
 
 ## [0.7.0] - 2020-03-16
 - Updated dependencies. [#361](https://github.com/paritytech/parity-common/pull/361)
