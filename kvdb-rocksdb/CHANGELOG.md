@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+## [0.8.0] - 2020-05-01
+- Added Secondary Instance API. [#384](https://github.com/paritytech/parity-common/pull/384) 
 - Updated RocksDB to 6.7.3. [#379](https://github.com/paritytech/parity-common/pull/379)
 ### Breaking
 - Updated to the new `kvdb` interface. [#313](https://github.com/paritytech/parity-common/pull/313)
