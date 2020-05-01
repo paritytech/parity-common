@@ -6,8 +6,11 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::fmt;
+use core::result::Result;
 use serde::{de, Deserializer, Serializer};
-use std::fmt;
 
 static CHARS: &[u8] = b"0123456789abcdef";
 
@@ -58,7 +61,7 @@ fn to_hex_raw<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a
 	}
 
 	// SAFETY: all characters come either from CHARS or "0x", therefore valid UTF8
-	unsafe { std::str::from_utf8_unchecked(&v[0..idx]) }
+	unsafe { core::str::from_utf8_unchecked(&v[0..idx]) }
 }
 
 /// Decoding bytes from hex string error.
@@ -75,6 +78,7 @@ pub enum FromHexError {
 	},
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for FromHexError {}
 
 impl fmt::Display for FromHexError {
