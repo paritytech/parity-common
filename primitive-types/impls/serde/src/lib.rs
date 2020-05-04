@@ -8,6 +8,14 @@
 
 //! Serde serialization support for uint and fixed hash.
 
+#![no_std]
+
+#[macro_use]
+extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
+
 #[doc(hidden)]
 pub use serde;
 

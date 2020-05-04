@@ -7,8 +7,12 @@ license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
 description = "Serde serialization support for uint and fixed hash."
 
+[features]
+default = ["std"]
+std = ["serde/std"]
+
 [dependencies]
-serde = "1.0.101"
+serde = { version = "1.0.101", default-features = false, features = ["alloc"] }
 
 [dev-dependencies]
 criterion = "0.3.0"
