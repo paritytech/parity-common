@@ -1,18 +1,10 @@
-// Copyright 2015-2019 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 //! Generetes trie root.
 //!
@@ -47,20 +39,15 @@ fn shared_prefix_len<T: Eq>(first: &[T], second: &[T]) -> usize {
 
 /// Generates a trie root hash for a vector of values
 ///
-/// ```rust
-/// extern crate triehash;
-/// extern crate keccak_hasher;
-/// extern crate ethereum_types;
-/// #[macro_use] extern crate hex_literal;
+/// ```
+/// use hex_literal::hex;
 /// use ethereum_types::H256;
 /// use triehash::ordered_trie_root;
 /// use keccak_hasher::KeccakHasher;
 ///
-/// fn main() {
-/// 	let v = &["doe", "reindeer"];
-/// 	let root = H256::from(hex!("e766d5d51b89dc39d981b41bda63248d7abce4f0225eefd023792a540bcffee3"));
-/// 	assert_eq!(ordered_trie_root::<KeccakHasher, _>(v), root.as_ref());
-/// }
+/// let v = &["doe", "reindeer"];
+/// let root = H256::from(hex!("e766d5d51b89dc39d981b41bda63248d7abce4f0225eefd023792a540bcffee3"));
+/// assert_eq!(ordered_trie_root::<KeccakHasher, _>(v), root.as_ref());
 /// ```
 pub fn ordered_trie_root<H, I>(input: I) -> H::Out
 where
@@ -74,25 +61,20 @@ where
 
 /// Generates a trie root hash for a vector of key-value tuples
 ///
-/// ```rust
-/// extern crate triehash;
-/// extern crate ethereum_types;
-/// extern crate keccak_hasher;
-/// #[macro_use] extern crate hex_literal;
+/// ```
+/// use hex_literal::hex;
 /// use triehash::trie_root;
 /// use ethereum_types::H256;
 /// use keccak_hasher::KeccakHasher;
 ///
-/// fn main() {
-/// 	let v = vec![
-/// 		("doe", "reindeer"),
-/// 		("dog", "puppy"),
-/// 		("dogglesworth", "cat"),
-/// 	];
+/// let v = vec![
+/// 	("doe", "reindeer"),
+/// 	("dog", "puppy"),
+/// 	("dogglesworth", "cat"),
+/// ];
 ///
-/// 	let root = H256::from(hex!("8aad789dff2f538bca5d8ea56e8abe10f4c7ba3a5dea95fea4cd6e7c3a1168d3"));
-/// 	assert_eq!(trie_root::<KeccakHasher, _, _, _>(v), root.as_ref());
-/// }
+/// let root = H256::from(hex!("8aad789dff2f538bca5d8ea56e8abe10f4c7ba3a5dea95fea4cd6e7c3a1168d3"));
+/// assert_eq!(trie_root::<KeccakHasher, _, _, _>(v), root.as_ref());
 /// ```
 pub fn trie_root<H, I, A, B>(input: I) -> H::Out
 where
@@ -126,25 +108,20 @@ where
 
 /// Generates a key-hashed (secure) trie root hash for a vector of key-value tuples.
 ///
-/// ```rust
-/// extern crate triehash;
-/// extern crate keccak_hasher;
-/// extern crate ethereum_types;
-/// #[macro_use] extern crate hex_literal;
+/// ```
+/// use hex_literal::hex;
 /// use ethereum_types::H256;
 /// use triehash::sec_trie_root;
 /// use keccak_hasher::KeccakHasher;
 ///
-/// fn main() {
-/// 	let v = vec![
-/// 		("doe", "reindeer"),
-/// 		("dog", "puppy"),
-/// 		("dogglesworth", "cat"),
-/// 	];
+/// let v = vec![
+/// 	("doe", "reindeer"),
+/// 	("dog", "puppy"),
+/// 	("dogglesworth", "cat"),
+/// ];
 ///
-/// 	let root = H256::from(hex!("d4cd937e4a4368d7931a9cf51686b7e10abb3dce38a39000fd7902a092b64585"));
-/// 	assert_eq!(sec_trie_root::<KeccakHasher, _, _, _>(v), root.as_ref());
-/// }
+/// let root = H256::from(hex!("d4cd937e4a4368d7931a9cf51686b7e10abb3dce38a39000fd7902a092b64585"));
+/// assert_eq!(sec_trie_root::<KeccakHasher, _, _, _>(v), root.as_ref());
 /// ```
 pub fn sec_trie_root<H, I, A, B>(input: I) -> H::Out
 where

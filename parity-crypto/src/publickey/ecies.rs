@@ -1,18 +1,10 @@
-// Copyright 2015-2019 Parity Technologies (UK) Ltd.
-// This file is part of Parity Ethereum.
-
-// Parity Ethereum is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity Ethereum is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 //! Functions for ECIES scheme encryption and decryption
 
@@ -27,7 +19,7 @@ const ENC_VERSION: u8 = 0x04;
 ///
 /// Authenticated data may be empty.
 pub fn encrypt(public: &Public, auth_data: &[u8], plain: &[u8]) -> Result<Vec<u8>, Error> {
-	let r = Random.generate()?;
+	let r = Random.generate();
 	let z = ecdh::agree(r.secret(), public)?;
 	let mut key = [0u8; 32];
 	kdf(&z, &[0u8; 0], &mut key);
@@ -122,7 +114,7 @@ mod tests {
 
 	#[test]
 	fn ecies_shared() {
-		let kp = Random.generate().unwrap();
+		let kp = Random.generate();
 		let message = b"So many books, so little time";
 
 		let shared = b"shared";

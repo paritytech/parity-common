@@ -1,18 +1,10 @@
-// Copyright 2015-2020 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
 use parity_util_mem::MallocSizeOf;
@@ -60,7 +52,7 @@ impl KeyValueDB for InMemory {
 		}
 	}
 
-	fn write_buffered(&self, transaction: DBTransaction) {
+	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
 		let mut columns = self.columns.write();
 		let ops = transaction.ops;
 		for op in ops {
@@ -75,11 +67,26 @@ impl KeyValueDB for InMemory {
 						col.remove(&*key);
 					}
 				}
+				DBOp::DeletePrefix { col, prefix } => {
+					if let Some(col) = columns.get_mut(&col) {
+						use std::ops::Bound;
+						if prefix.is_empty() {
+							col.clear();
+						} else {
+							let start_range = Bound::Included(prefix.to_vec());
+							let keys: Vec<_> = if let Some(end_range) = kvdb::end_prefix(&prefix[..]) {
+								col.range((start_range, Bound::Excluded(end_range))).map(|(k, _)| k.clone()).collect()
+							} else {
+								col.range((start_range, Bound::Unbounded)).map(|(k, _)| k.clone()).collect()
+							};
+							for key in keys.into_iter() {
+								col.remove(&key[..]);
+							}
+						}
+					}
+				}
 			}
 		}
-	}
-
-	fn flush(&self) -> io::Result<()> {
 		Ok(())
 	}
 
@@ -93,7 +100,7 @@ impl KeyValueDB for InMemory {
 		}
 	}
 
-	fn iter_from_prefix<'a>(
+	fn iter_with_prefix<'a>(
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
@@ -139,15 +146,21 @@ mod tests {
 	}
 
 	#[test]
+	fn delete_prefix() -> io::Result<()> {
+		let db = create(st::DELETE_PREFIX_NUM_COLUMNS);
+		st::test_delete_prefix(&db)
+	}
+
+	#[test]
 	fn iter() -> io::Result<()> {
 		let db = create(1);
 		st::test_iter(&db)
 	}
 
 	#[test]
-	fn iter_from_prefix() -> io::Result<()> {
+	fn iter_with_prefix() -> io::Result<()> {
 		let db = create(1);
-		st::test_iter_from_prefix(&db)
+		st::test_iter_with_prefix(&db)
 	}
 
 	#[test]

@@ -1,4 +1,4 @@
-// Copyright 2015-2017 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -59,14 +59,10 @@ pub const EMPTY_LIST_RLP: [u8; 1] = [0xC0; 1];
 
 /// Shortcut function to decode trusted rlp
 ///
-/// ```rust
-/// extern crate rlp;
-///
-/// fn main () {
-/// 	let data = vec![0x83, b'c', b'a', b't'];
-/// 	let animal: String = rlp::decode(&data).expect("could not decode");
-/// 	assert_eq!(animal, "cat".to_owned());
-/// }
+/// ```
+/// let data = vec![0x83, b'c', b'a', b't'];
+/// let animal: String = rlp::decode(&data).expect("could not decode");
+/// assert_eq!(animal, "cat".to_owned());
 /// ```
 pub fn decode<T>(bytes: &[u8]) -> Result<T, DecoderError>
 where
@@ -86,14 +82,10 @@ where
 
 /// Shortcut function to encode structure into rlp.
 ///
-/// ```rust
-/// extern crate rlp;
-///
-/// fn main () {
-/// 	let animal = "cat";
-/// 	let out = rlp::encode(&animal);
-/// 	assert_eq!(out, vec![0x83, b'c', b'a', b't']);
-/// }
+/// ```
+/// let animal = "cat";
+/// let out = rlp::encode(&animal);
+/// assert_eq!(out, vec![0x83, b'c', b'a', b't']);
 /// ```
 pub fn encode<E>(object: &E) -> Vec<u8>
 where

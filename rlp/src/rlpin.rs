@@ -1,4 +1,4 @@
-// Copyright 2015-2017 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -25,7 +25,7 @@ struct OffsetCache {
 }
 
 impl OffsetCache {
-	fn new(index: usize, offset: usize) -> OffsetCache {
+	const fn new(index: usize, offset: usize) -> OffsetCache {
 		OffsetCache { index, offset }
 	}
 }
@@ -68,7 +68,7 @@ fn calculate_payload_info(header_bytes: &[u8], len_of_len: usize) -> Result<Payl
 }
 
 impl PayloadInfo {
-	fn new(header_len: usize, value_len: usize) -> PayloadInfo {
+	const fn new(header_len: usize, value_len: usize) -> PayloadInfo {
 		PayloadInfo { header_len, value_len }
 	}
 
@@ -128,7 +128,7 @@ impl<'a> fmt::Display for Rlp<'a> {
 }
 
 impl<'a> Rlp<'a> {
-	pub fn new(bytes: &'a [u8]) -> Rlp<'a> {
+	pub const fn new(bytes: &'a [u8]) -> Rlp<'a> {
 		Rlp { bytes, offset_cache: Cell::new(None), count_cache: Cell::new(None) }
 	}
 
@@ -374,7 +374,7 @@ pub struct BasicDecoder<'a> {
 }
 
 impl<'a> BasicDecoder<'a> {
-	pub fn new(rlp: &'a [u8]) -> BasicDecoder<'a> {
+	pub const fn new(rlp: &'a [u8]) -> BasicDecoder<'a> {
 		BasicDecoder { rlp }
 	}
 

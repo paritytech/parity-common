@@ -1,18 +1,10 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -53,10 +45,61 @@ pub fn keccak256(data: &mut [u8]) {
 	keccak256.finalize(data);
 }
 
+/// Computes in-place keccak256 hash of `data[range]`.
+///
+/// The `range` argument specifies a subslice of `data` in bytes to be hashed.
+/// The resulting hash will be written back to `data`.
+/// # Panics
+///
+/// If `range` is out of bounds.
+///
+/// # Example
+///
+/// ```
+/// let mut data = [1u8; 32];
+/// // Hash the first 8 bytes of `data` and write the result, 32 bytes, to `data`.
+/// keccak_hash::keccak256_range(&mut data, 0..8);
+/// let expected = [
+///     0x54, 0x84, 0x4f, 0x69, 0xb4, 0xda, 0x4b, 0xb4, 0xa9, 0x9f, 0x24, 0x59, 0xb5, 0x11, 0xd4, 0x42,
+///     0xcc, 0x5b, 0xd2, 0xfd, 0xf4, 0xc3, 0x54, 0xd2, 0x07, 0xbb, 0x13, 0x08, 0x94, 0x43, 0xaf, 0x68,
+/// ];
+/// assert_eq!(&data, &expected);
+/// ```
+pub fn keccak256_range(data: &mut [u8], range: core::ops::Range<usize>) {
+	let mut keccak256 = Keccak::v256();
+	keccak256.update(&data[range]);
+	keccak256.finalize(data);
+}
+
 /// Computes in-place keccak512 hash of `data`.
 pub fn keccak512(data: &mut [u8]) {
 	let mut keccak512 = Keccak::v512();
 	keccak512.update(data.as_ref());
+	keccak512.finalize(data);
+}
+
+/// Computes in-place keccak512 hash of `data[range]`.
+///
+/// The `range` argument specifies a subslice of `data` in bytes to be hashed.
+/// The resulting hash will be written back to `data`.
+/// # Panics
+///
+/// If `range` is out of bounds.
+///
+/// # Example
+///
+/// ```
+/// let mut data = [1u8; 64];
+/// keccak_hash::keccak512_range(&mut data, 0..8);
+/// let expected = [
+///     0x90, 0x45, 0xc5, 0x9e, 0xd3, 0x0e, 0x1f, 0x42, 0xac, 0x35, 0xcc, 0xc9, 0x55, 0x7c, 0x77, 0x17,
+///     0xc8, 0x89, 0x3a, 0x77, 0x6c, 0xea, 0x2e, 0xf3, 0x88, 0xea, 0xe5, 0xc0, 0xea, 0x40, 0x26, 0x64,
+/// ];
+/// assert_eq!(&data[..32], &expected);
+/// ```
+pub fn keccak512_range(data: &mut [u8], range: core::ops::Range<usize>) {
+	let mut keccak512 = Keccak::v512();
+	keccak512.update(&data[range]);
 	keccak512.finalize(data);
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2015-2017 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -13,38 +13,30 @@
 /// Create a public unformatted hash type with 32 bytes size.
 ///
 /// ```
-/// # #[macro_use] extern crate fixed_hash;
+/// use fixed_hash::construct_fixed_hash;
+///
 /// construct_fixed_hash!{ pub struct H256(32); }
-/// # fn main() {
-/// # 	assert_eq!(std::mem::size_of::<H256>(), 32);
-/// # }
+/// assert_eq!(std::mem::size_of::<H256>(), 32);
 /// ```
 ///
 /// With additional attributes and doc comments.
 ///
 /// ```
-/// # #[macro_use] extern crate fixed_hash;
-/// // Add the below two lines to import serde and its derive
-/// // extern crate serde;
-/// // #[macro_use] extern crate serde_derive;
+/// use fixed_hash::construct_fixed_hash;
 /// construct_fixed_hash!{
 /// 	/// My unformatted 160 bytes sized hash type.
 /// 	#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 /// 	pub struct H160(20);
 /// }
-/// # fn main() {
-/// # 	assert_eq!(std::mem::size_of::<H160>(), 20);
-/// # }
+/// assert_eq!(std::mem::size_of::<H160>(), 20);
 /// ```
 ///
 /// The visibility modifier is optional and you can create a private hash type.
 ///
 /// ```
-/// # #[macro_use] extern crate fixed_hash;
+/// use fixed_hash::construct_fixed_hash;
 /// construct_fixed_hash!{ struct H512(64); }
-/// # fn main() {
-/// # 	assert_eq!(std::mem::size_of::<H512>(), 64);
-/// # }
+/// assert_eq!(std::mem::size_of::<H512>(), 64);
 /// ```
 #[macro_export(local_inner_macros)]
 macro_rules! construct_fixed_hash {
@@ -115,19 +107,19 @@ macro_rules! construct_fixed_hash {
 		impl $name {
 			/// Returns a new fixed hash where all bits are set to the given byte.
 			#[inline]
-			pub fn repeat_byte(byte: u8) -> $name {
+			pub const fn repeat_byte(byte: u8) -> $name {
 				$name([byte; $n_bytes])
 			}
 
 			/// Returns a new zero-initialized fixed hash.
 			#[inline]
-			pub fn zero() -> $name {
+			pub const fn zero() -> $name {
 				$name::repeat_byte(0u8)
 			}
 
 			/// Returns the size of this hash in bytes.
 			#[inline]
-			pub fn len_bytes() -> usize {
+			pub const fn len_bytes() -> usize {
 				$n_bytes
 			}
 
@@ -145,7 +137,7 @@ macro_rules! construct_fixed_hash {
 
 			/// Extracts a reference to the byte array containing the entire fixed hash.
 			#[inline]
-			pub fn as_fixed_bytes(&self) -> &[u8; $n_bytes] {
+			pub const fn as_fixed_bytes(&self) -> &[u8; $n_bytes] {
 				&self.0
 			}
 
@@ -157,7 +149,7 @@ macro_rules! construct_fixed_hash {
 
 			/// Returns the inner bytes array.
 			#[inline]
-			pub fn to_fixed_bytes(self) -> [u8; $n_bytes] {
+			pub const fn to_fixed_bytes(self) -> [u8; $n_bytes] {
 				self.0
 			}
 
@@ -321,9 +313,10 @@ macro_rules! construct_fixed_hash {
 
 		impl_byteorder_for_fixed_hash!($name);
 		impl_rand_for_fixed_hash!($name);
-		impl_libc_for_fixed_hash!($name);
+		impl_cmp_for_fixed_hash!($name);
 		impl_rustc_hex_for_fixed_hash!($name);
 		impl_quickcheck_for_fixed_hash!($name);
+		impl_arbitrary_for_fixed_hash!($name);
 	}
 }
 
@@ -535,17 +528,9 @@ macro_rules! impl_rand_for_fixed_hash {
 	};
 }
 
-// Implementation for disabled libc crate support.
-//
-// # Note
-//
-// Feature guarded macro definitions instead of feature guarded impl blocks
-// to work around the problems of introducing `libc` crate feature in
-// a user crate.
-#[cfg(not(all(feature = "libc", not(target_os = "unknown"))))]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_libc_for_fixed_hash {
+macro_rules! impl_cmp_for_fixed_hash {
 	( $name:ident ) => {
 		impl $crate::core_::cmp::PartialEq for $name {
 			#[inline]
@@ -558,52 +543,6 @@ macro_rules! impl_libc_for_fixed_hash {
 			#[inline]
 			fn cmp(&self, other: &Self) -> $crate::core_::cmp::Ordering {
 				self.as_bytes().cmp(other.as_bytes())
-			}
-		}
-	};
-}
-
-// Implementation for enabled libc crate support.
-//
-// # Note
-//
-// Feature guarded macro definitions instead of feature guarded impl blocks
-// to work around the problems of introducing `libc` crate feature in
-// a user crate.
-#[cfg(all(feature = "libc", not(target_os = "unknown")))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_libc_for_fixed_hash {
-	( $name:ident ) => {
-		impl $crate::core_::cmp::PartialEq for $name {
-			#[inline]
-			fn eq(&self, other: &Self) -> bool {
-				unsafe {
-					$crate::libc::memcmp(
-						self.as_ptr() as *const $crate::libc::c_void,
-						other.as_ptr() as *const $crate::libc::c_void,
-						Self::len_bytes(),
-					) == 0
-				}
-			}
-		}
-
-		impl $crate::core_::cmp::Ord for $name {
-			fn cmp(&self, other: &Self) -> $crate::core_::cmp::Ordering {
-				let r = unsafe {
-					$crate::libc::memcmp(
-						self.as_ptr() as *const $crate::libc::c_void,
-						other.as_ptr() as *const $crate::libc::c_void,
-						Self::len_bytes(),
-					)
-				};
-				if r < 0 {
-					return $crate::core_::cmp::Ordering::Less;
-				}
-				if r > 0 {
-					return $crate::core_::cmp::Ordering::Greater;
-				}
-				$crate::core_::cmp::Ordering::Equal
 			}
 		}
 	};
@@ -698,6 +637,42 @@ macro_rules! impl_quickcheck_for_fixed_hash {
 	};
 }
 
+// When the `arbitrary` feature is disabled.
+//
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `arbitrary` crate feature in
+// a user crate.
+#[cfg(not(feature = "arbitrary"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_arbitrary_for_fixed_hash {
+	( $name:ident ) => {};
+}
+
+// When the `arbitrary` feature is enabled.
+//
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `arbitrary` crate feature in
+// a user crate.
+#[cfg(feature = "arbitrary")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_arbitrary_for_fixed_hash {
+	( $name:ident ) => {
+		impl $crate::arbitrary::Arbitrary for $name {
+			fn arbitrary(u: &mut $crate::arbitrary::Unstructured<'_>) -> $crate::arbitrary::Result<Self> {
+				let mut res = Self::zero();
+				u.fill_buffer(&mut res.0)?;
+				Ok(Self::from(res))
+			}
+		}
+	};
+}
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_ops_for_hash {
@@ -761,15 +736,13 @@ macro_rules! impl_ops_for_hash {
 /// # Example
 ///
 /// ```
-/// #[macro_use] extern crate fixed_hash;
+/// use fixed_hash::{construct_fixed_hash, impl_fixed_hash_conversions};
 /// construct_fixed_hash!{ struct H160(20); }
 /// construct_fixed_hash!{ struct H256(32); }
 /// impl_fixed_hash_conversions!(H256, H160);
 /// // now use it!
-/// # fn main() {
 /// assert_eq!(H256::from(H160::zero()), H256::zero());
 /// assert_eq!(H160::from(H256::zero()), H160::zero());
-/// # }
 /// ```
 #[macro_export(local_inner_macros)]
 macro_rules! impl_fixed_hash_conversions {

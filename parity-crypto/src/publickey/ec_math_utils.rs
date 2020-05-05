@@ -1,18 +1,10 @@
-// Copyright 2015-2019 Parity Technologies (UK) Ltd.
-// This file is part of Parity Ethereum.
-
-// Parity Ethereum is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity Ethereum is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 //! Multiple primitives for work with public and secret keys and with secp256k1 curve points
 
@@ -37,25 +29,20 @@ lazy_static! {
 	pub static ref CURVE_ORDER: U256 = H256::from_slice(&SECP256K1_CURVE_ORDER).into_uint();
 }
 
-/// Whether the public key is valid.
-pub fn public_is_valid(public: &Public) -> bool {
-	to_secp256k1_public(public).ok().map_or(false, |p| p.is_valid())
-}
-
 /// In-place multiply public key by secret key (EC point * scalar)
 pub fn public_mul_secret(public: &mut Public, secret: &Secret) -> Result<(), Error> {
 	let key_secret = secret.to_secp256k1_secret()?;
 	let mut key_public = to_secp256k1_public(public)?;
-	key_public.mul_assign(&SECP256K1, &key_secret)?;
+	key_public.mul_assign(&SECP256K1, &key_secret[..])?;
 	set_public(public, &key_public);
 	Ok(())
 }
 
 /// In-place add one public key to another (EC point + EC point)
 pub fn public_add(public: &mut Public, other: &Public) -> Result<(), Error> {
-	let mut key_public = to_secp256k1_public(public)?;
+	let key_public = to_secp256k1_public(public)?;
 	let other_public = to_secp256k1_public(other)?;
-	key_public.add_assign(&SECP256K1, &other_public)?;
+	let key_public = key_public.combine(&other_public)?;
 	set_public(public, &key_public);
 	Ok(())
 }
@@ -63,10 +50,10 @@ pub fn public_add(public: &mut Public, other: &Public) -> Result<(), Error> {
 /// In-place sub one public key from another (EC point - EC point)
 pub fn public_sub(public: &mut Public, other: &Public) -> Result<(), Error> {
 	let mut key_neg_other = to_secp256k1_public(other)?;
-	key_neg_other.mul_assign(&SECP256K1, &key::MINUS_ONE_KEY)?;
+	key_neg_other.mul_assign(&SECP256K1, super::MINUS_ONE_KEY)?;
 
 	let mut key_public = to_secp256k1_public(public)?;
-	key_public.add_assign(&SECP256K1, &key_neg_other)?;
+	key_public = key_public.combine(&key_neg_other)?;
 	set_public(public, &key_public);
 	Ok(())
 }
@@ -74,15 +61,14 @@ pub fn public_sub(public: &mut Public, other: &Public) -> Result<(), Error> {
 /// Replace a public key with its additive inverse (EC point = - EC point)
 pub fn public_negate(public: &mut Public) -> Result<(), Error> {
 	let mut key_public = to_secp256k1_public(public)?;
-	key_public.mul_assign(&SECP256K1, &key::MINUS_ONE_KEY)?;
+	key_public.mul_assign(&SECP256K1, super::MINUS_ONE_KEY)?;
 	set_public(public, &key_public);
 	Ok(())
 }
 
 /// Return the generation point (aka base point) of secp256k1
 pub fn generation_point() -> Public {
-	let public_key =
-		key::PublicKey::from_slice(&SECP256K1, &BASE_POINT_BYTES).expect("constructed using constants; qed");
+	let public_key = key::PublicKey::from_slice(&BASE_POINT_BYTES).expect("constructed using constants; qed");
 	let mut public = Public::default();
 	set_public(&mut public, &public_key);
 	public
@@ -95,24 +81,24 @@ fn to_secp256k1_public(public: &Public) -> Result<key::PublicKey, Error> {
 		temp
 	};
 
-	Ok(key::PublicKey::from_slice(&SECP256K1, &public_data)?)
+	Ok(key::PublicKey::from_slice(&public_data)?)
 }
 
 fn set_public(public: &mut Public, key_public: &key::PublicKey) {
-	let key_public_serialized = key_public.serialize_vec(&SECP256K1, false);
+	let key_public_serialized = key_public.serialize_uncompressed();
 	public.as_bytes_mut().copy_from_slice(&key_public_serialized[1..65]);
 }
 
 #[cfg(test)]
 mod tests {
 	use super::super::{Generator, Random, Secret};
-	use super::{generation_point, public_add, public_is_valid, public_mul_secret, public_negate, public_sub};
+	use super::{generation_point, public_add, public_mul_secret, public_negate, public_sub};
 	use std::str::FromStr;
 
 	#[test]
 	fn public_addition_is_commutative() {
-		let public1 = Random.generate().unwrap().public().clone();
-		let public2 = Random.generate().unwrap().public().clone();
+		let public1 = Random.generate().public().clone();
+		let public2 = Random.generate().public().clone();
 
 		let mut left = public1.clone();
 		public_add(&mut left, &public2).unwrap();
@@ -125,8 +111,8 @@ mod tests {
 
 	#[test]
 	fn public_addition_is_reversible_with_subtraction() {
-		let public1 = Random.generate().unwrap().public().clone();
-		let public2 = Random.generate().unwrap().public().clone();
+		let public1 = Random.generate().public().clone();
+		let public2 = Random.generate().public().clone();
 
 		let mut sum = public1.clone();
 		public_add(&mut sum, &public2).unwrap();
@@ -137,18 +123,12 @@ mod tests {
 
 	#[test]
 	fn public_negation_is_involutory() {
-		let public = Random.generate().unwrap().public().clone();
+		let public = Random.generate().public().clone();
 		let mut negation = public.clone();
 		public_negate(&mut negation).unwrap();
 		public_negate(&mut negation).unwrap();
 
 		assert_eq!(negation, public);
-	}
-
-	#[test]
-	fn known_public_is_valid() {
-		let public = Random.generate().unwrap().public().clone();
-		assert!(public_is_valid(&public));
 	}
 
 	#[test]

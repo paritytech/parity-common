@@ -1,18 +1,10 @@
-// Copyright 2019-2020 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 //! IndexedDB tests.
 
@@ -48,15 +40,21 @@ async fn delete_and_get() {
 }
 
 #[wasm_bindgen_test]
+async fn delete_prefix() {
+	let db = open_db(st::DELETE_PREFIX_NUM_COLUMNS, "delete_prefix").await;
+	st::test_delete_prefix(&db).unwrap()
+}
+
+#[wasm_bindgen_test]
 async fn iter() {
 	let db = open_db(1, "iter").await;
 	st::test_iter(&db).unwrap()
 }
 
 #[wasm_bindgen_test]
-async fn iter_from_prefix() {
-	let db = open_db(1, "iter_from_prefix").await;
-	st::test_iter_from_prefix(&db).unwrap()
+async fn iter_with_prefix() {
+	let db = open_db(1, "iter_with_prefix").await;
+	st::test_iter_with_prefix(&db).unwrap()
 }
 
 #[wasm_bindgen_test]
@@ -74,7 +72,7 @@ async fn reopen_the_database_with_more_columns() {
 	// Write a value into the database
 	let mut batch = db.transaction();
 	batch.put(0, b"hello", b"world");
-	db.write_buffered(batch);
+	db.write(batch).unwrap();
 
 	assert_eq!(db.get(0, b"hello").unwrap().unwrap(), b"world");
 

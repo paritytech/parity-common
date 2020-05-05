@@ -1,18 +1,10 @@
-// Copyright 2019 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 //! A key-value database for use in browsers
 //!
@@ -79,7 +71,7 @@ impl Database {
 				txn.put_vec(column, key.as_ref(), value);
 			}
 			// write each column into memory
-			in_memory.write_buffered(txn);
+			in_memory.write(txn).expect("writing in memory always succeeds; qed");
 		}
 		Ok(Database { name: name_clone, version, columns, in_memory, indexed_db: inner })
 	}
@@ -110,13 +102,9 @@ impl KeyValueDB for Database {
 		self.in_memory.get_by_prefix(col, prefix)
 	}
 
-	fn write_buffered(&self, transaction: DBTransaction) {
+	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
 		let _ = indexed_db::idb_commit_transaction(&*self.indexed_db, &transaction, self.columns);
-		self.in_memory.write_buffered(transaction);
-	}
-
-	fn flush(&self) -> io::Result<()> {
-		Ok(())
+		self.in_memory.write(transaction)
 	}
 
 	// NOTE: clones the whole db
@@ -125,12 +113,12 @@ impl KeyValueDB for Database {
 	}
 
 	// NOTE: clones the whole db
-	fn iter_from_prefix<'a>(
+	fn iter_with_prefix<'a>(
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
 	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
-		self.in_memory.iter_from_prefix(col, prefix)
+		self.in_memory.iter_with_prefix(col, prefix)
 	}
 
 	// NOTE: not supported

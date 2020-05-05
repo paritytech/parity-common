@@ -1,4 +1,4 @@
-// Copyright 2015-2019 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -989,6 +989,12 @@ fn from_big_endian() {
 
 	let number = U256::from_big_endian(&source[..]);
 
+	assert_eq!(U256::from(1), number);
+
+	let number = U256::from_big_endian(&[]);
+	assert_eq!(U256::zero(), number);
+
+	let number = U256::from_big_endian(&[1]);
 	assert_eq!(U256::from(1), number);
 }
 

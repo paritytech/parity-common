@@ -1,3 +1,11 @@
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 /// Hexdecimal string 64 chars (32 bytes)
 pub const HEX_64_CHARS: &str = "\"0x6402541b4e3c2ab65306aec48fce5adedc60e3ac465c3d7036c731e0b2e49209\"";
 

@@ -1,4 +1,4 @@
-// Copyright 2015-2017 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -53,16 +53,12 @@ impl RlpStream {
 
 	/// Apends null to the end of stream, chainable.
 	///
-	/// ```rust
-	/// extern crate rlp;
-	/// use rlp::*;
-	///
-	/// fn main () {
-	/// 	let mut stream = RlpStream::new_list(2);
-	/// 	stream.append_empty_data().append_empty_data();
-	/// 	let out = stream.out();
-	/// 	assert_eq!(out, vec![0xc2, 0x80, 0x80]);
-	/// }
+	/// ```
+	/// use rlp::RlpStream;
+	/// let mut stream = RlpStream::new_list(2);
+	/// stream.append_empty_data().append_empty_data();
+	/// let out = stream.out();
+	/// assert_eq!(out, vec![0xc2, 0x80, 0x80]);
 	/// ```
 	pub fn append_empty_data(&mut self) -> &mut Self {
 		// self push raw item
@@ -94,16 +90,12 @@ impl RlpStream {
 
 	/// Appends value to the end of stream, chainable.
 	///
-	/// ```rust
-	/// extern crate rlp;
-	/// use rlp::*;
-	///
-	/// fn main () {
-	/// 	let mut stream = RlpStream::new_list(2);
-	/// 	stream.append(&"cat").append(&"dog");
-	/// 	let out = stream.out();
-	/// 	assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
-	/// }
+	/// ```
+	/// use rlp::RlpStream;
+	/// let mut stream = RlpStream::new_list(2);
+	/// stream.append(&"cat").append(&"dog");
+	/// let out = stream.out();
+	/// assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// ```
 	pub fn append<E>(&mut self, value: &E) -> &mut Self
 	where
@@ -119,16 +111,12 @@ impl RlpStream {
 
 	/// Appends iterator to the end of stream, chainable.
 	///
-	/// ```rust
-	/// extern crate rlp;
-	/// use rlp::*;
-	///
-	/// fn main () {
-	/// 	let mut stream = RlpStream::new_list(2);
-	/// 	stream.append(&"cat").append_iter("dog".as_bytes().iter().cloned());
-	/// 	let out = stream.out();
-	/// 	assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
-	/// }
+	/// ```
+	/// use rlp::RlpStream;
+	/// let mut stream = RlpStream::new_list(2);
+	/// stream.append(&"cat").append_iter("dog".as_bytes().iter().cloned());
+	/// let out = stream.out();
+	/// assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// ```
 	pub fn append_iter<I>(&mut self, value: I) -> &mut Self
 	where
@@ -167,17 +155,13 @@ impl RlpStream {
 
 	/// Declare appending the list of given size, chainable.
 	///
-	/// ```rust
-	/// extern crate rlp;
-	/// use rlp::*;
-	///
-	/// fn main () {
-	/// 	let mut stream = RlpStream::new_list(2);
-	/// 	stream.begin_list(2).append(&"cat").append(&"dog");
-	/// 	stream.append(&"");
-	/// 	let out = stream.out();
-	/// 	assert_eq!(out, vec![0xca, 0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g', 0x80]);
-	/// }
+	/// ```
+	/// use rlp::RlpStream;
+	/// let mut stream = RlpStream::new_list(2);
+	/// stream.begin_list(2).append(&"cat").append(&"dog");
+	/// stream.append(&"");
+	/// let out = stream.out();
+	/// assert_eq!(out, vec![0xca, 0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g', 0x80]);
 	/// ```
 	pub fn begin_list(&mut self, len: usize) -> &mut RlpStream {
 		self.finished_list = false;
@@ -249,18 +233,15 @@ impl RlpStream {
 
 	/// Clear the output stream so far.
 	///
-	/// ```rust
-	/// extern crate rlp;
-	/// use rlp::*;
-	///
-	/// fn main () {
-	/// 	let mut stream = RlpStream::new_list(3);
-	/// 	stream.append(&"cat");
-	/// 	stream.clear();
-	/// 	stream.append(&"dog");
-	/// 	let out = stream.out();
-	/// 	assert_eq!(out, vec![0x83, b'd', b'o', b'g']);
-	/// }
+	/// ```
+	/// use rlp::RlpStream;
+	/// let mut stream = RlpStream::new_list(3);
+	/// stream.append(&"cat");
+	/// stream.clear();
+	/// stream.append(&"dog");
+	/// let out = stream.out();
+	/// assert_eq!(out, vec![0x83, b'd', b'o', b'g']);
+	/// ```
 	pub fn clear(&mut self) {
 		// clear bytes
 		self.buffer.clear();
@@ -271,19 +252,16 @@ impl RlpStream {
 
 	/// Returns true if stream doesnt expect any more items.
 	///
-	/// ```rust
-	/// extern crate rlp;
-	/// use rlp::*;
-	///
-	/// fn main () {
-	/// 	let mut stream = RlpStream::new_list(2);
-	/// 	stream.append(&"cat");
-	/// 	assert_eq!(stream.is_finished(), false);
-	/// 	stream.append(&"dog");
-	/// 	assert_eq!(stream.is_finished(), true);
-	/// 	let out = stream.out();
-	/// 	assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
-	/// }
+	/// ```
+	/// use rlp::RlpStream;
+	/// let mut stream = RlpStream::new_list(2);
+	/// stream.append(&"cat");
+	/// assert_eq!(stream.is_finished(), false);
+	/// stream.append(&"dog");
+	/// assert_eq!(stream.is_finished(), true);
+	/// let out = stream.out();
+	/// assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
+	/// ```
 	pub fn is_finished(&self) -> bool {
 		self.unfinished_lists.is_empty()
 	}

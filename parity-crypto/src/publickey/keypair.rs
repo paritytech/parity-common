@@ -1,20 +1,12 @@
-// Copyright 2015-2019 Parity Technologies (UK) Ltd.
-// This file is part of Parity Ethereum.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
-// Parity Ethereum is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity Ethereum is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
-
-//! Key pair (public + secrect) description
+//! Key pair (public + secret) description.
 
 use super::{Address, Error, Public, Secret, SECP256K1};
 use crate::Keccak256;
@@ -48,14 +40,14 @@ impl KeyPair {
 	/// Create a pair from secret key
 	pub fn from_secret(secret: Secret) -> Result<KeyPair, Error> {
 		let context = &SECP256K1;
-		let s: key::SecretKey = key::SecretKey::from_slice(context, &secret[..])?;
-		let pub_key = key::PublicKey::from_secret_key(context, &s)?;
-		let serialized = pub_key.serialize_vec(context, false);
+		let s: key::SecretKey = key::SecretKey::from_slice(&secret[..])?;
+		let pub_key = key::PublicKey::from_secret_key(context, &s);
+		let serialized = pub_key.serialize_uncompressed();
 
 		let mut public = Public::default();
 		public.as_bytes_mut().copy_from_slice(&serialized[1..65]);
 
-		let keypair = KeyPair { secret: secret, public: public };
+		let keypair = KeyPair { secret, public };
 
 		Ok(keypair)
 	}
@@ -67,8 +59,7 @@ impl KeyPair {
 
 	/// Copies a pair from another one
 	pub fn from_keypair(sec: key::SecretKey, publ: key::PublicKey) -> Self {
-		let context = &SECP256K1;
-		let serialized = publ.serialize_vec(context, false);
+		let serialized = publ.serialize_uncompressed();
 		let secret = Secret::from(sec);
 		let mut public = Public::default();
 		public.as_bytes_mut().copy_from_slice(&serialized[1..65]);

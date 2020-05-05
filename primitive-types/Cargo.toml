@@ -1,15 +1,15 @@
 [package]
 name = "primitive-types"
-version = "0.6.2"
+version = "0.7.1"
 authors = ["Parity Technologies <admin@parity.io>"]
-license = "Apache-2.0/MIT"
+license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
 description = "Primitive types shared by Ethereum and Substrate"
 edition = "2018"
 
 [dependencies]
-fixed-hash = { version = "0.5", path = "../fixed-hash", default-features = false }
-uint = { version = "0.8.1", path = "../uint", default-features = false }
+fixed-hash = { version = "0.6", path = "../fixed-hash", default-features = false }
+uint = { version = "0.8.3", path = "../uint", default-features = false }
 impl-serde = { version = "0.3.0", path = "impls/serde", default-features = false, optional = true }
 impl-codec = { version = "0.4.1", path = "impls/codec", default-features = false, optional = true }
 impl-rlp = { version = "0.2", path = "impls/rlp", default-features = false, optional = true }
@@ -20,11 +20,12 @@ scale-info = { git = "https://github.com/paritytech/scale-info", default-feature
 default = ["std"]
 std = ["uint/std", "fixed-hash/std", "impl-codec/std"]
 byteorder = ["fixed-hash/byteorder"]
-libc = ["fixed-hash/libc"]
 rustc-hex = ["fixed-hash/rustc-hex"]
-serde = ["std", "impl-serde"]
+serde = ["std", "impl-serde", "impl-serde/std"]
+serde_no_std = ["impl-serde"]
 codec = ["impl-codec"]
 rlp = ["impl-rlp"]
+arbitrary = ["fixed-hash/arbitrary", "uint/arbitrary"]
 
 [[test]]
 name = "scale_info"
