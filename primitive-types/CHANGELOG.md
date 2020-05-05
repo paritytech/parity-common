@@ -5,7 +5,9 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
-- Added `no_std` support for `serde` feature. [#385](https://github.com/paritytech/parity-common/pull/385)
+
+## [0.7.2] - 2020-05-05
+- Added `serde_no_std` feature. [#385](https://github.com/paritytech/parity-common/pull/385)
 
 ## [0.7.1] - 2020-04-27
 - Added `arbitrary` feature. [#378](https://github.com/paritytech/parity-common/pull/378)
