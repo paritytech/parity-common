@@ -1,6 +1,6 @@
 [package]
 name = "kvdb"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "Generic key-value trait"
