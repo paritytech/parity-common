@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.8.0] - 2020-05-01
+## [0.8.0] - 2020-05-05
 - Updated RocksDB to 6.7.3. [#379](https://github.com/paritytech/parity-common/pull/379)
 ### Breaking
 - Updated to the new `kvdb` interface. [#313](https://github.com/paritytech/parity-common/pull/313)
