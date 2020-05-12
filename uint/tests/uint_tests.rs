@@ -281,7 +281,6 @@ fn uint256_bits_test() {
 }
 
 #[test]
-#[cfg_attr(feature = "dev", allow(eq_op))]
 fn uint256_comp_test() {
 	let small = U256([10u64, 0, 0, 0]);
 	let big = U256([0x8C8C3EE70C644118u64, 0x0209E7378231E632, 0, 0]);
@@ -296,6 +295,10 @@ fn uint256_comp_test() {
 	assert!(bigger >= big);
 	assert!(bigger >= small);
 	assert!(small <= small);
+	assert_eq!(small, small);
+	assert_eq!(biggest, biggest);
+	assert_ne!(big, biggest);
+	assert_ne!(big, bigger);
 }
 
 #[test]
