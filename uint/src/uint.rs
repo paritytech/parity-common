@@ -1468,8 +1468,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl $crate::core_::cmp::Eq for $name {
-		}
+		impl $crate::core_::cmp::Eq for $name {}
 
 		impl $crate::core_::hash::Hash for $name {
 			fn hash<H: $crate::core_::hash::Hasher>(&self, state: &mut H) {
