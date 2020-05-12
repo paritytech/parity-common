@@ -1466,7 +1466,7 @@ macro_rules! construct_uint {
 		// https://github.com/rust-lang/rust/issues/61415
 		impl $crate::core_::cmp::PartialEq for $name {
 			fn eq(&self, other: &$name) -> bool {
-				self.cmp(other) == $crate::core_::cmp::Ordering::Equal
+				self.as_ref() == other.as_ref()
 			}
 		}
 
