@@ -1464,15 +1464,7 @@ macro_rules! construct_uint {
 
 		impl $crate::core_::cmp::Ord for $name {
 			fn cmp(&self, other: &$name) -> $crate::core_::cmp::Ordering {
-				let &$name(ref me) = self;
-				let &$name(ref you) = other;
-				let mut i = $n_words;
-				while i > 0 {
-					i -= 1;
-					if me[i] < you[i] { return $crate::core_::cmp::Ordering::Less; }
-					if me[i] > you[i] { return $crate::core_::cmp::Ordering::Greater; }
-				}
-				$crate::core_::cmp::Ordering::Equal
+                self.as_ref().iter().rev().cmp(other.as_ref().iter().rev())
 			}
 		}
 
