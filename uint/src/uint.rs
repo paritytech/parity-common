@@ -445,7 +445,7 @@ macro_rules! construct_uint {
 		/// Little-endian large integer type
 		#[repr(C)]
 		$(#[$attr])*
-		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+		#[derive(Copy, Clone)]
 		$visibility struct $name (pub [u64; $n_words]);
 
 		/// Get a reference to the underlying little-endian words.
@@ -1459,6 +1459,22 @@ macro_rules! construct_uint {
 		impl<T> $crate::core_::ops::ShrAssign<T> for $name where T: Into<$name> {
 			fn shr_assign(&mut self, shift: T) {
 				*self = *self >> shift;
+			}
+		}
+
+		impl $crate::core_::cmp::PartialEq for $name {
+			fn eq(&self, other: &$name) -> bool {
+				self.cmp(other) == $crate::core_::cmp::Ordering::Equal
+			}
+		}
+
+		impl $crate::core_::cmp::Eq for $name {
+		}
+
+		impl $crate::core_::hash::Hash for $name {
+			fn hash<H: $crate::core_::hash::Hasher>(&self, state: &mut H) {
+				// use the impl as slice &[u64]
+				<[u64] as $crate::core_::hash::Hash>::hash(&self.0[..], state);
 			}
 		}
 
