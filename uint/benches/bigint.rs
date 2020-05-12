@@ -601,7 +601,7 @@ fn u512_ord(c: &mut Criterion) {
 		36306297304129857,
 		3453,
 	]);
-	c.bench_function("u512_ord", move |b| b.iter(|| black_box(one < two)));
+	c.bench_function("u512_ord", move |b| b.iter(|| black_box(one) < black_box(two)));
 }
 
 fn u256_from_le(c: &mut Criterion) {
