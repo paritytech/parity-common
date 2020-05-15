@@ -15,6 +15,7 @@ crunchy = { version = "0.2.2", default-features = false, features = ["limit_256"
 fixed-hash = { path = "../fixed-hash", version = "0.6", default-features = false }
 impl-serde = { path = "../primitive-types/impls/serde", version = "0.3", default-features = false, optional = true }
 impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.2", default-features = false }
+impl-codec = { version = "0.4.1", path = "../primitive-types/impls/codec", default-features = false, optional = true }
 
 [dev-dependencies]
 criterion = "0.3.0"
@@ -27,6 +28,7 @@ std = ["fixed-hash/std", "crunchy/std"]
 serialize = ["std", "impl-serde"]
 rustc-hex = ["fixed-hash/rustc-hex"]
 arbitrary = ["fixed-hash/arbitrary"]
+codec = ["impl-codec"]
 
 [[bench]]
 name = "bloom"

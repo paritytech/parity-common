@@ -57,6 +57,8 @@ use fixed_hash::*;
 use impl_rlp::impl_fixed_hash_rlp;
 #[cfg(feature = "serialize")]
 use impl_serde::impl_fixed_hash_serde;
+#[cfg(feature = "codec")]
+use impl_codec::impl_fixed_hash_codec;
 use tiny_keccak::{Hasher, Keccak};
 
 // 3 according to yellowpaper
@@ -68,6 +70,10 @@ construct_fixed_hash! {
 	pub struct Bloom(BLOOM_SIZE);
 }
 impl_fixed_hash_rlp!(Bloom, BLOOM_SIZE);
+#[cfg(feature = "serialize")]
+impl_fixed_hash_serde!(Bloom, BLOOM_SIZE);
+#[cfg(feature = "codec")]
+impl_fixed_hash_codec!(Bloom, BLOOM_SIZE);
 
 /// Returns log2.
 fn log2(x: usize) -> u32 {
@@ -263,9 +269,6 @@ impl<'a> From<&'a Bloom> for BloomRef<'a> {
 		BloomRef(&bloom.0)
 	}
 }
-
-#[cfg(feature = "serialize")]
-impl_fixed_hash_serde!(Bloom, BLOOM_SIZE);
 
 #[cfg(test)]
 mod tests {
