@@ -60,4 +60,5 @@ script:
   - cd rlp/ && cargo test --no-default-features && cargo check --benches && cd ..
   - cd triehash/ && cargo check --benches && cd ..
   - cd kvdb-web/ && wasm-pack test --headless --firefox && cd ..
-
+  - cd ethbloom/ && cargo test --all-features
+  - cd ethereum-types/ && cargo test --all-features
