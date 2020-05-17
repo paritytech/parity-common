@@ -8,11 +8,11 @@
 
 use crate::{U128, U256, U512, U64};
 use fixed_hash::*;
+#[cfg(feature = "codec")]
+use impl_codec::impl_fixed_hash_codec;
 use impl_rlp::impl_fixed_hash_rlp;
 #[cfg(feature = "serialize")]
 use impl_serde::impl_fixed_hash_serde;
-#[cfg(feature = "codec")]
-use impl_codec::impl_fixed_hash_codec;
 
 pub trait BigEndianHash {
 	type Uint;

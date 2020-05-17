@@ -6,11 +6,11 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#[cfg(feature = "codec")]
+use impl_codec::impl_uint_codec;
 use impl_rlp::impl_uint_rlp;
 #[cfg(feature = "serialize")]
 use impl_serde::impl_uint_serde;
-#[cfg(feature = "codec")]
-use impl_codec::impl_uint_codec;
 use uint_crate::*;
 
 pub use uint_crate::FromDecStrErr;

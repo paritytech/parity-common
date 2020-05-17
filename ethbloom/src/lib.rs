@@ -54,11 +54,11 @@ use core::{mem, ops};
 
 use crunchy::unroll;
 use fixed_hash::*;
+#[cfg(feature = "codec")]
+use impl_codec::impl_fixed_hash_codec;
 use impl_rlp::impl_fixed_hash_rlp;
 #[cfg(feature = "serialize")]
 use impl_serde::impl_fixed_hash_serde;
-#[cfg(feature = "codec")]
-use impl_codec::impl_fixed_hash_codec;
 use tiny_keccak::{Hasher, Keccak};
 
 // 3 according to yellowpaper
