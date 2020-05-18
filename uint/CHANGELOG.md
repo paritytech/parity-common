@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- Replace `ptr::offset` with `ptr::wrapping_offset`. [#394](https://github.com/paritytech/parity-common/pull/394)
 
 ## [0.8.3] - 2020-04-27
 - Added `arbitrary` feature. [#378](https://github.com/paritytech/parity-common/pull/378)
