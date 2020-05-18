@@ -118,7 +118,7 @@ macro_rules! uint_overflowing_binop {
 
 					unsafe {
 						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
-						*ret_ptr.offset(i as _) = res2
+						*ret_ptr.wrapping_offset(i as _) = res2
 					}
 					carry = (overflow1 as u8 + overflow2 as u8) as u64;
 				} else {
@@ -126,7 +126,7 @@ macro_rules! uint_overflowing_binop {
 
 					unsafe {
 						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
-						*ret_ptr.offset(i as _) = res
+						*ret_ptr.wrapping_offset(i as _) = res
 					}
 
 					carry = overflow as u64;
