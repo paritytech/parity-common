@@ -25,7 +25,7 @@ construct_uint! {
 fn hash_impl_is_the_same_as_for_a_slice() {
 	use core::hash::{Hash, Hasher as _};
 	use std::collections::hash_map::DefaultHasher;
-	
+
 	let uint_hash = {
 		let mut h = DefaultHasher::new();
 		let uint = U256::from(123u64);
