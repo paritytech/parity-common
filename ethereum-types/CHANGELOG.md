@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.9.2] - 2020-05-18
+- Added `codec` feature. [#393](https://github.com/paritytech/parity-common/pull/393)
+
 ## [0.9.1] - 2020-04-27
 - Added `arbitrary` feature. [#378](https://github.com/paritytech/parity-common/pull/378)
 

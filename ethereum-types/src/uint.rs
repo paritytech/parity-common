@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#[cfg(feature = "codec")]
+use impl_codec::impl_uint_codec;
 use impl_rlp::impl_uint_rlp;
 #[cfg(feature = "serialize")]
 use impl_serde::impl_uint_serde;
@@ -20,6 +22,8 @@ construct_uint! {
 impl_uint_rlp!(U64, 1);
 #[cfg(feature = "serialize")]
 impl_uint_serde!(U64, 1);
+#[cfg(feature = "codec")]
+impl_uint_codec!(U64, 1);
 
 pub use primitive_types::{U128, U256, U512};
 
