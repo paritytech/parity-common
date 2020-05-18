@@ -1475,7 +1475,7 @@ macro_rules! construct_uint {
 		impl $crate::core_::hash::Hash for $name {
 			fn hash<H: $crate::core_::hash::Hasher>(&self, state: &mut H) {
 				// use the impl as slice &[u64]
-				<[u64] as $crate::core_::hash::Hash>::hash(&self.0[..], state);
+				self.as_ref().hash(state);
 			}
 		}
 

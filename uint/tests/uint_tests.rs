@@ -20,6 +20,26 @@ construct_uint! {
 	pub struct U512(8);
 }
 
+#[cfg(feature = "std")]
+#[test]
+fn hash_impl_is_the_same_as_for_a_slice() {
+	use core::hash::{Hash, Hasher as _};
+	use std::collections::hash_map::DefaultHasher;
+	
+	let uint_hash = {
+		let mut h = DefaultHasher::new();
+		let uint = U256::from(123u64);
+		Hash::hash(&uint, &mut h);
+		h.finish()
+	};
+	let slice_hash = {
+		let mut h = DefaultHasher::new();
+		Hash::hash(&[123u64, 0, 0, 0], &mut h);
+		h.finish()
+	};
+	assert_eq!(uint_hash, slice_hash);
+}
+
 #[test]
 fn u128_conversions() {
 	let mut a = U256::from(u128::max_value());
@@ -1013,10 +1033,10 @@ fn into_fixed_array() {
 fn test_u256_from_fixed_array() {
 	let ary = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 123];
 	let num: U256 = ary.into();
-	assert_eq!(num, U256::from(std::u64::MAX) + 1 + 123);
+	assert_eq!(num, U256::from(core::u64::MAX) + 1 + 123);
 
 	let a_ref: &U256 = &ary.into();
-	assert_eq!(a_ref, &(U256::from(std::u64::MAX) + 1 + 123));
+	assert_eq!(a_ref, &(U256::from(core::u64::MAX) + 1 + 123));
 }
 
 #[test]
