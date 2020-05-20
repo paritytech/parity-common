@@ -339,6 +339,8 @@ fn generate_read_options() -> ReadOptions {
 fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
 	let mut block_opts = BlockBasedOptions::default();
 	block_opts.set_block_size(config.compaction.block_size);
+	block_opts.set_format_version(5);
+	block_opts.set_block_restart_interval(16);
 	// Set cache size as recommended by
 	// https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
 	let cache_size = config.memory_budget() / 3;
@@ -1106,7 +1108,7 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 		// Don't fsync every store
 		assert!(settings.contains("Options.use_fsync: 0"));
 
-		// We're using the old format
-		assert!(settings.contains("format_version: 2"));
+		// We're using the new format
+		assert!(settings.contains("format_version: 5"));
 	}
 }
