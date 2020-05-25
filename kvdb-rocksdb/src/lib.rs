@@ -339,6 +339,7 @@ fn generate_read_options() -> ReadOptions {
 fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
 	let mut block_opts = BlockBasedOptions::default();
 	block_opts.set_block_size(config.compaction.block_size);
+	// See https://github.com/facebook/rocksdb/blob/a1523efcdf2f0e8133b9a9f6e170a0dad49f928f/include/rocksdb/table.h#L246-L271 for details on what the format versions are/do.
 	block_opts.set_format_version(5);
 	block_opts.set_block_restart_interval(16);
 	// Set cache size as recommended by
