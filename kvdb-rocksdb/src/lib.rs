@@ -573,7 +573,7 @@ impl Database {
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
 	fn iter_with_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
-		let read_lock = self.db.read();
+		let read_lock = self.db.read_recursive();
 		let optional = if read_lock.is_some() {
 			let mut read_opts = generate_read_options();
 			// rocksdb doesn't work with an empty upper bound
