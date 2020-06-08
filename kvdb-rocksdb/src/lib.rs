@@ -507,8 +507,13 @@ impl Database {
 							let end_range = end_prefix.unwrap_or_else(|| vec![u8::max_value(); 16]);
 							batch.delete_range_cf(cf, &prefix[..], &end_range[..]);
 							if no_end {
+								use crate::iter::IterationHandler as _;
+
 								let prefix = if prefix.len() > end_range.len() { &prefix[..] } else { &end_range[..] };
-								for (key, _) in self.iter_with_prefix(col, prefix) {
+								// We call `iter_with_prefix` directly on `cfs` to avoid taking a lock twice
+								// See https://github.com/paritytech/parity-common/pull/396.
+								let read_opts = generate_read_options();
+								for (key, _) in cfs.iter_with_prefix(col, prefix, read_opts) {
 									batch.delete_cf(cf, &key[..]);
 								}
 							}
