@@ -47,7 +47,6 @@ script:
   - cd ethbloom/ && cargo test --no-default-features --features="rustc-hex" && cargo check --benches && cd ..
   - cd fixed-hash/ && cargo test --all-features && cargo test --no-default-features --features="byteorder,rustc-hex" && cd ..
   - cd uint/ && cargo test --all-features && cargo test --no-default-features && cd ..
-  - cargo test -p primitive-types --all-features
   - cd keccak-hash/ && cargo test --no-default-features && cd ..
   - cd plain_hasher/ && cargo test --no-default-features && cargo check --benches && cd ..
   - cd parity-bytes/ && cargo test --no-default-features && cd ..
