@@ -64,7 +64,7 @@ pub mod ethereum_impls;
 pub mod primitives_impls;
 
 pub use allocators::MallocSizeOfExt;
-pub use malloc_size::{MallocSizeOf, MallocSizeOfOps};
+pub use malloc_size::{MallocSizeOf, MallocSizeOfOps, MallocShallowSizeOf};
 
 pub use parity_util_mem_derive::*;
 
