@@ -70,6 +70,7 @@ pub use alloc::boxed::Box;
 use core::ffi::c_void;
 #[cfg(feature = "std")]
 use rstd::hash::Hash;
+use rstd::marker::PhantomData;
 use rstd::mem::size_of;
 use rstd::ops::Range;
 use rstd::ops::{Deref, DerefMut};
@@ -161,7 +162,18 @@ impl MallocSizeOfOps {
 pub trait MallocSizeOf {
 	/// Measure the heap usage of all descendant heap-allocated structures, but
 	/// not the space taken up by the value itself.
+	/// If the size_of is always 0, consider implementing `size_of_is_zero` as well.
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
+
+	/// Used to optimize `MallocSizeOf` implementation for collections
+	/// like `Vec` and `HashMap` to avoid iterating over them unnecessarily.
+	/// The `Self: Sized` bound is for object safety.
+	fn size_of_is_zero() -> bool
+	where
+		Self: Sized,
+	{
+		false
+	}
 }
 
 /// Trait for measuring the "shallow" heap usage of a container.
@@ -268,6 +280,11 @@ impl MallocSizeOf for Tuple {
 		for_tuples!( #( result += Tuple.size_of(ops); )* );
 		result
 	}
+	fn size_of_is_zero() -> bool {
+		let mut result = true;
+		for_tuples!( #( result = result && Tuple::size_of_is_zero(); )* );
+		result
+	}
 }
 
 impl<T: MallocSizeOf> MallocSizeOf for Option<T> {
@@ -277,6 +294,9 @@ impl<T: MallocSizeOf> MallocSizeOf for Option<T> {
 		} else {
 			0
 		}
+	}
+	fn size_of_is_zero() -> bool {
+		T::size_of_is_zero()
 	}
 }
 
@@ -317,8 +337,10 @@ where
 impl<T: MallocSizeOf> MallocSizeOf for [T] {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = 0;
-		for elem in self.iter() {
-			n += elem.size_of(ops);
+		if !T::size_of_is_zero() {
+			for elem in self.iter() {
+				n += elem.size_of(ops);
+			}
 		}
 		n
 	}
@@ -327,8 +349,10 @@ impl<T: MallocSizeOf> MallocSizeOf for [T] {
 impl<T: MallocSizeOf> MallocSizeOf for Vec<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for elem in self.iter() {
-			n += elem.size_of(ops);
+		if !T::size_of_is_zero() {
+			for elem in self.iter() {
+				n += elem.size_of(ops);
+			}
 		}
 		n
 	}
@@ -354,8 +378,10 @@ impl<T> MallocShallowSizeOf for rstd::collections::VecDeque<T> {
 impl<T: MallocSizeOf> MallocSizeOf for rstd::collections::VecDeque<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for elem in self.iter() {
-			n += elem.size_of(ops);
+		if !T::size_of_is_zero() {
+			for elem in self.iter() {
+				n += elem.size_of(ops);
+			}
 		}
 		n
 	}
@@ -389,8 +415,10 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for t in self.iter() {
-			n += t.size_of(ops);
+		if !T::size_of_is_zero() {
+			for t in self.iter() {
+				n += t.size_of(ops);
+			}
 		}
 		n
 	}
@@ -422,9 +450,11 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for (k, v) in self.iter() {
-			n += k.size_of(ops);
-			n += v.size_of(ops);
+		if !K::size_of_is_zero() || !V::size_of_is_zero() {
+			for (k, v) in self.iter() {
+				n += k.size_of(ops);
+				n += v.size_of(ops);
+			}
 		}
 		n
 	}
@@ -447,9 +477,11 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for (k, v) in self.iter() {
-			n += k.size_of(ops);
-			n += v.size_of(ops);
+		if !K::size_of_is_zero() || !V::size_of_is_zero() {
+			for (k, v) in self.iter() {
+				n += k.size_of(ops);
+				n += v.size_of(ops);
+			}
 		}
 		n
 	}
@@ -473,17 +505,12 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for k in self.iter() {
-			n += k.size_of(ops);
+		if !T::size_of_is_zero() {
+			for k in self.iter() {
+				n += k.size_of(ops);
+			}
 		}
 		n
-	}
-}
-
-// PhantomData is always 0.
-impl<T> MallocSizeOf for rstd::marker::PhantomData<T> {
-	fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-		0
 	}
 }
 
@@ -604,27 +631,33 @@ macro_rules! malloc_size_of_is_0(
 				fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
 					0
 				}
+				#[inline(always)]
+				fn size_of_is_zero() -> bool { true }
 			}
 		)+
 	);
 	(any: $($ty:ident<$($gen:ident),+>),+) => (
 		$(
-		impl<$($gen),+> $crate::MallocSizeOf for $ty<$($gen),+> {
-			#[inline(always)]
-			fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
-				0
+			impl<$($gen),+> $crate::MallocSizeOf for $ty<$($gen),+> {
+				#[inline(always)]
+				fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
+					0
+				}
+				#[inline(always)]
+				fn size_of_is_zero() -> bool { true }
 			}
-		}
 		)+
 	);
 	($($ty:ident<$($gen:ident),+>),+) => (
 		$(
-		impl<$($gen: $crate::MallocSizeOf),+> $crate::MallocSizeOf for $ty<$($gen),+> {
-			#[inline(always)]
-			fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
-				0
+			impl<$($gen: $crate::MallocSizeOf),+> $crate::MallocSizeOf for $ty<$($gen),+> {
+				#[inline(always)]
+				fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
+					0
+				}
+				#[inline(always)]
+				fn size_of_is_zero() -> bool { true }
 			}
-		}
 		)+
 	);
 );
@@ -641,6 +674,7 @@ malloc_size_of_is_0!(rstd::sync::atomic::AtomicUsize);
 malloc_size_of_is_0!(Range<u8>, Range<u16>, Range<u32>, Range<u64>, Range<usize>);
 malloc_size_of_is_0!(Range<i8>, Range<i16>, Range<i32>, Range<i64>, Range<isize>);
 malloc_size_of_is_0!(Range<f32>, Range<f64>);
+malloc_size_of_is_0!(any: PhantomData<T>);
 
 /// Measurable that defers to inner value and used to verify MallocSizeOf implementation in a
 /// struct.
@@ -681,9 +715,11 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for (k, v) in self.iter() {
-			n += k.size_of(ops);
-			n += v.size_of(ops);
+		if !K::size_of_is_zero() || !V::size_of_is_zero() {
+			for (k, v) in self.iter() {
+				n += k.size_of(ops);
+				n += v.size_of(ops);
+			}
 		}
 		n
 	}
@@ -698,9 +734,11 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = 0;
-		for (k, v) in self.iter() {
-			n += k.size_of(ops);
-			n += v.size_of(ops);
+		if !K::size_of_is_zero() || !V::size_of_is_zero() {
+			for (k, v) in self.iter() {
+				n += k.size_of(ops);
+				n += v.size_of(ops);
+			}
 		}
 		n
 	}
@@ -721,8 +759,10 @@ macro_rules! impl_smallvec {
 		{
 			fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 				let mut n = if self.spilled() { self.capacity() * core::mem::size_of::<T>() } else { 0 };
-				for elem in self.iter() {
-					n += elem.size_of(ops);
+				if !T::size_of_is_zero() {
+					for elem in self.iter() {
+						n += elem.size_of(ops);
+					}
 				}
 				n
 			}
@@ -793,6 +833,15 @@ mod tests {
 		let mut ops = new_malloc_size_ops();
 		let expected_min_allocs = mem::size_of::<String>() * 4 + "ÖWL".len() + "COW".len() + "PIG".len() + "DUCK".len();
 		assert!(v.size_of(&mut ops) >= expected_min_allocs);
+	}
+
+	#[test]
+	fn test_large_vec() {
+		const N: usize = 128 * 1024 * 1024;
+		let val = vec![1u8; N];
+		let mut ops = new_malloc_size_ops();
+		assert!(val.size_of(&mut ops) >= N);
+		assert!(val.size_of(&mut ops) < 2 * N);
 	}
 
 	#[test]
