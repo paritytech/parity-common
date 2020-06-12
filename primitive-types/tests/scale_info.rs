@@ -9,22 +9,22 @@
 //! Tests for scale-info feature of primitive-types.
 
 use primitive_types::{H256, U256};
-use scale_info::{Fields, Path, TypeComposite, TypeInfo};
+use scale_info::{build::Fields, Path, Type, TypeInfo};
 
 #[test]
 fn u256_scale_info() {
-	let r#type = TypeComposite::new()
+	let r#type = Type::builder()
 		.path(Path::new("U256", "primitive_types"))
-		.fields(Fields::unnamed().field_of::<[u64; 4]>());
+		.composite(Fields::unnamed().field_of::<[u64; 4]>());
 
 	assert_eq!(U256::type_info(), r#type.into());
 }
 
 #[test]
 fn h256_scale_info() {
-	let r#type = TypeComposite::new()
+	let r#type = Type::builder()
 		.path(Path::new("H256", "primitive_types"))
-		.fields(Fields::unnamed().field_of::<[u8; 32]>());
+		.composite(Fields::unnamed().field_of::<[u8; 32]>());
 
 	assert_eq!(H256::type_info(), r#type.into());
 }
