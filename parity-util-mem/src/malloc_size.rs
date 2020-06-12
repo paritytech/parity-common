@@ -338,9 +338,7 @@ impl<T: MallocSizeOf> MallocSizeOf for [T] {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = 0;
 		if !T::size_of_is_zero() {
-			for elem in self.iter() {
-				n += elem.size_of(ops);
-			}
+			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
 	}
@@ -350,9 +348,7 @@ impl<T: MallocSizeOf> MallocSizeOf for Vec<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
 		if !T::size_of_is_zero() {
-			for elem in self.iter() {
-				n += elem.size_of(ops);
-			}
+			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
 	}
@@ -379,9 +375,7 @@ impl<T: MallocSizeOf> MallocSizeOf for rstd::collections::VecDeque<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
 		if !T::size_of_is_zero() {
-			for elem in self.iter() {
-				n += elem.size_of(ops);
-			}
+			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
 	}
@@ -416,9 +410,7 @@ where
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
 		if !T::size_of_is_zero() {
-			for t in self.iter() {
-				n += t.size_of(ops);
-			}
+			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
 	}
@@ -451,10 +443,7 @@ where
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
 		if !K::size_of_is_zero() || !V::size_of_is_zero() {
-			for (k, v) in self.iter() {
-				n += k.size_of(ops);
-				n += v.size_of(ops);
-			}
+			n = self.iter().fold(n, |acc, (k, v)| acc + k.size_of(ops) + v.size_of(ops))
 		}
 		n
 	}
@@ -478,10 +467,7 @@ where
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
 		if !K::size_of_is_zero() || !V::size_of_is_zero() {
-			for (k, v) in self.iter() {
-				n += k.size_of(ops);
-				n += v.size_of(ops);
-			}
+			n = self.iter().fold(n, |acc, (k, v)| acc + k.size_of(ops) + v.size_of(ops))
 		}
 		n
 	}
@@ -506,9 +492,7 @@ where
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
 		if !T::size_of_is_zero() {
-			for k in self.iter() {
-				n += k.size_of(ops);
-			}
+			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
 	}
@@ -716,10 +700,7 @@ where
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
 		if !K::size_of_is_zero() || !V::size_of_is_zero() {
-			for (k, v) in self.iter() {
-				n += k.size_of(ops);
-				n += v.size_of(ops);
-			}
+			n = self.iter().fold(n, |acc, (k, v)| acc + k.size_of(ops) + v.size_of(ops))
 		}
 		n
 	}
@@ -735,10 +716,7 @@ where
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = 0;
 		if !K::size_of_is_zero() || !V::size_of_is_zero() {
-			for (k, v) in self.iter() {
-				n += k.size_of(ops);
-				n += v.size_of(ops);
-			}
+			n = self.iter().fold(n, |acc, (k, v)| acc + k.size_of(ops) + v.size_of(ops))
 		}
 		n
 	}
@@ -760,9 +738,7 @@ macro_rules! impl_smallvec {
 			fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 				let mut n = if self.spilled() { self.capacity() * core::mem::size_of::<T>() } else { 0 };
 				if !T::size_of_is_zero() {
-					for elem in self.iter() {
-						n += elem.size_of(ops);
-					}
+					n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 				}
 				n
 			}
