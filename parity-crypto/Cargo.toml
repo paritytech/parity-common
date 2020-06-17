@@ -1,6 +1,6 @@
 [package]
 name = "parity-crypto"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "Crypto utils used by ethstore and network."
@@ -30,6 +30,7 @@ secp256k1 = { version = "0.17.2", optional = true, features = ["recovery", "rand
 sha2 = "0.8.0"
 subtle = "2.2.1"
 tiny-keccak = { version = "2.0", features = ["keccak"] }
+zeroize = { version = "1.0.0", default-features = false }
 
 [dev-dependencies]
 criterion = "0.3.0"
