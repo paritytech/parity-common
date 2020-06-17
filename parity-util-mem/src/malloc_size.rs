@@ -265,6 +265,9 @@ impl<'a, T: ?Sized> MallocSizeOf for &'a T {
 		// Zero makes sense for a non-owning reference.
 		0
 	}
+	fn size_of_is_zero() -> bool {
+		true
+	}
 }
 
 impl<T: MallocSizeOf + ?Sized> MallocSizeOf for Box<T> {
@@ -307,17 +310,26 @@ impl<T: MallocSizeOf, E: MallocSizeOf> MallocSizeOf for Result<T, E> {
 			Err(ref e) => e.size_of(ops),
 		}
 	}
+	fn size_of_is_zero() -> bool {
+		T::size_of_is_zero() && E::size_of_is_zero()
+	}
 }
 
 impl<T: MallocSizeOf + Copy> MallocSizeOf for rstd::cell::Cell<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.get().size_of(ops)
 	}
+	fn size_of_is_zero() -> bool {
+		T::size_of_is_zero()
+	}
 }
 
 impl<T: MallocSizeOf> MallocSizeOf for rstd::cell::RefCell<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.borrow().size_of(ops)
+	}
+	fn size_of_is_zero() -> bool {
+		T::size_of_is_zero()
 	}
 }
 
@@ -419,6 +431,9 @@ where
 impl<I: MallocSizeOf> MallocSizeOf for rstd::cmp::Reverse<I> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.0.size_of(ops)
+	}
+	fn size_of_is_zero() -> bool {
+		I::size_of_is_zero()
 	}
 }
 
@@ -840,5 +855,18 @@ mod tests {
 
 		// MallocSizeOf is not implemented for [u8; 333]
 		assert_eq!(crate::malloc_size(&Data::<[u8; 333]> { phantom: std::marker::PhantomData }), 0);
+	}
+
+	#[test]
+	fn size_of_is_zero() {
+		assert!(std::cmp::Reverse::<u8>::size_of_is_zero());
+		assert!(!std::borrow::Cow::<String>::size_of_is_zero());
+		assert!(std::cell::RefCell::<u8>::size_of_is_zero());
+		assert!(std::cell::Cell::<u8>::size_of_is_zero());
+		assert!(Result::<(), ()>::size_of_is_zero());
+		assert!(<(u8, (), [u8; 32])>::size_of_is_zero());
+		assert!(Option::<u8>::size_of_is_zero());
+		assert!(!<String>::size_of_is_zero());
+		assert!(<&String>::size_of_is_zero());
 	}
 }
