@@ -17,13 +17,14 @@ use ethereum_types::H256;
 use secp256k1::constants::SECRET_KEY_SIZE as SECP256K1_SECRET_KEY_SIZE;
 use secp256k1::key;
 use zeroize::Zeroize;
+use std::pin::Pin;
 
 use crate::publickey::Error;
 
 /// Represents secret key
 #[derive(Clone, PartialEq, Eq)]
 pub struct Secret {
-	inner: H256,
+	inner: Pin<Box<H256>>,
 }
 
 impl Drop for Secret {
@@ -52,21 +53,23 @@ impl fmt::Display for Secret {
 
 impl Secret {
 	/// Creates a `Secret` from the given slice, returning `None` if the slice length != 32.
+	/// Caller is responsible to zeroize input slice.
 	pub fn copy_from_slice(key: &[u8]) -> Option<Self> {
 		if key.len() != 32 {
 			return None;
 		}
 		let mut h = H256::zero();
 		h.as_bytes_mut().copy_from_slice(&key[0..32]);
-		Some(Secret { inner: h })
+		Some(Secret { inner: Pin::new(Box::new(h)) })
 	}
 
 	/// Creates zero key, which is invalid for crypto operations, but valid for math operation.
 	pub fn zero() -> Self {
-		Secret { inner: H256::zero() }
+		Secret { inner: Pin::new(Box::new(H256::zero())) }
 	}
 
 	/// Imports and validates the key.
+	/// Caller is responsible to zeroize input slice.
 	pub fn import_key(key: &[u8]) -> Result<Self, Error> {
 		let secret = key::SecretKey::from_slice(key)?;
 		Ok(secret.into())
@@ -79,7 +82,7 @@ impl Secret {
 
 	/// Wrapper over hex conversion
 	pub fn to_hex(&self) -> String {
-		format!("{:x}", self.inner)
+		format!("{:x}", self.inner.deref())
 	}
 
 	/// Inplace add one secret key to another (scalar + scalar)
@@ -206,8 +209,10 @@ impl FromStr for Secret {
 }
 
 impl From<[u8; 32]> for Secret {
-	fn from(k: [u8; 32]) -> Self {
-		Secret { inner: H256(k) }
+	fn from(mut k: [u8; 32]) -> Self {
+		let result = Secret { inner: Pin::new(Box::new(H256(k))) };
+		k.zeroize();
+		result
 	}
 }
 
@@ -232,7 +237,7 @@ impl TryFrom<&[u8]> for Secret {
 		if b.len() != SECP256K1_SECRET_KEY_SIZE {
 			return Err(Error::InvalidSecretKey);
 		}
-		Ok(Self { inner: H256::from_slice(b) })
+		Ok(Self { inner: Pin::new(Box::new(H256::from_slice(b))) })
 	}
 }
 

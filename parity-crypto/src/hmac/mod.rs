@@ -8,6 +8,7 @@
 
 use std::marker::PhantomData;
 use std::ops::Deref;
+use std::pin::Pin;
 
 use digest::generic_array::{
 	typenum::{U32, U64},
@@ -43,8 +44,7 @@ impl<T> Deref for Signature<T> {
 pub struct SigKey<T>(KeyInner, PhantomData<T>);
 
 #[derive(PartialEq)]
-// Using `Box[u8]` guarantees no reallocation can happen
-struct DisposableBox(Box<[u8]>);
+struct DisposableBox(Pin<Box<[u8]>>);
 
 impl std::fmt::Debug for DisposableBox {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -54,7 +54,7 @@ impl std::fmt::Debug for DisposableBox {
 
 impl DisposableBox {
 	fn from_slice(data: &[u8]) -> Self {
-		Self(data.to_vec().into_boxed_slice())
+		Self(Pin::new(data.to_vec().into_boxed_slice()))
 	}
 }
 
