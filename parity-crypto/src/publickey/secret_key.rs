@@ -60,12 +60,12 @@ impl Secret {
 		}
 		let mut h = H256::zero();
 		h.as_bytes_mut().copy_from_slice(&key[0..32]);
-		Some(Secret { inner: Pin::new(Box::new(h)) })
+		Some(Secret { inner: Box::pin(h) })
 	}
 
 	/// Creates zero key, which is invalid for crypto operations, but valid for math operation.
 	pub fn zero() -> Self {
-		Secret { inner: Pin::new(Box::new(H256::zero())) }
+		Secret { inner: Box::pin(H256::zero()) }
 	}
 
 	/// Imports and validates the key.
@@ -210,7 +210,7 @@ impl FromStr for Secret {
 
 impl From<[u8; 32]> for Secret {
 	fn from(mut k: [u8; 32]) -> Self {
-		let result = Secret { inner: Pin::new(Box::new(H256(k))) };
+		let result = Secret { inner: Box::pin(H256(k)) };
 		k.zeroize();
 		result
 	}
@@ -239,7 +239,7 @@ impl TryFrom<&[u8]> for Secret {
 		if b.len() != SECP256K1_SECRET_KEY_SIZE {
 			return Err(Error::InvalidSecretKey);
 		}
-		Ok(Self { inner: Pin::new(Box::new(H256::from_slice(b))) })
+		Ok(Self { inner: Box::pin(H256::from_slice(b)) })
 	}
 }
 
