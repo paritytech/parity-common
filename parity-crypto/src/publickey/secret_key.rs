@@ -217,8 +217,10 @@ impl From<[u8; 32]> for Secret {
 }
 
 impl From<H256> for Secret {
-	fn from(s: H256) -> Self {
-		s.0.into()
+	fn from(mut s: H256) -> Self {
+		let result = s.0.into();
+		s.0.zeroize();
+		result
 	}
 }
 
