@@ -162,17 +162,17 @@ impl MallocSizeOfOps {
 pub trait MallocSizeOf {
 	/// Measure the heap usage of all descendant heap-allocated structures, but
 	/// not the space taken up by the value itself.
-	/// If the size_of is always 0, consider implementing `size_of_is_zero` as well.
+	/// If `T::size_of` is a constant, consider implementing `constant_size` as well.
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
 
 	/// Used to optimize `MallocSizeOf` implementation for collections
 	/// like `Vec` and `HashMap` to avoid iterating over them unnecessarily.
 	/// The `Self: Sized` bound is for object safety.
-	fn size_of_is_zero() -> bool
+	fn constant_size() -> Option<usize>
 	where
 		Self: Sized,
 	{
-		false
+		None
 	}
 }
 
@@ -265,8 +265,8 @@ impl<'a, T: ?Sized> MallocSizeOf for &'a T {
 		// Zero makes sense for a non-owning reference.
 		0
 	}
-	fn size_of_is_zero() -> bool {
-		true
+	fn constant_size() -> Option<usize> {
+		Some(0)
 	}
 }
 
@@ -283,9 +283,9 @@ impl MallocSizeOf for Tuple {
 		for_tuples!( #( result += Tuple.size_of(ops); )* );
 		result
 	}
-	fn size_of_is_zero() -> bool {
-		let mut result = true;
-		for_tuples!( #( result = result && Tuple::size_of_is_zero(); )* );
+	fn constant_size() -> Option<usize> {
+		let mut result = Some(0);
+		for_tuples!( #( result = result.and_then(|s| Tuple::constant_size().map(|t| s + t)); )* );
 		result
 	}
 }
@@ -298,8 +298,8 @@ impl<T: MallocSizeOf> MallocSizeOf for Option<T> {
 			0
 		}
 	}
-	fn size_of_is_zero() -> bool {
-		T::size_of_is_zero()
+	fn constant_size() -> Option<usize> {
+		T::constant_size().filter(|s| *s == 0)
 	}
 }
 
@@ -310,8 +310,9 @@ impl<T: MallocSizeOf, E: MallocSizeOf> MallocSizeOf for Result<T, E> {
 			Err(ref e) => e.size_of(ops),
 		}
 	}
-	fn size_of_is_zero() -> bool {
-		T::size_of_is_zero() && E::size_of_is_zero()
+	fn constant_size() -> Option<usize> {
+		// Result<T, E> has constant size iff T::constant_size == E::constant_size
+		T::constant_size().and_then(|t| E::constant_size().filter(|e| *e == t))
 	}
 }
 
@@ -319,8 +320,8 @@ impl<T: MallocSizeOf + Copy> MallocSizeOf for rstd::cell::Cell<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.get().size_of(ops)
 	}
-	fn size_of_is_zero() -> bool {
-		T::size_of_is_zero()
+	fn constant_size() -> Option<usize> {
+		T::constant_size()
 	}
 }
 
@@ -328,8 +329,8 @@ impl<T: MallocSizeOf> MallocSizeOf for rstd::cell::RefCell<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.borrow().size_of(ops)
 	}
-	fn size_of_is_zero() -> bool {
-		T::size_of_is_zero()
+	fn constant_size() -> Option<usize> {
+		T::constant_size()
 	}
 }
 
@@ -349,7 +350,9 @@ where
 impl<T: MallocSizeOf> MallocSizeOf for [T] {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = 0;
-		if !T::size_of_is_zero() {
+		if let Some(t) = T::constant_size() {
+			n += self.len() * t;
+		} else {
 			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
@@ -359,7 +362,9 @@ impl<T: MallocSizeOf> MallocSizeOf for [T] {
 impl<T: MallocSizeOf> MallocSizeOf for Vec<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		if !T::size_of_is_zero() {
+		if let Some(t) = T::constant_size() {
+			n += self.len() * t;
+		} else {
 			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
@@ -386,7 +391,9 @@ impl<T> MallocShallowSizeOf for rstd::collections::VecDeque<T> {
 impl<T: MallocSizeOf> MallocSizeOf for rstd::collections::VecDeque<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		if !T::size_of_is_zero() {
+		if let Some(t) = T::constant_size() {
+			n += self.len() * t;
+		} else {
 			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
@@ -421,7 +428,9 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		if !T::size_of_is_zero() {
+		if let Some(t) = T::constant_size() {
+			n += self.len() * t;
+		} else {
 			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
@@ -432,8 +441,8 @@ impl<I: MallocSizeOf> MallocSizeOf for rstd::cmp::Reverse<I> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.0.size_of(ops)
 	}
-	fn size_of_is_zero() -> bool {
-		I::size_of_is_zero()
+	fn constant_size() -> Option<usize> {
+		I::constant_size()
 	}
 }
 
@@ -457,7 +466,9 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		if !K::size_of_is_zero() || !V::size_of_is_zero() {
+		if let (Some(k), Some(v)) = (K::constant_size(), V::constant_size()) {
+			n += self.len() * (k + v)
+		} else {
 			n = self.iter().fold(n, |acc, (k, v)| acc + k.size_of(ops) + v.size_of(ops))
 		}
 		n
@@ -481,7 +492,9 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		if !K::size_of_is_zero() || !V::size_of_is_zero() {
+		if let (Some(k), Some(v)) = (K::constant_size(), V::constant_size()) {
+			n += self.len() * (k + v)
+		} else {
 			n = self.iter().fold(n, |acc, (k, v)| acc + k.size_of(ops) + v.size_of(ops))
 		}
 		n
@@ -506,7 +519,9 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		if !T::size_of_is_zero() {
+		if let Some(t) = T::constant_size() {
+			n += self.len() * t;
+		} else {
 			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
@@ -631,7 +646,7 @@ macro_rules! malloc_size_of_is_0(
 					0
 				}
 				#[inline(always)]
-				fn size_of_is_zero() -> bool { true }
+				fn constant_size() -> Option<usize> { Some(0) }
 			}
 		)+
 	);
@@ -643,7 +658,7 @@ macro_rules! malloc_size_of_is_0(
 					0
 				}
 				#[inline(always)]
-				fn size_of_is_zero() -> bool { true }
+				fn constant_size() -> Option<usize> { Some(0) }
 			}
 		)+
 	);
@@ -655,7 +670,7 @@ macro_rules! malloc_size_of_is_0(
 					0
 				}
 				#[inline(always)]
-				fn size_of_is_zero() -> bool { true }
+				fn constant_size() -> Option<usize> { Some(0) }
 			}
 		)+
 	);
@@ -714,7 +729,9 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		if !K::size_of_is_zero() || !V::size_of_is_zero() {
+		if let (Some(k), Some(v)) = (K::constant_size(), V::constant_size()) {
+			n += self.len() * (k + v)
+		} else {
 			n = self.iter().fold(n, |acc, (k, v)| acc + k.size_of(ops) + v.size_of(ops))
 		}
 		n
@@ -730,7 +747,9 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = 0;
-		if !K::size_of_is_zero() || !V::size_of_is_zero() {
+		if let (Some(k), Some(v)) = (K::constant_size(), V::constant_size()) {
+			n += self.len() * (k + v)
+		} else {
 			n = self.iter().fold(n, |acc, (k, v)| acc + k.size_of(ops) + v.size_of(ops))
 		}
 		n
@@ -752,7 +771,9 @@ macro_rules! impl_smallvec {
 		{
 			fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 				let mut n = if self.spilled() { self.capacity() * core::mem::size_of::<T>() } else { 0 };
-				if !T::size_of_is_zero() {
+				if let Some(t) = T::constant_size() {
+					n += self.len() * t;
+				} else {
 					n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 				}
 				n
@@ -858,15 +879,30 @@ mod tests {
 	}
 
 	#[test]
-	fn size_of_is_zero() {
-		assert!(std::cmp::Reverse::<u8>::size_of_is_zero());
-		assert!(!std::borrow::Cow::<String>::size_of_is_zero());
-		assert!(std::cell::RefCell::<u8>::size_of_is_zero());
-		assert!(std::cell::Cell::<u8>::size_of_is_zero());
-		assert!(Result::<(), ()>::size_of_is_zero());
-		assert!(<(u8, (), [u8; 32])>::size_of_is_zero());
-		assert!(Option::<u8>::size_of_is_zero());
-		assert!(!<String>::size_of_is_zero());
-		assert!(<&String>::size_of_is_zero());
+	fn constant_size() {
+		struct AlwaysTwo(Vec<u8>);
+
+		impl MallocSizeOf for AlwaysTwo {
+			fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+				self.0.size_of(ops)
+			}
+			fn constant_size() -> Option<usize> {
+				Some(2)
+			}
+		}
+
+		assert_eq!(AlwaysTwo::constant_size(), Some(2));
+		assert_eq!(std::cmp::Reverse::<u8>::constant_size(), Some(0));
+		assert_eq!(std::cell::RefCell::<u8>::constant_size(), Some(0));
+		assert_eq!(std::cell::Cell::<u8>::constant_size(), Some(0));
+		assert_eq!(Result::<(), ()>::constant_size(), Some(0));
+		assert_eq!(<(AlwaysTwo, (), [u8; 32], AlwaysTwo)>::constant_size(), Some(2 + 2));
+		assert_eq!(Option::<u8>::constant_size(), Some(0));
+		assert_eq!(<&String>::constant_size(), Some(0));
+
+		assert_eq!(<String>::constant_size(), None);
+		assert_eq!(std::borrow::Cow::<String>::constant_size(), None);
+		assert_eq!(Result::<(), String>::constant_size(), None);
+		assert_eq!(Option::<AlwaysTwo>::constant_size(), None);
 	}
 }
