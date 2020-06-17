@@ -70,6 +70,7 @@ pub use alloc::boxed::Box;
 use core::ffi::c_void;
 #[cfg(feature = "std")]
 use rstd::hash::Hash;
+use rstd::marker::PhantomData;
 use rstd::mem::size_of;
 use rstd::ops::Range;
 use rstd::ops::{Deref, DerefMut};
@@ -161,7 +162,18 @@ impl MallocSizeOfOps {
 pub trait MallocSizeOf {
 	/// Measure the heap usage of all descendant heap-allocated structures, but
 	/// not the space taken up by the value itself.
+	/// If `T::size_of` is a constant, consider implementing `constant_size` as well.
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
+
+	/// Used to optimize `MallocSizeOf` implementation for collections
+	/// like `Vec` and `HashMap` to avoid iterating over them unnecessarily.
+	/// The `Self: Sized` bound is for object safety.
+	fn constant_size() -> Option<usize>
+	where
+		Self: Sized,
+	{
+		None
+	}
 }
 
 /// Trait for measuring the "shallow" heap usage of a container.
@@ -253,6 +265,9 @@ impl<'a, T: ?Sized> MallocSizeOf for &'a T {
 		// Zero makes sense for a non-owning reference.
 		0
 	}
+	fn constant_size() -> Option<usize> {
+		Some(0)
+	}
 }
 
 impl<T: MallocSizeOf + ?Sized> MallocSizeOf for Box<T> {
@@ -268,6 +283,11 @@ impl MallocSizeOf for Tuple {
 		for_tuples!( #( result += Tuple.size_of(ops); )* );
 		result
 	}
+	fn constant_size() -> Option<usize> {
+		let mut result = Some(0);
+		for_tuples!( #( result = result.and_then(|s| Tuple::constant_size().map(|t| s + t)); )* );
+		result
+	}
 }
 
 impl<T: MallocSizeOf> MallocSizeOf for Option<T> {
@@ -278,6 +298,9 @@ impl<T: MallocSizeOf> MallocSizeOf for Option<T> {
 			0
 		}
 	}
+	fn constant_size() -> Option<usize> {
+		T::constant_size().filter(|s| *s == 0)
+	}
 }
 
 impl<T: MallocSizeOf, E: MallocSizeOf> MallocSizeOf for Result<T, E> {
@@ -287,17 +310,27 @@ impl<T: MallocSizeOf, E: MallocSizeOf> MallocSizeOf for Result<T, E> {
 			Err(ref e) => e.size_of(ops),
 		}
 	}
+	fn constant_size() -> Option<usize> {
+		// Result<T, E> has constant size iff T::constant_size == E::constant_size
+		T::constant_size().and_then(|t| E::constant_size().filter(|e| *e == t))
+	}
 }
 
 impl<T: MallocSizeOf + Copy> MallocSizeOf for rstd::cell::Cell<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.get().size_of(ops)
 	}
+	fn constant_size() -> Option<usize> {
+		T::constant_size()
+	}
 }
 
 impl<T: MallocSizeOf> MallocSizeOf for rstd::cell::RefCell<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.borrow().size_of(ops)
+	}
+	fn constant_size() -> Option<usize> {
+		T::constant_size()
 	}
 }
 
@@ -317,8 +350,10 @@ where
 impl<T: MallocSizeOf> MallocSizeOf for [T] {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = 0;
-		for elem in self.iter() {
-			n += elem.size_of(ops);
+		if let Some(t) = T::constant_size() {
+			n += self.len() * t;
+		} else {
+			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
 	}
@@ -327,8 +362,10 @@ impl<T: MallocSizeOf> MallocSizeOf for [T] {
 impl<T: MallocSizeOf> MallocSizeOf for Vec<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for elem in self.iter() {
-			n += elem.size_of(ops);
+		if let Some(t) = T::constant_size() {
+			n += self.len() * t;
+		} else {
+			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
 	}
@@ -354,8 +391,10 @@ impl<T> MallocShallowSizeOf for rstd::collections::VecDeque<T> {
 impl<T: MallocSizeOf> MallocSizeOf for rstd::collections::VecDeque<T> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for elem in self.iter() {
-			n += elem.size_of(ops);
+		if let Some(t) = T::constant_size() {
+			n += self.len() * t;
+		} else {
+			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
 	}
@@ -389,8 +428,10 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for t in self.iter() {
-			n += t.size_of(ops);
+		if let Some(t) = T::constant_size() {
+			n += self.len() * t;
+		} else {
+			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
 	}
@@ -399,6 +440,9 @@ where
 impl<I: MallocSizeOf> MallocSizeOf for rstd::cmp::Reverse<I> {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		self.0.size_of(ops)
+	}
+	fn constant_size() -> Option<usize> {
+		I::constant_size()
 	}
 }
 
@@ -422,9 +466,10 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for (k, v) in self.iter() {
-			n += k.size_of(ops);
-			n += v.size_of(ops);
+		if let (Some(k), Some(v)) = (K::constant_size(), V::constant_size()) {
+			n += self.len() * (k + v)
+		} else {
+			n = self.iter().fold(n, |acc, (k, v)| acc + k.size_of(ops) + v.size_of(ops))
 		}
 		n
 	}
@@ -447,9 +492,10 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for (k, v) in self.iter() {
-			n += k.size_of(ops);
-			n += v.size_of(ops);
+		if let (Some(k), Some(v)) = (K::constant_size(), V::constant_size()) {
+			n += self.len() * (k + v)
+		} else {
+			n = self.iter().fold(n, |acc, (k, v)| acc + k.size_of(ops) + v.size_of(ops))
 		}
 		n
 	}
@@ -473,17 +519,12 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for k in self.iter() {
-			n += k.size_of(ops);
+		if let Some(t) = T::constant_size() {
+			n += self.len() * t;
+		} else {
+			n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 		}
 		n
-	}
-}
-
-// PhantomData is always 0.
-impl<T> MallocSizeOf for rstd::marker::PhantomData<T> {
-	fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
-		0
 	}
 }
 
@@ -604,27 +645,33 @@ macro_rules! malloc_size_of_is_0(
 				fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
 					0
 				}
+				#[inline(always)]
+				fn constant_size() -> Option<usize> { Some(0) }
 			}
 		)+
 	);
 	(any: $($ty:ident<$($gen:ident),+>),+) => (
 		$(
-		impl<$($gen),+> $crate::MallocSizeOf for $ty<$($gen),+> {
-			#[inline(always)]
-			fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
-				0
+			impl<$($gen),+> $crate::MallocSizeOf for $ty<$($gen),+> {
+				#[inline(always)]
+				fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
+					0
+				}
+				#[inline(always)]
+				fn constant_size() -> Option<usize> { Some(0) }
 			}
-		}
 		)+
 	);
 	($($ty:ident<$($gen:ident),+>),+) => (
 		$(
-		impl<$($gen: $crate::MallocSizeOf),+> $crate::MallocSizeOf for $ty<$($gen),+> {
-			#[inline(always)]
-			fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
-				0
+			impl<$($gen: $crate::MallocSizeOf),+> $crate::MallocSizeOf for $ty<$($gen),+> {
+				#[inline(always)]
+				fn size_of(&self, _: &mut $crate::MallocSizeOfOps) -> usize {
+					0
+				}
+				#[inline(always)]
+				fn constant_size() -> Option<usize> { Some(0) }
 			}
-		}
 		)+
 	);
 );
@@ -641,6 +688,7 @@ malloc_size_of_is_0!(rstd::sync::atomic::AtomicUsize);
 malloc_size_of_is_0!(Range<u8>, Range<u16>, Range<u32>, Range<u64>, Range<usize>);
 malloc_size_of_is_0!(Range<i8>, Range<i16>, Range<i32>, Range<i64>, Range<isize>);
 malloc_size_of_is_0!(Range<f32>, Range<f64>);
+malloc_size_of_is_0!(any: PhantomData<T>);
 
 /// Measurable that defers to inner value and used to verify MallocSizeOf implementation in a
 /// struct.
@@ -681,9 +729,10 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = self.shallow_size_of(ops);
-		for (k, v) in self.iter() {
-			n += k.size_of(ops);
-			n += v.size_of(ops);
+		if let (Some(k), Some(v)) = (K::constant_size(), V::constant_size()) {
+			n += self.len() * (k + v)
+		} else {
+			n = self.iter().fold(n, |acc, (k, v)| acc + k.size_of(ops) + v.size_of(ops))
 		}
 		n
 	}
@@ -698,9 +747,10 @@ where
 {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 		let mut n = 0;
-		for (k, v) in self.iter() {
-			n += k.size_of(ops);
-			n += v.size_of(ops);
+		if let (Some(k), Some(v)) = (K::constant_size(), V::constant_size()) {
+			n += self.len() * (k + v)
+		} else {
+			n = self.iter().fold(n, |acc, (k, v)| acc + k.size_of(ops) + v.size_of(ops))
 		}
 		n
 	}
@@ -721,8 +771,10 @@ macro_rules! impl_smallvec {
 		{
 			fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
 				let mut n = if self.spilled() { self.capacity() * core::mem::size_of::<T>() } else { 0 };
-				for elem in self.iter() {
-					n += elem.size_of(ops);
+				if let Some(t) = T::constant_size() {
+					n += self.len() * t;
+				} else {
+					n = self.iter().fold(n, |acc, elem| acc + elem.size_of(ops))
 				}
 				n
 			}
@@ -796,6 +848,15 @@ mod tests {
 	}
 
 	#[test]
+	fn test_large_vec() {
+		const N: usize = 128 * 1024 * 1024;
+		let val = vec![1u8; N];
+		let mut ops = new_malloc_size_ops();
+		assert!(val.size_of(&mut ops) >= N);
+		assert!(val.size_of(&mut ops) < 2 * N);
+	}
+
+	#[test]
 	fn btree_set() {
 		let mut set = BTreeSet::new();
 		for t in 0..100 {
@@ -815,5 +876,33 @@ mod tests {
 
 		// MallocSizeOf is not implemented for [u8; 333]
 		assert_eq!(crate::malloc_size(&Data::<[u8; 333]> { phantom: std::marker::PhantomData }), 0);
+	}
+
+	#[test]
+	fn constant_size() {
+		struct AlwaysTwo(Vec<u8>);
+
+		impl MallocSizeOf for AlwaysTwo {
+			fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+				self.0.size_of(ops)
+			}
+			fn constant_size() -> Option<usize> {
+				Some(2)
+			}
+		}
+
+		assert_eq!(AlwaysTwo::constant_size(), Some(2));
+		assert_eq!(std::cmp::Reverse::<u8>::constant_size(), Some(0));
+		assert_eq!(std::cell::RefCell::<u8>::constant_size(), Some(0));
+		assert_eq!(std::cell::Cell::<u8>::constant_size(), Some(0));
+		assert_eq!(Result::<(), ()>::constant_size(), Some(0));
+		assert_eq!(<(AlwaysTwo, (), [u8; 32], AlwaysTwo)>::constant_size(), Some(2 + 2));
+		assert_eq!(Option::<u8>::constant_size(), Some(0));
+		assert_eq!(<&String>::constant_size(), Some(0));
+
+		assert_eq!(<String>::constant_size(), None);
+		assert_eq!(std::borrow::Cow::<String>::constant_size(), None);
+		assert_eq!(Result::<(), String>::constant_size(), None);
+		assert_eq!(Option::<AlwaysTwo>::constant_size(), None);
 	}
 }
