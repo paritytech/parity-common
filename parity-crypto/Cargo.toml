@@ -37,7 +37,7 @@ criterion = "0.3.0"
 hex-literal = "0.2.1"
 
 [features]
-default = []
+default = ["publickey"]
 # public key crypto utils
 # moved from ethkey module in parity ethereum repository
 publickey = ["secp256k1", "lazy_static", "ethereum-types", "rustc-hex"]
