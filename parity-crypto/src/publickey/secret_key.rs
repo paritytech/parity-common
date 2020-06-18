@@ -235,7 +235,7 @@ impl Secret {
 		key::SecretKey::from_slice(&self[..]).map_err(Into::into)
 	}
 }
-/*
+
 #[deprecated(since="0.6.2", note="please use `copy_from_str` instead, input is not zeroized")]
 impl FromStr for Secret {
 	type Err = Error;
@@ -291,7 +291,7 @@ impl From<key::SecretKey> for Secret {
 		a.into()
 	}
 }
-*/
+
 impl Deref for Secret {
 	type Target = H256;
 
