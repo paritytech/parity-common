@@ -139,7 +139,8 @@ mod tests {
 
 	#[test]
 	fn public_multiplication_verification() {
-		let secret = Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
+		let secret =
+			Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let mut public = generation_point();
 		public_mul_secret(&mut public, &secret).unwrap();
 		assert_eq!(format!("{:x}", public), "8ce0db0b0359ffc5866ba61903cc2518c3675ef2cf380a7e54bde7ea20e6fa1ab45b7617346cd11b7610001ee6ae5b0155c41cad9527cbcdff44ec67848943a4");

@@ -404,7 +404,8 @@ mod tests {
 
 	#[test]
 	fn smoky() {
-		let secret = Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
+		let secret =
+			Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let extended_secret = ExtendedSecret::with_code(secret.clone(), H256::zero());
 
 		// hardened
@@ -451,7 +452,8 @@ mod tests {
 
 	#[test]
 	fn h256_soft_match() {
-		let secret = Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
+		let secret =
+			Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let derivation_secret =
 			H256::from_str("51eaf04f9dbbc1417dc97e789edd0c37ecda88bac490434e367ea81b71b7b015").unwrap();
 
@@ -471,7 +473,8 @@ mod tests {
 
 	#[test]
 	fn h256_hard() {
-		let secret = Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
+		let secret =
+			Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let derivation_secret =
 			H256::from_str("51eaf04f9dbbc1417dc97e789edd0c37ecda88bac490434e367ea81b71b7b015").unwrap();
 		let extended_secret = ExtendedSecret::with_code(secret.clone(), H256::from_low_u64_be(1));
@@ -484,7 +487,8 @@ mod tests {
 
 	#[test]
 	fn test_key_derivation() {
-		let secret = Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
+		let secret =
+			Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let extended_secret = ExtendedSecret::with_code(secret.clone(), H256::from_low_u64_be(1));
 		let extended_public = ExtendedPublic::from_secret(&extended_secret).expect("Extended public should be created");
 

@@ -237,7 +237,7 @@ impl Secret {
 	}
 }
 
-#[deprecated(since="0.6.2", note="please use `copy_from_str` instead, input is not zeroized")]
+#[deprecated(since = "0.6.2", note = "please use `copy_from_str` instead, input is not zeroized")]
 impl FromStr for Secret {
 	type Err = Error;
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -245,7 +245,7 @@ impl FromStr for Secret {
 	}
 }
 
-#[deprecated(since="0.6.2", note="please use `copy_from` instead, input is not zeroized")]
+#[deprecated(since = "0.6.2", note = "please use `copy_from` instead, input is not zeroized")]
 impl From<[u8; 32]> for Secret {
 	fn from(mut k: [u8; 32]) -> Self {
 		let result = Secret { inner: Box::new(H256(k)) };
@@ -254,7 +254,7 @@ impl From<[u8; 32]> for Secret {
 	}
 }
 
-#[deprecated(since="0.6.2", note="please use `copy_from_slice` instead, input is not zeroized")]
+#[deprecated(since = "0.6.2", note = "please use `copy_from_slice` instead, input is not zeroized")]
 impl From<H256> for Secret {
 	fn from(mut s: H256) -> Self {
 		let result = s.0.into();
@@ -263,7 +263,7 @@ impl From<H256> for Secret {
 	}
 }
 
-#[deprecated(since="0.6.2", note="please use `copy_from_str` instead, input is not zeroized")]
+#[deprecated(since = "0.6.2", note = "please use `copy_from_str` instead, input is not zeroized")]
 impl TryFrom<&str> for Secret {
 	type Error = Error;
 
@@ -272,7 +272,7 @@ impl TryFrom<&str> for Secret {
 	}
 }
 
-#[deprecated(since="0.6.2", note="please use `copy_from_slice` instead, input is not zeroized")]
+#[deprecated(since = "0.6.2", note = "please use `copy_from_slice` instead, input is not zeroized")]
 impl TryFrom<&[u8]> for Secret {
 	type Error = Error;
 
@@ -284,7 +284,7 @@ impl TryFrom<&[u8]> for Secret {
 	}
 }
 
-#[deprecated(since="0.6.2", note="please use `copy_from_inner` instead, input is not zeroized")]
+#[deprecated(since = "0.6.2", note = "please use `copy_from_inner` instead, input is not zeroized")]
 impl From<key::SecretKey> for Secret {
 	fn from(key: key::SecretKey) -> Self {
 		let mut a = [0; SECP256K1_SECRET_KEY_SIZE];
@@ -335,7 +335,10 @@ mod tests {
 
 		let mut pow0 = secret.clone();
 		pow0.pow(0).unwrap();
-		assert_eq!(pow0, Secret::copy_from_str(&"0000000000000000000000000000000000000000000000000000000000000001").unwrap());
+		assert_eq!(
+			pow0,
+			Secret::copy_from_str(&"0000000000000000000000000000000000000000000000000000000000000001").unwrap()
+		);
 
 		let mut pow1 = secret.clone();
 		pow1.pow(1).unwrap();
