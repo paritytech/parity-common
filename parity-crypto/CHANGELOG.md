@@ -6,7 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-- Put `Secret` memory on heap.
+- Put `Secret` memory on heap. [#400](https://github.com/paritytech/parity-common/pull/400)
+- Add `copy_from` conversion methods for `Secret`.
+- Deprecate a few `From` implementations in favor of `copy_from`.
 
 ## [0.6.1] - 2020-04-11
 - Add `recover_allowing_all_zero_message()` and `ZeroesAllowedMessage` to accomodate ethereum's `ecrecover` builtin. [#369](https://github.com/paritytech/parity-common/pull/369)
