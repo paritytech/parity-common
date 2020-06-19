@@ -1,6 +1,6 @@
 [package]
 name = "parity-crypto"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "Crypto utils used by ethstore and network."

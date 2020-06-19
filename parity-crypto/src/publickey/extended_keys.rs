@@ -15,6 +15,7 @@
 pub use self::derivation::Error as DerivationError;
 use super::{Public, Secret};
 use ethereum_types::H256;
+use zeroize::Zeroize;
 
 /// Represents label that can be stored as a part of key derivation
 pub trait Label {
@@ -96,11 +97,13 @@ impl ExtendedSecret {
 	where
 		T: Label,
 	{
-		let (derived_key, next_chain_code) = derivation::private(*self.secret, self.chain_code, index);
+		let (mut derived_key, next_chain_code) = derivation::private(*self.secret, self.chain_code, index);
 
-		let derived_secret = Secret::from(derived_key.0);
+		let new_derived_secret = Secret::from(derived_key.0);
 
-		ExtendedSecret::with_code(derived_secret, next_chain_code)
+		derived_key.0.zeroize();
+
+		ExtendedSecret::with_code(new_derived_secret, next_chain_code)
 	}
 
 	/// Private key component of the extended key.
@@ -401,7 +404,8 @@ mod tests {
 
 	#[test]
 	fn smoky() {
-		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
+		let secret =
+			Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let extended_secret = ExtendedSecret::with_code(secret.clone(), H256::zero());
 
 		// hardened
@@ -437,7 +441,7 @@ mod tests {
 		);
 
 		let keypair = ExtendedKeyPair::with_secret(
-			Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap(),
+			Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap(),
 			H256::from_low_u64_be(64),
 		);
 		assert_eq!(
@@ -448,7 +452,8 @@ mod tests {
 
 	#[test]
 	fn h256_soft_match() {
-		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
+		let secret =
+			Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let derivation_secret =
 			H256::from_str("51eaf04f9dbbc1417dc97e789edd0c37ecda88bac490434e367ea81b71b7b015").unwrap();
 
@@ -468,7 +473,8 @@ mod tests {
 
 	#[test]
 	fn h256_hard() {
-		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
+		let secret =
+			Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let derivation_secret =
 			H256::from_str("51eaf04f9dbbc1417dc97e789edd0c37ecda88bac490434e367ea81b71b7b015").unwrap();
 		let extended_secret = ExtendedSecret::with_code(secret.clone(), H256::from_low_u64_be(1));
@@ -481,7 +487,8 @@ mod tests {
 
 	#[test]
 	fn test_key_derivation() {
-		let secret = Secret::from_str("a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
+		let secret =
+			Secret::copy_from_str(&"a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65").unwrap();
 		let extended_secret = ExtendedSecret::with_code(secret.clone(), H256::from_low_u64_be(1));
 		let extended_public = ExtendedPublic::from_secret(&extended_secret).expect("Extended public should be created");
 

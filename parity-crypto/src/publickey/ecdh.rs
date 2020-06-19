@@ -34,7 +34,8 @@ mod tests {
 	#[test]
 	fn test_agree() {
 		// Just some random values for secret/public to check we agree with previous implementation.
-		let secret = Secret::from_str("01a400760945613ff6a46383b250bf27493bfe679f05274916182776f09b28f1").unwrap();
+		let secret =
+			Secret::copy_from_str(&"01a400760945613ff6a46383b250bf27493bfe679f05274916182776f09b28f1").unwrap();
 		let public= Public::from_str("e37f3cbb0d0601dc930b8d8aa56910dd5629f2a0979cc742418960573efc5c0ff96bc87f104337d8c6ab37e597d4f9ffbd57302bc98a825519f691b378ce13f5").unwrap();
 		let shared = agree(&secret, &public);
 

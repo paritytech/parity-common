@@ -27,7 +27,7 @@ pub use self::error::Error;
 pub use self::extended_keys::{Derivation, DerivationError, ExtendedKeyPair, ExtendedPublic, ExtendedSecret};
 pub use self::keypair::{public_to_address, KeyPair};
 pub use self::keypair_generator::Random;
-pub use self::secret_key::Secret;
+pub use self::secret_key::{Secret, ZeroizeSecretKey};
 
 use ethereum_types::H256;
 use lazy_static::lazy_static;
