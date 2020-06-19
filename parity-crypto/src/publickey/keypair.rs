@@ -59,6 +59,7 @@ impl KeyPair {
 	}
 
 	/// Copies a pair from another one
+	#[inline(always)]
 	pub fn from_keypair(sec: key::SecretKey, publ: key::PublicKey) -> Self {
 		let serialized = publ.serialize_uncompressed();
 		let secret = Secret::copy_from_inner(&sec);
