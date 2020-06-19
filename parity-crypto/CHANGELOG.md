@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.6.2] - 2020-06-19
 - Put `Secret` memory on heap. [#400](https://github.com/paritytech/parity-common/pull/400)
 - Add `copy_from_str` conversion methods for `Secret`.
 - Deprecate `From<&str>` in favor of `copy_from_str`.
