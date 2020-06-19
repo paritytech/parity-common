@@ -71,14 +71,6 @@ impl Secret {
 		Ok(Secret { inner: Box::new(h) })
 	}
 
-	/// Creates a `Secret` from the given array.
-	/// Caller is responsible to zeroize input array.
-	pub fn copy_from(key: &[u8; 32]) -> Self {
-		let mut h = H256::zero();
-		h.as_bytes_mut().copy_from_slice(&key[0..32]);
-		Secret { inner: Box::new(h) }
-	}
-
 	/// Creates a `Secret` from the given inner implementation of
 	/// secret key.
 	/// Caller is responsible to zeroize input secret.
@@ -97,9 +89,7 @@ impl Secret {
 	/// Caller is responsible to zeroize input slice.
 	pub fn import_key(key: &[u8]) -> Result<Self, Error> {
 		let secret = key::SecretKey::from_slice(key)?;
-		let result = Secret::copy_from_inner(&secret);
-		ZeroizeSecretKey(secret).zeroize();
-		Ok(result)
+		Ok(secret.into())
 	}
 
 	/// Checks validity of this key.
@@ -124,8 +114,7 @@ impl Secret {
 				let mut key_secret = self.to_secp256k1_secret()?;
 				let other_secret = other.to_secp256k1_secret()?;
 				key_secret.add_assign(&other_secret[..])?;
-				*self = Secret::copy_from_inner(&key_secret);
-				ZeroizeSecretKey(key_secret).zeroize();
+				*self = key_secret.into();
 				ZeroizeSecretKey(other_secret).zeroize();
 
 				Ok(())
@@ -147,8 +136,7 @@ impl Secret {
 				other_secret.mul_assign(super::MINUS_ONE_KEY)?;
 				key_secret.add_assign(&other_secret[..])?;
 
-				*self = Secret::copy_from_inner(&key_secret);
-				ZeroizeSecretKey(key_secret).zeroize();
+				*self = key_secret.into();
 				ZeroizeSecretKey(other_secret).zeroize();
 				Ok(())
 			}
@@ -159,7 +147,7 @@ impl Secret {
 	pub fn dec(&mut self) -> Result<(), Error> {
 		match self.is_zero() {
 			true => {
-				*self = Secret::copy_from_slice(super::MINUS_ONE_KEY)
+				*self = Secret::try_from(super::MINUS_ONE_KEY)
 					.expect("Constructing a secret key from a known-good constant works; qed.");
 				Ok(())
 			}
@@ -167,8 +155,7 @@ impl Secret {
 				let mut key_secret = self.to_secp256k1_secret()?;
 				key_secret.add_assign(super::MINUS_ONE_KEY)?;
 
-				*self = Secret::copy_from_inner(&key_secret);
-				ZeroizeSecretKey(key_secret).zeroize();
+				*self = key_secret.into();
 				Ok(())
 			}
 		}
@@ -187,8 +174,7 @@ impl Secret {
 				let other_secret = other.to_secp256k1_secret()?;
 				key_secret.mul_assign(&other_secret[..])?;
 
-				*self = Secret::copy_from_inner(&key_secret);
-				ZeroizeSecretKey(key_secret).zeroize();
+				*self = key_secret.into();
 				ZeroizeSecretKey(other_secret).zeroize();
 				Ok(())
 			}
@@ -203,8 +189,7 @@ impl Secret {
 				let mut key_secret = self.to_secp256k1_secret()?;
 				key_secret.mul_assign(super::MINUS_ONE_KEY)?;
 
-				*self = Secret::copy_from_inner(&key_secret);
-				ZeroizeSecretKey(key_secret).zeroize();
+				*self = key_secret.into();
 				Ok(())
 			}
 		}
@@ -217,7 +202,7 @@ impl Secret {
 		}
 
 		match pow {
-			0 => *self = Secret::copy_from_inner(&key::ONE_KEY),
+			0 => *self = key::ONE_KEY.into(),
 			1 => (),
 			_ => {
 				let c = self.clone();
@@ -245,8 +230,8 @@ impl FromStr for Secret {
 	}
 }
 
-#[deprecated(since = "0.6.2", note = "please use `copy_from` instead, input is not zeroized")]
 impl From<[u8; 32]> for Secret {
+	#[inline(always)]
 	fn from(mut k: [u8; 32]) -> Self {
 		let result = Secret { inner: Box::new(H256(k)) };
 		k.zeroize();
@@ -254,8 +239,8 @@ impl From<[u8; 32]> for Secret {
 	}
 }
 
-#[deprecated(since = "0.6.2", note = "please use `copy_from_slice` instead, input is not zeroized")]
 impl From<H256> for Secret {
+	#[inline(always)]
 	fn from(mut s: H256) -> Self {
 		let result = s.0.into();
 		s.0.zeroize();
@@ -284,11 +269,12 @@ impl TryFrom<&[u8]> for Secret {
 	}
 }
 
-#[deprecated(since = "0.6.2", note = "please use `copy_from_inner` instead, input is not zeroized")]
 impl From<key::SecretKey> for Secret {
+	#[inline(always)]
 	fn from(key: key::SecretKey) -> Self {
 		let mut a = [0; SECP256K1_SECRET_KEY_SIZE];
 		a.copy_from_slice(&key[0..SECP256K1_SECRET_KEY_SIZE]);
+		ZeroizeSecretKey(key).zeroize();
 		a.into()
 	}
 }

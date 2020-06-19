@@ -8,11 +8,10 @@
 
 //! Key pair (public + secret) description.
 
-use super::{Address, Error, Public, Secret, ZeroizeSecretKey, SECP256K1};
+use super::{Address, Error, Public, Secret, SECP256K1};
 use crate::Keccak256;
 use secp256k1::key;
 use std::fmt;
-use zeroize::Zeroize;
 
 /// Convert public key into the address
 pub fn public_to_address(public: &Public) -> Address {
@@ -62,8 +61,7 @@ impl KeyPair {
 	#[inline(always)]
 	pub fn from_keypair(sec: key::SecretKey, publ: key::PublicKey) -> Self {
 		let serialized = publ.serialize_uncompressed();
-		let secret = Secret::copy_from_inner(&sec);
-		ZeroizeSecretKey(sec).zeroize();
+		let secret = Secret::from(sec);
 		let mut public = Public::default();
 		public.as_bytes_mut().copy_from_slice(&serialized[1..65]);
 

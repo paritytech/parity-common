@@ -99,7 +99,7 @@ impl ExtendedSecret {
 	{
 		let (mut derived_key, next_chain_code) = derivation::private(*self.secret, self.chain_code, index);
 
-		let new_derived_secret = Secret::copy_from(&derived_key.0);
+		let new_derived_secret = Secret::from(derived_key.0);
 
 		derived_key.0.zeroize();
 
@@ -397,7 +397,7 @@ mod tests {
 		F: Fn(ExtendedSecret) -> ExtendedSecret,
 	{
 		let (private_seed, chain_code) = master_chain_basic();
-		let extended_secret = ExtendedSecret::with_code(Secret::copy_from(&private_seed.0), chain_code);
+		let extended_secret = ExtendedSecret::with_code(Secret::from(private_seed.0), chain_code);
 		let derived = f(extended_secret);
 		assert_eq!(**derived.as_raw(), test_private);
 	}
