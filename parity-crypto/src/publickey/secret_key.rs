@@ -71,15 +71,6 @@ impl Secret {
 		Ok(Secret { inner: Box::new(h) })
 	}
 
-	/// Creates a `Secret` from the given inner implementation of
-	/// secret key.
-	/// Caller is responsible to zeroize input secret.
-	pub fn copy_from_inner(key: &key::SecretKey) -> Self {
-		let mut h = H256::zero();
-		h.as_bytes_mut().copy_from_slice(&key[0..SECP256K1_SECRET_KEY_SIZE]);
-		Secret { inner: Box::new(h) }
-	}
-
 	/// Creates zero key, which is invalid for crypto operations, but valid for math operation.
 	pub fn zero() -> Self {
 		Secret { inner: Box::new(H256::zero()) }
