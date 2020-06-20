@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.7.0] - 2020-06-20
+- Added `const_size` to `MallocSizeOf` to optimize it for flat collections. [#398](https://github.com/paritytech/parity-common/pull/398)
+- Exported `MallocShallowSizeOf`. [#399](https://github.com/paritytech/parity-common/pull/399)
+- Updated dependencies.
+
 ## [0.6.1] - 2020-04-15
 - Fix compilation on Windows for no-std. [#375](https://github.com/paritytech/parity-common/pull/375)
 - Prevent multiple versions from being linked into the same program. [#363](https://github.com/paritytech/parity-common/pull/363)
