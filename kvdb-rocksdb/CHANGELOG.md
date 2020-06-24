@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.9.0] - 2020-06-20
+## [0.9.0] - 2020-06-24
 - Updated `kvdb` to 0.7. [#402](https://github.com/paritytech/parity-common/pull/402)
 
 ## [0.8.0] - 2020-05-05
