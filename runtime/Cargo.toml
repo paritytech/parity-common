@@ -12,8 +12,10 @@ keywords = ["parity", "runtime", "tokio"]
 include = ["Cargo.toml", "src/**/*.rs", "README.md", "CHANGELOG.md"]
 
 [dependencies]
-futures = "0.1"
-tokio = "0.1.22"
+futures = { version = "0.3", default-features = false, features = ["compat"] }
+futures01 = { package = "futures", version = "0.1" }
+tokio-compat = "0.1"
+tokio = { version = "0.2", features = ["full"] }
 
 [features]
 test-helpers = []
