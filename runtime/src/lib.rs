@@ -17,7 +17,7 @@
 //! Tokio Runtime wrapper.
 
 use futures::compat::*;
-use futures01::Future as Future01;
+use futures01::{Future as Future01, IntoFuture as IntoFuture01};
 use std::{fmt, future::Future, thread};
 pub use tokio_compat::runtime::{Builder as TokioRuntimeBuilder, Runtime as TokioRuntime, TaskExecutor};
 
@@ -136,10 +136,11 @@ impl Executor {
 	/// Spawn a legacy future on this runtime
 	pub fn spawn<R>(&self, r: R)
 	where
-		R: Future01<Item = (), Error = ()> + Send + 'static,
+		R: IntoFuture01<Item = (), Error = ()> + Send + 'static,
+		R::Future: Send + 'static,
 	{
 		self.spawn_std(async move {
-			let _ = r.compat().await;
+			let _ = r.into_future().compat().await;
 		})
 	}
 
