@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.2.0] - 2020-07-16
+## [0.1.2] - 2020-07-16
 ### Changed
 - Port runtime to tokio-compat. [#403](https://github.com/paritytech/parity-common/pull/403)
 
