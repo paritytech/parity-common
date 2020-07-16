@@ -16,26 +16,19 @@
 
 //! Simple example, illustating usage of runtime wrapper.
 
-use futures::{Future, Stream};
 use parity_runtime::Runtime;
-use std::thread::park_timeout;
-use std::time::Duration;
-use tokio::fs::read_dir;
+use std::{thread::park_timeout, time::Duration};
+use tokio::{fs::read_dir, stream::*};
 
 /// Read current directory in a future, which is executed in the created runtime
 fn main() {
-	let fut = read_dir(".")
-		.flatten_stream()
-		.for_each(|dir| {
-			println!("{:?}", dir.path());
-			Ok(())
-		})
-		.map_err(|err| {
-			eprintln!("Error: {:?}", err);
-			()
-		});
 	let runtime = Runtime::with_default_thread_count();
-	runtime.executor().spawn(fut);
+	runtime.executor().spawn_std(async move {
+		let mut dirs = read_dir(".").await.unwrap();
+		while let Some(dir) = dirs.try_next().await.expect("Error") {
+			println!("{:?}", dir.path());
+		}
+	});
 	let timeout = Duration::from_secs(3);
 	park_timeout(timeout);
 }

@@ -16,11 +16,10 @@
 
 //! Tokio Runtime wrapper.
 
-use futures::{future, Future, IntoFuture};
-use std::sync::mpsc;
-use std::{fmt, thread};
-pub use tokio::runtime::{Builder as TokioRuntimeBuilder, Runtime as TokioRuntime, TaskExecutor};
-pub use tokio::timer::Delay;
+use futures::compat::*;
+use futures01::{Future as Future01, IntoFuture as IntoFuture01};
+use std::{fmt, future::Future, thread};
+pub use tokio_compat::runtime::{Builder as TokioRuntimeBuilder, Runtime as TokioRuntime, TaskExecutor};
 
 /// Runtime for futures.
 ///
@@ -30,19 +29,21 @@ pub struct Runtime {
 	handle: RuntimeHandle,
 }
 
+const RUNTIME_BUILD_PROOF: &str =
+	"Building a Tokio runtime will only fail when mio components cannot be initialized (catastrophic)";
+
 impl Runtime {
 	fn new(runtime_bldr: &mut TokioRuntimeBuilder) -> Self {
-		let mut runtime = runtime_bldr.build().expect(
-			"Building a Tokio runtime will only fail when mio components \
-			 cannot be initialized (catastrophic)",
-		);
-		let (stop, stopped) = futures::oneshot();
-		let (tx, rx) = mpsc::channel();
+		let mut runtime = runtime_bldr.build().expect(RUNTIME_BUILD_PROOF);
+
+		let (stop, stopped) = tokio::sync::oneshot::channel();
+		let (tx, rx) = std::sync::mpsc::channel();
 		let handle = thread::spawn(move || {
-			tx.send(runtime.executor()).expect("Rx is blocking upper thread.");
-			runtime
-				.block_on(futures::empty().select(stopped).map(|_| ()).map_err(|_| ()))
-				.expect("Tokio runtime should not have unhandled errors.");
+			let executor = runtime.executor();
+			runtime.block_on_std(async move {
+				tx.send(executor).expect("Rx is blocking upper thread.");
+				let _ = stopped.await;
+			});
 		});
 		let executor = rx.recv().expect("tx is transfered to a newly spawned thread.");
 
@@ -110,6 +111,10 @@ impl fmt::Debug for Mode {
 	}
 }
 
+fn block_on<F: Future<Output = ()> + Send + 'static>(r: F) {
+	tokio::runtime::Builder::new().enable_all().basic_scheduler().build().expect(RUNTIME_BUILD_PROOF).block_on(r)
+}
+
 #[derive(Debug, Clone)]
 pub struct Executor {
 	inner: Mode,
@@ -128,37 +133,49 @@ impl Executor {
 		Executor { inner: Mode::ThreadPerFuture }
 	}
 
-	/// Spawn a future on this runtime
+	/// Spawn a legacy future on this runtime
 	pub fn spawn<R>(&self, r: R)
 	where
-		R: IntoFuture<Item = (), Error = ()> + Send + 'static,
+		R: IntoFuture01<Item = (), Error = ()> + Send + 'static,
 		R::Future: Send + 'static,
 	{
-		match self.inner {
-			Mode::Tokio(ref executor) => executor.spawn(r.into_future()),
-			Mode::Sync => {
-				let _ = r.into_future().wait();
+		self.spawn_std(async move {
+			let _ = r.into_future().compat().await;
+		})
+	}
+
+	/// Spawn an std future on this runtime
+	pub fn spawn_std<R>(&self, r: R)
+	where
+		R: Future<Output = ()> + Send + 'static,
+	{
+		match &self.inner {
+			Mode::Tokio(executor) => {
+				let _ = executor.spawn_handle_std(r);
 			}
+			Mode::Sync => block_on(r),
 			Mode::ThreadPerFuture => {
-				thread::spawn(move || {
-					let _ = r.into_future().wait();
-				});
+				thread::spawn(move || block_on(r));
 			}
 		}
 	}
 }
 
-impl<F: Future<Item = (), Error = ()> + Send + 'static> future::Executor<F> for Executor {
-	fn execute(&self, future: F) -> Result<(), future::ExecuteError<F>> {
-		match self.inner {
-			Mode::Tokio(ref executor) => executor.execute(future),
+impl<F: Future01<Item = (), Error = ()> + Send + 'static> futures01::future::Executor<F> for Executor {
+	fn execute(&self, future: F) -> Result<(), futures01::future::ExecuteError<F>> {
+		match &self.inner {
+			Mode::Tokio(executor) => executor.execute(future),
 			Mode::Sync => {
-				let _ = future.wait();
+				block_on(async move {
+					let _ = future.compat().await;
+				});
 				Ok(())
 			}
 			Mode::ThreadPerFuture => {
 				thread::spawn(move || {
-					let _ = future.wait();
+					block_on(async move {
+						let _ = future.compat().await;
+					})
 				});
 				Ok(())
 			}
@@ -168,7 +185,7 @@ impl<F: Future<Item = (), Error = ()> + Send + 'static> future::Executor<F> for 
 
 /// A handle to a runtime. Dropping the handle will cause runtime to shutdown.
 pub struct RuntimeHandle {
-	close: Option<futures::sync::oneshot::Sender<()>>,
+	close: Option<tokio::sync::oneshot::Sender<()>>,
 	handle: Option<thread::JoinHandle<()>>,
 }
 
