@@ -33,9 +33,9 @@ impl Hasher for PlainHasher {
 		let mut prefix_bytes = self.prefix.to_le_bytes();
 
 		unroll! {
-			for _i in 0..8 {
+			for i in 0..8 {
 				unsafe {
-					prefix_bytes[_i] ^= (*bytes_ptr ^ *bytes_ptr.offset(8)) ^ (*bytes_ptr.offset(16) ^ *bytes_ptr.offset(24));
+					prefix_bytes[i] ^= (*bytes_ptr ^ *bytes_ptr.offset(8)) ^ (*bytes_ptr.offset(16) ^ *bytes_ptr.offset(24));
 					bytes_ptr = bytes_ptr.offset(1);
 				}
 			}
