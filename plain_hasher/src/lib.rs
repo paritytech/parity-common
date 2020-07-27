@@ -32,7 +32,7 @@ impl Hasher for PlainHasher {
 
 		unroll! {
 			for i in 0..8 {
-                prefix_bytes[i] ^= (bytes[i] ^ bytes[i + 8]) ^ (bytes[i + 16] ^ bytes[i + 24]);
+				prefix_bytes[i] ^= (bytes[i] ^ bytes[i + 8]) ^ (bytes[i + 16] ^ bytes[i + 24]);
 			}
 		}
 
