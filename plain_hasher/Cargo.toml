@@ -1,7 +1,7 @@
 [package]
 name = "plain_hasher"
 description = "Hasher for 32-byte keys."
-version = "0.2.3"
+version = "0.3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT OR Apache-2.0"
 keywords = ["hash", "hasher"]
@@ -16,8 +16,6 @@ crunchy = { version = "0.2.2", default-features = false }
 criterion = "0.3.0"
 
 [features]
-default = ["std"]
-std = ["crunchy/std"]
 
 [[bench]]
 name = "bench"
