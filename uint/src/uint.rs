@@ -1115,13 +1115,15 @@ macro_rules! construct_uint {
 
 			/// Converts from big endian representation bytes in memory.
 			pub fn from_big_endian(slice: &[u8]) -> Self {
+				use $crate::byteorder::{ByteOrder, BigEndian};
 				assert!($n_words * 8 >= slice.len());
 
+				let mut padded = [0u8; $n_words * 8];
+				padded[$n_words * 8 - slice.len() .. $n_words * 8].copy_from_slice(&slice);
+
 				let mut ret = [0; $n_words];
-				unsafe {
-					let ret_u8: &mut [u8; $n_words * 8] = $crate::core_::mem::transmute(&mut ret);
-					ret_u8[0..slice.len()].copy_from_slice(slice);
-					ret_u8[0..slice.len()].reverse();
+				for i in 0..$n_words {
+					ret[$n_words - i - 1] = BigEndian::read_u64(&padded[8 * i..]);
 				}
 
 				$name(ret)
@@ -1129,12 +1131,15 @@ macro_rules! construct_uint {
 
 			/// Converts from little endian representation bytes in memory.
 			pub fn from_little_endian(slice: &[u8]) -> Self {
+				use $crate::byteorder::{ByteOrder, LittleEndian};
 				assert!($n_words * 8 >= slice.len());
 
+				let mut padded = [0u8; $n_words * 8];
+				padded[0..slice.len()].copy_from_slice(&slice);
+
 				let mut ret = [0; $n_words];
-				unsafe {
-					let ret_u8: &mut [u8; $n_words * 8] = $crate::core_::mem::transmute(&mut ret);
-					ret_u8[0..slice.len()].copy_from_slice(&slice);
+				for i in 0..$n_words {
+					ret[i] = LittleEndian::read_u64(&padded[8 * i..]);
 				}
 
 				$name(ret)
