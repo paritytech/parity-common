@@ -139,6 +139,16 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	fn io_stats(&self, _kind: IoStatsKind) -> IoStats {
 		IoStats::empty()
 	}
+
+	/// Check for the existence of a value by key.
+	fn has_key(&self, col: u32, key: &[u8]) -> io::Result<bool> {
+		self.get(col, key).map(|opt| opt.is_some())
+	}
+
+	/// Check for the existence of a value by prefix.
+	fn has_prefix(&self, col: u32, prefix: &[u8]) -> bool {
+		self.get_by_prefix(col, prefix).is_some()
+	}
 }
 
 /// For a given start prefix (inclusive), returns the correct end prefix (non-inclusive).
