@@ -23,7 +23,7 @@ use crate::publickey::Error;
 /// Represents secret key
 pub struct Secret {
 	// We're using `region::lock` to avoid swapping secret data to disk.
-	// Since don't propagate the error if a syscall fails,
+	// Since we don't propagate the error if a syscall fails,
 	// the guard returned by `region::lock` is optional.
 	mlock_guard: Option<region::LockGuard>,
 	inner: Box<H256>,
@@ -231,7 +231,6 @@ impl Clone for Secret {
 	fn clone_from(&mut self, other: &Self) {
 		self.inner.as_bytes_mut().copy_from_slice(other.inner.as_bytes());
 	}
-
 }
 
 impl PartialEq for Secret {
