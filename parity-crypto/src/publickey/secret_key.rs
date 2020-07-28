@@ -21,14 +21,18 @@ use zeroize::Zeroize;
 use crate::publickey::Error;
 
 /// Represents secret key
-#[derive(Clone, PartialEq, Eq)]
 pub struct Secret {
+	// We're using `region::lock` to avoid swapping secret data to disk.
+	// Since don't propagate the error if a syscall fails,
+	// the guard returned by `region::lock` is optional.
+	mlock_guard: Option<region::LockGuard>,
 	inner: Box<H256>,
 }
 
 impl Drop for Secret {
 	fn drop(&mut self) {
-		self.inner.0.zeroize()
+		self.inner.0.zeroize();
+		let _ = self.mlock_guard.take();
 	}
 }
 
@@ -57,9 +61,9 @@ impl Secret {
 		if key.len() != 32 {
 			return None;
 		}
-		let mut h = H256::zero();
-		h.as_bytes_mut().copy_from_slice(&key[0..32]);
-		Some(Secret { inner: Box::new(h) })
+		let mut me = Self::zero();
+		me.inner.as_bytes_mut().copy_from_slice(&key[0..32]);
+		Some(me)
 	}
 
 	/// Creates a `Secret` from the given `str` representation,
@@ -67,13 +71,18 @@ impl Secret {
 	/// the secret.
 	/// Caller is responsible to zeroize input slice.
 	pub fn copy_from_str(s: &str) -> Result<Self, Error> {
-		let h = H256::from_str(s).map_err(|e| Error::Custom(format!("{:?}", e)))?;
-		Ok(Secret { inner: Box::new(h) })
+		let mut h = H256::from_str(s).map_err(|e| Error::Custom(format!("{:?}", e)))?;
+		let mut me = Self::zero();
+		me.inner.as_bytes_mut().swap_with_slice(h.as_bytes_mut());
+		Ok(me)
 	}
 
 	/// Creates zero key, which is invalid for crypto operations, but valid for math operation.
 	pub fn zero() -> Self {
-		Secret { inner: Box::new(H256::zero()) }
+		let inner = Box::new(H256::zero());
+		let bytes = inner.as_bytes();
+		let mlock_guard = region::lock(bytes.as_ptr(), bytes.len()).ok();
+		Self { mlock_guard, inner }
 	}
 
 	/// Imports and validates the key.
@@ -98,7 +107,7 @@ impl Secret {
 		match (self.is_zero(), other.is_zero()) {
 			(true, true) | (false, true) => Ok(()),
 			(true, false) => {
-				*self = other.clone();
+				self.clone_from(other);
 				Ok(())
 			}
 			(false, false) => {
@@ -118,7 +127,7 @@ impl Secret {
 		match (self.is_zero(), other.is_zero()) {
 			(true, true) | (false, true) => Ok(()),
 			(true, false) => {
-				*self = other.clone();
+				self.clone_from(other);
 				self.neg()
 			}
 			(false, false) => {
@@ -213,6 +222,26 @@ impl Secret {
 	}
 }
 
+impl Clone for Secret {
+	fn clone(&self) -> Self {
+		let mut copy = Self::zero();
+		copy.clone_from(self);
+		copy
+	}
+	fn clone_from(&mut self, other: &Self) {
+		self.inner.as_bytes_mut().copy_from_slice(other.inner.as_bytes());
+	}
+
+}
+
+impl PartialEq for Secret {
+	fn eq(&self, other: &Self) -> bool {
+		self.inner == other.inner
+	}
+}
+
+impl Eq for Secret {}
+
 #[deprecated(since = "0.6.2", note = "please use `copy_from_str` instead, input is not zeroized")]
 impl FromStr for Secret {
 	type Err = Error;
@@ -224,18 +253,21 @@ impl FromStr for Secret {
 impl From<[u8; 32]> for Secret {
 	#[inline(always)]
 	fn from(mut k: [u8; 32]) -> Self {
-		let result = Secret { inner: Box::new(H256(k)) };
+		let mut me = Self::zero();
+		let mut secret = H256(k);
+		me.inner.as_bytes_mut().swap_with_slice(secret.as_bytes_mut());
 		k.zeroize();
-		result
+		me
 	}
 }
 
 impl From<H256> for Secret {
 	#[inline(always)]
 	fn from(mut s: H256) -> Self {
-		let result = s.0.into();
+		let mut me = Self::zero();
+		me.inner.as_bytes_mut().swap_with_slice(s.as_bytes_mut());
 		s.0.zeroize();
-		result
+		me
 	}
 }
 
@@ -256,7 +288,7 @@ impl TryFrom<&[u8]> for Secret {
 		if b.len() != SECP256K1_SECRET_KEY_SIZE {
 			return Err(Error::InvalidSecretKey);
 		}
-		Ok(Self { inner: Box::new(H256::from_slice(b)) })
+		Ok(Self::copy_from_slice(b).expect("checked len above; qed"))
 	}
 }
 
