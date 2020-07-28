@@ -23,6 +23,13 @@ use crate::publickey::Error;
 /// Represents secret key
 pub struct Secret {
 	// We're using `region::lock` to avoid swapping secret data to disk.
+	//
+	// The potential error is ignored as this security measure is optional
+	// and the syscall may fail due to multiple reasons, e.g. on windows
+	// there is a small amount of maximal pages a process can lock by default.
+	// Also it's not guaranteed that a memory page won't be written to disk,
+	// e.g. in case of hibernation or memory starvation.
+	//
 	// Since we don't propagate the error if a syscall fails,
 	// the guard returned by `region::lock` is optional.
 	mlock_guard: Option<region::LockGuard>,
@@ -32,6 +39,10 @@ pub struct Secret {
 impl Drop for Secret {
 	fn drop(&mut self) {
 		self.inner.0.zeroize();
+		// `region::LockGuard::drop` will panic only if
+		// `region::unlock()` has failed for some reason
+		// AND `debug_assertions` are enabled.
+		// https://docs.rs/region/2.2.0/src/region/lock.rs.html#86-91
 		let _ = self.mlock_guard.take();
 	}
 }
@@ -81,6 +92,7 @@ impl Secret {
 	pub fn zero() -> Self {
 		let inner = Box::new(H256::zero());
 		let bytes = inner.as_bytes();
+		// Lock the memory page and convert the result to `Option`.
 		let mlock_guard = region::lock(bytes.as_ptr(), bytes.len()).ok();
 		Self { mlock_guard, inner }
 	}
