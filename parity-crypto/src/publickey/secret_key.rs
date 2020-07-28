@@ -93,8 +93,14 @@ impl Secret {
 	pub fn zero() -> Self {
 		let inner = Box::new(H256::zero());
 		let bytes = inner.as_bytes();
-		// Lock the memory page and convert the result to `Option`.
-		let mlock_guard = region::lock(bytes.as_ptr(), bytes.len()).ok();
+		// Try to lock the memory page and convert the result to `Option`.
+		let mlock_guard = match region::lock(bytes.as_ptr(), bytes.len()) {
+			Ok(guard) => Some(guard),
+			Err(e) => {
+				log::warn!("Failed to lock memory page with a Secret: {}", e);
+				None
+			}
+		};
 		Self { mlock_guard, inner }
 	}
 
