@@ -53,16 +53,7 @@ mod usable_size {
 			feature = "weealloc-global",
 			feature = "dlmalloc-global",
 		))] {
-
-			// do not try system allocator
-
-			/// Warning this is for compatibility only.
-			/// This function does panic: `estimate-heapsize` feature needs to be activated
-			/// to avoid this function call.
-			pub unsafe extern "C" fn malloc_usable_size(_ptr: *const c_void) -> usize {
-				unreachable!("estimate heapsize only")
-			}
-
+			// Compile error if you try and use malloc_usable_size.
 		} else if #[cfg(target_os = "windows")] {
 
 			use winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
