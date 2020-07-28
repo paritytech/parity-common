@@ -84,7 +84,8 @@ impl Secret {
 	pub fn copy_from_str(s: &str) -> Result<Self, Error> {
 		let mut h = H256::from_str(s).map_err(|e| Error::Custom(format!("{:?}", e)))?;
 		let mut me = Self::zero();
-		me.inner.as_bytes_mut().swap_with_slice(h.as_bytes_mut());
+		me.inner.as_bytes_mut().copy_from_slice(h.as_bytes());
+		h.0.zeroize();
 		Ok(me)
 	}
 
@@ -266,7 +267,8 @@ impl From<[u8; 32]> for Secret {
 	fn from(mut k: [u8; 32]) -> Self {
 		let mut me = Self::zero();
 		let mut secret = H256(k);
-		me.inner.as_bytes_mut().swap_with_slice(secret.as_bytes_mut());
+		me.inner.as_bytes_mut().copy_from_slice(secret.as_bytes());
+		secret.0.zeroize();
 		k.zeroize();
 		me
 	}
@@ -276,7 +278,7 @@ impl From<H256> for Secret {
 	#[inline(always)]
 	fn from(mut s: H256) -> Self {
 		let mut me = Self::zero();
-		me.inner.as_bytes_mut().swap_with_slice(s.as_bytes_mut());
+		me.inner.as_bytes_mut().copy_from_slice(s.as_bytes());
 		s.0.zeroize();
 		me
 	}
