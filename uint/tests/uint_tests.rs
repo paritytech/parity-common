@@ -56,6 +56,9 @@ fn uint256_checked_ops() {
 	let a = U256::from(10);
 	let b = !U256::from(1);
 
+	assert_eq!(a.checked_pow(b), None);
+	assert_eq!(a.checked_pow(z), Some(1.into()));
+
 	assert_eq!(a.checked_add(b), None);
 	assert_eq!(a.checked_add(a), Some(20.into()));
 
