@@ -899,6 +899,14 @@ macro_rules! construct_uint {
 				(res, overflow)
 			}
 
+			/// Checked exponentiation. Returns `None` if overflow occurred.
+			pub fn checked_pow(self, expon: $name) -> Option<$name> {
+				match self.overflowing_pow(expon) {
+					(_, true) => None,
+					(val, _) => Some(val),
+				}
+			}
+
 			/// Add with overflow.
 			#[inline(always)]
 			pub fn overflowing_add(self, other: $name) -> ($name, bool) {
