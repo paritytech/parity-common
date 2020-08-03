@@ -23,20 +23,18 @@ matrix:
       addons:
         chrome: stable
         firefox: latest
-      install:
-        - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | sh
-        - source ~/.nvm/nvm.sh
-        - nvm install --lts
-        - npm install -g chromedriver
-        - npm install -g geckodriver@1.19.1 # https://github.com/rustwasm/wasm-bindgen/issues/2261
-        - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-        - which chromedriver
-        - which geckodriver
       rust: stable
   allow_failures:
     - rust: nightly
 install:
+  - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | sh
+  - source ~/.nvm/nvm.sh
+  - nvm install --lts
+  - npm install -g chromedriver
+  - npm install -g geckodriver@1.19.1 # https://github.com/rustwasm/wasm-bindgen/issues/2261
   - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+  - which chromedriver
+  - which geckodriver
 script:
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
     cargo fmt -- --check;
