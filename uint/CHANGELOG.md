@@ -6,7 +6,8 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 - Added a manual impl of `Eq` and `Hash`. [#390](https://github.com/paritytech/parity-common/pull/390)
-- Remove some unsafe code and add big-endian support. [#407](https://github.com/paritytech/parity-common/pull/407)
+- Removed some unsafe code and add big-endian support. [#407](https://github.com/paritytech/parity-common/pull/407)
+- Added `checked_pow`. [#417](https://github.com/paritytech/parity-common/pull/417)
 
 ## [0.8.3] - 2020-04-27
 - Added `arbitrary` feature. [#378](https://github.com/paritytech/parity-common/pull/378)
