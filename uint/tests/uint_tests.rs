@@ -56,8 +56,12 @@ fn uint256_checked_ops() {
 	let a = U256::from(10);
 	let b = !U256::from(1);
 
-	assert_eq!(a.checked_pow(b), None);
-	assert_eq!(a.checked_pow(z), Some(1.into()));
+	assert_eq!(U256::from(10).checked_pow(U256::from(0)), Some(U256::from(1)));
+	assert_eq!(U256::from(10).checked_pow(U256::from(1)), Some(U256::from(10)));
+	assert_eq!(U256::from(10).checked_pow(U256::from(2)), Some(U256::from(100)));
+	assert_eq!(U256::from(10).checked_pow(U256::from(3)), Some(U256::from(1000)));
+	assert_eq!(U256::from(10).checked_pow(U256::from(20)), Some(U256::exp10(20)));
+	assert_eq!(U256::from(2).checked_pow(U256::from(0x100)), None);
 
 	assert_eq!(a.checked_add(b), None);
 	assert_eq!(a.checked_add(a), Some(20.into()));
@@ -1188,6 +1192,10 @@ pub mod laws {
 				quickcheck! {
 					fn pow_mul(x: $uint_ty) -> TestResult {
 						if x.overflowing_pow($uint_ty::from(2)).1 || x.overflowing_pow($uint_ty::from(3)).1 {
+							// On overflow `checked_pow` should return `None`.
+							assert_eq!(x.checked_pow($uint_ty::from(2)), None);
+							assert_eq!(x.checked_pow($uint_ty::from(3)), None);
+
 							return TestResult::discard();
 						}
 
