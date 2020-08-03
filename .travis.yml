@@ -21,7 +21,6 @@ matrix:
     - os: osx
       osx_image: xcode11.3
       addons:
-        chrome: stable
         firefox: latest
       rust: stable
   allow_failures:
@@ -30,10 +29,8 @@ install:
   - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | sh
   - source ~/.nvm/nvm.sh
   - nvm install --lts
-  - npm install -g chromedriver
   - npm install -g geckodriver@1.19.1 # https://github.com/rustwasm/wasm-bindgen/issues/2261
   - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-  - which chromedriver
   - which geckodriver
 script:
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
@@ -59,6 +56,6 @@ script:
   - cd primitive-types/ && cargo test --no-default-features --features=serde_no_std && cd ..
   - cd rlp/ && cargo test --no-default-features && cargo check --benches && cd ..
   - cd triehash/ && cargo check --benches && cd ..
-  - cd kvdb-web/ && wasm-pack test --headless --firefox --chrome && cd ..
+  - cd kvdb-web/ && wasm-pack test --headless --firefox && cd ..
   - cd ethbloom/ && cargo test --all-features && cd ..
   - cd ethereum-types/ && cargo test --all-features && cd ..
