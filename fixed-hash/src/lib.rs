@@ -1,4 +1,4 @@
-// Copyright 2015-2017 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -18,10 +18,6 @@ pub extern crate alloc as alloc_;
 #[doc(hidden)]
 pub use core as core_;
 
-#[cfg(all(feature = "libc", not(target_os = "unknown")))]
-#[doc(hidden)]
-pub use libc;
-
 // This disables a warning for unused #[macro_use(..)]
 // which is incorrect since the compiler does not check
 // for all available configurations.
@@ -38,10 +34,6 @@ pub use static_assertions::const_assert;
 #[doc(hidden)]
 pub use byteorder;
 
-#[cfg(not(feature = "libc"))]
-#[doc(hidden)]
-pub mod libc {}
-
 #[cfg(feature = "rustc-hex")]
 #[doc(hidden)]
 pub use rustc_hex;
@@ -53,6 +45,10 @@ pub use rand;
 #[cfg(feature = "quickcheck")]
 #[doc(hidden)]
 pub use quickcheck;
+
+#[cfg(feature = "arbitrary")]
+#[doc(hidden)]
+pub use arbitrary;
 
 #[macro_use]
 mod hash;

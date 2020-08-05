@@ -1,4 +1,4 @@
-// Copyright 2015-2019 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -20,6 +20,26 @@ construct_uint! {
 	pub struct U512(8);
 }
 
+#[cfg(feature = "std")]
+#[test]
+fn hash_impl_is_the_same_as_for_a_slice() {
+	use core::hash::{Hash, Hasher as _};
+	use std::collections::hash_map::DefaultHasher;
+
+	let uint_hash = {
+		let mut h = DefaultHasher::new();
+		let uint = U256::from(123u64);
+		Hash::hash(&uint, &mut h);
+		h.finish()
+	};
+	let slice_hash = {
+		let mut h = DefaultHasher::new();
+		Hash::hash(&[123u64, 0, 0, 0], &mut h);
+		h.finish()
+	};
+	assert_eq!(uint_hash, slice_hash);
+}
+
 #[test]
 fn u128_conversions() {
 	let mut a = U256::from(u128::max_value());
@@ -35,6 +55,14 @@ fn uint256_checked_ops() {
 	let z = U256::from(0);
 	let a = U256::from(10);
 	let b = !U256::from(1);
+
+	assert_eq!(U256::from(10).checked_pow(U256::from(0)), Some(U256::from(1)));
+	assert_eq!(U256::from(10).checked_pow(U256::from(1)), Some(U256::from(10)));
+	assert_eq!(U256::from(10).checked_pow(U256::from(2)), Some(U256::from(100)));
+	assert_eq!(U256::from(10).checked_pow(U256::from(3)), Some(U256::from(1000)));
+	assert_eq!(U256::from(10).checked_pow(U256::from(20)), Some(U256::exp10(20)));
+	assert_eq!(U256::from(2).checked_pow(U256::from(0x100)), None);
+	assert_eq!(U256::max_value().checked_pow(U256::from(2)), None);
 
 	assert_eq!(a.checked_add(b), None);
 	assert_eq!(a.checked_add(a), Some(20.into()));
@@ -281,7 +309,6 @@ fn uint256_bits_test() {
 }
 
 #[test]
-#[cfg_attr(feature = "dev", allow(eq_op))]
 fn uint256_comp_test() {
 	let small = U256([10u64, 0, 0, 0]);
 	let big = U256([0x8C8C3EE70C644118u64, 0x0209E7378231E632, 0, 0]);
@@ -296,6 +323,10 @@ fn uint256_comp_test() {
 	assert!(bigger >= big);
 	assert!(bigger >= small);
 	assert!(small <= small);
+	assert_eq!(small, small);
+	assert_eq!(biggest, biggest);
+	assert_ne!(big, biggest);
+	assert_ne!(big, bigger);
 }
 
 #[test]
@@ -990,6 +1021,12 @@ fn from_big_endian() {
 	let number = U256::from_big_endian(&source[..]);
 
 	assert_eq!(U256::from(1), number);
+
+	let number = U256::from_big_endian(&[]);
+	assert_eq!(U256::zero(), number);
+
+	let number = U256::from_big_endian(&[1]);
+	assert_eq!(U256::from(1), number);
 }
 
 #[test]
@@ -1004,10 +1041,10 @@ fn into_fixed_array() {
 fn test_u256_from_fixed_array() {
 	let ary = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 123];
 	let num: U256 = ary.into();
-	assert_eq!(num, U256::from(std::u64::MAX) + 1 + 123);
+	assert_eq!(num, U256::from(core::u64::MAX) + 1 + 123);
 
 	let a_ref: &U256 = &ary.into();
-	assert_eq!(a_ref, &(U256::from(std::u64::MAX) + 1 + 123));
+	assert_eq!(a_ref, &(U256::from(core::u64::MAX) + 1 + 123));
 }
 
 #[test]
@@ -1156,6 +1193,10 @@ pub mod laws {
 				quickcheck! {
 					fn pow_mul(x: $uint_ty) -> TestResult {
 						if x.overflowing_pow($uint_ty::from(2)).1 || x.overflowing_pow($uint_ty::from(3)).1 {
+							// On overflow `checked_pow` should return `None`.
+							assert_eq!(x.checked_pow($uint_ty::from(2)), None);
+							assert_eq!(x.checked_pow($uint_ty::from(3)), None);
+
 							return TestResult::discard();
 						}
 

@@ -1,3 +1,11 @@
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 //!
 //! ```
 //! use hex_literal::hex;
@@ -46,6 +54,8 @@ use core::{mem, ops};
 
 use crunchy::unroll;
 use fixed_hash::*;
+#[cfg(feature = "codec")]
+use impl_codec::impl_fixed_hash_codec;
 use impl_rlp::impl_fixed_hash_rlp;
 #[cfg(feature = "serialize")]
 use impl_serde::impl_fixed_hash_serde;
@@ -60,6 +70,10 @@ construct_fixed_hash! {
 	pub struct Bloom(BLOOM_SIZE);
 }
 impl_fixed_hash_rlp!(Bloom, BLOOM_SIZE);
+#[cfg(feature = "serialize")]
+impl_fixed_hash_serde!(Bloom, BLOOM_SIZE);
+#[cfg(feature = "codec")]
+impl_fixed_hash_codec!(Bloom, BLOOM_SIZE);
 
 /// Returns log2.
 fn log2(x: usize) -> u32 {
@@ -255,9 +269,6 @@ impl<'a> From<&'a Bloom> for BloomRef<'a> {
 		BloomRef(&bloom.0)
 	}
 }
-
-#[cfg(feature = "serialize")]
-impl_fixed_hash_serde!(Bloom, BLOOM_SIZE);
 
 #[cfg(test)]
 mod tests {

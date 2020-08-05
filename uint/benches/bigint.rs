@@ -1,4 +1,4 @@
-// Copyright 2015-2017 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -577,7 +577,7 @@ fn u512_shr(c: &mut Criterion) {
 fn u256_ord(c: &mut Criterion) {
 	let one = U256([12767554894655550452, 16333049135534778834, 140317443000293558, 598963]);
 	let two = U256([2096410819092764509, 8483673822214032535, 36306297304129857, 3453]);
-	c.bench_function("u256_ord", move |b| b.iter(|| black_box(one < two)));
+	c.bench_function("u256_ord", move |b| b.iter(|| black_box(one) < black_box(two)));
 }
 
 fn u512_ord(c: &mut Criterion) {
@@ -601,7 +601,7 @@ fn u512_ord(c: &mut Criterion) {
 		36306297304129857,
 		3453,
 	]);
-	c.bench_function("u512_ord", move |b| b.iter(|| black_box(one < two)));
+	c.bench_function("u512_ord", move |b| b.iter(|| black_box(one) < black_box(two)));
 }
 
 fn u256_from_le(c: &mut Criterion) {
@@ -637,8 +637,8 @@ fn from_fixed_array(c: &mut Criterion) {
 		[255, 0, 0, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 121, 0, 0, 0, 0, 0, 213, 0, 0, 0, 0, 0, 0];
 	c.bench_function("from_fixed_array", move |b| {
 		b.iter(|| {
-			let _: U512 = black_box(ary512.into());
-			let _: U256 = black_box(ary256.into());
+			let _: U512 = black_box(black_box(ary512).into());
+			let _: U256 = black_box(black_box(ary256).into());
 		})
 	});
 }

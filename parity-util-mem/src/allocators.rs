@@ -1,18 +1,10 @@
-// Copyright 2015-2019 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 //! default allocator management
 //! Features are:
@@ -74,6 +66,7 @@ mod usable_size {
 		} else if #[cfg(target_os = "windows")] {
 
 			use winapi::um::heapapi::{GetProcessHeap, HeapSize, HeapValidate};
+			use winapi::ctypes::c_void as winapi_c_void;
 
 			/// Get the size of a heap block.
 			/// Call windows allocator through `winapi` crate
@@ -81,11 +74,11 @@ mod usable_size {
 
 				let heap = GetProcessHeap();
 
-				if HeapValidate(heap, 0, ptr) == 0 {
+				if HeapValidate(heap, 0, ptr as *const winapi_c_void) == 0 {
 					ptr = *(ptr as *const *const c_void).offset(-1);
 				}
 
-				HeapSize(heap, 0, ptr) as usize
+				HeapSize(heap, 0, ptr as *const winapi_c_void) as usize
 			}
 
 		} else if #[cfg(feature = "jemalloc-global")] {
@@ -101,10 +94,10 @@ mod usable_size {
 			pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
 				// mimalloc doesn't actually mutate the value ptr points to,
 				// but requires a mut pointer in the API
-				mimalloc_sys::mi_usable_size(ptr as *mut _)
+				libmimalloc_sys::mi_usable_size(ptr as *mut _)
 			}
 
-		} else if #[cfg(target_os = "linux")] {
+		} else if #[cfg(any(target_os = "linux", target_os = "android"))] {
 
 			/// Linux call system allocator (currently malloc).
 			extern "C" {

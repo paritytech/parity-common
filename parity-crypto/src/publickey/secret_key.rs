@@ -1,35 +1,29 @@
-// Copyright 2015-2019 Parity Technologies (UK) Ltd.
-// This file is part of Parity Ethereum.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
-// Parity Ethereum is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+//! Secret key implementation.
 
-// Parity Ethereum is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity Ethereum.  If not, see <http://www.gnu.org/licenses/>.
-
-//! Secret key implementation
-
-use super::{Error, SECP256K1};
-use ethereum_types::H256;
-use secp256k1::constants::SECRET_KEY_SIZE as SECP256K1_SECRET_KEY_SIZE;
-use secp256k1::key;
 use std::convert::TryFrom;
 use std::fmt;
 use std::ops::Deref;
 use std::str::FromStr;
+
+use ethereum_types::H256;
+use secp256k1::constants::SECRET_KEY_SIZE as SECP256K1_SECRET_KEY_SIZE;
+use secp256k1::key;
 use zeroize::Zeroize;
+
+use crate::publickey::Error;
 
 /// Represents secret key
 #[derive(Clone, PartialEq, Eq)]
 pub struct Secret {
-	inner: H256,
+	inner: Box<H256>,
 }
 
 impl Drop for Secret {
@@ -58,23 +52,34 @@ impl fmt::Display for Secret {
 
 impl Secret {
 	/// Creates a `Secret` from the given slice, returning `None` if the slice length != 32.
+	/// Caller is responsible to zeroize input slice.
 	pub fn copy_from_slice(key: &[u8]) -> Option<Self> {
 		if key.len() != 32 {
 			return None;
 		}
 		let mut h = H256::zero();
 		h.as_bytes_mut().copy_from_slice(&key[0..32]);
-		Some(Secret { inner: h })
+		Some(Secret { inner: Box::new(h) })
+	}
+
+	/// Creates a `Secret` from the given `str` representation,
+	/// returning an error for hex big endian representation of
+	/// the secret.
+	/// Caller is responsible to zeroize input slice.
+	pub fn copy_from_str(s: &str) -> Result<Self, Error> {
+		let h = H256::from_str(s).map_err(|e| Error::Custom(format!("{:?}", e)))?;
+		Ok(Secret { inner: Box::new(h) })
 	}
 
 	/// Creates zero key, which is invalid for crypto operations, but valid for math operation.
 	pub fn zero() -> Self {
-		Secret { inner: H256::zero() }
+		Secret { inner: Box::new(H256::zero()) }
 	}
 
 	/// Imports and validates the key.
+	/// Caller is responsible to zeroize input slice.
 	pub fn import_key(key: &[u8]) -> Result<Self, Error> {
-		let secret = key::SecretKey::from_slice(&super::SECP256K1, key)?;
+		let secret = key::SecretKey::from_slice(key)?;
 		Ok(secret.into())
 	}
 
@@ -85,7 +90,7 @@ impl Secret {
 
 	/// Wrapper over hex conversion
 	pub fn to_hex(&self) -> String {
-		format!("{:x}", self.inner)
+		format!("{:x}", self.inner.deref())
 	}
 
 	/// Inplace add one secret key to another (scalar + scalar)
@@ -99,9 +104,10 @@ impl Secret {
 			(false, false) => {
 				let mut key_secret = self.to_secp256k1_secret()?;
 				let other_secret = other.to_secp256k1_secret()?;
-				key_secret.add_assign(&SECP256K1, &other_secret)?;
-
+				key_secret.add_assign(&other_secret[..])?;
 				*self = key_secret.into();
+				ZeroizeSecretKey(other_secret).zeroize();
+
 				Ok(())
 			}
 		}
@@ -118,10 +124,11 @@ impl Secret {
 			(false, false) => {
 				let mut key_secret = self.to_secp256k1_secret()?;
 				let mut other_secret = other.to_secp256k1_secret()?;
-				other_secret.mul_assign(&SECP256K1, &key::MINUS_ONE_KEY)?;
-				key_secret.add_assign(&SECP256K1, &other_secret)?;
+				other_secret.mul_assign(super::MINUS_ONE_KEY)?;
+				key_secret.add_assign(&other_secret[..])?;
 
 				*self = key_secret.into();
+				ZeroizeSecretKey(other_secret).zeroize();
 				Ok(())
 			}
 		}
@@ -131,12 +138,13 @@ impl Secret {
 	pub fn dec(&mut self) -> Result<(), Error> {
 		match self.is_zero() {
 			true => {
-				*self = key::MINUS_ONE_KEY.into();
+				*self = Secret::try_from(super::MINUS_ONE_KEY)
+					.expect("Constructing a secret key from a known-good constant works; qed.");
 				Ok(())
 			}
 			false => {
 				let mut key_secret = self.to_secp256k1_secret()?;
-				key_secret.add_assign(&SECP256K1, &key::MINUS_ONE_KEY)?;
+				key_secret.add_assign(super::MINUS_ONE_KEY)?;
 
 				*self = key_secret.into();
 				Ok(())
@@ -155,9 +163,10 @@ impl Secret {
 			(false, false) => {
 				let mut key_secret = self.to_secp256k1_secret()?;
 				let other_secret = other.to_secp256k1_secret()?;
-				key_secret.mul_assign(&SECP256K1, &other_secret)?;
+				key_secret.mul_assign(&other_secret[..])?;
 
 				*self = key_secret.into();
+				ZeroizeSecretKey(other_secret).zeroize();
 				Ok(())
 			}
 		}
@@ -169,21 +178,12 @@ impl Secret {
 			true => Ok(()),
 			false => {
 				let mut key_secret = self.to_secp256k1_secret()?;
-				key_secret.mul_assign(&SECP256K1, &key::MINUS_ONE_KEY)?;
+				key_secret.mul_assign(super::MINUS_ONE_KEY)?;
 
 				*self = key_secret.into();
 				Ok(())
 			}
 		}
-	}
-
-	/// Inplace inverse secret key (1 / scalar)
-	pub fn inv(&mut self) -> Result<(), Error> {
-		let mut key_secret = self.to_secp256k1_secret()?;
-		key_secret.inv_assign(&SECP256K1)?;
-
-		*self = key_secret.into();
-		Ok(())
 	}
 
 	/// Compute power of secret key inplace (secret ^ pow).
@@ -206,12 +206,14 @@ impl Secret {
 		Ok(())
 	}
 
-	/// Create `secp256k1::key::SecretKey` based on this secret
+	/// Create a `secp256k1::key::SecretKey` based on this secret.
+	/// Warning the resulting secret key need to be zeroized manually.
 	pub fn to_secp256k1_secret(&self) -> Result<key::SecretKey, Error> {
-		Ok(key::SecretKey::from_slice(&SECP256K1, &self[..])?)
+		key::SecretKey::from_slice(&self[..]).map_err(Into::into)
 	}
 }
 
+#[deprecated(since = "0.6.2", note = "please use `copy_from_str` instead, input is not zeroized")]
 impl FromStr for Secret {
 	type Err = Error;
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -220,17 +222,24 @@ impl FromStr for Secret {
 }
 
 impl From<[u8; 32]> for Secret {
-	fn from(k: [u8; 32]) -> Self {
-		Secret { inner: H256(k) }
+	#[inline(always)]
+	fn from(mut k: [u8; 32]) -> Self {
+		let result = Secret { inner: Box::new(H256(k)) };
+		k.zeroize();
+		result
 	}
 }
 
 impl From<H256> for Secret {
-	fn from(s: H256) -> Self {
-		s.0.into()
+	#[inline(always)]
+	fn from(mut s: H256) -> Self {
+		let result = s.0.into();
+		s.0.zeroize();
+		result
 	}
 }
 
+#[deprecated(since = "0.6.2", note = "please use `copy_from_str` instead, input is not zeroized")]
 impl TryFrom<&str> for Secret {
 	type Error = Error;
 
@@ -239,10 +248,24 @@ impl TryFrom<&str> for Secret {
 	}
 }
 
+#[deprecated(since = "0.6.2", note = "please use `copy_from_slice` instead, input is not zeroized")]
+impl TryFrom<&[u8]> for Secret {
+	type Error = Error;
+
+	fn try_from(b: &[u8]) -> Result<Self, Error> {
+		if b.len() != SECP256K1_SECRET_KEY_SIZE {
+			return Err(Error::InvalidSecretKey);
+		}
+		Ok(Self { inner: Box::new(H256::from_slice(b)) })
+	}
+}
+
 impl From<key::SecretKey> for Secret {
+	#[inline(always)]
 	fn from(key: key::SecretKey) -> Self {
 		let mut a = [0; SECP256K1_SECRET_KEY_SIZE];
 		a.copy_from_slice(&key[0..SECP256K1_SECRET_KEY_SIZE]);
+		ZeroizeSecretKey(key).zeroize();
 		a.into()
 	}
 }
@@ -255,40 +278,44 @@ impl Deref for Secret {
 	}
 }
 
+/// A wrapper type around `SecretKey` to prevent leaking secret key data. This
+/// type will properly zeroize the secret key to `ONE_KEY` in a way that will
+/// not get optimized away by the compiler nor be prone to leaks that take
+/// advantage of access reordering.
+#[derive(Clone, Copy)]
+pub struct ZeroizeSecretKey(pub secp256k1::SecretKey);
+
+impl Default for ZeroizeSecretKey {
+	fn default() -> Self {
+		ZeroizeSecretKey(secp256k1::key::ONE_KEY)
+	}
+}
+
+impl std::ops::Deref for ZeroizeSecretKey {
+	type Target = secp256k1::SecretKey;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl zeroize::DefaultIsZeroes for ZeroizeSecretKey {}
+
 #[cfg(test)]
 mod tests {
 	use super::super::{Generator, Random};
 	use super::Secret;
-	use std::str::FromStr;
-
-	#[test]
-	fn multiplicating_secret_inversion_with_secret_gives_one() {
-		let secret = Random.generate().unwrap().secret().clone();
-		let mut inversion = secret.clone();
-		inversion.inv().unwrap();
-		inversion.mul(&secret).unwrap();
-		assert_eq!(
-			inversion,
-			Secret::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap()
-		);
-	}
-
-	#[test]
-	fn secret_inversion_is_reversible_with_inversion() {
-		let secret = Random.generate().unwrap().secret().clone();
-		let mut inversion = secret.clone();
-		inversion.inv().unwrap();
-		inversion.inv().unwrap();
-		assert_eq!(inversion, secret);
-	}
 
 	#[test]
 	fn secret_pow() {
-		let secret = Random.generate().unwrap().secret().clone();
+		let secret = Random.generate().secret().clone();
 
 		let mut pow0 = secret.clone();
 		pow0.pow(0).unwrap();
-		assert_eq!(pow0, Secret::from_str("0000000000000000000000000000000000000000000000000000000000000001").unwrap());
+		assert_eq!(
+			pow0,
+			Secret::copy_from_str(&"0000000000000000000000000000000000000000000000000000000000000001").unwrap()
+		);
 
 		let mut pow1 = secret.clone();
 		pow1.pow(1).unwrap();

@@ -1,18 +1,10 @@
-// Copyright 2015-2018 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use keccak_hash::keccak;
@@ -30,12 +22,26 @@ pub fn keccak_256_with_empty_input(c: &mut Criterion) {
 }
 
 pub fn keccak_256_with_typical_input(c: &mut Criterion) {
-	let data: Vec<u8> = From::from("some medium length string with important information");
-	c.bench_function("keccak_256_with_typical_input", |b| {
+	let mut data: Vec<u8> = From::from("some medium length string with important information");
+	let len = data.len();
+	let mut group = c.benchmark_group("keccak_256_with_typical_input");
+	group.bench_function("regular", |b| {
 		b.iter(|| {
 			let _out = keccak(black_box(&data));
 		})
 	});
+	group.bench_function("inplace", |b| {
+		b.iter(|| {
+			keccak_hash::keccak256(black_box(&mut data[..]));
+		})
+	});
+	group.bench_function("inplace_range", |b| {
+		b.iter(|| {
+			keccak_hash::keccak256_range(black_box(&mut data[..]), 0..len);
+		})
+	});
+
+	group.finish();
 }
 
 pub fn keccak_256_with_large_input(c: &mut Criterion) {

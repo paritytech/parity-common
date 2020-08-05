@@ -1,4 +1,4 @@
-// Copyright 2015-2019 Parity Technologies
+// Copyright 2020 Parity Technologies
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -7,6 +7,14 @@
 // except according to those terms.
 
 //! Serde serialization support for uint and fixed hash.
+
+#![no_std]
+
+#[macro_use]
+extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
 
 #[doc(hidden)]
 pub use serde;

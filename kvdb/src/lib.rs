@@ -1,22 +1,13 @@
-// Copyright 2015-2019 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 //! Key-Value store abstraction.
 
-use bytes::Bytes;
 use smallvec::SmallVec;
 use std::io;
 
@@ -44,6 +35,7 @@ pub struct DBTransaction {
 pub enum DBOp {
 	Insert { col: u32, key: DBKey, value: DBValue },
 	Delete { col: u32, key: DBKey },
+	DeletePrefix { col: u32, prefix: DBKey },
 }
 
 impl DBOp {
@@ -52,6 +44,7 @@ impl DBOp {
 		match *self {
 			DBOp::Insert { ref key, .. } => key,
 			DBOp::Delete { ref key, .. } => key,
+			DBOp::DeletePrefix { ref prefix, .. } => prefix,
 		}
 	}
 
@@ -60,6 +53,7 @@ impl DBOp {
 		match *self {
 			DBOp::Insert { col, .. } => col,
 			DBOp::Delete { col, .. } => col,
+			DBOp::DeletePrefix { col, .. } => col,
 		}
 	}
 }
@@ -81,7 +75,7 @@ impl DBTransaction {
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
-	pub fn put_vec(&mut self, col: u32, key: &[u8], value: Bytes) {
+	pub fn put_vec(&mut self, col: u32, key: &[u8], value: Vec<u8>) {
 		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value });
 	}
 
@@ -89,23 +83,21 @@ impl DBTransaction {
 	pub fn delete(&mut self, col: u32, key: &[u8]) {
 		self.ops.push(DBOp::Delete { col, key: DBKey::from_slice(key) });
 	}
+
+	/// Delete all values with the given key prefix.
+	/// Using an empty prefix here will remove all keys
+	/// (all keys start with the empty prefix).
+	pub fn delete_prefix(&mut self, col: u32, prefix: &[u8]) {
+		self.ops.push(DBOp::DeletePrefix { col, prefix: DBKey::from_slice(prefix) });
+	}
 }
 
 /// Generic key-value database.
 ///
-/// This makes a distinction between "buffered" and "flushed" values. Values which have been
-/// written can always be read, but may be present in an in-memory buffer. Values which have
-/// been flushed have been moved to backing storage, like a RocksDB instance. There are certain
-/// operations which are only guaranteed to operate on flushed data and not buffered,
-/// although implementations may differ in this regard.
-///
-/// The contents of an interior buffer may be explicitly flushed using the `flush` method.
-///
-/// The `KeyValueDB` also deals in "column families", which can be thought of as distinct
+/// The `KeyValueDB` deals with "column families", which can be thought of as distinct
 /// stores within a database. Keys written in one column family will not be accessible from
 /// any other. The number of column families must be specified at initialization, with a
-/// differing interface for each database. The `None` argument in place of a column index
-/// is always supported.
+/// differing interface for each database.
 ///
 /// The API laid out here, along with the `Sync` bound implies interior synchronization for
 /// implementation.
@@ -118,26 +110,18 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	/// Get a value by key.
 	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>>;
 
-	/// Get a value by partial key. Only works for flushed data.
+	/// Get the first value matching the given prefix.
 	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>>;
 
-	/// Write a transaction of changes to the buffer.
-	fn write_buffered(&self, transaction: DBTransaction);
-
 	/// Write a transaction of changes to the backing store.
-	fn write(&self, transaction: DBTransaction) -> io::Result<()> {
-		self.write_buffered(transaction);
-		self.flush()
-	}
+	fn write(&self, transaction: DBTransaction) -> io::Result<()>;
 
-	/// Flush all buffered data.
-	fn flush(&self) -> io::Result<()>;
-
-	/// Iterate over flushed data for a given column.
+	/// Iterate over the data for a given column.
 	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
 
-	/// Iterate over flushed data for a given column, starting from a given prefix.
-	fn iter_from_prefix<'a>(
+	/// Iterate over the data for a given column, returning all key/value pairs
+	/// where the key starts with the given prefix.
+	fn iter_with_prefix<'a>(
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
@@ -154,5 +138,54 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	/// may impede the performance and might be off by default).
 	fn io_stats(&self, _kind: IoStatsKind) -> IoStats {
 		IoStats::empty()
+	}
+
+	/// Check for the existence of a value by key.
+	fn has_key(&self, col: u32, key: &[u8]) -> io::Result<bool> {
+		self.get(col, key).map(|opt| opt.is_some())
+	}
+
+	/// Check for the existence of a value by prefix.
+	fn has_prefix(&self, col: u32, prefix: &[u8]) -> bool {
+		self.get_by_prefix(col, prefix).is_some()
+	}
+}
+
+/// For a given start prefix (inclusive), returns the correct end prefix (non-inclusive).
+/// This assumes the key bytes are ordered in lexicographical order.
+/// Since key length is not limited, for some case we return `None` because there is
+/// no bounded limit (every keys in the serie `[]`, `[255]`, `[255, 255]` ...).
+pub fn end_prefix(prefix: &[u8]) -> Option<Vec<u8>> {
+	let mut end_range = prefix.to_vec();
+	while let Some(0xff) = end_range.last() {
+		end_range.pop();
+	}
+	if let Some(byte) = end_range.last_mut() {
+		*byte += 1;
+		Some(end_range)
+	} else {
+		None
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use super::end_prefix;
+
+	#[test]
+	fn end_prefix_test() {
+		assert_eq!(end_prefix(&[5, 6, 7]), Some(vec![5, 6, 8]));
+		assert_eq!(end_prefix(&[5, 6, 255]), Some(vec![5, 7]));
+		// This is not equal as the result is before start.
+		assert_ne!(end_prefix(&[5, 255, 255]), Some(vec![5, 255]));
+		// This is equal ([5, 255] will not be deleted because
+		// it is before start).
+		assert_eq!(end_prefix(&[5, 255, 255]), Some(vec![6]));
+		assert_eq!(end_prefix(&[255, 255, 255]), None);
+
+		assert_eq!(end_prefix(&[0x00, 0xff]), Some(vec![0x01]));
+		assert_eq!(end_prefix(&[0xff]), None);
+		assert_eq!(end_prefix(&[]), None);
+		assert_eq!(end_prefix(b"0"), Some(b"1".to_vec()));
 	}
 }

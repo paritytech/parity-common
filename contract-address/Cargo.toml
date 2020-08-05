@@ -1,8 +1,8 @@
 [package]
 name = "contract-address"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Parity Technologies <admin@parity.io>"]
-license = "MIT"
+license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
 repository = "https://github.com/paritytech/parity-common"
 description = "A utility crate to create an ethereum contract address"
@@ -11,9 +11,9 @@ edition = "2018"
 readme = "README.md"
 
 [dependencies]
-ethereum-types = { version = "0.8.0", path = "../ethereum-types" }
+ethereum-types = { version = "0.9.0", path = "../ethereum-types" }
 rlp = { version = "0.4", path = "../rlp" }
-keccak-hash = { version = "0.4", path = "../keccak-hash", default-features = false }
+keccak-hash = { version = "0.5", path = "../keccak-hash", default-features = false }
 
 [features]
 default = []

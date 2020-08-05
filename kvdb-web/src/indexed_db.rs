@@ -1,24 +1,16 @@
-// Copyright 2019 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// Parity is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Parity is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright 2020 Parity Technologies
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 //! Utility functions to interact with IndexedDB browser API.
 
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
-use web_sys::{Event, IdbCursorWithValue, IdbDatabase, IdbOpenDbRequest, IdbRequest, IdbTransactionMode};
+use web_sys::{Event, IdbCursorWithValue, IdbDatabase, IdbKeyRange, IdbOpenDbRequest, IdbRequest, IdbTransactionMode};
 
 use futures::channel;
 use futures::prelude::*;
@@ -163,6 +155,19 @@ pub fn idb_commit_transaction(idb: &IdbDatabase, txn: &DBTransaction, columns: u
 				let res = object_stores[column].delete(key_js.as_ref());
 				if let Err(err) = res {
 					warn!("error deleting key from col_{}: {:?}", column, err);
+				}
+			}
+			DBOp::DeletePrefix { col, prefix } => {
+				let column = *col as usize;
+				// Convert rust bytes to js arrays
+				let prefix_js_start = Uint8Array::from(prefix.as_ref());
+				let prefix_js_end = Uint8Array::from(prefix.as_ref());
+
+				let range = IdbKeyRange::bound(prefix_js_start.as_ref(), prefix_js_end.as_ref())
+					.expect("Starting and ending at same value is valid bound; qed");
+				let res = object_stores[column].delete(range.as_ref());
+				if let Err(err) = res {
+					warn!("error deleting prefix from col_{}: {:?}", column, err);
 				}
 			}
 		}
