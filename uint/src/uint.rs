@@ -135,7 +135,7 @@ macro_rules! uint_overflowing_binop {
 		}
 
 		($name(ret), carry > 0)
-		}};
+	}};
 }
 
 #[macro_export]
@@ -244,7 +244,7 @@ macro_rules! panic_on_overflow {
 	($name: expr) => {
 		if $name {
 			panic!("arithmetic operation overflow")
-			}
+		}
 	};
 }
 
@@ -445,7 +445,7 @@ macro_rules! construct_uint {
 		/// Little-endian large integer type
 		#[repr(C)]
 		$(#[$attr])*
-		#[derive(Copy, Clone)]
+		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 		$visibility struct $name (pub [u64; $n_words]);
 
 		/// Get a reference to the underlying little-endian words.
@@ -1475,26 +1475,9 @@ macro_rules! construct_uint {
 			}
 		}
 
-		// We implement `Eq` and `Hash` manually to workaround
-		// https://github.com/rust-lang/rust/issues/61415
-		impl $crate::core_::cmp::PartialEq for $name {
-			fn eq(&self, other: &$name) -> bool {
-				self.as_ref() == other.as_ref()
-			}
-		}
-
-		impl $crate::core_::cmp::Eq for $name {}
-
-		impl $crate::core_::hash::Hash for $name {
-			fn hash<H: $crate::core_::hash::Hasher>(&self, state: &mut H) {
-				// use the impl as slice &[u64]
-				self.as_ref().hash(state);
-			}
-		}
-
 		impl $crate::core_::cmp::Ord for $name {
 			fn cmp(&self, other: &$name) -> $crate::core_::cmp::Ordering {
-                self.as_ref().iter().rev().cmp(other.as_ref().iter().rev())
+				self.as_ref().iter().rev().cmp(other.as_ref().iter().rev())
 			}
 		}
 
