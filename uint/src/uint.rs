@@ -597,7 +597,7 @@ macro_rules! construct_uint {
 				r
 			}
 
-			/// Returns the number of leading zeros in the binary representation of self.
+			/// Returns the number of trailing zeros in the binary representation of self.
 			pub fn trailing_zeros(&self) -> u32 {
 				let mut r = 0;
 				for i in 0..$n_words {
