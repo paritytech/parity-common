@@ -40,6 +40,16 @@ fn hash_impl_is_the_same_as_for_a_slice() {
 	assert_eq!(uint_hash, slice_hash);
 }
 
+// https://github.com/paritytech/parity-common/issues/420
+#[test]
+fn const_matching_works() {
+	const ONE: U256 = U256([1, 0, 0, 0]);
+	match U256::zero() {
+		ONE => unreachable!(),
+		_ => {}
+	}
+}
+
 #[test]
 fn u128_conversions() {
 	let mut a = U256::from(u128::max_value());

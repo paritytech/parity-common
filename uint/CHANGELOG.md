@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.8.5] - 2020-08-12
+- Make const matching work again. [#421](https://github.com/paritytech/parity-common/pull/421)
+
 ## [0.8.4] - 2020-08-03
 - Added a manual impl of `Eq` and `Hash`. [#390](https://github.com/paritytech/parity-common/pull/390)
 - Removed some unsafe code and added big-endian support. [#407](https://github.com/paritytech/parity-common/pull/407)
