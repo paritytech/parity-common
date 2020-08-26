@@ -336,7 +336,7 @@ fn generate_read_options() -> ReadOptions {
 }
 
 /// Generate the block based options for RocksDB, based on the given `DatabaseConfig`.
-fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
+fn generate_block_based_options(config: &DatabaseConfig) -> io::Result<BlockBasedOptions> {
 	let mut block_opts = BlockBasedOptions::default();
 	block_opts.set_block_size(config.compaction.block_size);
 	// See https://github.com/facebook/rocksdb/blob/a1523efcdf2f0e8133b9a9f6e170a0dad49f928f/include/rocksdb/table.h#L246-L271 for details on what the format versions are/do.
@@ -348,7 +348,8 @@ fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
 	if cache_size == 0 {
 		block_opts.disable_cache()
 	} else {
-		block_opts.set_lru_cache(cache_size);
+		let cache = rocksdb::Cache::new_lru_cache(cache_size).map_err(other_io_err)?;
+		block_opts.set_block_cache(&cache);
 		// "index and filter blocks will be stored in block cache, together with all other data blocks."
 		// See: https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#indexes-and-filter-blocks
 		block_opts.set_cache_index_and_filter_blocks(true);
@@ -357,7 +358,7 @@ fn generate_block_based_options(config: &DatabaseConfig) -> BlockBasedOptions {
 	}
 	block_opts.set_bloom_filter(10, true);
 
-	block_opts
+	Ok(block_opts)
 }
 
 impl Database {
@@ -372,7 +373,7 @@ impl Database {
 		assert!(config.columns > 0, "the number of columns must not be zero");
 
 		let opts = generate_options(config);
-		let block_opts = generate_block_based_options(config);
+		let block_opts = generate_block_based_options(config)?;
 
 		// attempt database repair if it has been previously marked as corrupted
 		let db_corrupted = Path::new(path).join(Database::CORRUPTION_FILE_NAME);
