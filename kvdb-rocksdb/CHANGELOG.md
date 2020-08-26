@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.9.1] - 2020-08-25
+## [0.9.1] - 2020-08-26
 - Updated rocksdb to 0.15. [#424](https://github.com/paritytech/parity-common/pull/424)
 - Set `format_version` to 5. [#395](https://github.com/paritytech/parity-common/pull/395) 
 
