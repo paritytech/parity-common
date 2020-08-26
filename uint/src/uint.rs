@@ -1573,6 +1573,10 @@ macro_rules! impl_std_for_uint {
 					false => ("0".to_owned() + value).from_hex()?,
 				};
 
+				if $n_words * 8 < bytes.len() {
+					return Err(Self::Err::InvalidHexLength);
+				}
+
 				let bytes_ref: &[u8] = &bytes;
 				Ok(From::from(bytes_ref))
 			}
