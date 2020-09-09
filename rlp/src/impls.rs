@@ -33,6 +33,12 @@ pub fn decode_usize(bytes: &[u8]) -> Result<usize, DecoderError> {
 	}
 }
 
+impl<T: Encodable + ?Sized> Encodable for Box<T> {
+	fn rlp_append(&self, s: &mut RlpStream) {
+		Encodable::rlp_append(&**self, s)
+	}
+}
+
 impl Encodable for bool {
 	fn rlp_append(&self, s: &mut RlpStream) {
 		s.encoder().encode_iter(once(if *self { 1u8 } else { 0 }));
