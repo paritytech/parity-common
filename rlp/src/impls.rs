@@ -7,7 +7,7 @@
 // except according to those terms.
 
 #[cfg(not(feature = "std"))]
-use alloc::{borrow::ToOwned, string::String, vec::Vec};
+use alloc::{borrow::ToOwned, boxed::Box, string::String, vec::Vec};
 use core::iter::{empty, once};
 use core::{mem, str};
 
@@ -30,6 +30,18 @@ pub fn decode_usize(bytes: &[u8]) -> Result<usize, DecoderError> {
 			Ok(res)
 		}
 		_ => Err(DecoderError::RlpIsTooBig),
+	}
+}
+
+impl<T: Encodable + ?Sized> Encodable for Box<T> {
+	fn rlp_append(&self, s: &mut RlpStream) {
+		Encodable::rlp_append(&**self, s)
+	}
+}
+
+impl<T: Decodable> Decodable for Box<T> {
+	fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+		T::decode(rlp).map(Box::new)
 	}
 }
 
