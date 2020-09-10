@@ -7,7 +7,7 @@
 // except according to those terms.
 
 #[cfg(not(feature = "std"))]
-use alloc::{borrow::ToOwned, string::String, vec::Vec};
+use alloc::{borrow::ToOwned, boxed::Box, string::String, vec::Vec};
 use core::iter::{empty, once};
 use core::{mem, str};
 
