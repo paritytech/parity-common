@@ -9,7 +9,7 @@
 use core::{cmp, fmt};
 
 use hex_literal::hex;
-use primitive_types::{H160, U256};
+use primitive_types::{H160, U256, H256};
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
 #[test]
@@ -608,4 +608,11 @@ fn test_list_at() {
 	let _rlp1 = rlp.at(1).unwrap();
 	let rlp2 = rlp.at(2).unwrap();
 	assert_eq!(rlp2.val_at::<u16>(2).unwrap(), 33338);
+}
+
+#[test]
+fn test_trimmed_address() {
+	let raw = hex!("f86582033280831000009430a5e0cbe6729895f4188000b4ec61f8a659d2d6843b9aca008079a0777431d65e1f74adfe7b06598f8ec36de82328673874b4431eb0d94edc06b3aa9f92849d2cc6b3cc436b4162af737ef245ae50c7e31e5acd707947085f88d465");
+	let rlp = Rlp::new(&raw);
+	assert_eq!(rlp.val_at::<H256>(8).unwrap(), H256::from(hex!("0092849d2cc6b3cc436b4162af737ef245ae50c7e31e5acd707947085f88d465")));
 }
