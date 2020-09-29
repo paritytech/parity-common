@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+## [0.4.6] - 2020-09-29
 - Implement Encodable, Decodable for boxed types. [#427](https://github.com/paritytech/parity-common/pull/427)
 
 ## [0.4.5] - 2020-03-16
