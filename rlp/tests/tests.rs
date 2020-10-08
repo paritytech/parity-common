@@ -180,6 +180,16 @@ fn encode_u64() {
 }
 
 #[test]
+fn encode_u128() {
+	let tests = vec![
+		ETestPair(0u128, vec![0x80u8]),
+		ETestPair(0x0100_0000_0000_0000, vec![0x88, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
+		ETestPair(0xFFFF_FFFF_FFFF_FFFF, vec![0x88, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
+	];
+	run_encode_tests(tests);
+}
+
+#[test]
 fn encode_u256() {
 	let tests = vec![
 		ETestPair(U256::from(0u64), vec![0x80u8]),

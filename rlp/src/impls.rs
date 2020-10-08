@@ -170,10 +170,12 @@ macro_rules! impl_decodable_for_u {
 impl_encodable_for_u!(u16);
 impl_encodable_for_u!(u32);
 impl_encodable_for_u!(u64);
+impl_encodable_for_u!(u128);
 
 impl_decodable_for_u!(u16);
 impl_decodable_for_u!(u32);
 impl_decodable_for_u!(u64);
+impl_decodable_for_u!(u128);
 
 impl Encodable for usize {
 	fn rlp_append(&self, s: &mut RlpStream) {
