@@ -345,6 +345,15 @@ fn decode_untrusted_u64() {
 }
 
 #[test]
+fn decode_untrusted_u128() {
+	let tests = vec![
+		DTestPair(0x0100_0000_0000_0000u128, vec![0x88, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
+		DTestPair(0xFFFF_FFFF_FFFF_FFFFu128, vec![0x88, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
+	];
+	run_decode_tests(tests);
+}
+
+#[test]
 fn decode_untrusted_u256() {
 	let tests = vec![
 		DTestPair(U256::from(0u64), vec![0x80u8]),
