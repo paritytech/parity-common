@@ -79,6 +79,44 @@ impl Decodable for Vec<u8> {
 	}
 }
 
+#[cfg(feature = "arrayvec")]
+mod arrayvec_impl {
+	use super::*;
+	use arrayvec::{Array, ArrayVec};
+
+	impl<A, T> Encodable for ArrayVec<A>
+	where
+		A: Array<Item = T>,
+		T: Encodable,
+	{
+		fn rlp_append(&self, s: &mut RlpStream) {
+			s.begin_list(self.len());
+			for item in self {
+				s.append(item);
+			}
+		}
+	}
+
+	impl<A, T> Decodable for ArrayVec<A>
+	where
+		A: Array<Item = T>,
+		T: Decodable,
+	{
+		fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+			if rlp.item_count()? > A::CAPACITY {
+				return Err(DecoderError::RlpIncorrectListLen);
+			}
+
+			let mut out = Self::new();
+			for item in rlp {
+				out.push(T::decode(&item)?);
+			}
+
+			Ok(out)
+		}
+	}
+}
+
 impl<T> Encodable for Option<T>
 where
 	T: Encodable,
