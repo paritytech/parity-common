@@ -369,6 +369,12 @@ impl<'a, 'view> Iterator for RlpIterator<'a, 'view> {
 	}
 }
 
+impl<'a, 'view> ExactSizeIterator for RlpIterator<'a, 'view> {
+	fn len(&self) -> usize {
+		self.rlp.item_count().unwrap_or(0)
+	}
+}
+
 pub struct BasicDecoder<'a> {
 	rlp: &'a [u8],
 }
