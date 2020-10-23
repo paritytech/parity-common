@@ -44,7 +44,7 @@ construct_uint! {
 }
 
 construct_fixed_hash! {
-	/// Fixed-size uninterpreted hash type with 20 bytes (160 bits) size.
+	/// Fixed-size uninterpreted hash type with 16 bytes (128 bits) size.
 	#[cfg_attr(feature = "scale-info", derive(TypeInfo))]
 	pub struct H128(16);
 }
