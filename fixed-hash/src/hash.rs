@@ -588,14 +588,15 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 			/// - When encountering invalid non hex-digits
 			/// - Upon empty string input or invalid input length in general
 			fn from_str(input: &str) -> $crate::core_::result::Result<$name, $crate::rustc_hex::FromHexError> {
-				#[cfg(not(feature = "std"))]
-				use $crate::alloc_::vec::Vec;
-				use $crate::rustc_hex::FromHex;
-				let bytes: Vec<u8> = input.from_hex()?;
-				if bytes.len() != Self::len_bytes() {
-					return Err($crate::rustc_hex::FromHexError::InvalidHexLength);
+				let mut iter = $crate::rustc_hex::FromHexIter::new(input);
+				let mut result = Self::zero();
+				for byte in result.as_mut() {
+					*byte = iter.next().ok_or(Self::Err::InvalidHexLength)??;
 				}
-				Ok($name::from_slice(&bytes))
+				if iter.next().is_some() {
+					return Err(Self::Err::InvalidHexLength);
+				}
+				Ok(result)
 			}
 		}
 	};
