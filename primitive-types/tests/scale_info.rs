@@ -32,31 +32,15 @@ fn h256_scale_info() {
 fn convert_u256_to_f64() {
 	assert_eq!(f64::from(0.into()), 0.0);
 	assert_eq!(f64::from(42.into()), 42.0);
-	assert_eq!(
-		f64::from(1_000_000_000_000_000_000u128.into()),
-		1_000_000_000_000_000_000.0,
-	);
+	assert_eq!(f64::from(1_000_000_000_000_000_000u128.into()), 1_000_000_000_000_000_000.0,);
 }
 
 #[test]
-#[allow(
-	clippy::excessive_precision,
-	clippy::float_cmp,
-	clippy::unreadable_literal
-)]
+#[allow(clippy::excessive_precision, clippy::float_cmp, clippy::unreadable_literal)]
 fn convert_u256_to_f64_precision_loss() {
-	assert_eq!(
-		f64::from(u64::max_value().into()),
-		u64::max_value() as f64,
-	);
-	assert_eq!(
-		f64::from(U256::MAX),
-		115792089237316195423570985008687907853269984665640564039457584007913129639935.0,
-	);
-	assert_eq!(
-		f64::from(U256::MAX),
-		115792089237316200000000000000000000000000000000000000000000000000000000000000.0,
-	);
+	assert_eq!(f64::from(u64::max_value().into()), u64::max_value() as f64,);
+	assert_eq!(f64::from(U256::MAX), 115792089237316195423570985008687907853269984665640564039457584007913129639935.0,);
+	assert_eq!(f64::from(U256::MAX), 115792089237316200000000000000000000000000000000000000000000000000000000000000.0,);
 }
 
 #[test]
@@ -65,40 +49,20 @@ fn convert_f64_to_u256() {
 	assert_eq!(U256::from(13.37), 13.into());
 	assert_eq!(U256::from(42.0), 42.into());
 	assert_eq!(U256::from(999.999), 999.into());
-	assert_eq!(
-		U256::from(1_000_000_000_000_000_000.0),
-		1_000_000_000_000_000_000u128.into(),
-	);
+	assert_eq!(U256::from(1_000_000_000_000_000_000.0), 1_000_000_000_000_000_000u128.into(),);
 }
 
 #[test]
 fn convert_f64_to_u256_large() {
 	let value = U256::from(1) << U256::from(255);
-	assert_eq!(
-		U256::from(
-			format!("{}", value)
-				.parse::<f64>()
-				.expect("unexpected error parsing f64")
-		),
-		value,
-	);
+	assert_eq!(U256::from(format!("{}", value).parse::<f64>().expect("unexpected error parsing f64")), value,);
 }
 
 #[test]
 #[allow(clippy::unreadable_literal)]
 fn convert_f64_to_u256_overflow() {
-	assert_eq!(
-		U256::from(
-			115792089237316200000000000000000000000000000000000000000000000000000000000000.0
-		),
-		U256::MAX,
-	);
-	assert_eq!(
-		U256::from(
-			999999999999999999999999999999999999999999999999999999999999999999999999999999.0
-		),
-		U256::MAX,
-	);
+	assert_eq!(U256::from(115792089237316200000000000000000000000000000000000000000000000000000000000000.0), U256::MAX,);
+	assert_eq!(U256::from(999999999999999999999999999999999999999999999999999999999999999999999999999999.0), U256::MAX,);
 }
 
 #[test]
