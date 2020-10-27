@@ -140,6 +140,7 @@ impl U256 {
 		}
 	}
 
+	#[cfg(feature = "std")]
 	pub fn to_f64_lossy(self) -> f64 {
 		let (res, factor) = match self {
 			U256([_, _, 0, 0]) => (self, 1.0),
