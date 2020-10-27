@@ -110,6 +110,44 @@ impl U256 {
 	pub fn full_mul(self, other: U256) -> U512 {
 		U512(uint_full_mul_reg!(U256, 4, self, other))
 	}
+
+	/// Lossy saturating conversion from a `f64` to a `U256`.
+	///
+	/// The conversion follows roughly the same rules as converting `f64` to other
+	/// primitive integer types. Namely, the conversion of `value: f64` behaves as
+	/// follows:
+	/// - `NaN` => `0`
+	/// - `(-∞, 0]` => `0`
+	/// - `(0, u256::MAX]` => `value as u256`
+	/// - `(u256::MAX, +∞)` => `u256::MAX`
+	pub fn from_f64_lossy(value: f64) -> U256 {
+		if value >= 1.0 {
+			let bits = value.to_bits();
+			// NOTE: Don't consider the sign or check that the subtraction will
+			//   underflow since we already checked that the value is greater
+			//   than 1.0.
+			let exponent = ((bits >> 52) & 0x7ff) - 1023;
+			let mantissa = (bits & 0x0f_ffff_ffff_ffff) | 0x10_0000_0000_0000;
+			if exponent <= 52 {
+				U256::from(mantissa >> (52 - exponent))
+			} else if exponent >= 256 {
+				U256::MAX
+			} else {
+				U256::from(mantissa) << U256::from(exponent - 52)
+			}
+		} else {
+			0.into()
+		}
+	}
+
+	pub fn to_f64_lossy(self) -> f64 {
+		let (res, factor) = match self {
+			U256([_, _, 0, 0]) => (self, 1.0),
+			U256([_, _, _, 0]) => (self >> 64, 2.0f64.powi(64)),
+			U256([_, _, _, _]) => (self >> 128, 2.0f64.powi(128)),
+		};
+		(res.low_u128() as f64) * factor
+	}
 }
 
 impl From<U256> for U512 {
@@ -217,47 +255,5 @@ impl<'a> TryFrom<&'a U512> for U256 {
 		ret[2] = arr[2];
 		ret[3] = arr[3];
 		Ok(U256(ret))
-	}
-}
-
-impl From<f64> for U256 {
-	/// Lossy saturating conversion from a `f64` to a `U256`.
-	///
-	/// The conversion follows roughly the same rules as converting `f64` to other
-	/// primitive integer types. Namely, the conversion of `value: f64` behaves as
-	/// follows:
-	/// - `NaN` => `0`
-	/// - `(-∞, 0]` => `0`
-	/// - `(0, u256::MAX]` => `value as u256`
-	/// - `(u256::MAX, +∞)` => `u256::MAX`
-	fn from(value: f64) -> U256 {
-		if value >= 1.0 {
-			let bits = value.to_bits();
-			// NOTE: Don't consider the sign or check that the subtraction will
-			//   underflow since we already checked that the value is greater
-			//   than 1.0.
-			let exponent = ((bits >> 52) & 0x7ff) - 1023;
-			let mantissa = (bits & 0x0f_ffff_ffff_ffff) | 0x10_0000_0000_0000;
-			if exponent <= 52 {
-				U256::from(mantissa >> (52 - exponent))
-			} else if exponent >= 256 {
-				U256::MAX
-			} else {
-				U256::from(mantissa) << U256::from(exponent - 52)
-			}
-		} else {
-			0.into()
-		}
-	}
-}
-
-impl From<U256> for f64 {
-	fn from(value: U256) -> f64 {
-		let (value, factor) = match value {
-			U256([_, _, 0, 0]) => (value, 1.0),
-			U256([_, _, _, 0]) => (value >> 64, 2.0f64.powi(64)),
-			U256([_, _, _, _]) => (value >> 128, 2.0f64.powi(128)),
-		};
-		(value.low_u128() as f64) * factor
 	}
 }
