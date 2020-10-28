@@ -25,6 +25,7 @@ serde_no_std = ["impl-serde"]
 codec = ["impl-codec"]
 rlp = ["impl-rlp"]
 arbitrary = ["fixed-hash/arbitrary", "uint/arbitrary"]
+fp-conversion = ["std"]
 
 [[test]]
 name = "scale_info"

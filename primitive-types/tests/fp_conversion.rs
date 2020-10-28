@@ -8,6 +8,8 @@
 
 //! Tests for to and from f64 lossy for U256 primitive-type.
 
+#![cfg(feature = "fp-conversion")]
+
 use primitive_types::U256;
 
 #[test]
@@ -20,6 +22,7 @@ fn convert_u256_to_f64() {
 
 #[test]
 #[allow(clippy::excessive_precision, clippy::float_cmp, clippy::unreadable_literal)]
+#[cfg(feature = "std")]
 fn convert_u256_to_f64_precision_loss() {
 	assert_eq!(U256::from(u64::max_value()).to_f64_lossy(), u64::max_value() as f64,);
 	assert_eq!(
@@ -67,4 +70,9 @@ fn convert_f64_to_u256_non_normal() {
 	assert_eq!(U256::from_f64_lossy(f64::NAN), 0.into());
 	assert_eq!(U256::from_f64_lossy(f64::NEG_INFINITY), 0.into());
 	assert_eq!(U256::from_f64_lossy(f64::INFINITY), U256::MAX);
+}
+
+#[test]
+fn f64_to_u256_truncation() {
+	assert_eq!(U256::from_f64_lossy(10.5), 10.into());
 }
