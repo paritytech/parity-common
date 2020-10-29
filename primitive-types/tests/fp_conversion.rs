@@ -6,9 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Tests for to and from f64 lossy for U256 primitive-type.
-
-#![cfg(feature = "fp-conversion")]
+//! Testing to and from f64 lossy for U256 primitive type.
 
 use primitive_types::U256;
 

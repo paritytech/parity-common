@@ -30,3 +30,7 @@ fp-conversion = ["std"]
 [[test]]
 name = "scale_info"
 required-features = ["scale-info"]
+
+[[test]]
+name = "fp_conversion"
+required-features = ["fp-conversion"]
