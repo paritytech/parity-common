@@ -30,7 +30,6 @@ pub use self::keypair_generator::Random;
 pub use self::secret_key::{Secret, ZeroizeSecretKey};
 
 use ethereum_types::H256;
-use lazy_static::lazy_static;
 
 pub use ethereum_types::{Address, Public};
 pub type Message = H256;
@@ -56,10 +55,6 @@ const MINUS_ONE_KEY: &'static [u8] = &[
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc,
 	0xe6, 0xaf, 0x48, 0xa0, 0x3b, 0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
 ];
-
-lazy_static! {
-	static ref SECP256K1: secp256k1::Secp256k1<secp256k1::All> = secp256k1::Secp256k1::new();
-}
 
 /// Generates new keypair.
 pub trait Generator {

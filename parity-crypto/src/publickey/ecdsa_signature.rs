@@ -8,12 +8,13 @@
 
 //! Signature based on ECDSA, algorithm's description: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 
-use super::{public_to_address, Address, Error, Message, Public, Secret, ZeroesAllowedMessage, SECP256K1};
+use super::{public_to_address, Address, Error, Message, Public, Secret, ZeroesAllowedMessage};
 use ethereum_types::{H256, H520};
 use rustc_hex::{FromHex, ToHex};
 use secp256k1::key::{PublicKey, SecretKey};
 use secp256k1::{
 	recovery::{RecoverableSignature, RecoveryId},
+	SECP256K1,
 	Error as SecpError, Message as SecpMessage,
 };
 use std::cmp::PartialEq;
@@ -271,12 +272,12 @@ pub fn recover_allowing_all_zero_message(
 
 #[cfg(test)]
 mod tests {
-	use super::super::{Generator, Message, Random, SECP256K1};
+	use super::super::{Generator, Message, Random};
 	use super::{
 		recover, recover_allowing_all_zero_message, sign, verify_address, verify_public, Secret, Signature,
 		ZeroesAllowedMessage,
 	};
-	use secp256k1::SecretKey;
+	use secp256k1::{SECP256K1, SecretKey};
 	use std::str::FromStr;
 
 	// Copy of `sign()` that allows signing all-zero Messages.

@@ -8,7 +8,8 @@
 
 //! Random key pair generator. Relies on the secp256k1 C-library to generate random data.
 
-use super::{Generator, KeyPair, SECP256K1};
+use super::{Generator, KeyPair};
+use secp256k1::SECP256K1;
 
 /// Randomly generates new keypair, instantiating the RNG each time.
 pub struct Random;
