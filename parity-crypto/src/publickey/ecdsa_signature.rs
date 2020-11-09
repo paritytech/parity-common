@@ -14,8 +14,7 @@ use rustc_hex::{FromHex, ToHex};
 use secp256k1::key::{PublicKey, SecretKey};
 use secp256k1::{
 	recovery::{RecoverableSignature, RecoveryId},
-	SECP256K1,
-	Error as SecpError, Message as SecpMessage,
+	Error as SecpError, Message as SecpMessage, SECP256K1,
 };
 use std::cmp::PartialEq;
 use std::fmt;
@@ -277,7 +276,7 @@ mod tests {
 		recover, recover_allowing_all_zero_message, sign, verify_address, verify_public, Secret, Signature,
 		ZeroesAllowedMessage,
 	};
-	use secp256k1::{SECP256K1, SecretKey};
+	use secp256k1::{SecretKey, SECP256K1};
 	use std::str::FromStr;
 
 	// Copy of `sign()` that allows signing all-zero Messages.
