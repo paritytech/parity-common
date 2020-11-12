@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.7.3] - 2020-11-12
+- Added `scale_info` support. [#312](https://github.com/paritytech/parity-common/pull/312)
+- Added `H128` type. [#434](https://github.com/paritytech/parity-common/pull/434)
+- Added `fp-conversion` feature: `U256` <-> `f64`. [#436](https://github.com/paritytech/parity-common/pull/436)
+
 ## [0.7.2] - 2020-05-05
 - Added `serde_no_std` feature. [#385](https://github.com/paritytech/parity-common/pull/385)
 
