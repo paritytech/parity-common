@@ -202,11 +202,13 @@ impl ExtendedKeyPair {
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
 mod derivation {
 	use super::super::ec_math_utils::CURVE_ORDER;
-	use super::super::SECP256K1;
 	use super::{Derivation, Label};
 	use crate::{hmac, Keccak256};
 	use ethereum_types::{BigEndianHash, H256, H512, U256, U512};
-	use secp256k1::key::{PublicKey, SecretKey};
+	use secp256k1::{
+		key::{PublicKey, SecretKey},
+		SECP256K1,
+	};
 	use std::convert::TryInto;
 
 	#[derive(Debug)]

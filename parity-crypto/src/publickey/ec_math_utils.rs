@@ -8,11 +8,12 @@
 
 //! Multiple primitives for work with public and secret keys and with secp256k1 curve points
 
-use super::{Error, Public, Secret, SECP256K1};
+use super::{Error, Public, Secret};
 use ethereum_types::{BigEndianHash as _, H256, U256};
 use lazy_static::lazy_static;
 use secp256k1::constants::CURVE_ORDER as SECP256K1_CURVE_ORDER;
 use secp256k1::key;
+use secp256k1::SECP256K1;
 
 /// Generation point array combined from X and Y coordinates
 /// Equivalent to uncompressed form, see https://tools.ietf.org/id/draft-jivsov-ecc-compact-05.html#rfc.section.3

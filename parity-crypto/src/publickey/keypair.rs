@@ -8,9 +8,9 @@
 
 //! Key pair (public + secret) description.
 
-use super::{Address, Error, Public, Secret, SECP256K1};
+use super::{Address, Error, Public, Secret};
 use crate::Keccak256;
-use secp256k1::key;
+use secp256k1::{key, SECP256K1};
 use std::fmt;
 
 /// Convert public key into the address

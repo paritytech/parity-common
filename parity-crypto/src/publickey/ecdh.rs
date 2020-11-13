@@ -21,7 +21,7 @@ pub fn agree(secret: &Secret, public: &Public) -> Result<Secret, Error> {
 
 	let publ = key::PublicKey::from_slice(&pdata)?;
 	let sec = key::SecretKey::from_slice(secret.as_bytes())?;
-	let shared = ecdh::SharedSecret::new_with_hash(&publ, &sec, |x, _| x.into())?;
+	let shared = ecdh::SharedSecret::new_with_hash(&publ, &sec, |x, _| x.into());
 
 	Secret::import_key(&shared[0..32]).map_err(|_| Error::Secp(secp256k1::Error::InvalidSecretKey))
 }
