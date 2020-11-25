@@ -20,7 +20,7 @@ impl-codec = { version = "0.4.1", path = "../primitive-types/impls/codec", defau
 [dev-dependencies]
 criterion = "0.3.0"
 rand = "0.7.2"
-hex-literal = "0.2.1"
+hex-literal = "0.3.1"
 
 [features]
 default = ["std", "serialize", "rustc-hex"]
