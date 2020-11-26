@@ -480,7 +480,7 @@ fn test_rlp_nested_empty_list_encode() {
 	let mut stream = RlpStream::new_list(2);
 	stream.append_list(&(Vec::new() as Vec<u32>));
 	stream.append(&40u32);
-	assert_eq!(stream.drain()[..], [0xc2u8, 0xc0u8, 40u8][..]);
+	assert_eq!(stream.out()[..], [0xc2u8, 0xc0u8, 40u8][..]);
 }
 
 #[test]
@@ -497,7 +497,7 @@ fn test_rlp_stream_size_limit() {
 		let item = [0u8; 1];
 		let mut stream = RlpStream::new();
 		while stream.append_raw_checked(&item, 1, limit) {}
-		assert_eq!(stream.drain().len(), limit);
+		assert_eq!(stream.out().len(), limit);
 	}
 }
 

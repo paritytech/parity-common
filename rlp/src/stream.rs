@@ -8,7 +8,7 @@
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
-use bytes::BufMut;
+use bytes::{BufMut, BytesMut};
 use core::borrow::Borrow;
 
 use crate::traits::Encodable;
@@ -29,7 +29,7 @@ impl ListInfo {
 /// Appendable rlp encoder.
 pub struct RlpStream {
 	unfinished_lists: Vec<ListInfo>,
-	buffer: Vec<u8>,
+	buffer: BytesMut,
 	finished_list: bool,
 }
 
@@ -42,7 +42,7 @@ impl Default for RlpStream {
 impl RlpStream {
 	/// Initializes instance of empty `Stream`.
 	pub fn new() -> Self {
-		RlpStream { unfinished_lists: Vec::with_capacity(16), buffer: Vec::with_capacity(1024), finished_list: false }
+		RlpStream { unfinished_lists: Vec::with_capacity(16), buffer: BytesMut::new(), finished_list: false }
 	}
 
 	/// Initializes the `Stream` as a list.
@@ -271,7 +271,7 @@ impl RlpStream {
 	/// Streams out encoded bytes.
 	///
 	/// panic! if stream is not finished.
-	pub fn out(self) -> Vec<u8> {
+	pub fn out(self) -> BytesMut {
 		if self.is_finished() {
 			self.buffer
 		} else {
@@ -330,7 +330,7 @@ impl RlpStream {
 }
 
 pub struct BasicEncoder<'a> {
-	buffer: &'a mut Vec<u8>,
+	buffer: &'a mut BytesMut,
 }
 
 impl<'a> BasicEncoder<'a> {
