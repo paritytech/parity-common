@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+## Breaking
+- Updated dlmalloc to 0.2.1. [#452](https://github.com/paritytech/parity-common/pull/452)
 
 ## [0.7.0] - 2020-06-24
 - Added `const_size` to `MallocSizeOf` to optimize it for flat collections. [#398](https://github.com/paritytech/parity-common/pull/398)
