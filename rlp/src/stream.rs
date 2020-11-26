@@ -8,6 +8,7 @@
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
+use bytes::BufMut;
 use core::borrow::Borrow;
 
 use crate::traits::Encodable;
@@ -62,7 +63,7 @@ impl RlpStream {
 	/// ```
 	pub fn append_empty_data(&mut self) -> &mut Self {
 		// self push raw item
-		self.buffer.push(0x80);
+		self.buffer.put_u8(0x80);
 
 		// try to finish and prepend the length
 		self.note_appended(1);
@@ -168,14 +169,14 @@ impl RlpStream {
 		match len {
 			0 => {
 				// we may finish, if the appended list len is equal 0
-				self.buffer.push(0xc0u8);
+				self.buffer.put_u8(0xc0u8);
 				self.note_appended(1);
 				self.finished_list = true;
 			}
 			_ => {
 				// payload is longer than 1 byte only for lists > 55 bytes
 				// by pushing always this 1 byte we may avoid unnecessary shift of data
-				self.buffer.push(0);
+				self.buffer.put_u8(0);
 
 				let position = self.buffer.len();
 				self.unfinished_lists.push(ListInfo::new(position, Some(len)));
@@ -191,7 +192,7 @@ impl RlpStream {
 		self.finished_list = false;
 		// payload is longer than 1 byte only for lists > 55 bytes
 		// by pushing always this 1 byte we may avoid unnecessary shift of data
-		self.buffer.push(0);
+		self.buffer.put_u8(0);
 		let position = self.buffer.len();
 		self.unfinished_lists.push(ListInfo::new(position, None));
 		// return chainable self
@@ -387,22 +388,22 @@ impl<'a> BasicEncoder<'a> {
 		};
 		match len {
 			// just 0
-			0 => self.buffer.push(0x80u8),
+			0 => self.buffer.put_u8(0x80u8),
 			len @ 1..=55 => {
 				let first = value.next().expect("iterator length is higher than 1");
 				if len == 1 && first < 0x80 {
 					// byte is its own encoding if < 0x80
-					self.buffer.push(first);
+					self.buffer.put_u8(first);
 				} else {
 					// (prefix + length), followed by the string
-					self.buffer.push(0x80u8 + len as u8);
-					self.buffer.push(first);
+					self.buffer.put_u8(0x80u8 + len as u8);
+					self.buffer.put_u8(first);
 					self.buffer.extend(value);
 				}
 			}
 			// (prefix + length of length), followed by the length, followd by the string
 			len => {
-				self.buffer.push(0);
+				self.buffer.put_u8(0);
 				let position = self.buffer.len();
 				let inserted_bytes = self.insert_size(len, position);
 				self.buffer[position - 1] = 0xb7 + inserted_bytes;
