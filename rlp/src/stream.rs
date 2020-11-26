@@ -72,11 +72,6 @@ impl RlpStream {
 		self
 	}
 
-	/// Drain the object and return the underlying ElasticArray. Panics if it is not finished.
-	pub fn drain(self) -> Vec<u8> {
-		self.out()
-	}
-
 	/// Appends raw (pre-serialised) RLP data. Use with caution. Chainable.
 	pub fn append_raw(&mut self, bytes: &[u8], item_count: usize) -> &mut Self {
 		// push raw items
