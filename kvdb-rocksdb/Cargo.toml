@@ -33,4 +33,4 @@ tempdir = "0.3.7"
 keccak-hash = { path = "../keccak-hash" }
 sysinfo = "0.15.3"
 ctrlc = "3.1.4"
-time = "0.1"
+time = "0.2"
