@@ -42,14 +42,12 @@ impl Default for RlpStream {
 impl RlpStream {
 	/// Initializes instance of empty `Stream`.
 	pub fn new() -> Self {
-		RlpStream { unfinished_lists: Vec::with_capacity(16), buffer: BytesMut::new(), finished_list: false }
+		Self::new_with_buffer(BytesMut::with_capacity(1024))
 	}
 
 	/// Initializes the `Stream` as a list.
 	pub fn new_list(len: usize) -> Self {
-		let mut stream = RlpStream::new();
-		stream.begin_list(len);
-		stream
+		Self::new_list_with_buffer(BytesMut::with_capacity(1024), len)
 	}
 
 	/// Initializes instance of empty `Stream`.
