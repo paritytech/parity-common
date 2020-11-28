@@ -52,6 +52,18 @@ impl RlpStream {
 		stream
 	}
 
+	/// Initializes instance of empty `Stream`.
+	pub fn new_with_buffer(buffer: BytesMut) -> Self {
+		RlpStream { unfinished_lists: Vec::with_capacity(16), buffer, finished_list: false }
+	}
+
+	/// Initializes the `Stream` as a list.
+	pub fn new_list_with_buffer(buffer: BytesMut, len: usize) -> Self {
+		let mut stream = RlpStream::new_with_buffer(buffer);
+		stream.begin_list(len);
+		stream
+	}
+
 	/// Apends null to the end of stream, chainable.
 	///
 	/// ```

@@ -8,6 +8,7 @@
 
 use core::{cmp, fmt};
 
+use bytes::BytesMut;
 use hex_literal::hex;
 use primitive_types::{H160, U256};
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
@@ -226,6 +227,18 @@ fn encode_str() {
 		),
 	];
 	run_encode_tests(tests);
+}
+
+#[test]
+fn encode_into_existing_buffer() {
+	let mut buffer = BytesMut::new();
+	buffer.extend_from_slice(b"junk");
+
+	let mut s = RlpStream::new_with_buffer(buffer.split());
+	s.append(&"cat");
+	buffer.unsplit(s.out());
+
+	assert_eq!(&buffer[..], &[b'j', b'u', b'n', b'k', 0x83, b'c', b'a', b't']);
 }
 
 #[test]
