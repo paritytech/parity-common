@@ -234,7 +234,7 @@ fn encode_into_existing_buffer() {
 	let mut buffer = BytesMut::new();
 	buffer.extend_from_slice(b"junk");
 
-	let mut s = RlpStream::new_with_buffer(buffer.split());
+	let mut s = RlpStream::new_with_buffer(buffer.split_off(buffer.len()));
 	s.append(&"cat");
 	buffer.unsplit(s.out());
 
