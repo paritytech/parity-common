@@ -8,6 +8,7 @@
 
 #[cfg(not(feature = "std"))]
 use alloc::{borrow::ToOwned, boxed::Box, string::String, vec::Vec};
+use bytes::{Bytes, BytesMut};
 use core::iter::{empty, once};
 use core::{mem, str};
 
@@ -76,6 +77,30 @@ impl Encodable for Vec<u8> {
 impl Decodable for Vec<u8> {
 	fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
 		rlp.decoder().decode_value(|bytes| Ok(bytes.to_vec()))
+	}
+}
+
+impl Encodable for Bytes {
+	fn rlp_append(&self, s: &mut RlpStream) {
+		s.encoder().encode_value(self);
+	}
+}
+
+impl Decodable for Bytes {
+	fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+		rlp.decoder().decode_value(|bytes| Ok(Bytes::copy_from_slice(bytes)))
+	}
+}
+
+impl Encodable for BytesMut {
+	fn rlp_append(&self, s: &mut RlpStream) {
+		s.encoder().encode_value(self);
+	}
+}
+
+impl Decodable for BytesMut {
+	fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+		rlp.decoder().decode_value(|bytes| Ok(bytes.into()))
 	}
 }
 
