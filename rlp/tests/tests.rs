@@ -8,7 +8,7 @@
 
 use core::{cmp, fmt};
 
-use bytes::BytesMut;
+use bytes::{Bytes, BytesMut};
 use hex_literal::hex;
 use primitive_types::{H160, U256};
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
@@ -266,6 +266,28 @@ fn encode_vector_u8() {
 }
 
 #[test]
+fn encode_bytes() {
+	let tests = vec![
+		ETestPair(Bytes::from_static(&[]), vec![0x80]),
+		ETestPair(Bytes::from_static(&[0u8]), vec![0]),
+		ETestPair(Bytes::from_static(&[0x15]), vec![0x15]),
+		ETestPair(Bytes::from_static(&[0x40, 0x00]), vec![0x82, 0x40, 0x00]),
+	];
+	run_encode_tests(tests);
+}
+
+#[test]
+fn encode_bytesmut() {
+	let tests = vec![
+		ETestPair(BytesMut::from(&[] as &[u8]), vec![0x80]),
+		ETestPair(BytesMut::from(&[0_u8] as &[u8]), vec![0]),
+		ETestPair(BytesMut::from(&[0x15_u8] as &[u8]), vec![0x15]),
+		ETestPair(BytesMut::from(&[0x40_u8, 0x00_u8] as &[u8]), vec![0x82, 0x40, 0x00]),
+	];
+	run_encode_tests(tests);
+}
+
+#[test]
 fn encode_vector_u64() {
 	let tests = vec![
 		VETestPair(vec![], vec![0xc0]),
@@ -323,6 +345,28 @@ fn decode_vector_u8() {
 		DTestPair(vec![0u8], vec![0]),
 		DTestPair(vec![0x15], vec![0x15]),
 		DTestPair(vec![0x40, 0x00], vec![0x82, 0x40, 0x00]),
+	];
+	run_decode_tests(tests);
+}
+
+#[test]
+fn decode_bytes() {
+	let tests = vec![
+		DTestPair(Bytes::from_static(&[]), vec![0x80]),
+		DTestPair(Bytes::from_static(&[0u8]), vec![0]),
+		DTestPair(Bytes::from_static(&[0x15]), vec![0x15]),
+		DTestPair(Bytes::from_static(&[0x40, 0x00]), vec![0x82, 0x40, 0x00]),
+	];
+	run_decode_tests(tests);
+}
+
+#[test]
+fn decode_bytesmut() {
+	let tests = vec![
+		DTestPair(BytesMut::from(&[] as &[u8]), vec![0x80]),
+		DTestPair(BytesMut::from(&[0_u8] as &[u8]), vec![0]),
+		DTestPair(BytesMut::from(&[0x15_u8] as &[u8]), vec![0x15]),
+		DTestPair(BytesMut::from(&[0x40_u8, 0x00_u8] as &[u8]), vec![0x82, 0x40, 0x00]),
 	];
 	run_decode_tests(tests);
 }
