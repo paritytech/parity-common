@@ -681,7 +681,7 @@ macro_rules! construct_uint {
 
 			fn full_shl(self, shift: u32) -> [u64; $n_words + 1] {
 				debug_assert!(shift < Self::WORD_BITS as u32);
-				let mut u = [064; $n_words + 1];
+				let mut u = [0u64; $n_words + 1];
 				let u_lo = self.0[0] << shift;
 				let u_hi = self >> (Self::WORD_BITS as u32 - shift);
 				u[0] = u_lo;
