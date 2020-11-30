@@ -136,7 +136,7 @@ fn main() {
 		keyvalues = KeyValueSeed::with_seed(seed);
 
 		if step % 10000 == 9999 {
-			let timestamp = time::strftime("%Y-%m-%d %H:%M:%S", &time::now()).expect("Error formatting log timestamp");
+			let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
 
 			println!("{}", timestamp);
 			println!("\tData written: {} keys - {} Mb", step + 1, ((step + 1) * 64 * 128) / 1024 / 1024);
