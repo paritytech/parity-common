@@ -8,6 +8,7 @@
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
+use bytes::{BufMut, BytesMut};
 use core::borrow::Borrow;
 
 use crate::traits::Encodable;
@@ -28,7 +29,7 @@ impl ListInfo {
 /// Appendable rlp encoder.
 pub struct RlpStream {
 	unfinished_lists: Vec<ListInfo>,
-	buffer: Vec<u8>,
+	buffer: BytesMut,
 	finished_list: bool,
 }
 
@@ -41,12 +42,22 @@ impl Default for RlpStream {
 impl RlpStream {
 	/// Initializes instance of empty `Stream`.
 	pub fn new() -> Self {
-		RlpStream { unfinished_lists: Vec::with_capacity(16), buffer: Vec::with_capacity(1024), finished_list: false }
+		Self::new_with_buffer(BytesMut::with_capacity(1024))
 	}
 
 	/// Initializes the `Stream` as a list.
 	pub fn new_list(len: usize) -> Self {
-		let mut stream = RlpStream::new();
+		Self::new_list_with_buffer(BytesMut::with_capacity(1024), len)
+	}
+
+	/// Initializes instance of empty `Stream`.
+	pub fn new_with_buffer(buffer: BytesMut) -> Self {
+		RlpStream { unfinished_lists: Vec::with_capacity(16), buffer, finished_list: false }
+	}
+
+	/// Initializes the `Stream` as a list.
+	pub fn new_list_with_buffer(buffer: BytesMut, len: usize) -> Self {
+		let mut stream = RlpStream::new_with_buffer(buffer);
 		stream.begin_list(len);
 		stream
 	}
@@ -62,18 +73,13 @@ impl RlpStream {
 	/// ```
 	pub fn append_empty_data(&mut self) -> &mut Self {
 		// self push raw item
-		self.buffer.push(0x80);
+		self.buffer.put_u8(0x80);
 
 		// try to finish and prepend the length
 		self.note_appended(1);
 
 		// return chainable self
 		self
-	}
-
-	/// Drain the object and return the underlying ElasticArray. Panics if it is not finished.
-	pub fn drain(self) -> Vec<u8> {
-		self.out()
 	}
 
 	/// Appends raw (pre-serialised) RLP data. Use with caution. Chainable.
@@ -168,14 +174,14 @@ impl RlpStream {
 		match len {
 			0 => {
 				// we may finish, if the appended list len is equal 0
-				self.buffer.push(0xc0u8);
+				self.buffer.put_u8(0xc0u8);
 				self.note_appended(1);
 				self.finished_list = true;
 			}
 			_ => {
 				// payload is longer than 1 byte only for lists > 55 bytes
 				// by pushing always this 1 byte we may avoid unnecessary shift of data
-				self.buffer.push(0);
+				self.buffer.put_u8(0);
 
 				let position = self.buffer.len();
 				self.unfinished_lists.push(ListInfo::new(position, Some(len)));
@@ -191,7 +197,7 @@ impl RlpStream {
 		self.finished_list = false;
 		// payload is longer than 1 byte only for lists > 55 bytes
 		// by pushing always this 1 byte we may avoid unnecessary shift of data
-		self.buffer.push(0);
+		self.buffer.put_u8(0);
 		let position = self.buffer.len();
 		self.unfinished_lists.push(ListInfo::new(position, None));
 		// return chainable self
@@ -275,7 +281,7 @@ impl RlpStream {
 	/// Streams out encoded bytes.
 	///
 	/// panic! if stream is not finished.
-	pub fn out(self) -> Vec<u8> {
+	pub fn out(self) -> BytesMut {
 		if self.is_finished() {
 			self.buffer
 		} else {
@@ -325,16 +331,10 @@ impl RlpStream {
 		self.note_appended(1);
 		self.finished_list = true;
 	}
-
-	/// Finalize current unbounded list. Panics if no unbounded list has been opened.
-	#[deprecated(since = "0.4.3", note = "use finalize_unbounded_list instead")]
-	pub fn complete_unbounded_list(&mut self) {
-		self.finalize_unbounded_list();
-	}
 }
 
 pub struct BasicEncoder<'a> {
-	buffer: &'a mut Vec<u8>,
+	buffer: &'a mut BytesMut,
 }
 
 impl<'a> BasicEncoder<'a> {
@@ -387,22 +387,22 @@ impl<'a> BasicEncoder<'a> {
 		};
 		match len {
 			// just 0
-			0 => self.buffer.push(0x80u8),
+			0 => self.buffer.put_u8(0x80u8),
 			len @ 1..=55 => {
 				let first = value.next().expect("iterator length is higher than 1");
 				if len == 1 && first < 0x80 {
 					// byte is its own encoding if < 0x80
-					self.buffer.push(first);
+					self.buffer.put_u8(first);
 				} else {
 					// (prefix + length), followed by the string
-					self.buffer.push(0x80u8 + len as u8);
-					self.buffer.push(first);
+					self.buffer.put_u8(0x80u8 + len as u8);
+					self.buffer.put_u8(first);
 					self.buffer.extend(value);
 				}
 			}
 			// (prefix + length of length), followed by the length, followd by the string
 			len => {
-				self.buffer.push(0);
+				self.buffer.put_u8(0);
 				let position = self.buffer.len();
 				let inserted_bytes = self.insert_size(len, position);
 				self.buffer[position - 1] = 0xb7 + inserted_bytes;

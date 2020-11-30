@@ -8,6 +8,7 @@ authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
 
 [dependencies]
+bytes = { version = "0.6", default-features = false }
 rustc-hex = { version = "2.0.1", default-features = false }
 
 [dev-dependencies]
@@ -17,7 +18,7 @@ primitive-types = { path = "../primitive-types", version = "0.7", features = ["i
 
 [features]
 default = ["std"]
-std = ["rustc-hex/std"]
+std = ["bytes/std", "rustc-hex/std"]
 
 [[bench]]
 name = "rlp"

@@ -9,10 +9,9 @@
 //! Common RLP traits
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
+use bytes::BytesMut;
 
-use crate::error::DecoderError;
-use crate::rlpin::Rlp;
-use crate::stream::RlpStream;
+use crate::{error::DecoderError, rlpin::Rlp, stream::RlpStream};
 
 /// RLP decodable trait
 pub trait Decodable: Sized {
@@ -26,9 +25,9 @@ pub trait Encodable {
 	fn rlp_append(&self, s: &mut RlpStream);
 
 	/// Get rlp-encoded bytes for this instance
-	fn rlp_bytes(&self) -> Vec<u8> {
+	fn rlp_bytes(&self) -> BytesMut {
 		let mut s = RlpStream::new();
 		self.rlp_append(&mut s);
-		s.drain()
+		s.out()
 	}
 }

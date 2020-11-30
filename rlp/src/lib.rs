@@ -45,12 +45,15 @@ mod traits;
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
+use bytes::BytesMut;
 use core::borrow::Borrow;
 
-pub use self::error::DecoderError;
-pub use self::rlpin::{PayloadInfo, Prototype, Rlp, RlpIterator};
-pub use self::stream::RlpStream;
-pub use self::traits::{Decodable, Encodable};
+pub use self::{
+	error::DecoderError,
+	rlpin::{PayloadInfo, Prototype, Rlp, RlpIterator},
+	stream::RlpStream,
+	traits::{Decodable, Encodable},
+};
 
 /// The RLP encoded empty data (used to mean "null value").
 pub const NULL_RLP: [u8; 1] = [0x80; 1];
@@ -87,21 +90,21 @@ where
 /// let out = rlp::encode(&animal);
 /// assert_eq!(out, vec![0x83, b'c', b'a', b't']);
 /// ```
-pub fn encode<E>(object: &E) -> Vec<u8>
+pub fn encode<E>(object: &E) -> BytesMut
 where
 	E: Encodable,
 {
 	let mut stream = RlpStream::new();
 	stream.append(object);
-	stream.drain()
+	stream.out()
 }
 
-pub fn encode_list<E, K>(object: &[K]) -> Vec<u8>
+pub fn encode_list<E, K>(object: &[K]) -> BytesMut
 where
 	E: Encodable,
 	K: Borrow<E>,
 {
 	let mut stream = RlpStream::new();
 	stream.append_list(object);
-	stream.drain()
+	stream.out()
 }
