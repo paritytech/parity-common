@@ -15,7 +15,7 @@ kvdb = { version = "0.7", path = "../kvdb" }
 kvdb-memorydb = { version = "0.7", path = "../kvdb-memorydb" }
 futures = "0.3"
 log = "0.4.8"
-send_wrapper = "0.3.0"
+send_wrapper = "0.5.0"
 parity-util-mem = { path = "../parity-util-mem", version = "0.7", default-features = false }
 
 [dependencies.web-sys]
