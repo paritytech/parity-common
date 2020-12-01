@@ -319,6 +319,19 @@ fn encode_vector_str() {
 	run_encode_tests_list(tests);
 }
 
+#[test]
+fn clear() {
+	let mut buffer = BytesMut::new();
+	buffer.extend_from_slice(b"junk");
+
+	let mut s = RlpStream::new_with_buffer(buffer);
+	s.append(&"parrot");
+	s.clear();
+	s.append(&"cat");
+
+	assert_eq!(&s.out()[..], &[b'j', b'u', b'n', b'k', 0x83, b'c', b'a', b't']);
+}
+
 struct DTestPair<T>(T, Vec<u8>)
 where
 	T: Decodable + fmt::Debug + cmp::Eq;
