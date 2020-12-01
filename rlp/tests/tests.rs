@@ -234,11 +234,23 @@ fn encode_into_existing_buffer() {
 	let mut buffer = BytesMut::new();
 	buffer.extend_from_slice(b"junk");
 
-	let mut s = RlpStream::new_with_buffer(buffer.split_off(buffer.len()));
+	let mut split_buffer = buffer.split_off(buffer.len());
+	split_buffer.extend_from_slice(b"!");
+
+	let mut s = RlpStream::new_with_buffer(split_buffer);
 	s.append(&"cat");
 	buffer.unsplit(s.out());
 
-	assert_eq!(&buffer[..], &[b'j', b'u', b'n', b'k', 0x83, b'c', b'a', b't']);
+	buffer.extend_from_slice(b" and ");
+
+	let mut s = RlpStream::new_with_buffer(buffer);
+	s.append(&"dog");
+	let buffer = s.out();
+
+	assert_eq!(
+		&buffer[..],
+		&[b'j', b'u', b'n', b'k', b'!', 0x83, b'c', b'a', b't', b' ', b'a', b'n', b'd', b' ', 0x83, b'd', b'o', b'g']
+	);
 }
 
 #[test]
