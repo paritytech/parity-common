@@ -29,6 +29,8 @@
 //! implementations for even more speed, hidden behind the `x64_arithmetic`
 //! feature flag.
 
+use core::fmt;
+
 /// Conversion from decimal string error
 #[derive(Debug, PartialEq)]
 pub enum FromDecStrErr {
@@ -38,9 +40,8 @@ pub enum FromDecStrErr {
 	InvalidLength,
 }
 
-#[cfg(feature = "std")]
-impl std::fmt::Display for FromDecStrErr {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for FromDecStrErr {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(
 			f,
 			"{}",
@@ -60,9 +61,8 @@ pub struct FromHexError {
 	inner: hex::FromHexError,
 }
 
-#[cfg(feature = "std")]
-impl std::fmt::Display for FromHexError {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for FromHexError {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "{}", self.inner)
 	}
 }
