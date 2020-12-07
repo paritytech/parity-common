@@ -68,7 +68,11 @@ impl fmt::Display for FromHexError {
 }
 
 #[cfg(feature = "std")]
-impl std::error::Error for FromHexError {}
+impl std::error::Error for FromHexError {
+	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+		Some(&self.inner)
+	}
+}
 
 #[doc(hidden)]
 impl From<hex::FromHexError> for FromHexError {

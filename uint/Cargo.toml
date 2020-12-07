@@ -20,7 +20,7 @@ arbitrary = { version = "0.4", optional = true }
 
 [features]
 default = ["std"]
-std = ["byteorder/std", "crunchy/std"]
+std = ["byteorder/std", "crunchy/std", "hex/std"]
 quickcheck = ["qc", "rand"]
 
 [[example]]
