@@ -10,6 +10,7 @@ use crate::{U128, U256, U512, U64};
 use fixed_hash::*;
 #[cfg(feature = "codec")]
 use impl_codec::impl_fixed_hash_codec;
+#[cfg(feature = "rlp")]
 use impl_rlp::impl_fixed_hash_rlp;
 #[cfg(feature = "serialize")]
 use impl_serde::impl_fixed_hash_serde;
@@ -22,6 +23,7 @@ pub trait BigEndianHash {
 }
 
 construct_fixed_hash! { pub struct H32(4); }
+#[cfg(feature = "rlp")]
 impl_fixed_hash_rlp!(H32, 4);
 #[cfg(feature = "serialize")]
 impl_fixed_hash_serde!(H32, 4);
@@ -29,6 +31,7 @@ impl_fixed_hash_serde!(H32, 4);
 impl_fixed_hash_codec!(H32, 4);
 
 construct_fixed_hash! { pub struct H64(8); }
+#[cfg(feature = "rlp")]
 impl_fixed_hash_rlp!(H64, 8);
 #[cfg(feature = "serialize")]
 impl_fixed_hash_serde!(H64, 8);
@@ -36,6 +39,7 @@ impl_fixed_hash_serde!(H64, 8);
 impl_fixed_hash_codec!(H64, 8);
 
 construct_fixed_hash! { pub struct H128(16); }
+#[cfg(feature = "rlp")]
 impl_fixed_hash_rlp!(H128, 16);
 #[cfg(feature = "serialize")]
 impl_fixed_hash_serde!(H128, 16);
@@ -46,6 +50,7 @@ pub use primitive_types::H160;
 pub use primitive_types::H256;
 
 construct_fixed_hash! { pub struct H264(33); }
+#[cfg(feature = "rlp")]
 impl_fixed_hash_rlp!(H264, 33);
 #[cfg(feature = "serialize")]
 impl_fixed_hash_serde!(H264, 33);
@@ -55,6 +60,7 @@ impl_fixed_hash_codec!(H264, 33);
 pub use primitive_types::H512;
 
 construct_fixed_hash! { pub struct H520(65); }
+#[cfg(feature = "rlp")]
 impl_fixed_hash_rlp!(H520, 65);
 #[cfg(feature = "serialize")]
 impl_fixed_hash_serde!(H520, 65);

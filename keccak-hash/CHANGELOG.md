@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+### Breaking
+- Updated `primitive-types` to 0.8. [#463](https://github.com/paritytech/parity-common/pull/463)
 
 ## [0.5.1] - 2020-04-10
 - Added `keccak256_range` and `keccak512_range` functions. [#370](https://github.com/paritytech/parity-common/pull/370)

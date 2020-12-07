@@ -56,6 +56,7 @@ use crunchy::unroll;
 use fixed_hash::*;
 #[cfg(feature = "codec")]
 use impl_codec::impl_fixed_hash_codec;
+#[cfg(feature = "rlp")]
 use impl_rlp::impl_fixed_hash_rlp;
 #[cfg(feature = "serialize")]
 use impl_serde::impl_fixed_hash_serde;
@@ -69,6 +70,7 @@ construct_fixed_hash! {
 	/// Bloom hash type with 256 bytes (2048 bits) size.
 	pub struct Bloom(BLOOM_SIZE);
 }
+#[cfg(feature = "rlp")]
 impl_fixed_hash_rlp!(Bloom, BLOOM_SIZE);
 #[cfg(feature = "serialize")]
 impl_fixed_hash_serde!(Bloom, BLOOM_SIZE);

@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- Updated `impl-rlp` to `rlp` 0.5. [#463](https://github.com/paritytech/parity-common/pull/463)
 
 ## [0.7.3] - 2020-11-12
 - Added `scale_info` support. [#312](https://github.com/paritytech/parity-common/pull/312)
