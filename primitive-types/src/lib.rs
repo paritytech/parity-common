@@ -32,11 +32,6 @@ pub enum Error {
 }
 
 construct_uint! {
-	/// 128-bit unsigned integer.
-	#[cfg_attr(feature = "scale-info", derive(TypeInfo))]
-	pub struct U128(2);
-}
-construct_uint! {
 	/// 256-bit unsigned integer.
 	#[cfg_attr(feature = "scale-info", derive(TypeInfo))]
 	pub struct U256(4);
@@ -84,7 +79,6 @@ mod serde {
 	use super::*;
 	use impl_serde::{impl_fixed_hash_serde, impl_uint_serde};
 
-	impl_uint_serde!(U128, 2);
 	impl_uint_serde!(U256, 4);
 	impl_uint_serde!(U512, 8);
 
@@ -99,7 +93,6 @@ mod codec {
 	use super::*;
 	use impl_codec::{impl_fixed_hash_codec, impl_uint_codec};
 
-	impl_uint_codec!(U128, 2);
 	impl_uint_codec!(U256, 4);
 	impl_uint_codec!(U512, 8);
 
@@ -114,7 +107,6 @@ mod rlp {
 	use super::*;
 	use impl_rlp::{impl_fixed_hash_rlp, impl_uint_rlp};
 
-	impl_uint_rlp!(U128, 2);
 	impl_uint_rlp!(U256, 4);
 	impl_uint_rlp!(U512, 8);
 
@@ -147,21 +139,6 @@ impl From<U256> for U512 {
 	}
 }
 
-impl TryFrom<U256> for U128 {
-	type Error = Error;
-
-	fn try_from(value: U256) -> Result<U128, Error> {
-		let U256(ref arr) = value;
-		if arr[2] | arr[3] != 0 {
-			return Err(Error::Overflow);
-		}
-		let mut ret = [0; 2];
-		ret[0] = arr[0];
-		ret[1] = arr[1];
-		Ok(U128(ret))
-	}
-}
-
 impl TryFrom<U512> for U256 {
 	type Error = Error;
 
@@ -176,41 +153,6 @@ impl TryFrom<U512> for U256 {
 		ret[2] = arr[2];
 		ret[3] = arr[3];
 		Ok(U256(ret))
-	}
-}
-
-impl TryFrom<U512> for U128 {
-	type Error = Error;
-
-	fn try_from(value: U512) -> Result<U128, Error> {
-		let U512(ref arr) = value;
-		if arr[2] | arr[3] | arr[4] | arr[5] | arr[6] | arr[7] != 0 {
-			return Err(Error::Overflow);
-		}
-		let mut ret = [0; 2];
-		ret[0] = arr[0];
-		ret[1] = arr[1];
-		Ok(U128(ret))
-	}
-}
-
-impl From<U128> for U512 {
-	fn from(value: U128) -> U512 {
-		let U128(ref arr) = value;
-		let mut ret = [0; 8];
-		ret[0] = arr[0];
-		ret[1] = arr[1];
-		U512(ret)
-	}
-}
-
-impl From<U128> for U256 {
-	fn from(value: U128) -> U256 {
-		let U128(ref arr) = value;
-		let mut ret = [0; 4];
-		ret[0] = arr[0];
-		ret[1] = arr[1];
-		U256(ret)
 	}
 }
 

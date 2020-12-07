@@ -9,6 +9,6 @@
 //! Implementation of `MallocSize` for common ethereum types: fixed hashes
 //! and uints.
 
-use ethereum_types::{Bloom, H128, H264, H32, H520, H64, U64};
+use ethereum_types::{Bloom, H128, H264, H32, H520, H64};
 
-malloc_size_of_is_0!(U64, H32, H64, H128, H264, H520, Bloom);
+malloc_size_of_is_0!(H32, H64, H128, H264, H520, Bloom);

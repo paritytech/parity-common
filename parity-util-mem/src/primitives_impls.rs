@@ -8,9 +8,9 @@
 
 //! Implementation of `MallocSize` primitive types.
 
-use primitive_types::{H160, H256, H512, U128, U256, U512};
+use primitive_types::{H160, H256, H512, U256, U512};
 
-malloc_size_of_is_0!(U128, U256, U512, H160, H256, H512);
+malloc_size_of_is_0!(U256, U512, H160, H256, H512);
 
 #[cfg(test)]
 mod tests {

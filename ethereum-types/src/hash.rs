@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use crate::{U128, U256, U512, U64};
+use crate::{U256, U512};
 use fixed_hash::*;
 #[cfg(feature = "codec")]
 use impl_codec::impl_fixed_hash_codec;
@@ -67,6 +67,22 @@ impl_fixed_hash_serde!(H520, 65);
 #[cfg(feature = "codec")]
 impl_fixed_hash_codec!(H520, 65);
 
+macro_rules! impl_core_uint_conversions {
+	($hash: ident, $uint: ident) => {
+		impl BigEndianHash for $hash {
+			type Uint = $uint;
+
+			fn from_uint(value: &$uint) -> Self {
+				$hash(value.to_be_bytes())
+			}
+
+			fn into_uint(&self) -> $uint {
+				$uint::from_be_bytes(self.0)
+			}
+		}
+	};
+}
+
 macro_rules! impl_uint_conversions {
 	($hash: ident, $uint: ident) => {
 		impl BigEndianHash for $hash {
@@ -85,8 +101,8 @@ macro_rules! impl_uint_conversions {
 	};
 }
 
-impl_uint_conversions!(H64, U64);
-impl_uint_conversions!(H128, U128);
+impl_core_uint_conversions!(H64, u64);
+impl_core_uint_conversions!(H128, u128);
 impl_uint_conversions!(H256, U256);
 impl_uint_conversions!(H512, U512);
 
