@@ -1550,31 +1550,34 @@ macro_rules! construct_uint {
 			}
 		}
 
-		$crate::impl_std_for_uint!($name, $n_words);
-		// `$n_words * 8` because macro expects bytes and
-		// uints use 64 bit (8 byte) words
-		$crate::impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
-		$crate::impl_arbitrary_for_uint!($name, ($n_words * 8));
-	}
-}
-
-#[cfg(feature = "std")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_std_for_uint {
-	($name: ident, $n_words: tt) => {
 		impl $crate::core_::str::FromStr for $name {
-			type Err = $crate::rustc_hex::FromHexError;
+			type Err = $crate::hex::FromHexError;
 
 			fn from_str(value: &str) -> $crate::core_::result::Result<$name, Self::Err> {
-				use $crate::rustc_hex::FromHex;
-				let bytes: Vec<u8> = match value.len() % 2 == 0 {
-					true => value.from_hex()?,
-					false => ("0".to_owned() + value).from_hex()?,
-				};
+				const bytes_len: usize = $n_words * 8;
+				const max_encoded_len: usize = bytes_len * 2;
 
-				if $n_words * 8 < bytes.len() {
-					return Err(Self::Err::InvalidHexLength);
+				let mut bytes = [0_u8; bytes_len];
+
+				let encoded = value.as_bytes();
+
+				if encoded.len() > max_encoded_len {
+					return Err(Self::Err::InvalidStringLength);
+				}
+
+				if encoded.len() % 2 == 0 {
+					let out = &mut bytes[bytes_len - encoded.len() / 2..];
+
+					$crate::hex::decode_to_slice(encoded, out)?;
+				} else {
+					// Prepend '0' by overlaying our value on a scratch buffer filled with '0' characters.
+					let mut s = [b'0'; max_encoded_len];
+					s[max_encoded_len - encoded.len()..].copy_from_slice(encoded);
+					let encoded = &s[max_encoded_len - encoded.len() - 1..];
+
+					let out = &mut bytes[bytes_len - encoded.len() / 2..];
+
+					$crate::hex::decode_to_slice(encoded, out)?;
 				}
 
 				let bytes_ref: &[u8] = &bytes;
@@ -1587,14 +1590,12 @@ macro_rules! impl_std_for_uint {
 				s.parse().unwrap()
 			}
 		}
-	};
-}
 
-#[cfg(not(feature = "std"))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_std_for_uint {
-	($name: ident, $n_words: tt) => {};
+		// `$n_words * 8` because macro expects bytes and
+		// uints use 64 bit (8 byte) words
+		$crate::impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
+		$crate::impl_arbitrary_for_uint!($name, ($n_words * 8));
+	}
 }
 
 #[cfg(feature = "quickcheck")]

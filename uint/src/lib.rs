@@ -19,7 +19,7 @@ pub use byteorder;
 pub use core as core_;
 
 #[doc(hidden)]
-pub use rustc_hex;
+pub use hex;
 
 #[cfg(feature = "quickcheck")]
 #[doc(hidden)]
