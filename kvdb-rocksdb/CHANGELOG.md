@@ -5,10 +5,11 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- Updated dependencies. [#470](https://github.com/paritytech/parity-common/pull/470)
 
 ## [0.9.1] - 2020-08-26
 - Updated rocksdb to 0.15. [#424](https://github.com/paritytech/parity-common/pull/424)
-- Set `format_version` to 5. [#395](https://github.com/paritytech/parity-common/pull/395) 
+- Set `format_version` to 5. [#395](https://github.com/paritytech/parity-common/pull/395)
 
 ## [0.9.0] - 2020-06-24
 - Updated `kvdb` to 0.7. [#402](https://github.com/paritytech/parity-common/pull/402)
@@ -18,7 +19,7 @@ The format is based on [Keep a Changelog].
 ### Breaking
 - Updated to the new `kvdb` interface. [#313](https://github.com/paritytech/parity-common/pull/313)
 - Rename and optimize prefix iteration. [#365](https://github.com/paritytech/parity-common/pull/365)
-- Added Secondary Instance API. [#384](https://github.com/paritytech/parity-common/pull/384) 
+- Added Secondary Instance API. [#384](https://github.com/paritytech/parity-common/pull/384)
 
 ## [0.7.0] - 2020-03-16
 - Updated dependencies. [#361](https://github.com/paritytech/parity-common/pull/361)
