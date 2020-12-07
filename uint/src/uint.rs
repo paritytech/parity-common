@@ -55,6 +55,28 @@ impl std::fmt::Display for FromDecStrErr {
 #[cfg(feature = "std")]
 impl std::error::Error for FromDecStrErr {}
 
+#[derive(Debug)]
+pub struct FromHexError {
+	inner: hex::FromHexError,
+}
+
+#[cfg(feature = "std")]
+impl std::fmt::Display for FromHexError {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}", self.inner)
+	}
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for FromHexError {}
+
+#[doc(hidden)]
+impl From<hex::FromHexError> for FromHexError {
+	fn from(inner: hex::FromHexError) -> Self {
+		Self { inner }
+	}
+}
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_map_from {
@@ -1551,7 +1573,7 @@ macro_rules! construct_uint {
 		}
 
 		impl $crate::core_::str::FromStr for $name {
-			type Err = $crate::hex::FromHexError;
+			type Err = $crate::FromHexError;
 
 			fn from_str(value: &str) -> $crate::core_::result::Result<$name, Self::Err> {
 				const bytes_len: usize = $n_words * 8;
@@ -1562,13 +1584,13 @@ macro_rules! construct_uint {
 				let encoded = value.as_bytes();
 
 				if encoded.len() > max_encoded_len {
-					return Err(Self::Err::InvalidStringLength);
+					return Err($crate::hex::FromHexError::InvalidStringLength.into());
 				}
 
 				if encoded.len() % 2 == 0 {
 					let out = &mut bytes[bytes_len - encoded.len() / 2..];
 
-					$crate::hex::decode_to_slice(encoded, out)?;
+					$crate::hex::decode_to_slice(encoded, out).map_err(Self::Err::from)?;
 				} else {
 					// Prepend '0' by overlaying our value on a scratch buffer filled with '0' characters.
 					let mut s = [b'0'; max_encoded_len];
@@ -1577,7 +1599,7 @@ macro_rules! construct_uint {
 
 					let out = &mut bytes[bytes_len - encoded.len() / 2..];
 
-					$crate::hex::decode_to_slice(encoded, out)?;
+					$crate::hex::decode_to_slice(encoded, out).map_err(Self::Err::from)?;
 				}
 
 				let bytes_ref: &[u8] = &bytes;
