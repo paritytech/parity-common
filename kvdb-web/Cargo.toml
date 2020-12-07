@@ -11,8 +11,8 @@ edition = "2018"
 [dependencies]
 wasm-bindgen = "0.2.69"
 js-sys = "0.3.46"
-kvdb = { version = "0.7", path = "../kvdb" }
-kvdb-memorydb = { version = "0.7", path = "../kvdb-memorydb" }
+kvdb = { version = "0.8", path = "../kvdb" }
+kvdb-memorydb = { version = "0.8", path = "../kvdb-memorydb" }
 futures = "0.3.8"
 log = "0.4.11"
 send_wrapper = "0.5.0"
