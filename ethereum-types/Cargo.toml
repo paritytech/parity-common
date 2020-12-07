@@ -11,17 +11,18 @@ edition = "2018"
 ethbloom = { path = "../ethbloom", version = "0.10", default-features = false }
 fixed-hash = { path = "../fixed-hash", version = "0.6", default-features = false, features = ["byteorder", "rustc-hex"] }
 uint-crate = { path = "../uint", package = "uint", version = "0.8", default-features = false }
-primitive-types = { path = "../primitive-types", version = "0.8", features = ["rlp", "byteorder", "rustc-hex"], default-features = false }
+primitive-types = { path = "../primitive-types", version = "0.8", features = ["byteorder", "rustc-hex"], default-features = false }
 impl-serde = { path = "../primitive-types/impls/serde", version = "0.3.0", default-features = false, optional = true }
-impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.3", default-features = false }
+impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.3", default-features = false, optional = true }
 impl-codec = { version = "0.4.1", path = "../primitive-types/impls/codec", default-features = false, optional = true }
 
 [dev-dependencies]
 serde_json = "1.0.41"
 
 [features]
-default = ["std", "serialize"]
+default = ["std", "rlp", "serialize"]
 std = ["uint-crate/std", "fixed-hash/std", "ethbloom/std", "primitive-types/std"]
 serialize = ["std", "impl-serde", "primitive-types/serde", "ethbloom/serialize"]
 arbitrary = ["ethbloom/arbitrary", "fixed-hash/arbitrary", "uint-crate/arbitrary"]
+rlp = ["impl-rlp", "ethbloom/rlp"]
 codec = ["impl-codec", "ethbloom/codec"]

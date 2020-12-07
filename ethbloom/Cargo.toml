@@ -14,7 +14,7 @@ tiny-keccak = { version = "2.0", features = ["keccak"] }
 crunchy = { version = "0.2.2", default-features = false, features = ["limit_256"] }
 fixed-hash = { path = "../fixed-hash", version = "0.6", default-features = false }
 impl-serde = { path = "../primitive-types/impls/serde", version = "0.3", default-features = false, optional = true }
-impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.3", default-features = false }
+impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.3", default-features = false, optional = true }
 impl-codec = { version = "0.4.1", path = "../primitive-types/impls/codec", default-features = false, optional = true }
 
 [dev-dependencies]
@@ -23,11 +23,12 @@ rand = "0.7.2"
 hex-literal = "0.3.1"
 
 [features]
-default = ["std", "serialize", "rustc-hex"]
+default = ["std", "rlp", "serialize", "rustc-hex"]
 std = ["fixed-hash/std", "crunchy/std"]
 serialize = ["std", "impl-serde"]
 rustc-hex = ["fixed-hash/rustc-hex"]
 arbitrary = ["fixed-hash/arbitrary"]
+rlp = ["impl-rlp"]
 codec = ["impl-codec"]
 
 [[bench]]
