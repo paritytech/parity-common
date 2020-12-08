@@ -1580,28 +1580,28 @@ macro_rules! construct_uint {
 			type Err = $crate::FromHexError;
 
 			fn from_str(value: &str) -> $crate::core_::result::Result<$name, Self::Err> {
-				const bytes_len: usize = $n_words * 8;
-				const max_encoded_len: usize = bytes_len * 2;
+				const BYTES_LEN: usize = $n_words * 8;
+				const MAX_ENCODED_LEN: usize = BYTES_LEN * 2;
 
-				let mut bytes = [0_u8; bytes_len];
+				let mut bytes = [0_u8; BYTES_LEN];
 
 				let encoded = value.as_bytes();
 
-				if encoded.len() > max_encoded_len {
+				if encoded.len() > MAX_ENCODED_LEN {
 					return Err($crate::hex::FromHexError::InvalidStringLength.into());
 				}
 
 				if encoded.len() % 2 == 0 {
-					let out = &mut bytes[bytes_len - encoded.len() / 2..];
+					let out = &mut bytes[BYTES_LEN - encoded.len() / 2..];
 
 					$crate::hex::decode_to_slice(encoded, out).map_err(Self::Err::from)?;
 				} else {
 					// Prepend '0' by overlaying our value on a scratch buffer filled with '0' characters.
-					let mut s = [b'0'; max_encoded_len];
-					s[max_encoded_len - encoded.len()..].copy_from_slice(encoded);
-					let encoded = &s[max_encoded_len - encoded.len() - 1..];
+					let mut s = [b'0'; MAX_ENCODED_LEN];
+					s[MAX_ENCODED_LEN - encoded.len()..].copy_from_slice(encoded);
+					let encoded = &s[MAX_ENCODED_LEN - encoded.len() - 1..];
 
-					let out = &mut bytes[bytes_len - encoded.len() / 2..];
+					let out = &mut bytes[BYTES_LEN - encoded.len() / 2..];
 
 					$crate::hex::decode_to_slice(encoded, out).map_err(Self::Err::from)?;
 				}
