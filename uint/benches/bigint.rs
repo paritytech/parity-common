@@ -71,6 +71,7 @@ criterion_group!(
 	u128_mul,
 	u128_div,
 	from_fixed_array,
+	from_str,
 );
 criterion_main!(bigint);
 
@@ -639,6 +640,16 @@ fn from_fixed_array(c: &mut Criterion) {
 		b.iter(|| {
 			let _: U512 = black_box(black_box(ary512).into());
 			let _: U256 = black_box(black_box(ary256).into());
+		})
+	});
+}
+
+fn from_str(c: &mut Criterion) {
+	c.bench_function("from_str", move |b| {
+		b.iter(|| {
+			black_box(U512::from_str(black_box("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).unwrap());
+			black_box(U512::from_str(black_box("0FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).unwrap());
+			black_box(U512::from_str(black_box("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).unwrap());
 		})
 	});
 }

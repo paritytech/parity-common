@@ -29,6 +29,8 @@
 //! implementations for even more speed, hidden behind the `x64_arithmetic`
 //! feature flag.
 
+use core::fmt;
+
 /// Conversion from decimal string error
 #[derive(Debug, PartialEq)]
 pub enum FromDecStrErr {
@@ -38,9 +40,8 @@ pub enum FromDecStrErr {
 	InvalidLength,
 }
 
-#[cfg(feature = "std")]
-impl std::fmt::Display for FromDecStrErr {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for FromDecStrErr {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(
 			f,
 			"{}",
@@ -54,6 +55,31 @@ impl std::fmt::Display for FromDecStrErr {
 
 #[cfg(feature = "std")]
 impl std::error::Error for FromDecStrErr {}
+
+#[derive(Debug)]
+pub struct FromHexError {
+	inner: hex::FromHexError,
+}
+
+impl fmt::Display for FromHexError {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "{}", self.inner)
+	}
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for FromHexError {
+	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+		Some(&self.inner)
+	}
+}
+
+#[doc(hidden)]
+impl From<hex::FromHexError> for FromHexError {
+	fn from(inner: hex::FromHexError) -> Self {
+		Self { inner }
+	}
+}
 
 #[macro_export]
 #[doc(hidden)]
@@ -1550,31 +1576,34 @@ macro_rules! construct_uint {
 			}
 		}
 
-		$crate::impl_std_for_uint!($name, $n_words);
-		// `$n_words * 8` because macro expects bytes and
-		// uints use 64 bit (8 byte) words
-		$crate::impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
-		$crate::impl_arbitrary_for_uint!($name, ($n_words * 8));
-	}
-}
-
-#[cfg(feature = "std")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_std_for_uint {
-	($name: ident, $n_words: tt) => {
 		impl $crate::core_::str::FromStr for $name {
-			type Err = $crate::rustc_hex::FromHexError;
+			type Err = $crate::FromHexError;
 
 			fn from_str(value: &str) -> $crate::core_::result::Result<$name, Self::Err> {
-				use $crate::rustc_hex::FromHex;
-				let bytes: Vec<u8> = match value.len() % 2 == 0 {
-					true => value.from_hex()?,
-					false => ("0".to_owned() + value).from_hex()?,
-				};
+				const BYTES_LEN: usize = $n_words * 8;
+				const MAX_ENCODED_LEN: usize = BYTES_LEN * 2;
 
-				if $n_words * 8 < bytes.len() {
-					return Err(Self::Err::InvalidHexLength);
+				let mut bytes = [0_u8; BYTES_LEN];
+
+				let encoded = value.as_bytes();
+
+				if encoded.len() > MAX_ENCODED_LEN {
+					return Err($crate::hex::FromHexError::InvalidStringLength.into());
+				}
+
+				if encoded.len() % 2 == 0 {
+					let out = &mut bytes[BYTES_LEN - encoded.len() / 2..];
+
+					$crate::hex::decode_to_slice(encoded, out).map_err(Self::Err::from)?;
+				} else {
+					// Prepend '0' by overlaying our value on a scratch buffer filled with '0' characters.
+					let mut s = [b'0'; MAX_ENCODED_LEN];
+					s[MAX_ENCODED_LEN - encoded.len()..].copy_from_slice(encoded);
+					let encoded = &s[MAX_ENCODED_LEN - encoded.len() - 1..];
+
+					let out = &mut bytes[BYTES_LEN - encoded.len() / 2..];
+
+					$crate::hex::decode_to_slice(encoded, out).map_err(Self::Err::from)?;
 				}
 
 				let bytes_ref: &[u8] = &bytes;
@@ -1587,14 +1616,12 @@ macro_rules! impl_std_for_uint {
 				s.parse().unwrap()
 			}
 		}
-	};
-}
 
-#[cfg(not(feature = "std"))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_std_for_uint {
-	($name: ident, $n_words: tt) => {};
+		// `$n_words * 8` because macro expects bytes and
+		// uints use 64 bit (8 byte) words
+		$crate::impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
+		$crate::impl_arbitrary_for_uint!($name, ($n_words * 8));
+	}
 }
 
 #[cfg(feature = "quickcheck")]
