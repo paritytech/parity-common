@@ -788,10 +788,10 @@ mod tests {
 	use super::*;
 	use kvdb_shared_tests as st;
 	use std::io::{self, Read};
-	use tempdir::TempDir;
+	use tempfile::Builder as TempfileBuilder;
 
 	fn create(columns: u32) -> io::Result<Database> {
-		let tempdir = TempDir::new("")?;
+		let tempdir = TempfileBuilder::new().prefix("").tempdir()?;
 		let config = DatabaseConfig::with_columns(columns);
 		Database::open(&config, tempdir.path().to_str().expect("tempdir path is valid unicode"))
 	}
@@ -846,7 +846,7 @@ mod tests {
 
 	#[test]
 	fn secondary_db_get() -> io::Result<()> {
-		let primary = TempDir::new("")?;
+		let primary = TempfileBuilder::new().prefix("").tempdir()?;
 		let config = DatabaseConfig::with_columns(1);
 		let db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
 
@@ -856,7 +856,7 @@ mod tests {
 		db.write(transaction)?;
 
 		let config = DatabaseConfig {
-			secondary: TempDir::new("")?.path().to_str().map(|s| s.to_string()),
+			secondary: TempfileBuilder::new().prefix("").tempdir()?.path().to_str().map(|s| s.to_string()),
 			..DatabaseConfig::with_columns(1)
 		};
 		let second_db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
@@ -866,12 +866,12 @@ mod tests {
 
 	#[test]
 	fn secondary_db_catch_up() -> io::Result<()> {
-		let primary = TempDir::new("")?;
+		let primary = TempfileBuilder::new().prefix("").tempdir()?;
 		let config = DatabaseConfig::with_columns(1);
 		let db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
 
 		let config = DatabaseConfig {
-			secondary: TempDir::new("")?.path().to_str().map(|s| s.to_string()),
+			secondary: TempfileBuilder::new().prefix("").tempdir()?.path().to_str().map(|s| s.to_string()),
 			..DatabaseConfig::with_columns(1)
 		};
 		let second_db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
@@ -888,7 +888,7 @@ mod tests {
 
 	#[test]
 	fn mem_tables_size() {
-		let tempdir = TempDir::new("").unwrap();
+		let tempdir = TempfileBuilder::new().prefix("").tempdir().unwrap();
 
 		let config = DatabaseConfig {
 			max_open_files: 512,
@@ -950,7 +950,7 @@ mod tests {
 		let config_1 = DatabaseConfig::default();
 		let config_5 = DatabaseConfig::with_columns(5);
 
-		let tempdir = TempDir::new("").unwrap();
+		let tempdir = TempfileBuilder::new().prefix("").tempdir().unwrap();
 
 		// open 1, add 4.
 		{
@@ -975,7 +975,7 @@ mod tests {
 		let config_1 = DatabaseConfig::default();
 		let config_5 = DatabaseConfig::with_columns(5);
 
-		let tempdir = TempDir::new("drop_columns").unwrap();
+		let tempdir = TempfileBuilder::new().prefix("drop_columns").tempdir().unwrap();
 
 		// open 5, remove 4.
 		{
@@ -997,7 +997,7 @@ mod tests {
 
 	#[test]
 	fn test_num_keys() {
-		let tempdir = TempDir::new("").unwrap();
+		let tempdir = TempfileBuilder::new().prefix("").tempdir().unwrap();
 		let config = DatabaseConfig::with_columns(1);
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
 
@@ -1059,7 +1059,7 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 		cfg.compaction.initial_file_size = 102030;
 		cfg.memory_budget = [(0, 30), (1, 300)].iter().cloned().collect();
 
-		let db_path = TempDir::new("config_test").expect("the OS can create tmp dirs");
+		let db_path = TempfileBuilder::new().prefix("config_test").tempdir().expect("the OS can create tmp dirs");
 		let db = Database::open(&cfg, db_path.path().to_str().unwrap()).expect("can open a db");
 		let mut rocksdb_log = std::fs::File::open(format!("{}/LOG", db_path.path().to_str().unwrap()))
 			.expect("rocksdb creates a LOG file");
