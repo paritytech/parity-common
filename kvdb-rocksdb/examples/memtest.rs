@@ -99,7 +99,7 @@ fn main() {
 	for c in 0..=COLUMN_COUNT {
 		config.memory_budget.insert(c, mb_per_col);
 	}
-	let dir = tempdir::TempDir::new("rocksdb-example").unwrap();
+	let dir = tempfile::Builder::new().prefix("rocksdb-example").tempdir().unwrap();
 
 	println!("Database is put in: {} (maybe check if it was deleted)", dir.path().to_string_lossy());
 	let db = Database::open(&config, &dir.path().to_string_lossy()).unwrap();
