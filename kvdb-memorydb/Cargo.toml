@@ -17,4 +17,3 @@ kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.6" }
 
 [features]
 default = []
-wasm-bindgen = ["parking_lot/wasm-bindgen"]
