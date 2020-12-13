@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+### Breaking
+- Updated dependencies. [#470](https://github.com/paritytech/parity-common/pull/470)
 
 ## [0.7.0] - 2020-07-06
 - Updated `kvdb` to 0.7.0 [#404](https://github.com/paritytech/parity-common/pull/404)
