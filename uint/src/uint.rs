@@ -31,6 +31,102 @@
 
 use core::fmt;
 
+/// A list of error categories encountered when parsing numbers.
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
+pub enum FromStrRadixErrKind {
+	/// A character in the input string is not valid for the given radix.
+	InvalidCharacter,
+
+	/// The input length is not valid for the given radix.
+	InvalidLength,
+
+	/// The given radix is not supported.
+	UnsupportedRadix,
+}
+
+#[derive(Debug)]
+enum FromStrRadixErrSrc {
+	Hex(FromHexError),
+	Dec(FromDecStrErr),
+}
+
+impl fmt::Display for FromStrRadixErrSrc {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		match self {
+			FromStrRadixErrSrc::Dec(d) => write!(f, "{}", d),
+			FromStrRadixErrSrc::Hex(h) => write!(f, "{}", h),
+		}
+	}
+}
+
+/// The error type for parsing numbers from strings.
+#[derive(Debug)]
+pub struct FromStrRadixErr {
+	kind: FromStrRadixErrKind,
+	source: Option<FromStrRadixErrSrc>,
+}
+
+impl FromStrRadixErr {
+	#[doc(hidden)]
+	pub fn unsupported() -> Self {
+		Self { kind: FromStrRadixErrKind::UnsupportedRadix, source: None }
+	}
+
+	/// Returns the corresponding `FromStrRadixErrKind` for this error.
+	pub fn kind(&self) -> FromStrRadixErrKind {
+		self.kind
+	}
+}
+
+impl fmt::Display for FromStrRadixErr {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		if let Some(ref src) = self.source {
+			return write!(f, "{}", src);
+		}
+
+		match self.kind {
+			FromStrRadixErrKind::UnsupportedRadix => write!(f, "the given radix is not supported"),
+			FromStrRadixErrKind::InvalidCharacter => write!(f, "input contains an invalid character"),
+			FromStrRadixErrKind::InvalidLength => write!(f, "length not supported for radix or type"),
+		}
+	}
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for FromStrRadixErr {
+	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+		match self.source {
+			Some(FromStrRadixErrSrc::Dec(ref d)) => Some(d),
+			Some(FromStrRadixErrSrc::Hex(ref h)) => Some(h),
+			None => None,
+		}
+	}
+}
+
+impl From<FromDecStrErr> for FromStrRadixErr {
+	fn from(e: FromDecStrErr) -> Self {
+		let kind = match e {
+			FromDecStrErr::InvalidCharacter => FromStrRadixErrKind::InvalidCharacter,
+			FromDecStrErr::InvalidLength => FromStrRadixErrKind::InvalidLength,
+		};
+
+		Self { kind, source: Some(FromStrRadixErrSrc::Dec(e)) }
+	}
+}
+
+impl From<FromHexError> for FromStrRadixErr {
+	fn from(e: FromHexError) -> Self {
+		let kind = match e.inner {
+			hex::FromHexError::InvalidHexCharacter { .. } => FromStrRadixErrKind::InvalidCharacter,
+			hex::FromHexError::InvalidStringLength => FromStrRadixErrKind::InvalidLength,
+			hex::FromHexError::OddLength => FromStrRadixErrKind::InvalidLength,
+		};
+
+		Self { kind, source: Some(FromStrRadixErrSrc::Hex(e)) }
+	}
+}
+
 /// Conversion from decimal string error
 #[derive(Debug, PartialEq)]
 pub enum FromDecStrErr {
@@ -492,6 +588,18 @@ macro_rules! construct_uint {
 			const WORD_BITS: usize = 64;
 			/// Maximum value.
 			pub const MAX: $name = $name([u64::max_value(); $n_words]);
+
+			/// Converts a string slice in a given base to an integer. Only supports radixes of 10
+			/// and 16.
+			pub fn from_str_radix(txt: &str, radix: u32) -> Result<Self, $crate::FromStrRadixErr> {
+				let parsed = match radix {
+					10 => Self::from_dec_str(txt)?,
+					16 => core::str::FromStr::from_str(txt)?,
+					_ => return Err($crate::FromStrRadixErr::unsupported()),
+				};
+
+				Ok(parsed)
+			}
 
 			/// Convert from a decimal string.
 			pub fn from_dec_str(value: &str) -> $crate::core_::result::Result<Self, $crate::FromDecStrErr> {
