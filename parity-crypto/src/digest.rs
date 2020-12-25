@@ -93,17 +93,17 @@ impl Hasher<Ripemd160> {
 impl<T> Hasher<T> {
 	pub fn update(&mut self, data: &[u8]) {
 		match self.0 {
-			Inner::Sha256(ref mut ctx) => ctx.input(data),
-			Inner::Sha512(ref mut ctx) => ctx.input(data),
-			Inner::Ripemd160(ref mut ctx) => ctx.input(data),
+			Inner::Sha256(ref mut ctx) => ctx.update(data),
+			Inner::Sha512(ref mut ctx) => ctx.update(data),
+			Inner::Ripemd160(ref mut ctx) => ctx.update(data),
 		}
 	}
 
 	pub fn finish(self) -> Digest<T> {
 		match self.0 {
-			Inner::Sha256(ctx) => Digest(InnerDigest::Sha256(ctx.result()), PhantomData),
-			Inner::Sha512(ctx) => Digest(InnerDigest::Sha512(ctx.result()), PhantomData),
-			Inner::Ripemd160(ctx) => Digest(InnerDigest::Ripemd160(ctx.result()), PhantomData),
+			Inner::Sha256(ctx) => Digest(InnerDigest::Sha256(ctx.finalize()), PhantomData),
+			Inner::Sha512(ctx) => Digest(InnerDigest::Sha512(ctx.finalize()), PhantomData),
+			Inner::Ripemd160(ctx) => Digest(InnerDigest::Ripemd160(ctx.finalize()), PhantomData),
 		}
 	}
 }

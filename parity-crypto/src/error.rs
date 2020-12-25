@@ -30,7 +30,7 @@ pub struct SymmError(PrivSymmErr);
 #[derive(Debug)]
 enum PrivSymmErr {
 	BlockMode(block_modes::BlockModeError),
-	KeyStream(aes_ctr::stream_cipher::LoopError),
+	KeyStream(aes_ctr::cipher::stream::LoopError),
 	InvalidKeyLength(block_modes::InvalidKeyIvLength),
 }
 
@@ -111,8 +111,8 @@ impl From<block_modes::InvalidKeyIvLength> for SymmError {
 	}
 }
 
-impl From<aes_ctr::stream_cipher::LoopError> for SymmError {
-	fn from(e: aes_ctr::stream_cipher::LoopError) -> SymmError {
+impl From<aes_ctr::cipher::stream::LoopError> for SymmError {
+	fn from(e: aes_ctr::cipher::stream::LoopError) -> SymmError {
 		SymmError(PrivSymmErr::KeyStream(e))
 	}
 }
