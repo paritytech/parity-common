@@ -22,6 +22,7 @@ use fixed_hash::{construct_fixed_hash, impl_fixed_hash_conversions};
 #[cfg(feature = "scale-info")]
 use scale_info::TypeInfo;
 use uint::{construct_uint, uint_full_mul_reg};
+pub use uint::{FromStrRadixErr, FromStrRadixErrKind};
 
 /// Error type for conversion.
 #[derive(Debug, PartialEq, Eq)]
@@ -66,6 +67,16 @@ construct_fixed_hash! {
 	/// Fixed-size uninterpreted hash type with 64 bytes (512 bits) size.
 	#[cfg_attr(feature = "scale-info", derive(TypeInfo))]
 	pub struct H512(64);
+}
+
+#[cfg(feature = "num-traits")]
+mod num_traits {
+	use super::*;
+	use impl_num_traits::impl_uint_num_traits;
+
+	impl_uint_num_traits!(U128, 2);
+	impl_uint_num_traits!(U256, 4);
+	impl_uint_num_traits!(U512, 8);
 }
 
 #[cfg(feature = "impl-serde")]
