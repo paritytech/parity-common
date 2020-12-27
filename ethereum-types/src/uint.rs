@@ -14,7 +14,7 @@ use impl_rlp::impl_uint_rlp;
 use impl_serde::impl_uint_serde;
 use uint_crate::*;
 
-pub use uint_crate::FromDecStrErr;
+pub use uint_crate::{FromDecStrErr, FromStrRadixErr, FromStrRadixErrKind};
 
 construct_uint! {
 	/// Unsigned 64-bit integer.
