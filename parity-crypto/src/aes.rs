@@ -6,9 +6,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use aes::block_cipher::generic_array::GenericArray;
+use aes::cipher::generic_array::GenericArray;
 use aes::{Aes128, Aes256};
-use aes_ctr::stream_cipher::{NewStreamCipher, SyncStreamCipher};
+use aes_ctr::cipher::stream::{NewStreamCipher, SyncStreamCipher};
 use block_modes::{
 	block_padding::{Pkcs7, ZeroPadding},
 	BlockMode, Cbc, Ecb,
