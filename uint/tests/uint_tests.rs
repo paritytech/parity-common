@@ -132,7 +132,7 @@ fn uint256_from() {
 	);
 
 	// test initializtion from string
-    let sa = U256::from_str("0a").unwrap();
+	let sa = U256::from_str("0a").unwrap();
 	let sa2 = U256::from_str("0x0a").unwrap();
 	assert_eq!(sa2, sa);
 	assert_eq!(e, sa);
