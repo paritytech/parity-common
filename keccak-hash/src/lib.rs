@@ -189,7 +189,7 @@ mod tests {
 		use std::io::{BufReader, Write};
 
 		// given
-		let tmpdir = tempdir::TempDir::new("keccak").unwrap();
+		let tmpdir = tempfile::Builder::new().prefix("keccak").tempdir().unwrap();
 		let mut path = tmpdir.path().to_owned();
 		path.push("should_keccak_a_file");
 		// Prepare file
