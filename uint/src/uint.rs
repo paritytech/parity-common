@@ -1688,11 +1688,7 @@ macro_rules! construct_uint {
 			type Err = $crate::FromHexError;
 
 			fn from_str(value: &str) -> $crate::core_::result::Result<$name, Self::Err> {
-				let value = if value.starts_with("0x") {
-					&value[2..]
-				} else {
-					value
-				};
+                let value = value.strip_prefix("0x").unwrap_or(value);
 				const BYTES_LEN: usize = $n_words * 8;
 				const MAX_ENCODED_LEN: usize = BYTES_LEN * 2;
 
