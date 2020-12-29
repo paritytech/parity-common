@@ -13,7 +13,7 @@ use digest::generic_array::{
 	typenum::{U32, U64},
 	GenericArray,
 };
-use hmac::{Hmac, Mac as _};
+use hmac::{Hmac, Mac as _, NewMac as _};
 use zeroize::Zeroize;
 
 use crate::digest::{Sha256, Sha512};
@@ -113,15 +113,15 @@ impl<T> Signer<T> {
 
 	pub fn update(&mut self, data: &[u8]) {
 		match &mut self.0 {
-			SignerInner::Sha256(hmac) => hmac.input(data),
-			SignerInner::Sha512(hmac) => hmac.input(data),
+			SignerInner::Sha256(hmac) => hmac.update(data),
+			SignerInner::Sha512(hmac) => hmac.update(data),
 		}
 	}
 
 	pub fn sign(self) -> Signature<T> {
 		match self.0 {
-			SignerInner::Sha256(hmac) => Signature(HashInner::Sha256(hmac.result().code()), PhantomData),
-			SignerInner::Sha512(hmac) => Signature(HashInner::Sha512(hmac.result().code()), PhantomData),
+			SignerInner::Sha256(hmac) => Signature(HashInner::Sha256(hmac.finalize().into_bytes()), PhantomData),
+			SignerInner::Sha512(hmac) => Signature(HashInner::Sha512(hmac.finalize().into_bytes()), PhantomData),
 		}
 	}
 }
@@ -146,12 +146,12 @@ pub fn verify<T>(key: &VerifyKey<T>, data: &[u8], sig: &[u8]) -> bool {
 	match &key.0 {
 		KeyInner::Sha256(key_bytes) => {
 			let mut ctx = Hmac::<sha2::Sha256>::new_varkey(&key_bytes.0).expect("always returns Ok; qed");
-			ctx.input(data);
+			ctx.update(data);
 			ctx.verify(sig).is_ok()
 		}
 		KeyInner::Sha512(key_bytes) => {
 			let mut ctx = Hmac::<sha2::Sha512>::new_varkey(&key_bytes.0).expect("always returns Ok; qed");
-			ctx.input(data);
+			ctx.update(data);
 			ctx.verify(sig).is_ok()
 		}
 	}
