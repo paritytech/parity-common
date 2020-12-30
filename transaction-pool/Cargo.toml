@@ -9,7 +9,7 @@ edition = "2018"
 
 [dependencies]
 log = "0.4.8"
-smallvec = "0.6.10"
+smallvec = "1.5.1"
 trace-time = { path = "../trace-time", version = "0.1" }
 
 [dev-dependencies]
