@@ -244,23 +244,8 @@ mod rand {
 
 	#[test]
 	fn random() {
-		let default_seed = <StdRng as SeedableRng>::Seed::default();
-		let mut rng = StdRng::from_seed(default_seed);
-		assert_eq!(H32::random_using(&mut rng), H32::from([0x76, 0xa0, 0x40, 0x53]));
-	}
-
-	#[test]
-	fn randomize() {
-		let default_seed = <StdRng as SeedableRng>::Seed::default();
-		let mut rng = StdRng::from_seed(default_seed);
-		assert_eq!(
-			{
-				let mut ret = H32::zero();
-				ret.randomize_using(&mut rng);
-				ret
-			},
-			H32::from([0x76, 0xa0, 0x40, 0x53])
-		)
+		let mut rng = StdRng::seed_from_u64(123);
+		assert_eq!(H32::random_using(&mut rng), H32::from([0xeb, 0x96, 0xaf, 0x1c]));
 	}
 }
 
