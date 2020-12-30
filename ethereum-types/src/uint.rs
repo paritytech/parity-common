@@ -16,18 +16,7 @@ use uint_crate::*;
 
 pub use uint_crate::FromDecStrErr;
 
-construct_uint! {
-	/// Unsigned 64-bit integer.
-	pub struct U64(1);
-}
-#[cfg(feature = "rlp")]
-impl_uint_rlp!(U64, 1);
-#[cfg(feature = "serialize")]
-impl_uint_serde!(U64, 1);
-#[cfg(feature = "codec")]
-impl_uint_codec!(U64, 1);
-
-pub use primitive_types::{U128, U256, U512};
+pub use primitive_types::{U256, U512};
 
 #[cfg(test)]
 mod tests {
