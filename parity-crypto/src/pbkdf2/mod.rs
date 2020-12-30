@@ -10,11 +10,11 @@ pub struct Salt<'a>(pub &'a [u8]);
 pub struct Secret<'a>(pub &'a [u8]);
 
 pub fn sha256(iter: u32, salt: Salt<'_>, sec: Secret<'_>, out: &mut [u8; 32]) {
-	pbkdf2::pbkdf2::<hmac::Hmac<sha2::Sha256>>(sec.0, salt.0, iter as usize, out)
+	pbkdf2::pbkdf2::<hmac::Hmac<sha2::Sha256>>(sec.0, salt.0, iter, out)
 }
 
 pub fn sha512(iter: u32, salt: Salt<'_>, sec: Secret<'_>, out: &mut [u8; 64]) {
-	pbkdf2::pbkdf2::<hmac::Hmac<sha2::Sha512>>(sec.0, salt.0, iter as usize, out)
+	pbkdf2::pbkdf2::<hmac::Hmac<sha2::Sha512>>(sec.0, salt.0, iter, out)
 }
 
 #[cfg(test)]

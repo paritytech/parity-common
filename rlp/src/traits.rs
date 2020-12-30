@@ -7,8 +7,6 @@
 // except according to those terms.
 
 //! Common RLP traits
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
 use bytes::BytesMut;
 
 use crate::{error::DecoderError, rlpin::Rlp, stream::RlpStream};

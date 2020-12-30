@@ -232,21 +232,3 @@ fn ietf_test_vectors() {
 		),
 	);
 }
-
-#[test]
-fn secrets_are_zeroed_on_drop() {
-	let ptr: *const KeyInner;
-	let zeros = KeyInner::Sha256(DisposableBox::from_slice(&[0u8; 6][..]));
-	let expected = KeyInner::Sha256(DisposableBox::from_slice(b"sikrit"));
-	{
-		let secret = b"sikrit";
-		let signing_key = SigKey::sha256(secret);
-		ptr = &signing_key.0;
-		unsafe {
-			assert_eq!(*ptr, expected);
-		}
-	}
-	unsafe {
-		assert_eq!(*ptr, zeros);
-	}
-}
