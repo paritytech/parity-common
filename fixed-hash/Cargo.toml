@@ -22,7 +22,7 @@ static_assertions = "1.0.0"
 arbitrary = { version = "0.4", optional = true }
 
 [dev-dependencies]
-rand_xorshift = "0.2.0"
+rand_xorshift = "0.3.0"
 criterion = "0.3.0"
 rand = { version = "0.8.0", default-features = false, features = ["std_rng"] }
 
