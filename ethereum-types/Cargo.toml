@@ -9,7 +9,7 @@ edition = "2018"
 
 [dependencies]
 ethbloom = { path = "../ethbloom", version = "0.10", default-features = false }
-fixed-hash = { path = "../fixed-hash", version = "0.6", default-features = false, features = ["byteorder", "rustc-hex"] }
+fixed-hash = { path = "../fixed-hash", version = "0.7", default-features = false, features = ["byteorder", "rustc-hex"] }
 uint-crate = { path = "../uint", package = "uint", version = "0.9", default-features = false }
 primitive-types = { path = "../primitive-types", version = "0.8", features = ["byteorder", "rustc-hex"], default-features = false }
 impl-serde = { path = "../primitive-types/impls/serde", version = "0.3.0", default-features = false, optional = true }
