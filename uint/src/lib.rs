@@ -27,7 +27,7 @@ pub use qc;
 
 #[cfg(feature = "quickcheck")]
 #[doc(hidden)]
-pub use rand;
+pub use rand07;
 
 #[cfg(feature = "arbitrary")]
 #[doc(hidden)]

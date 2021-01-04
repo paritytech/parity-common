@@ -28,7 +28,7 @@ alloc_counter = "0.0.4"
 criterion = "0.3"
 ethereum-types = { path = "../ethereum-types" }
 kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.6" }
-rand = "0.7.2"
+rand = "0.8.0"
 tempfile = "3.1.0"
 keccak-hash = { path = "../keccak-hash" }
 sysinfo = "0.15.3"

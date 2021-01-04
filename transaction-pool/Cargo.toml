@@ -10,7 +10,6 @@ edition = "2018"
 [dependencies]
 log = "0.4.8"
 smallvec = "1.6.0"
-trace-time = { path = "../trace-time", version = "0.1" }
 
 [dev-dependencies]
 ethereum-types = { version = "0.10.0", path = "../ethereum-types" }
