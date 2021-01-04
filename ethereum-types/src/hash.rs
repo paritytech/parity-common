@@ -135,6 +135,11 @@ mod tests {
 	}
 
 	#[test]
+	fn test_parse_0x() {
+		assert!("0x0000000000000000000000000000000000000000000000000000000000000000".parse::<H256>().is_ok())
+	}
+
+	#[test]
 	fn test_serialize_invalid() {
 		assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000\"")
 			.unwrap_err()
