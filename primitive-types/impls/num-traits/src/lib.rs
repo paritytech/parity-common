@@ -8,12 +8,13 @@
 
 //! num-traits support for uint.
 
-#![cfg_attr(not(feature = "std"), no_std)]
+#![no_std]
 
 #[doc(hidden)]
 pub use num_traits;
 
-pub use uint::{FromStrRadixErr, FromStrRadixErrKind};
+#[doc(hidden)]
+pub use uint;
 
 /// Add num-traits support to an integer created by `construct_uint!`.
 #[macro_export]
@@ -39,7 +40,7 @@ macro_rules! impl_uint_num_traits {
 		}
 
 		impl $crate::num_traits::Num for $name {
-			type FromStrRadixErr = $crate::FromStrRadixErr;
+			type FromStrRadixErr = $crate::uint::FromStrRadixErr;
 
 			fn from_str_radix(txt: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
 				Self::from_str_radix(txt, radix)
