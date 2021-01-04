@@ -50,7 +50,7 @@ fn open_db() -> Database {
 /// an `ElasticArray128` so sometimes we save on allocations.
 fn n_random_bytes(n: usize) -> Vec<u8> {
 	let mut rng = rand::thread_rng();
-	let variability: i64 = rng.gen_range(0, (n / 5) as i64);
+	let variability: i64 = rng.gen_range(0..(n / 5) as i64);
 	let plus_or_minus: i64 = if variability % 2 == 0 { 1 } else { -1 };
 	let range = Uniform::from(0..u8::max_value());
 	rng.sample_iter(&range).take((n as i64 + plus_or_minus * variability) as usize).collect()

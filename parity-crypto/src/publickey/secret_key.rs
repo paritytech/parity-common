@@ -8,7 +8,6 @@
 
 //! Secret key implementation.
 
-use std::convert::TryFrom;
 use std::fmt;
 use std::ops::Deref;
 use std::str::FromStr;
