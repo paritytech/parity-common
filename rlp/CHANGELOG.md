@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+## [0.5.0] - 2021-01-05
 ### Breaking
 - Use BytesMut for `RlpStream`'s backing buffer. [#453](https://github.com/paritytech/parity-common/pull/453)
 

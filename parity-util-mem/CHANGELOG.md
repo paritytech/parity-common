@@ -5,8 +5,9 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
-- Updated dlmalloc to 0.2.1. [#452](https://github.com/paritytech/parity-common/pull/452)
 
+## [0.8.0] - 2021-01-05
+- Updated dlmalloc to 0.2.1. [#452](https://github.com/paritytech/parity-common/pull/452)
 ### Breaking
 - Updated `ethereum-types` to 0.10. [#463](https://github.com/paritytech/parity-common/pull/463)
 - Updated `parking_lot` to 0.11.1. [#470](https://github.com/paritytech/parity-common/pull/470)

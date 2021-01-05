@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+## [0.8.0] - 2021-01-05
 ### Breaking
 - Updated `parity-util-mem` to 0.8. [#470](https://github.com/paritytech/parity-common/pull/470)
 
