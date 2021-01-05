@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.7.0] - 2021-01-05
+### Breaking
+- Updated `rand` to 0.8. [#488](https://github.com/paritytech/parity-common/pull/488)
+
 ## [0.6.1] - 2020-04-27
 - Added `arbitrary` feature. [#378](https://github.com/paritytech/parity-common/pull/378)
 

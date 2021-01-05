@@ -5,7 +5,12 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+## [0.8.0] - 2021-01-05
+- Added `num-traits` feature. [#480](https://github.com/paritytech/parity-common/pull/480)
+### Breaking
 - Updated `impl-rlp` to `rlp` 0.5. [#463](https://github.com/paritytech/parity-common/pull/463)
+- Updated `uint` to 0.9. [#486](https://github.com/paritytech/parity-common/pull/486)
 
 ## [0.7.3] - 2020-11-12
 - Added `scale_info` support. [#312](https://github.com/paritytech/parity-common/pull/312)

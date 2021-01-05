@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.9.0] - 2021-01-05
+- Allow `0x` prefix in `from_str`. [#487](https://github.com/paritytech/parity-common/pull/487)
+### Breaking
+- Optimized FromStr, made it no_std-compatible. [#468](https://github.com/paritytech/parity-common/pull/468)
+
 ## [0.8.5] - 2020-08-12
 - Make const matching work again. [#421](https://github.com/paritytech/parity-common/pull/421)
 

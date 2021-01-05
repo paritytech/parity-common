@@ -5,8 +5,11 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+## [0.10.0] - 2021-01-05
 ### Breaking
 - Updated `rlp` to 0.5. [#463](https://github.com/paritytech/parity-common/pull/463)
+- Updated `uint` to 0.9. [#486](https://github.com/paritytech/parity-common/pull/486)
 
 ## [0.9.2] - 2020-05-18
 - Added `codec` feature. [#393](https://github.com/paritytech/parity-common/pull/393)
