@@ -13,7 +13,7 @@ readme = "README.md"
 [dependencies]
 ethereum-types = { version = "0.10.0", path = "../ethereum-types" }
 rlp = { version = "0.5", path = "../rlp" }
-keccak-hash = { version = "0.5", path = "../keccak-hash", default-features = false }
+keccak-hash = { version = "0.6", path = "../keccak-hash", default-features = false }
 
 [features]
 default = []
