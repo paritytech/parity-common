@@ -13,7 +13,7 @@ harness = false
 
 [dependencies]
 smallvec = "1.0.0"
-fs-swap = "0.2.4"
+fs-swap = "0.2.5"
 kvdb = { path = "../kvdb", version = "0.8" }
 log = "0.4.8"
 num_cpus = "1.10.1"
