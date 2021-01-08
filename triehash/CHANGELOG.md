@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.8.4] - 2020-01-08
+- Updated `rlp` to 0.5. [#463](https://github.com/paritytech/parity-common/pull/463)
 ## [0.8.3] - 2020-03-16
 - License changed from GPL3 to dual MIT/Apache2. [#342](https://github.com/paritytech/parity-common/pull/342)
 ## [0.8.2] - 2019-12-15
