@@ -16,6 +16,7 @@ matrix:
       rust: stable
       install:
         - cargo install cross
+        - rustup target add wasm64-unknown-unknown
       script:
         - cross test --target=aarch64-linux-android -p parity-util-mem
     - os: osx
@@ -42,6 +43,8 @@ script:
     cd contract-address/ && cargo test --features=external_doc && cd ..;
     fi
   - cd ethbloom/ && cargo test --no-default-features --features="rustc-hex" && cargo check --benches && cd ..
+  - cd ethbloom/ && cargo build --no-default-features --features="serialize,rlp,codec" --target=wasm32-unknown-unknown && cd ..
+  - cd ethereum-types/ && cargo build --no-default-features --features="serialize,rlp" --target=wasm32-unknown-unknown && cd ..
   - cd fixed-hash/ && cargo test --all-features && cargo test --no-default-features --features="byteorder,rustc-hex" && cd ..
   - cd uint/ && cargo test --all-features && cargo test --no-default-features && cd ..
   - cd keccak-hash/ && cargo test --no-default-features && cd ..
