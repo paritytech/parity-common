@@ -25,7 +25,7 @@ hex-literal = "0.3.1"
 [features]
 default = ["std", "rlp", "serialize", "rustc-hex"]
 std = ["fixed-hash/std", "crunchy/std"]
-serialize = ["std", "impl-serde"]
+serialize = ["impl-serde"]
 rustc-hex = ["fixed-hash/rustc-hex"]
 arbitrary = ["fixed-hash/arbitrary"]
 rlp = ["impl-rlp"]
