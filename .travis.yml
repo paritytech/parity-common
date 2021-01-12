@@ -16,7 +16,6 @@ matrix:
       rust: stable
       install:
         - cargo install cross
-        - rustup target add wasm32-unknown-unknown
       script:
         - cross test --target=aarch64-linux-android -p parity-util-mem
     - os: osx
@@ -27,6 +26,7 @@ matrix:
   allow_failures:
     - rust: nightly
 install:
+  - rustup target add wasm32-unknown-unknown
   - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | sh
   - source ~/.nvm/nvm.sh
   - nvm install --lts
