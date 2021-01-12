@@ -16,7 +16,7 @@ matrix:
       rust: stable
       install:
         - cargo install cross
-        - rustup target add wasm64-unknown-unknown
+        - rustup target add wasm32-unknown-unknown
       script:
         - cross test --target=aarch64-linux-android -p parity-util-mem
     - os: osx
