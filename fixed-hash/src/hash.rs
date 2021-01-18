@@ -24,9 +24,9 @@
 /// ```
 /// use fixed_hash::construct_fixed_hash;
 /// construct_fixed_hash!{
-/// 	/// My unformatted 160 bytes sized hash type.
-/// 	#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-/// 	pub struct H160(20);
+///     /// My unformatted 160 bytes sized hash type.
+///     #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+///     pub struct H160(20);
 /// }
 /// assert_eq!(std::mem::size_of::<H160>(), 20);
 /// ```
