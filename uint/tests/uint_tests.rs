@@ -1019,7 +1019,7 @@ fn leading_zeros() {
 }
 
 #[test]
-fn issue_507() {
+fn issue_507_roundtrip() {
 	let mut b32 = <[u8; 32]>::default();
 	let a = U256::from(10);
 	a.to_little_endian(&mut b32);
