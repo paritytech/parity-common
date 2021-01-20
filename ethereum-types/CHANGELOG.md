@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+### Potentially-breaking
+- `serialize` feature no longer pulls `std`. [#503](https://github.com/paritytech/parity-common/pull/503)
 
 ## [0.10.0] - 2021-01-05
 ### Breaking
