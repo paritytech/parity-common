@@ -1019,6 +1019,15 @@ fn leading_zeros() {
 }
 
 #[test]
+fn issue_507_roundtrip() {
+	let mut b32 = <[u8; 32]>::default();
+	let a = U256::from(10);
+	a.to_little_endian(&mut b32);
+	let b = U256::from_little_endian(&b32[..]);
+	assert_eq!(a, b);
+}
+
+#[test]
 fn trailing_zeros() {
 	assert_eq!(U256::from("1adbdd6bd6ff027485484b97f8a6a4c7129756dd100000000000000000000000").trailing_zeros(), 92);
 	assert_eq!(U256::from("1adbdd6bd6ff027485484b97f8a6a4c7129756dd10000000000000000000000f").trailing_zeros(), 0);
