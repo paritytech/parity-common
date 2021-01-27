@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.9.0] - 2021-01-27
+### Breaking
+- Updated `impl-codec` to 0.5. [#510](https://github.com/paritytech/parity-common/pull/510)
+- Updated `scale-info` to 0.5. [#510](https://github.com/paritytech/parity-common/pull/510)
+
 ## [0.8.0] - 2021-01-05
 - Added `num-traits` feature. [#480](https://github.com/paritytech/parity-common/pull/480)
 ### Breaking
