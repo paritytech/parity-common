@@ -14,7 +14,7 @@ use scale_info::{build::Fields, Path, Type, TypeInfo};
 #[test]
 fn u256_scale_info() {
 	let r#type =
-		Type::builder().path(Path::new("U256", "primitive_types")).composite(Fields::unnamed().field_of::<[u64; 4]>());
+		Type::builder().path(Path::new("U256", "primitive_types")).composite(Fields::unnamed().field_of::<[u64; 4]>("[u64; 4]"));
 
 	assert_eq!(U256::type_info(), r#type.into());
 }
@@ -22,7 +22,7 @@ fn u256_scale_info() {
 #[test]
 fn h256_scale_info() {
 	let r#type =
-		Type::builder().path(Path::new("H256", "primitive_types")).composite(Fields::unnamed().field_of::<[u8; 32]>());
+		Type::builder().path(Path::new("H256", "primitive_types")).composite(Fields::unnamed().field_of::<[u8; 32]>("[u8; 32]"));
 
 	assert_eq!(H256::type_info(), r#type.into());
 }
