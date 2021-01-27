@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+## [0.11.0] - 2021-01-27
+### Breaking
+- Updated `ethbloom` to 0.11. [#510](https://github.com/paritytech/parity-common/pull/510)
+- Updated `primitive-types` to 0.8. [#510](https://github.com/paritytech/parity-common/pull/510)
+- Updated `impl-codec` to 0.5. [#510](https://github.com/paritytech/parity-common/pull/510)
+
 ### Potentially-breaking
 - `serialize` feature no longer pulls `std`. [#503](https://github.com/paritytech/parity-common/pull/503)
 

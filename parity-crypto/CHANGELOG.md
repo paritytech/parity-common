@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.8.0] - 2021-01-27
+### Breaking
+- Updated `ethereum-types` to 0.11. [#510](https://github.com/paritytech/parity-common/pull/510)
+
 ## [0.7.0] - 2021-01-05
 ### Breaking
 - Bump `rust-secp256k1` to v0.19, always allow zero signatures. [#438](https://github.com/paritytech/parity-common/pull/438)
