@@ -14,7 +14,7 @@ impl-serde = { version = "0.3.1", path = "impls/serde", default-features = false
 impl-codec = { version = "0.5.0", path = "impls/codec", default-features = false, optional = true }
 impl-num-traits = { version = "0.1.0", path = "impls/num-traits", default-features = false, optional = true }
 impl-rlp = { version = "0.3", path = "impls/rlp", default-features = false, optional = true }
-scale-info = { version = "0.5", features = ["derive"], default-features = false, optional = true }
+scale-info = { version = "0.6", features = ["derive"], default-features = false, optional = true }
 
 [features]
 default = ["std"]
