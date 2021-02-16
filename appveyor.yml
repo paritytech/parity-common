@@ -18,6 +18,7 @@ install:
   - cargo -vV
 
 build_script:
+  - cargo generate-lockfile --verbose && cargo update -p funty --precise "1.1.0" --verbose
   - cargo check --tests
   - cargo build --all
 

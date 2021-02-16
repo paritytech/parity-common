@@ -216,7 +216,10 @@ pub trait MallocConditionalShallowSizeOf {
 	fn conditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize;
 }
 
-#[cfg(not(any(all(target_os = "macos", not(feature = "jemalloc-global"),), feature = "estimate-heapsize")))]
+#[cfg(not(any(
+	all(any(target_os = "macos", target_os = "ios"), not(feature = "jemalloc-global"),),
+	feature = "estimate-heapsize"
+)))]
 pub mod inner_allocator_use {
 
 	use super::*;
