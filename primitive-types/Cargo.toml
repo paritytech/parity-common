@@ -15,6 +15,8 @@ impl-codec = { version = "0.5.0", path = "impls/codec", default-features = false
 impl-num-traits = { version = "0.1.0", path = "impls/num-traits", default-features = false, optional = true }
 impl-rlp = { version = "0.3", path = "impls/rlp", default-features = false, optional = true }
 scale-info = { version = "0.6", features = ["derive"], default-features = false, optional = true }
+# we add parity-scale-codec here directly only because scale-info requires us to do so
+# see https://github.com/paritytech/scale-info/pull/61#discussion_r568760753
 parity-scale-codec = { version = "2.0", default-features = false, optional = true }
 
 [features]
