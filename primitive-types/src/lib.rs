@@ -20,7 +20,7 @@ mod fp_conversion;
 use core::convert::TryFrom;
 use fixed_hash::{construct_fixed_hash, impl_fixed_hash_conversions};
 #[cfg(feature = "scale-info")]
-use scale_info::TypeInfo;
+use codec_info::TypeInfo;
 use uint::{construct_uint, uint_full_mul_reg};
 
 /// Error type for conversion.
