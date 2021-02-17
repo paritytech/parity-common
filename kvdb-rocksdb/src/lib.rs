@@ -230,7 +230,7 @@ impl Default for DatabaseConfig {
 			keep_log_file_num: 1,
 			enable_statistics: false,
 			secondary: None,
-                        max_total_wal_size: None,
+			max_total_wal_size: None,
 		}
 	}
 }
