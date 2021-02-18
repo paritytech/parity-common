@@ -177,7 +177,7 @@ pub struct DatabaseConfig {
 	/// if the secondary instance reads and applies state changes before the primary instance compacts them.
 	/// More info: https://github.com/facebook/rocksdb/wiki/Secondary-instance
 	pub secondary: Option<String>,
-	/// Limit the size of write ahead logs
+	/// Limit the size (in bytes) of write ahead logs
 	/// More info: https://github.com/facebook/rocksdb/wiki/Write-Ahead-Log
 	pub max_total_wal_size: Option<u64>,
 }
