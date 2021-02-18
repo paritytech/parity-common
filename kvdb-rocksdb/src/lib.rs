@@ -905,6 +905,7 @@ mod tests {
 			keep_log_file_num: 1,
 			enable_statistics: false,
 			secondary: None,
+			max_total_wal_size: None,
 		};
 
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
