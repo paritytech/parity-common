@@ -16,7 +16,7 @@ qc = { package = "quickcheck", version = "0.9.0", optional = true }
 rand07 = { package = "rand", version = "0.7", default-features = false, optional = true }
 hex = { version = "0.4", default-features = false }
 static_assertions = "1.0.0"
-arbitrary = { version = "0.4", optional = true }
+arbitrary = { version = "1.0", optional = true }
 
 [features]
 default = ["std"]
