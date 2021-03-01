@@ -1780,7 +1780,7 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 #[doc(hidden)]
 macro_rules! impl_arbitrary_for_uint {
 	($uint: ty, $n_bytes: tt) => {
-		impl $crate::arbitrary::Arbitrary for $uint {
+		impl $crate::arbitrary::Arbitrary<'_> for $uint {
 			fn arbitrary(u: &mut $crate::arbitrary::Unstructured<'_>) -> $crate::arbitrary::Result<Self> {
 				let mut res = [0u8; $n_bytes];
 				u.fill_buffer(&mut res)?;
