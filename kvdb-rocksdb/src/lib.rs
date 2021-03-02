@@ -177,6 +177,9 @@ pub struct DatabaseConfig {
 	/// if the secondary instance reads and applies state changes before the primary instance compacts them.
 	/// More info: https://github.com/facebook/rocksdb/wiki/Secondary-instance
 	pub secondary: Option<String>,
+	/// Limit the size (in bytes) of write ahead logs
+	/// More info: https://github.com/facebook/rocksdb/wiki/Write-Ahead-Log
+	pub max_total_wal_size: Option<u64>,
 }
 
 impl DatabaseConfig {
@@ -227,6 +230,7 @@ impl Default for DatabaseConfig {
 			keep_log_file_num: 1,
 			enable_statistics: false,
 			secondary: None,
+			max_total_wal_size: None,
 		}
 	}
 }
@@ -325,6 +329,9 @@ fn generate_options(config: &DatabaseConfig) -> Options {
 	opts.set_bytes_per_sync(1 * MB as u64);
 	opts.set_keep_log_file_num(1);
 	opts.increase_parallelism(cmp::max(1, num_cpus::get() as i32 / 2));
+	if let Some(m) = config.max_total_wal_size {
+		opts.set_max_total_wal_size(m);
+	}
 
 	opts
 }
@@ -898,6 +905,7 @@ mod tests {
 			keep_log_file_num: 1,
 			enable_statistics: false,
 			secondary: None,
+			max_total_wal_size: None,
 		};
 
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
