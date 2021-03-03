@@ -20,6 +20,8 @@ pub use uint;
 #[macro_export]
 macro_rules! impl_uint_num_traits {
 	($name: ident, $len: expr) => {
+		impl $crate::num_traits::sign::Unsigned for $name {}
+
 		impl $crate::num_traits::identities::Zero for $name {
 			#[inline]
 			fn zero() -> Self {
