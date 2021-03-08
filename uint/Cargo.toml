@@ -32,7 +32,7 @@ required-features = ["std"]
 
 [dev-dependencies]
 criterion = "0.3.0"
-num-bigint = "0.3.1"
+num-bigint = "0.4.0"
 
 [target.'cfg(all(unix, target_arch = "x86_64"))'.dev-dependencies]
 rug = { version = "1.6.0", default-features = false, features = ["integer"] }
