@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.11.1] - 2021-05-03
+- Updated `rocksdb` to 0.16. [#537](https://github.com/paritytech/parity-common/pull/537)
+
 ## [0.11.0] - 2021-01-27
 ### Breaking
 - Updated `kvdb` to 0.9. [#510](https://github.com/paritytech/parity-common/pull/510)
