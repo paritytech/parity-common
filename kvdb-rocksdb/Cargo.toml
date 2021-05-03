@@ -1,6 +1,6 @@
 [package]
 name = "kvdb-rocksdb"
-version = "0.11.0"
+version = "0.11.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "kvdb implementation backed by RocksDB"
@@ -13,7 +13,7 @@ harness = false
 
 [dependencies]
 smallvec = "1.0.0"
-fs-swap = "0.2.5"
+fs-swap = "0.2.6"
 kvdb = { path = "../kvdb", version = "0.9" }
 log = "0.4.8"
 num_cpus = "1.10.1"
