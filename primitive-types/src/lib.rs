@@ -125,9 +125,18 @@ mod rlp {
 
 impl_fixed_hash_conversions!(H256, H160);
 
+impl U128 {
+	/// Multiplies two 128-bit integers to produce full 256-bit integer.
+	/// Overflow is not possible.
+	#[inline(always)]
+	pub fn full_mul(self, other: U128) -> U256 {
+		U256(uint_full_mul_reg!(U128, 2, self, other))
+	}
+}
+
 impl U256 {
-	/// Multiplies two 256-bit integers to produce full 512-bit integer
-	/// No overflow possible
+	/// Multiplies two 256-bit integers to produce full 512-bit integer.
+	/// Overflow is not possible.
 	#[inline(always)]
 	pub fn full_mul(self, other: U256) -> U512 {
 		U512(uint_full_mul_reg!(U256, 4, self, other))
