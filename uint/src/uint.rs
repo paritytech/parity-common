@@ -603,12 +603,11 @@ macro_rules! construct_uint {
 
 			/// Convert from a decimal string.
 			pub fn from_dec_str(value: &str) -> $crate::core_::result::Result<Self, $crate::FromDecStrErr> {
-				if !value.bytes().all(|b| b >= 48 && b <= 57) {
-					return Err($crate::FromDecStrErr::InvalidCharacter)
-				}
-
 				let mut res = Self::default();
-				for b in value.bytes().map(|b| b - 48) {
+				for b in value.bytes().map(|b| b.wrapping_sub(b'0')) {
+					if b > 9 {
+						return Err($crate::FromDecStrErr::InvalidCharacter)
+					}
 					let (r, overflow) = res.overflowing_mul_u64(10);
 					if overflow > 0 {
 						return Err($crate::FromDecStrErr::InvalidLength);
