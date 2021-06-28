@@ -1149,7 +1149,6 @@ pub mod laws {
 								(s * s <= x) && (y > x)
 							)
 						} else {
-							assert_eq!(x, $uint_ty::MAX);
 							TestResult::from_bool(
 								s * s <= x
 							)
