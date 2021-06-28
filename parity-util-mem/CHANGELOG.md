@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- Fixed `malloc_usable_size` for FreeBSD. [#553](https://github.com/paritytech/parity-common/pull/553)
 
 ## [0.9.0] - 2021-01-27
 ### Breaking
