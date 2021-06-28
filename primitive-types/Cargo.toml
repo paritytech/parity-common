@@ -40,3 +40,7 @@ required-features = ["scale-info"]
 [[test]]
 name = "fp_conversion"
 required-features = ["fp-conversion"]
+
+[[test]]
+name = "num_traits"
+required-features = ["num-traits"]
