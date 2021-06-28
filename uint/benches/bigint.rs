@@ -44,6 +44,7 @@ criterion_group!(
 	u256_div,
 	u512_div_mod,
 	u256_rem,
+	u256_integer_sqrt,
 	u256_bit_and,
 	u256_bit_or,
 	u256_bit_xor,
@@ -58,6 +59,7 @@ criterion_group!(
 	u512_mul,
 	u512_div,
 	u512_rem,
+	u512_integer_sqrt,
 	u512_mul_u32_vs_u64,
 	mulmod_u512_vs_biguint_vs_gmp,
 	conversions,
@@ -253,6 +255,21 @@ fn u256_rem(c: &mut Criterion) {
 	);
 }
 
+fn u256_integer_sqrt(c: &mut Criterion) {
+	c.bench(
+		"u256_integer_sqrt",
+		ParameterizedBenchmark::new(
+			"",
+			|b, x| {
+				b.iter(|| {
+					black_box(x.integer_sqrt().0)
+				})
+			},
+			vec![U256::from(u64::MAX), U256::from(u128::MAX), U256::MAX],
+		),
+	);
+}
+
 fn u512_pairs() -> Vec<(U512, U512)> {
 	vec![
 		(U512::from(1u64), U512::from(0u64)),
@@ -283,6 +300,21 @@ fn u512_mul(c: &mut Criterion) {
 	c.bench(
 		"u512_mul",
 		ParameterizedBenchmark::new("", |b, (x, y)| b.iter(|| black_box(x.overflowing_mul(*y).0)), u512_pairs()),
+	);
+}
+
+fn u512_integer_sqrt(c: &mut Criterion) {
+	c.bench(
+		"u512_integer_sqrt",
+		ParameterizedBenchmark::new(
+			"",
+			|b, x| {
+				b.iter(|| {
+					black_box(x.integer_sqrt().0)
+				})
+			},
+			vec![U512::from(u64::MAX), U512::from(u128::MAX), U512::MAX],
+		),
 	);
 }
 

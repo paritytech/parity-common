@@ -1141,6 +1141,23 @@ pub mod laws {
 				}
 
 				quickcheck! {
+					fn isqrt(x: $uint_ty) -> TestResult {
+						let s = x.integer_sqrt();
+						let higher = s + 1;
+						if let Some(y) = higher.checked_mul(higher) {
+							TestResult::from_bool(
+								(s * s <= x) && (y > x)
+							)
+						} else {
+							assert_eq!(x, $uint_ty::MAX);
+							TestResult::from_bool(
+								s * s <= x
+							)
+						}
+					}
+				}
+
+				quickcheck! {
 					fn pow_mul(x: $uint_ty) -> TestResult {
 						if x.overflowing_pow($uint_ty::from(2)).1 || x.overflowing_pow($uint_ty::from(3)).1 {
 							// On overflow `checked_pow` should return `None`.

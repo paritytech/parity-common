@@ -975,6 +975,32 @@ macro_rules! construct_uint {
 				self.div_mod_knuth(other, n, m)
 			}
 
+			/// Compute the highest `n` such that `n * n <= self`.
+			pub fn integer_sqrt(mut self) -> Self {
+				let one = Self::one();
+				if self <= one {
+					return self;
+				}
+				// the implementation is based on:
+				// https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_numeral_system_(base_2)
+
+				// "bit" starts at the highest power of four <= self.
+				let max_shift = $n_words * Self::WORD_BITS as u32 - 1;
+				let shift: u32 = (max_shift - self.leading_zeros()) & !1;
+				let mut bit = one << shift;
+				let mut result = Self::zero();
+				while !bit.is_zero() {
+					let x = result + bit;
+					result >>= 1;
+					if self >= x {
+						self -= x;
+						result += bit;
+					}
+					bit >>= 2;
+				}
+				result
+			}
+
 			/// Fast exponentiation by squaring
 			/// https://en.wikipedia.org/wiki/Exponentiation_by_squaring
 			///
