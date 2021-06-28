@@ -260,11 +260,7 @@ fn u256_integer_sqrt(c: &mut Criterion) {
 		"u256_integer_sqrt",
 		ParameterizedBenchmark::new(
 			"",
-			|b, x| {
-				b.iter(|| {
-					black_box(x.integer_sqrt().0)
-				})
-			},
+			|b, x| b.iter(|| black_box(x.integer_sqrt().0)),
 			vec![
 				U256::from(u64::MAX),
 				U256::from(u128::MAX) + 1,
@@ -313,11 +309,7 @@ fn u512_integer_sqrt(c: &mut Criterion) {
 		"u512_integer_sqrt",
 		ParameterizedBenchmark::new(
 			"",
-			|b, x| {
-				b.iter(|| {
-					black_box(x.integer_sqrt().0)
-				})
-			},
+			|b, x| b.iter(|| black_box(x.integer_sqrt().0)),
 			vec![
 				U512::from(u32::MAX) + 1,
 				U512::from(u64::MAX),

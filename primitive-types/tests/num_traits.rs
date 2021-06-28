@@ -9,7 +9,6 @@
 use impl_num_traits::integer_sqrt::IntegerSquareRoot;
 use primitive_types::U256;
 
-
 #[test]
 fn u256_isqrt() {
 	let x = U256::MAX;
