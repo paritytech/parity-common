@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- Added `integer_sqrt` method. [#554](https://github.com/paritytech/parity-common/pull/554)
 
 ## [0.9.0] - 2021-01-05
 - Allow `0x` prefix in `from_str`. [#487](https://github.com/paritytech/parity-common/pull/487)
