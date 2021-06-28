@@ -981,24 +981,20 @@ macro_rules! construct_uint {
 				if self <= one {
 					return self;
 				}
-				// the implementation is based on:
-				// https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_numeral_system_(base_2)
 
-				// "bit" starts at the highest power of four <= self.
-				let max_shift = $n_words * Self::WORD_BITS as u32 - 1;
-				let shift: u32 = (max_shift - self.leading_zeros()) & !1;
-				let mut bit = one << shift;
-				let mut result = Self::zero();
-				while !bit.is_zero() {
-					let x = result + bit;
-					result >>= 1;
-					if self >= x {
-						self -= x;
-						result += bit;
+				// the implementation is based on:
+				// https://en.wikipedia.org/wiki/Integer_square_root#Using_only_integer_division
+
+				// Set the initial guess to something higher than √self.
+				let shift: u32 = (self.bits() as u32 + 1) / 2;
+				let mut x_prev = one << shift;
+				loop {
+					let x = (x_prev + self / x_prev) >> 1;
+					if x >= x_prev {
+						return x_prev;
 					}
-					bit >>= 2;
+					x_prev = x;
 				}
-				result
 			}
 
 			/// Fast exponentiation by squaring

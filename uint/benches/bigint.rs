@@ -265,7 +265,12 @@ fn u256_integer_sqrt(c: &mut Criterion) {
 					black_box(x.integer_sqrt().0)
 				})
 			},
-			vec![U256::from(u64::MAX), U256::from(u128::MAX), U256::MAX],
+			vec![
+				U256::from(u64::MAX),
+				U256::from(u128::MAX) + 1,
+				U256::from(u128::MAX - 1) * U256::from(u128::MAX - 1) - 1,
+				U256::MAX,
+			],
 		),
 	);
 }
@@ -313,7 +318,13 @@ fn u512_integer_sqrt(c: &mut Criterion) {
 					black_box(x.integer_sqrt().0)
 				})
 			},
-			vec![U512::from(u64::MAX), U512::from(u128::MAX), U512::MAX],
+			vec![
+				U512::from(u32::MAX) + 1,
+				U512::from(u64::MAX),
+				(U512::from(u128::MAX) + 1) * (U512::from(u128::MAX) + 1),
+				U256::MAX.full_mul(U256::MAX) - 1,
+				U512::MAX,
+			],
 		),
 	);
 }

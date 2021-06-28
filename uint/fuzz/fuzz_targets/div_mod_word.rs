@@ -57,7 +57,7 @@ fn div_mod_word(hi: u64, lo: u64, y: u64) -> (u64, u64) {
 }
 
 fuzz_target!(|data: &[u8]| {
-    if data.len() == 24 {
+	if data.len() == 24 {
 		let mut buf = [0u8; 8];
 		buf.copy_from_slice(&data[..8]);
 		let x = u64::from_ne_bytes(buf);
@@ -68,5 +68,5 @@ fuzz_target!(|data: &[u8]| {
 		if x < z {
 			assert_eq!(div_mod_word(x, y, z), div_mod_word_u128(x, y, z));
 		}
-    }
+	}
 });

@@ -24,3 +24,7 @@ path = "fuzz_targets/div_mod.rs"
 [[bin]]
 name = "div_mod_word"
 path = "fuzz_targets/div_mod_word.rs"
+
+[[bin]]
+name = "isqrt"
+path = "fuzz_targets/isqrt.rs"
