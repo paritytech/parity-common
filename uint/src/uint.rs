@@ -976,10 +976,10 @@ macro_rules! construct_uint {
 			}
 
 			/// Compute the highest `n` such that `n * n <= self`.
-			pub fn integer_sqrt(mut self) -> Self {
+			pub fn integer_sqrt(&self) -> Self {
 				let one = Self::one();
-				if self <= one {
-					return self;
+				if self <= &one {
+					return *self;
 				}
 
 				// the implementation is based on:
