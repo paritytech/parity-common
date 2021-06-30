@@ -260,10 +260,12 @@ where
 
 #[cfg(test)]
 mod tests {
-	use super::{hex_prefix_encode, shared_prefix_len, trie_root};
+	use super::*;
 	use ethereum_types::H256;
 	use hex_literal::hex;
 	use keccak_hasher::KeccakHasher;
+    #[cfg(not(feature = "std"))]
+    use alloc::vec;
 
 	#[test]
 	fn test_hex_prefix_encode() {
