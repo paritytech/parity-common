@@ -8,12 +8,12 @@ description = "Ethereum types"
 edition = "2018"
 
 [dependencies]
-ethbloom = { path = "../ethbloom", version = "0.12", default-features = false }
+ethbloom = { path = "../ethbloom", version = "0.11", default-features = false }
 fixed-hash = { path = "../fixed-hash", version = "0.7", default-features = false, features = ["byteorder", "rustc-hex"] }
 uint-crate = { path = "../uint", package = "uint", version = "0.9", default-features = false }
 primitive-types = { path = "../primitive-types", version = "0.10", features = ["byteorder", "rustc-hex"], default-features = false }
 impl-serde = { path = "../primitive-types/impls/serde", version = "0.3.0", default-features = false, optional = true }
-impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.4", default-features = false, optional = true }
+impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.3", default-features = false, optional = true }
 impl-codec = { version = "0.5.0", path = "../primitive-types/impls/codec", default-features = false, optional = true }
 
 [dev-dependencies]

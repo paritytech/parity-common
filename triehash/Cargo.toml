@@ -9,7 +9,7 @@ edition = "2018"
 
 [dependencies]
 hash-db = { version = "0.15.2", default-features = false }
-rlp = { version = "0.6", path = "../rlp", default-features = false }
+rlp = { version = "0.5", path = "../rlp", default-features = false }
 
 [dev-dependencies]
 criterion = "0.3.0"
