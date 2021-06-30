@@ -67,7 +67,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p fixed-hash --no-default-features --features='byteorder,rustc-hex'
+          args: --manifest-path fixed-hash/Cargo.toml --no-default-features --features='byteorder,rustc-hex'
 
       - name: Test fixed-hash all-features
         uses: actions-rs/cargo@v1
@@ -79,7 +79,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p primitive-types --no-default-features --features='scale-info,num-traits,serde_no_std'
+          args: --manifest-path primitive-types/Cargo.toml --no-default-features --features='scale-info,num-traits,serde_no_std'
 
       - name: Test primitive-types all-features
         uses: actions-rs/cargo@v1
@@ -91,7 +91,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p ethereum-types --no-default-features --features='serialize,rlp' --target=wasm32-unknown-unknown
+          args: --manifest-path ethereum-types/Cargo.toml --no-default-features --features='serialize,rlp' --target=wasm32-unknown-unknown
 
       - name: Test ethereum-types all-features
         uses: actions-rs/cargo@v1
@@ -140,4 +140,3 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
-
