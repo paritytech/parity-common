@@ -81,8 +81,8 @@ jobs:
           command: test
           args: -p primitive-types --all-features
 
-      - name: Test ethereum-types no_std
-        run: cargo test -p ethereum-types --no-default-features --features='serialize,rlp' --target=wasm32-unknown-unknown
+      - name: Build ethereum-types no_std
+        run: cargo build -p ethereum-types --no-default-features --features='serialize,rlp' --target=wasm32-unknown-unknown
 
       - name: Test ethereum-types all-features
         uses: actions-rs/cargo@v1
