@@ -261,11 +261,11 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
+	#[cfg(not(feature = "std"))]
+	use alloc::vec;
 	use ethereum_types::H256;
 	use hex_literal::hex;
 	use keccak_hasher::KeccakHasher;
-    #[cfg(not(feature = "std"))]
-    use alloc::vec;
 
 	#[test]
 	fn test_hex_prefix_encode() {
