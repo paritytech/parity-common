@@ -23,7 +23,7 @@ fn from_gmp(x: Integer) -> U512 {
 }
 
 fuzz_target!(|data: &[u8]| {
-    if data.len() == 128 {
+	if data.len() == 128 {
 		let x = U512::from_little_endian(&data[..64]);
 		let y = U512::from_little_endian(&data[64..]);
 		let x_gmp = Integer::from_digits(&data[..64], Order::LsfLe);
@@ -32,5 +32,5 @@ fuzz_target!(|data: &[u8]| {
 			let (a, b) = x_gmp.div_rem(y_gmp);
 			assert_eq!((from_gmp(a), from_gmp(b)), x.div_mod(y));
 		}
-    }
+	}
 });

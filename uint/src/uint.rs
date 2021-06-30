@@ -975,6 +975,28 @@ macro_rules! construct_uint {
 				self.div_mod_knuth(other, n, m)
 			}
 
+			/// Compute the highest `n` such that `n * n <= self`.
+			pub fn integer_sqrt(&self) -> Self {
+				let one = Self::one();
+				if self <= &one {
+					return *self;
+				}
+
+				// the implementation is based on:
+				// https://en.wikipedia.org/wiki/Integer_square_root#Using_only_integer_division
+
+				// Set the initial guess to something higher than √self.
+				let shift: u32 = (self.bits() as u32 + 1) / 2;
+				let mut x_prev = one << shift;
+				loop {
+					let x = (x_prev + self / x_prev) >> 1;
+					if x >= x_prev {
+						return x_prev;
+					}
+					x_prev = x;
+				}
+			}
+
 			/// Fast exponentiation by squaring
 			/// https://en.wikipedia.org/wiki/Exponentiation_by_squaring
 			///

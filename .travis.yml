@@ -61,6 +61,7 @@ script:
   - cd primitive-types/ && cargo test --all-features && cd ..
   - cd primitive-types/ && cargo test --no-default-features --features=serde_no_std && cd ..
   - cd primitive-types/ && cargo test --no-default-features --features=scale-info && cd ..
+  - cd primitive-types/ && cargo test --no-default-features --features=num-traits && cd ..
   - cd rlp/ && cargo test --no-default-features && cargo check --benches && cd ..
   - cd triehash/ && cargo check --benches && cd ..
   - cd kvdb-web/ && wasm-pack test --headless --firefox && cd ..

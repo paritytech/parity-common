@@ -14,6 +14,9 @@
 pub use num_traits;
 
 #[doc(hidden)]
+pub use integer_sqrt;
+
+#[doc(hidden)]
 pub use uint;
 
 /// Add num-traits support to an integer created by `construct_uint!`.
@@ -46,6 +49,12 @@ macro_rules! impl_uint_num_traits {
 
 			fn from_str_radix(txt: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
 				Self::from_str_radix(txt, radix)
+			}
+		}
+
+		impl $crate::integer_sqrt::IntegerSquareRoot for $name {
+			fn integer_sqrt_checked(&self) -> Option<Self> {
+				Some(self.integer_sqrt())
 			}
 		}
 	};
