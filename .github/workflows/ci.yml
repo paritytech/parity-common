@@ -35,6 +35,14 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Remove msys64 # Workaround to resolve link error with C:\msys64\mingw64\bin\libclang.dll
+        if: runner.os == 'Windows'
+        run: Remove-Item -LiteralPath "C:\msys64\" -Force -Recurse
+
+      - name: Install dependencies
+        if: runner.os == 'Windows'
+        run: choco install llvm -y
+
       - run: rustup target add wasm32-unknown-unknown
 
       - name: Test no-default-features
