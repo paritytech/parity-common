@@ -1,0 +1,140 @@
+on: [pull_request]
+
+name: Continuous integration
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --workspace --benches
+
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macOS-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - run: rustup target add wasm32-unknown-unknown
+
+      - name: Test no-default-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --workspace --no-default-features
+
+      - name: Test default features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --workspace
+
+      - name: Test uint
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p uint --all-features
+
+      - name: Test fixed-hash no_std
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p fixed-hash --no-default-features --features="byteorder,rustc-hex"
+
+      - name: Test fixed-hash all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p fixed-hash --all-features
+
+      - name: Test primitive-types no_std
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p primitive-types --no-default-features --features="scale-info,num-traits,serde_no_std"
+
+      - name: Test primitive-types all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p primitive-types --all-features
+
+      - name: Test ethereum-types no_std
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ethereum-types --no-default-features --features="serialize,rlp" --target=wasm32-unknown-unknown
+
+      - name: Test ethereum-types all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ethereum-types --all-features
+
+      - name: Test ethbloom all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ethbloom --all-features
+
+      - name: Test parity-crypto all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p parity-crypto --all-features
+
+  cross:
+    name: Test cross-compilation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - run: cargo install cross
+
+      - name: Test parity-util-mem on Android
+        run: cross test -p parity-util-mem --target=aarch64-linux-android
+
+      - name: Test uint on bigendian
+        run: cross test -p uint --target=mips64-unknown-linux-gnuabi64
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
