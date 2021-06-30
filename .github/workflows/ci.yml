@@ -111,24 +111,19 @@ jobs:
           command: test
           args: -p parity-crypto --all-features
 
-  cross:
-    name: Test cross-compilation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
-      - run: cargo install cross
-
       - name: Test parity-util-mem on Android
-        run: cross test -p parity-util-mem --target=aarch64-linux-android
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: test
+          args: -p parity-util-mem --target=aarch64-linux-android
 
       - name: Test uint on bigendian
-        run: cross test -p uint --target=mips64-unknown-linux-gnuabi64
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: test
+          args: -p uint --target=mips64-unknown-linux-gnuabi64
 
   fmt:
     name: Rustfmt
