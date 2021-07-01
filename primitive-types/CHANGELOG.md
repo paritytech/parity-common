@@ -6,7 +6,6 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.10.0] - 2021-06-30
 ### Added
 - Added `U128::full_mul` method. [#546](https://github.com/paritytech/parity-common/pull/546)
 ### Breaking
