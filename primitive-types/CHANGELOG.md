@@ -5,9 +5,13 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+### Added
 - Added `U128::full_mul` method. [#546](https://github.com/paritytech/parity-common/pull/546)
 ### Breaking
-- Updated `scale-info` to 0.6. [#519](https://github.com/paritytech/parity-common/pull/519)
+- Updated `scale-info` to 0.9. [#556](https://github.com/paritytech/parity-common/pull/556)
+### Removed
+- Removed `parity-scale-codec` direct dependency. [#556](https://github.com/paritytech/parity-common/pull/556)
 
 ## [0.9.0] - 2021-01-27
 ### Breaking

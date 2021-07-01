@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+### Breaking
+- Updated `primitive-types` to 0.10. [#556](https://github.com/paritytech/parity-common/pull/556)
+
 ## [0.11.0] - 2021-01-27
 ### Breaking
 - Updated `ethbloom` to 0.11. [#510](https://github.com/paritytech/parity-common/pull/510)

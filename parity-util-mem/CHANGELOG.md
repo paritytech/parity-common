@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog].
 ## [Unreleased]
 - Fixed `malloc_usable_size` for FreeBSD. [#553](https://github.com/paritytech/parity-common/pull/553)
 
+### Breaking
+- Updated `ethereum-types` to 0.12. [#556](https://github.com/paritytech/parity-common/pull/556)
+- Updated `primitive-types` to 0.10. [#556](https://github.com/paritytech/parity-common/pull/556)
+- Updated `hashbrown` to 0.11. [#533](https://github.com/paritytech/parity-common/pull/533)
+
 ## [0.9.0] - 2021-01-27
 ### Breaking
 - Updated `ethereum-types` to 0.11. [#510](https://github.com/paritytech/parity-common/pull/510)

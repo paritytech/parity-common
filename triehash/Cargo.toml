@@ -14,7 +14,7 @@ rlp = { version = "0.5", path = "../rlp", default-features = false }
 [dev-dependencies]
 criterion = "0.3.0"
 keccak-hasher = "0.15.2"
-ethereum-types = { version = "0.11.0", path = "../ethereum-types" }
+ethereum-types = { version = "0.12.0", path = "../ethereum-types" }
 tiny-keccak = { version = "2.0", features = ["keccak"] }
 trie-standardmap = "0.15.2"
 hex-literal = "0.3.1"

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+### Breaking
+- Updated `ethereum-types` to 0.12. [#556](https://github.com/paritytech/parity-common/pull/556)
+- Updated `keccak-hash` to 0.8. [#556](https://github.com/paritytech/parity-common/pull/556)
+
 ## [0.6.0] - 2021-01-27
 ### Breaking
 - Updated `ethereum-types` to 0.11. [#510](https://github.com/paritytech/parity-common/pull/510)

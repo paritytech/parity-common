@@ -1,6 +1,6 @@
 [package]
 name = "contract-address"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
@@ -11,9 +11,9 @@ edition = "2018"
 readme = "README.md"
 
 [dependencies]
-ethereum-types = { version = "0.11.0", path = "../ethereum-types" }
+ethereum-types = { version = "0.12.0", path = "../ethereum-types" }
 rlp = { version = "0.5", path = "../rlp" }
-keccak-hash = { version = "0.7", path = "../keccak-hash", default-features = false }
+keccak-hash = { version = "0.8", path = "../keccak-hash", default-features = false }
 
 [features]
 default = []

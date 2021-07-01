@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+### Breaking
+- Updated `kvdb` to 0.10. [#556](https://github.com/paritytech/parity-common/pull/556)
+- Updated `parity-util-mem` to 0.10. [#556](https://github.com/paritytech/parity-common/pull/556)
+
 ## [0.11.1] - 2021-05-03
 - Updated `rocksdb` to 0.16. [#537](https://github.com/paritytech/parity-common/pull/537)
 
