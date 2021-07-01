@@ -1,23 +1,16 @@
 [workspace]
 resolver = "2"
 members = [
-	"contract-address",
 	"fixed-hash",
 	"keccak-hash",
 	"kvdb",
 	"kvdb-memorydb",
 	"kvdb-rocksdb",
 	"kvdb-shared-tests",
-	"kvdb-web",
 	"parity-bytes",
 	"parity-crypto",
-	"parity-path",
-	"plain_hasher",
 	"rlp",
 	"rlp-derive",
-	"transaction-pool",
-	"trace-time",
-	"triehash",
 	"uint",
 	"parity-util-mem",
 	"primitive-types",
