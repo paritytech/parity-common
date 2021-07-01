@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+## [0.9.1] - 2021-06-30
 - Added `integer_sqrt` method. [#554](https://github.com/paritytech/parity-common/pull/554)
 
 ## [0.9.0] - 2021-01-05
