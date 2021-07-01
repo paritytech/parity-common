@@ -125,6 +125,7 @@ jobs:
         run: cargo test -p parity-util-mem --features='jemalloc-global'
 
       - name: Test parity-util-mem mimalloc-global 
+        if: runner.os != 'Windows'
         run: cargo test -p parity-util-mem --features='mimalloc-global'
 
       - name: Test parity-util-mem dlmalloc-global 
