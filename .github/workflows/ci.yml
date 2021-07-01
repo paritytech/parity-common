@@ -33,7 +33,6 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - windows-latest
           - macOS-latest
     steps:
       - uses: actions/checkout@v2
@@ -45,14 +44,6 @@ jobs:
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v1.3.0
-
-      - name: Remove msys64 # Workaround to resolve link error with C:\msys64\mingw64\bin\libclang.dll
-        if: runner.os == 'Windows'
-        run: Remove-Item -LiteralPath "C:\msys64\" -Force -Recurse
-
-      - name: Install dependencies
-        if: runner.os == 'Windows'
-        run: choco install llvm -y
 
       - run: rustup target add wasm32-unknown-unknown
 
@@ -136,12 +127,30 @@ jobs:
         run: cargo test -p parity-util-mem --features='jemalloc-global'
 
       - name: Test parity-util-mem mimalloc-global 
-        if: runner.os != 'Windows'
         run: cargo test -p parity-util-mem --features='mimalloc-global'
 
       - name: Test parity-util-mem dlmalloc-global 
-        if: runner.os != 'Windows'
         run: cargo test -p parity-util-mem --no-default-features --features='dlmalloc-global'
+
+  test_windows:
+    name: Test Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v1.3.0
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --workspace --all-features --exclude kvdb-rocksdb
+
 
   fmt:
     name: Rustfmt
