@@ -20,7 +20,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --workspace --benches
+          args: --workspace --all-targets
 
   test:
     name: Test
@@ -38,6 +38,9 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v1.3.0
 
       - name: Remove msys64 # Workaround to resolve link error with C:\msys64\mingw64\bin\libclang.dll
         if: runner.os == 'Windows'
