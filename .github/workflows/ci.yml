@@ -1,0 +1,160 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+name: Continuous integration
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v1.3.0
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --workspace --all-targets
+
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macOS-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v1.3.0
+
+      - name: Remove msys64 # Workaround to resolve link error with C:\msys64\mingw64\bin\libclang.dll
+        if: runner.os == 'Windows'
+        run: Remove-Item -LiteralPath "C:\msys64\" -Force -Recurse
+
+      - name: Install dependencies
+        if: runner.os == 'Windows'
+        run: choco install llvm -y
+
+      - run: rustup target add wasm32-unknown-unknown
+
+      - name: Test no-default-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --workspace --no-default-features
+
+      - name: Test default features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --workspace
+
+      - name: Test uint
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p uint --all-features
+
+      - name: Test fixed-hash no_std
+        run: cargo test -p fixed-hash --no-default-features --features='byteorder,rustc-hex'
+
+      - name: Test fixed-hash all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p fixed-hash --all-features
+
+      - name: Test primitive-types no_std
+        run: cargo test -p primitive-types --no-default-features --features='scale-info,num-traits,serde_no_std'
+
+      - name: Test primitive-types all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p primitive-types --all-features
+
+      - name: Build ethereum-types no_std
+        run: cargo build -p ethereum-types --no-default-features --features='serialize,rlp' --target=wasm32-unknown-unknown
+
+      - name: Test ethereum-types all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ethereum-types --all-features
+
+      - name: Test ethbloom all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ethbloom --all-features
+
+      - name: Test parity-crypto all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p parity-crypto --all-features
+
+      - name: Test uint on bigendian
+        if: runner.os == 'Linux'
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: test
+          args: -p uint --target=mips64-unknown-linux-gnuabi64
+
+      - name: Test parity-util-mem on Android
+        if: runner.os == 'Linux'
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: test
+          args: -p parity-util-mem --target=aarch64-linux-android
+
+      - name: Test parity-util-mem estimate-heapsize 
+        run: cargo test -p parity-util-mem --features='estimate-heapsize'
+
+      - name: Test parity-util-mem jemalloc-global 
+        run: cargo test -p parity-util-mem --features='jemalloc-global'
+
+      - name: Test parity-util-mem mimalloc-global 
+        if: runner.os != 'Windows'
+        run: cargo test -p parity-util-mem --features='mimalloc-global'
+
+      - name: Test parity-util-mem dlmalloc-global 
+        if: runner.os != 'Windows'
+        run: cargo test -p parity-util-mem --no-default-features --features='dlmalloc-global'
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check

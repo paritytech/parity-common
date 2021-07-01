@@ -53,6 +53,7 @@ fn derive_ignore() {
 }
 
 #[test]
+#[cfg(all(feature = "lru", feature = "hashbrown"))]
 fn derive_morecomplex() {
 	#[derive(MallocSizeOf)]
 	struct Trivia {
