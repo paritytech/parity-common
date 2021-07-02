@@ -8,7 +8,6 @@ members = [
 	"kvdb-rocksdb",
 	"kvdb-shared-tests",
 	"parity-bytes",
-	"parity-crypto",
 	"rlp",
 	"rlp-derive",
 	"uint",
