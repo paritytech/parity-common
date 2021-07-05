@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.9.1] - 2021-07-05
+### Added
+- Implemented `parity_scale_codec::MaxEncodedLen` trait for `{U128, U256, U512}` and `{H128, H160, H256, H512}` types.
+
 ## [0.9.0] - 2021-01-27
 ### Breaking
 - Updated `impl-codec` to 0.5. [#510](https://github.com/paritytech/parity-common/pull/510)
