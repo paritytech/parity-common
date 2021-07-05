@@ -98,12 +98,6 @@ jobs:
           command: test
           args: -p ethbloom --all-features
 
-      - name: Test parity-crypto all-features
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p parity-crypto --all-features
-
       - name: Test uint on bigendian
         if: runner.os == 'Linux'
         uses: actions-rs/cargo@v1
