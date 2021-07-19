@@ -70,10 +70,11 @@ pub use alloc::boxed::Box;
 use core::ffi::c_void;
 #[cfg(feature = "std")]
 use rstd::hash::Hash;
-use rstd::marker::PhantomData;
-use rstd::mem::size_of;
-use rstd::ops::Range;
-use rstd::ops::{Deref, DerefMut};
+use rstd::{
+	marker::PhantomData,
+	mem::size_of,
+	ops::{Deref, DerefMut, Range},
+};
 #[cfg(feature = "std")]
 use std::hash::BuildHasher;
 #[cfg(feature = "std")]
@@ -125,7 +126,7 @@ impl MallocSizeOfOps {
 		// larger than the required alignment, but small enough that it is
 		// always in the first page of memory and therefore not a legitimate
 		// address.
-		return ptr as *const usize as usize <= 256;
+		return ptr as *const usize as usize <= 256
 	}
 
 	/// Call `size_of_op` on `ptr`, first checking that the allocation isn't
@@ -535,8 +536,8 @@ where
 // trait bounds are ever allowed, this code should be uncommented.
 // (We do have a compile-fail test for this:
 // rc_arc_must_not_derive_malloc_size_of.rs)
-//impl<T> !MallocSizeOf for Arc<T> { }
-//impl<T> !MallocShallowSizeOf for Arc<T> { }
+// impl<T> !MallocSizeOf for Arc<T> { }
+// impl<T> !MallocShallowSizeOf for Arc<T> { }
 
 #[cfg(feature = "std")]
 fn arc_ptr<T>(s: &Arc<T>) -> *const T {
@@ -760,9 +761,10 @@ where
 }
 
 malloc_size_of_is_0!(
-	[u8; 1], [u8; 2], [u8; 3], [u8; 4], [u8; 5], [u8; 6], [u8; 7], [u8; 8], [u8; 9], [u8; 10], [u8; 11], [u8; 12],
-	[u8; 13], [u8; 14], [u8; 15], [u8; 16], [u8; 17], [u8; 18], [u8; 19], [u8; 20], [u8; 21], [u8; 22], [u8; 23],
-	[u8; 24], [u8; 25], [u8; 26], [u8; 27], [u8; 28], [u8; 29], [u8; 30], [u8; 31], [u8; 32]
+	[u8; 1], [u8; 2], [u8; 3], [u8; 4], [u8; 5], [u8; 6], [u8; 7], [u8; 8], [u8; 9], [u8; 10],
+	[u8; 11], [u8; 12], [u8; 13], [u8; 14], [u8; 15], [u8; 16], [u8; 17], [u8; 18], [u8; 19],
+	[u8; 20], [u8; 21], [u8; 22], [u8; 23], [u8; 24], [u8; 25], [u8; 26], [u8; 27], [u8; 28],
+	[u8; 29], [u8; 30], [u8; 31], [u8; 32]
 );
 
 macro_rules! impl_smallvec {
@@ -773,7 +775,8 @@ macro_rules! impl_smallvec {
 			T: MallocSizeOf,
 		{
 			fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-				let mut n = if self.spilled() { self.capacity() * core::mem::size_of::<T>() } else { 0 };
+				let mut n =
+					if self.spilled() { self.capacity() * core::mem::size_of::<T>() } else { 0 };
 				if let Some(t) = T::constant_size() {
 					n += self.len() * t;
 				} else {
@@ -797,8 +800,7 @@ malloc_size_of_is_0!(std::time::Duration);
 mod tests {
 	use crate::{allocators::new_malloc_size_ops, MallocSizeOf, MallocSizeOfOps};
 	use smallvec::SmallVec;
-	use std::collections::BTreeSet;
-	use std::mem;
+	use std::{collections::BTreeSet, mem};
 	impl_smallvec!(3);
 
 	#[test]
@@ -812,7 +814,10 @@ mod tests {
 		assert_eq!(v.size_of(&mut ops), 0);
 		assert!(!v.spilled());
 		v.push(4);
-		assert!(v.spilled(), "SmallVec spills when going beyond the capacity of the inner backing array");
+		assert!(
+			v.spilled(),
+			"SmallVec spills when going beyond the capacity of the inner backing array"
+		);
 		assert_eq!(v.size_of(&mut ops), 4); // 4 u8s on the heap
 	}
 
@@ -827,7 +832,10 @@ mod tests {
 		assert!(v.size_of(&mut ops) >= 3);
 		assert!(!v.spilled());
 		v.push(Box::new(4u8));
-		assert!(v.spilled(), "SmallVec spills when going beyond the capacity of the inner backing array");
+		assert!(
+			v.spilled(),
+			"SmallVec spills when going beyond the capacity of the inner backing array"
+		);
 		let mut ops = new_malloc_size_ops();
 		let expected_min_allocs = mem::size_of::<Box<u8>>() * 4 + 4;
 		assert!(v.size_of(&mut ops) >= expected_min_allocs);
@@ -846,7 +854,8 @@ mod tests {
 		v.push("ÖWL".into());
 		assert!(v.spilled());
 		let mut ops = new_malloc_size_ops();
-		let expected_min_allocs = mem::size_of::<String>() * 4 + "ÖWL".len() + "COW".len() + "PIG".len() + "DUCK".len();
+		let expected_min_allocs =
+			mem::size_of::<String>() * 4 + "ÖWL".len() + "COW".len() + "PIG".len() + "DUCK".len();
 		assert!(v.size_of(&mut ops) >= expected_min_allocs);
 	}
 

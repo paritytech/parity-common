@@ -16,7 +16,12 @@ pub fn impl_encodable(ast: &syn::DeriveInput) -> TokenStream {
 		panic!("#[derive(RlpEncodable)] is only defined for structs.");
 	};
 
-	let stmts: Vec<_> = body.fields.iter().enumerate().map(|(i, field)| encodable_field(i, field)).collect();
+	let stmts: Vec<_> = body
+		.fields
+		.iter()
+		.enumerate()
+		.map(|(i, field)| encodable_field(i, field))
+		.collect();
 	let name = &ast.ident;
 
 	let stmts_len = stmts.len();

@@ -9,19 +9,23 @@
 #[cfg(not(feature = "std"))]
 use alloc::{borrow::ToOwned, boxed::Box, string::String, vec::Vec};
 use bytes::{Bytes, BytesMut};
-use core::iter::{empty, once};
-use core::{mem, str};
+use core::{
+	iter::{empty, once},
+	mem, str,
+};
 
-use crate::error::DecoderError;
-use crate::rlpin::Rlp;
-use crate::stream::RlpStream;
-use crate::traits::{Decodable, Encodable};
+use crate::{
+	error::DecoderError,
+	rlpin::Rlp,
+	stream::RlpStream,
+	traits::{Decodable, Encodable},
+};
 
 pub fn decode_usize(bytes: &[u8]) -> Result<usize, DecoderError> {
 	match bytes.len() {
 		l if l <= mem::size_of::<usize>() => {
 			if bytes[0] == 0 {
-				return Err(DecoderError::RlpInvalidIndirection);
+				return Err(DecoderError::RlpInvalidIndirection)
 			}
 			let mut res = 0usize;
 			for (i, byte) in bytes.iter().enumerate().take(l) {
@@ -29,7 +33,7 @@ pub fn decode_usize(bytes: &[u8]) -> Result<usize, DecoderError> {
 				res += (*byte as usize) << shift;
 			}
 			Ok(res)
-		}
+		},
 		_ => Err(DecoderError::RlpIsTooBig),
 	}
 }
@@ -112,11 +116,11 @@ where
 		match *self {
 			None => {
 				s.begin_list(0);
-			}
+			},
 			Some(ref value) => {
 				s.begin_list(1);
 				s.append(value);
-			}
+			},
 		}
 	}
 }
@@ -176,7 +180,7 @@ macro_rules! impl_decodable_for_u {
 					0 | 1 => u8::decode(rlp).map(|v| v as $name),
 					l if l <= mem::size_of::<$name>() => {
 						if bytes[0] == 0 {
-							return Err(DecoderError::RlpInvalidIndirection);
+							return Err(DecoderError::RlpInvalidIndirection)
 						}
 						let mut res = 0 as $name;
 						for (i, byte) in bytes.iter().enumerate().take(l) {
@@ -184,7 +188,7 @@ macro_rules! impl_decodable_for_u {
 							res += (*byte as $name) << shift;
 						}
 						Ok(res)
-					}
+					},
 					_ => Err(DecoderError::RlpIsTooBig),
 				})
 			}

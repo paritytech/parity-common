@@ -109,7 +109,11 @@ fn u128_div(c: &mut Criterion) {
 					black_box(x / u128::from(*z))
 				})
 			},
-			vec![(0u64, u64::max_value(), 100u64), (u64::max_value(), u64::max_value(), 99), (42, 42, 100500)],
+			vec![
+				(0u64, u64::max_value(), 100u64),
+				(u64::max_value(), u64::max_value(), 99),
+				(42, 42, 100500),
+			],
 		),
 	);
 }
@@ -161,7 +165,13 @@ fn u256_mul(c: &mut Criterion) {
 			vec![
 				(U256::max_value(), 1u64),
 				(U256::from(3), u64::max_value()),
-				(U256::from_dec_str("21674844646682989462120101885968193938394323990565507610662749").unwrap(), 173),
+				(
+					U256::from_dec_str(
+						"21674844646682989462120101885968193938394323990565507610662749",
+					)
+					.unwrap(),
+					173,
+				),
 			],
 		),
 	);
@@ -247,8 +257,14 @@ fn u256_rem(c: &mut Criterion) {
 					U256([2096410819092764509, 8483673822214032535, 36306297304129857, 3453]),
 				),
 				(
-					U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap(),
-					U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0").unwrap(),
+					U256::from_str(
+						"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+					)
+					.unwrap(),
+					U256::from_str(
+						"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0",
+					)
+					.unwrap(),
 				),
 			],
 		),
@@ -276,31 +292,53 @@ fn u512_pairs() -> Vec<(U512, U512)> {
 		(U512::from(1u64), U512::from(0u64)),
 		(U512::from(u64::max_value()), U512::from(u64::from(u32::max_value()) + 1)),
 		(
-			U512([12767554894655550452, 16333049135534778834, 140317443000293558, 598963, 0, 0, 0, 0]),
+			U512([
+				12767554894655550452,
+				16333049135534778834,
+				140317443000293558,
+				598963,
+				0,
+				0,
+				0,
+				0,
+			]),
 			U512([0, 0, 0, 0, 2096410819092764509, 8483673822214032535, 36306297304129857, 3453]),
 		),
 		(
-			U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap(),
-			U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0").unwrap(),
+			U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+				.unwrap(),
+			U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0")
+				.unwrap(),
 		),
 	]
 }
 
 fn u512_add(c: &mut Criterion) {
-	c.bench("u512_add", ParameterizedBenchmark::new("", |b, (x, y)| b.iter(|| black_box(x + y)), u512_pairs()));
+	c.bench(
+		"u512_add",
+		ParameterizedBenchmark::new("", |b, (x, y)| b.iter(|| black_box(x + y)), u512_pairs()),
+	);
 }
 
 fn u512_sub(c: &mut Criterion) {
 	c.bench(
 		"u512_sub",
-		ParameterizedBenchmark::new("", |b, (x, y)| b.iter(|| black_box(x.overflowing_sub(*y).0)), u512_pairs()),
+		ParameterizedBenchmark::new(
+			"",
+			|b, (x, y)| b.iter(|| black_box(x.overflowing_sub(*y).0)),
+			u512_pairs(),
+		),
 	);
 }
 
 fn u512_mul(c: &mut Criterion) {
 	c.bench(
 		"u512_mul",
-		ParameterizedBenchmark::new("", |b, (x, y)| b.iter(|| black_box(x.overflowing_mul(*y).0)), u512_pairs()),
+		ParameterizedBenchmark::new(
+			"",
+			|b, (x, y)| b.iter(|| black_box(x.overflowing_mul(*y).0)),
+			u512_pairs(),
+		),
 	);
 }
 
@@ -372,8 +410,12 @@ fn u512_rem(c: &mut Criterion) {
 fn conversions(c: &mut Criterion) {
 	c.bench(
 		"conversions biguint vs gmp",
-		ParameterizedBenchmark::new("BigUint", |b, i| bench_convert_to_biguit(b, *i), vec![0, 42, u64::max_value()])
-			.with_function("gmp", |b, i| bench_convert_to_gmp(b, *i)),
+		ParameterizedBenchmark::new(
+			"BigUint",
+			|b, i| bench_convert_to_biguit(b, *i),
+			vec![0, 42, u64::max_value()],
+		)
+		.with_function("gmp", |b, i| bench_convert_to_gmp(b, *i)),
 	);
 }
 
@@ -405,12 +447,14 @@ fn u512_mul_u32_vs_u64(c: &mut Criterion) {
 }
 
 fn bench_u512_mul_u32(b: &mut Bencher, i: u32) {
-	let x = U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let x =
+		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	b.iter(|| black_box(x * i));
 }
 
 fn bench_u512_mul_u64(b: &mut Bencher, i: u64) {
-	let x = U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let x =
+		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	b.iter(|| black_box(x * i));
 }
 
@@ -430,8 +474,10 @@ fn mulmod_u512_vs_biguint_vs_gmp(c: &mut Criterion) {
 }
 
 fn bench_biguint_mulmod(b: &mut Bencher, z: U256) {
-	let x = U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
-	let y = U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let x =
+		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let y =
+		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	b.iter(|| {
 		let w = to_biguint(x) * to_biguint(y);
 		black_box(from_biguint(w % to_biguint(z)))
@@ -439,8 +485,10 @@ fn bench_biguint_mulmod(b: &mut Bencher, z: U256) {
 }
 
 fn bench_gmp_mulmod(b: &mut Bencher, z: U256) {
-	let x = U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
-	let y = U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let x =
+		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let y =
+		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	b.iter(|| {
 		let w = to_gmp(x) * to_gmp(y);
 		black_box(from_gmp(w % to_gmp(z)))
@@ -448,8 +496,10 @@ fn bench_gmp_mulmod(b: &mut Bencher, z: U256) {
 }
 
 fn bench_u512_mulmod(b: &mut Bencher, z: U256) {
-	let x = U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
-	let y = U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let x =
+		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
+	let y =
+		U512::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 	let z = U512([z.0[0], z.0[1], z.0[2], z.0[3], 0, 0, 0, 0]);
 	b.iter(|| {
 		let w = x.overflowing_mul(y).0;
@@ -460,7 +510,9 @@ fn bench_u512_mulmod(b: &mut Bencher, z: U256) {
 // NOTE: uses native `u128` and does not measure this crates performance,
 // but might be interesting as a comparison.
 fn u128_mul(c: &mut Criterion) {
-	c.bench_function("u128_mul", |b| b.iter(|| black_box(12345u128 * u128::from(u64::max_value()))));
+	c.bench_function("u128_mul", |b| {
+		b.iter(|| black_box(12345u128 * u128::from(u64::max_value())))
+	});
 }
 
 fn u256_bit_and(c: &mut Criterion) {
@@ -644,8 +696,8 @@ fn u256_from_le(c: &mut Criterion) {
 	c.bench_function("u256_from_le", |b| {
 		b.iter(|| {
 			let raw = black_box([
-				1u8, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,
-				101, 103, 107, 109, 113, 127,
+				1u8, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
+				73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127,
 			]);
 			black_box(U256::from_little_endian(&raw[..]))
 		})
@@ -656,8 +708,8 @@ fn u256_from_be(c: &mut Criterion) {
 	c.bench_function("u256_from_be", |b| {
 		b.iter(|| {
 			let raw = black_box([
-				1u8, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,
-				101, 103, 107, 109, 113, 127,
+				1u8, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
+				73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127,
 			]);
 			black_box(U256::from_big_endian(&raw[..]))
 		})
@@ -666,11 +718,14 @@ fn u256_from_be(c: &mut Criterion) {
 
 fn from_fixed_array(c: &mut Criterion) {
 	let ary512: [u8; 64] = [
-		255, 0, 0, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 121, 0, 0, 0, 0, 0, 213, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 45, 0, 0, 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 123,
+		255, 0, 0, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 121, 0, 0, 0, 0, 0, 213, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 45, 0, 0, 67, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 123,
 	];
-	let ary256: [u8; 32] =
-		[255, 0, 0, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 121, 0, 0, 0, 0, 0, 213, 0, 0, 0, 0, 0, 0];
+	let ary256: [u8; 32] = [
+		255, 0, 0, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 121, 0, 0, 0, 0, 0, 213, 0, 0,
+		0, 0, 0, 0,
+	];
 	c.bench_function("from_fixed_array", move |b| {
 		b.iter(|| {
 			let _: U512 = black_box(black_box(ary512).into());

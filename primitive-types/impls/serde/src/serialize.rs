@@ -6,10 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use alloc::string::String;
-use alloc::vec::Vec;
-use core::fmt;
-use core::result::Result;
+use alloc::{string::String, vec::Vec};
+use core::{fmt, result::Result};
 use serde::{de, Deserializer, Serializer};
 
 static CHARS: &[u8] = b"0123456789abcdef";
@@ -25,12 +23,12 @@ pub fn to_hex(bytes: &[u8], skip_leading_zero: bool) -> String {
 		let non_zero = bytes.iter().take_while(|b| **b == 0).count();
 		let bytes = &bytes[non_zero..];
 		if bytes.is_empty() {
-			return "0x0".into();
+			return "0x0".into()
 		} else {
 			bytes
 		}
 	} else if bytes.is_empty() {
-		return "0x".into();
+		return "0x".into()
 	} else {
 		bytes
 	};
@@ -85,7 +83,8 @@ impl fmt::Display for FromHexError {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
 			Self::MissingPrefix => write!(fmt, "0x prefix is missing"),
-			Self::InvalidHex { character, index } => write!(fmt, "invalid hex character: {}, at {}", character, index),
+			Self::InvalidHex { character, index } =>
+				write!(fmt, "invalid hex character: {}, at {}", character, index),
 		}
 	}
 }
@@ -96,7 +95,7 @@ impl fmt::Display for FromHexError {
 /// or non-hex characters are present.
 pub fn from_hex(v: &str) -> Result<Vec<u8>, FromHexError> {
 	if !v.starts_with("0x") {
-		return Err(FromHexError::MissingPrefix);
+		return Err(FromHexError::MissingPrefix)
 	}
 
 	let mut bytes = vec![0u8; (v.len() - 1) / 2];
@@ -124,12 +123,12 @@ fn from_hex_raw<'a>(v: &str, bytes: &mut [u8]) -> Result<usize, FromHexError> {
 			b'0'..=b'9' => buf |= byte - b'0',
 			b' ' | b'\r' | b'\n' | b'\t' => {
 				buf >>= 4;
-				continue;
-			}
+				continue
+			},
 			b => {
 				let character = char::from(b);
-				return Err(FromHexError::InvalidHex { character, index });
-			}
+				return Err(FromHexError::InvalidHex { character, index })
+			},
 		}
 
 		modulus += 1;
@@ -193,7 +192,8 @@ impl<'a> fmt::Display for ExpectedLen<'a> {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
 			ExpectedLen::Exact(ref v) => write!(fmt, "length of {}", v.len() * 2),
-			ExpectedLen::Between(min, ref v) => write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
+			ExpectedLen::Between(min, ref v) =>
+				write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
 		}
 	}
 }
@@ -227,7 +227,10 @@ where
 
 /// Deserialize into vector of bytes with additional size check.
 /// Returns number of bytes written.
-pub fn deserialize_check_len<'a, 'de, D>(deserializer: D, len: ExpectedLen<'a>) -> Result<usize, D::Error>
+pub fn deserialize_check_len<'a, 'de, D>(
+	deserializer: D,
+	len: ExpectedLen<'a>,
+) -> Result<usize, D::Error>
 where
 	D: Deserializer<'de>,
 {
@@ -244,17 +247,18 @@ where
 
 		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
 			if !v.starts_with("0x") {
-				return Err(E::custom(FromHexError::MissingPrefix));
+				return Err(E::custom(FromHexError::MissingPrefix))
 			}
 
 			let len = v.len();
 			let is_len_valid = match self.len {
 				ExpectedLen::Exact(ref slice) => len == 2 * slice.len() + 2,
-				ExpectedLen::Between(min, ref slice) => len <= 2 * slice.len() + 2 && len > 2 * min + 2,
+				ExpectedLen::Between(min, ref slice) =>
+					len <= 2 * slice.len() + 2 && len > 2 * min + 2,
 			};
 
 			if !is_len_valid {
-				return Err(E::invalid_length(v.len() - 2, &self));
+				return Err(E::invalid_length(v.len() - 2, &self))
 			}
 
 			let bytes = match self.len {
@@ -300,12 +304,18 @@ mod tests {
 
 	#[test]
 	fn should_not_fail_on_other_strings() {
-		let a: Bytes =
-			serde_json::from_str("\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587\"").unwrap();
-		let b: Bytes =
-			serde_json::from_str("\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587b\"").unwrap();
-		let c: Bytes =
-			serde_json::from_str("\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587b4\"").unwrap();
+		let a: Bytes = serde_json::from_str(
+			"\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587\"",
+		)
+		.unwrap();
+		let b: Bytes = serde_json::from_str(
+			"\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587b\"",
+		)
+		.unwrap();
+		let c: Bytes = serde_json::from_str(
+			"\"0x7f864e18e3dd8b58386310d2fe0919eef27c6e558564b7f67f22d99d20f587b4\"",
+		)
+		.unwrap();
 
 		assert_eq!(a.0.len(), 31);
 		assert_eq!(b.0.len(), 32);

@@ -9,29 +9,29 @@
 //! default allocator management
 //! Features are:
 //! - windows:
-//!	 - no features: default implementation from servo `heapsize` crate
-//!	 - weealloc: default to `estimate_size`
-//!	 - dlmalloc: default to `estimate_size`
-//!	 - jemalloc: default windows allocator is used instead
-//!	 - mimalloc: use mimallocator crate
+//! 	 - no features: default implementation from servo `heapsize` crate
+//! 	 - weealloc: default to `estimate_size`
+//! 	 - dlmalloc: default to `estimate_size`
+//! 	 - jemalloc: default windows allocator is used instead
+//! 	 - mimalloc: use mimallocator crate
 //! - arch x86:
-//!	 - no features: use default alloc
-//!	 - jemalloc: use jemallocator crate
-//!	 - weealloc: default to `estimate_size`
-//!	 - dlmalloc: default to `estimate_size`
-//!	 - mimalloc: use mimallocator crate
+//! 	 - no features: use default alloc
+//! 	 - jemalloc: use jemallocator crate
+//! 	 - weealloc: default to `estimate_size`
+//! 	 - dlmalloc: default to `estimate_size`
+//! 	 - mimalloc: use mimallocator crate
 //! - arch x86/macos:
-//!	 - no features: use default alloc, requires using `estimate_size`
-//!	 - jemalloc: use jemallocator crate
-//!	 - weealloc: default to `estimate_size`
-//!	 - dlmalloc: default to `estimate_size`
-//!	 - mimalloc: use mimallocator crate
+//! 	 - no features: use default alloc, requires using `estimate_size`
+//! 	 - jemalloc: use jemallocator crate
+//! 	 - weealloc: default to `estimate_size`
+//! 	 - dlmalloc: default to `estimate_size`
+//! 	 - mimalloc: use mimallocator crate
 //! - arch wasm32:
-//!	 - no features: default to `estimate_size`
-//!	 - weealloc: default to `estimate_size`
-//!	 - dlmalloc: default to `estimate_size`
-//!	 - jemalloc: compile error
-//!	 - mimalloc: compile error (until https://github.com/microsoft/mimalloc/pull/32 is merged)
+//! 	 - no features: default to `estimate_size`
+//! 	 - weealloc: default to `estimate_size`
+//! 	 - dlmalloc: default to `estimate_size`
+//! 	 - jemalloc: compile error
+//! 	 - mimalloc: compile error (until https://github.com/microsoft/mimalloc/pull/32 is merged)
 
 #[cfg(feature = "std")]
 use crate::malloc_size::MallocUnconditionalSizeOf;
@@ -126,7 +126,11 @@ mod usable_size {
 
 /// Get a new instance of a MallocSizeOfOps
 pub fn new_malloc_size_ops() -> MallocSizeOfOps {
-	MallocSizeOfOps::new(usable_size::malloc_usable_size, usable_size::new_enclosing_size_fn(), None)
+	MallocSizeOfOps::new(
+		usable_size::malloc_usable_size,
+		usable_size::new_enclosing_size_fn(),
+		None,
+	)
 }
 
 /// Extension methods for `MallocSizeOf` trait, do not implement

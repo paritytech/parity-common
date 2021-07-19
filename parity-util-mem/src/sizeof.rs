@@ -9,7 +9,9 @@
 //! Estimation for heapsize calculation. Usable to replace call to allocator method (for some
 //! allocators or simply because we just need a deterministic cunsumption measurement).
 
-use crate::malloc_size::{MallocShallowSizeOf, MallocSizeOf, MallocSizeOfOps, MallocUnconditionalShallowSizeOf};
+use crate::malloc_size::{
+	MallocShallowSizeOf, MallocSizeOf, MallocSizeOfOps, MallocUnconditionalShallowSizeOf,
+};
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
 #[cfg(not(feature = "std"))]

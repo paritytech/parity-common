@@ -90,7 +90,11 @@ where
 {
 	/// Creates a new `ReadGuardedIterator` that maps `RwLock<RocksDB>` to `RwLock<DBIterator>`,
 	/// where `DBIterator` iterates over all keys.
-	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: u32, read_opts: ReadOptions) -> Self {
+	pub fn new(
+		read_lock: RwLockReadGuard<'a, Option<T>>,
+		col: u32,
+		read_opts: ReadOptions,
+	) -> Self {
 		Self { inner: Self::new_inner(read_lock, |db| db.iter(col, read_opts)) }
 	}
 
@@ -108,7 +112,10 @@ where
 	fn new_inner(
 		rlock: RwLockReadGuard<'a, Option<T>>,
 		f: impl FnOnce(&'a T) -> <&'a T as IterationHandler>::Iterator,
-	) -> OwningHandle<UnsafeStableAddress<'a, Option<T>>, DerefWrapper<Option<<&'a T as IterationHandler>::Iterator>>> {
+	) -> OwningHandle<
+		UnsafeStableAddress<'a, Option<T>>,
+		DerefWrapper<Option<<&'a T as IterationHandler>::Iterator>>,
+	> {
 		OwningHandle::new_with_fn(UnsafeStableAddress(rlock), move |rlock| {
 			let rlock = unsafe { rlock.as_ref().expect("initialized as non-null; qed") };
 			DerefWrapper(rlock.as_ref().map(f))
@@ -124,6 +131,10 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 	}
 
 	fn iter_with_prefix(&self, col: u32, prefix: &[u8], read_opts: ReadOptions) -> Self::Iterator {
-		self.db.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::From(prefix, Direction::Forward))
+		self.db.iterator_cf_opt(
+			self.cf(col as usize),
+			read_opts,
+			IteratorMode::From(prefix, Direction::Forward),
+		)
 	}
 }

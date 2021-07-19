@@ -83,12 +83,12 @@ impl<'a> BytesRef<'a> {
 				data.resize(offset, 0);
 				data.extend_from_slice(input);
 				wrote
-			}
+			},
 			BytesRef::Fixed(ref mut data) if offset < data.len() => {
 				let max = min(data.len() - offset, input.len());
 				data[offset..(max + offset)].copy_from_slice(&input[..max]);
 				max
-			}
+			},
 			_ => 0,
 		}
 	}

@@ -10,23 +10,23 @@
 //!
 //! Allows encoding, decoding, and view onto rlp-slice
 //!
-//!# What should you use when?
+//! # What should you use when?
 //!
-//!### Use `encode` function when:
+//! ### Use `encode` function when:
 //! * You want to encode something inline.
 //! * You do not work on big set of data.
 //! * You want to encode whole data structure at once.
 //!
-//!### Use `decode` function when:
+//! ### Use `decode` function when:
 //! * You want to decode something inline.
 //! * You do not work on big set of data.
 //! * You want to decode whole rlp at once.
 //!
-//!### Use `RlpStream` when:
+//! ### Use `RlpStream` when:
 //! * You want to encode something in portions.
 //! * You encode a big set of data.
 //!
-//!### Use `Rlp` when:
+//! ### Use `Rlp` when:
 //! * You need to handle data corruption errors.
 //! * You are working on input data.
 //! * You want to get view onto rlp-slice.

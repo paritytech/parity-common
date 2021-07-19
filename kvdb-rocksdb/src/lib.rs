@@ -14,7 +14,8 @@ use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, path
 use parity_util_mem::MallocSizeOf;
 use parking_lot::RwLock;
 use rocksdb::{
-	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB,
+	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions,
+	WriteBatch, WriteOptions, DB,
 };
 
 use crate::iter::KeyValuePair;
@@ -110,11 +111,11 @@ impl CompactionProfile {
 				if file.read_exact(&mut buffer).is_ok() {
 					// 0 means not rotational.
 					if buffer == [48] {
-						return Self::ssd();
+						return Self::ssd()
 					}
 					// 1 means rotational.
 					if buffer == [49] {
-						return Self::hdd();
+						return Self::hdd()
 					}
 				}
 			}
@@ -197,7 +198,9 @@ impl DatabaseConfig {
 
 	/// Returns the total memory budget in bytes.
 	pub fn memory_budget(&self) -> MiB {
-		(0..self.columns).map(|i| self.memory_budget.get(&i).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB).sum()
+		(0..self.columns)
+			.map(|i| self.memory_budget.get(&i).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
+			.sum()
 	}
 
 	/// Returns the memory budget of the specified column in bytes.
@@ -261,7 +264,9 @@ impl MallocSizeOf for DBAndColumns {
 
 impl DBAndColumns {
 	fn cf(&self, i: usize) -> &ColumnFamily {
-		self.db.cf_handle(&self.column_names[i]).expect("the specified column name is correct; qed")
+		self.db
+			.cf_handle(&self.column_names[i])
+			.expect("the specified column name is correct; qed")
 	}
 
 	fn static_property_or_warn(&self, col: usize, prop: &str) -> usize {
@@ -270,7 +275,7 @@ impl DBAndColumns {
 			_ => {
 				warn!("Cannot read expected static property of RocksDb database: {}", prop);
 				0
-			}
+			},
 		}
 	}
 }
@@ -295,7 +300,10 @@ pub struct Database {
 }
 
 #[inline]
-fn check_for_corruption<T, P: AsRef<Path>>(path: P, res: result::Result<T, Error>) -> io::Result<T> {
+fn check_for_corruption<T, P: AsRef<Path>>(
+	path: P,
+	res: result::Result<T, Error>,
+) -> io::Result<T> {
 	if let Err(ref s) = res {
 		if is_corrupted(s) {
 			warn!("DB corrupted: {}. Repair will be triggered on next restart", s);
@@ -307,8 +315,9 @@ fn check_for_corruption<T, P: AsRef<Path>>(path: P, res: result::Result<T, Error
 }
 
 fn is_corrupted(err: &Error) -> bool {
-	err.as_ref().starts_with("Corruption:")
-		|| err.as_ref().starts_with("Invalid argument: You have to open all column families")
+	err.as_ref().starts_with("Corruption:") ||
+		err.as_ref()
+			.starts_with("Invalid argument: You have to open all column families")
 }
 
 /// Generate the options for RocksDB, based on the given `DatabaseConfig`.
@@ -422,7 +431,12 @@ impl Database {
 		block_opts: &BlockBasedOptions,
 	) -> io::Result<rocksdb::DB> {
 		let cf_descriptors: Vec<_> = (0..config.columns)
-			.map(|i| ColumnFamilyDescriptor::new(column_names[i as usize], config.column_config(&block_opts, i)))
+			.map(|i| {
+				ColumnFamilyDescriptor::new(
+					column_names[i as usize],
+					config.column_config(&block_opts, i),
+				)
+			})
 			.collect();
 
 		let db = match DB::open_cf_descriptors(&opts, path, cf_descriptors) {
@@ -436,10 +450,10 @@ impl Database {
 								.map_err(other_io_err)?;
 						}
 						Ok(db)
-					}
+					},
 					err => err,
 				}
-			}
+			},
 			ok => ok,
 		};
 
@@ -451,12 +465,15 @@ impl Database {
 
 				let cf_descriptors: Vec<_> = (0..config.columns)
 					.map(|i| {
-						ColumnFamilyDescriptor::new(column_names[i as usize], config.column_config(&block_opts, i))
+						ColumnFamilyDescriptor::new(
+							column_names[i as usize],
+							config.column_config(&block_opts, i),
+						)
 					})
 					.collect();
 
 				DB::open_cf_descriptors(&opts, path, cf_descriptors).map_err(other_io_err)?
-			}
+			},
 			Err(s) => return Err(other_io_err(s)),
 		})
 	}
@@ -476,8 +493,9 @@ impl Database {
 			Err(ref s) if is_corrupted(s) => {
 				warn!("DB corrupted: {}, attempting repair", s);
 				DB::repair(&opts, path).map_err(other_io_err)?;
-				DB::open_cf_as_secondary(&opts, path, secondary_path, column_names).map_err(other_io_err)?
-			}
+				DB::open_cf_as_secondary(&opts, path, secondary_path, column_names)
+					.map_err(other_io_err)?
+			},
 			Err(s) => return Err(other_io_err(s)),
 		})
 	}
@@ -506,12 +524,12 @@ impl Database {
 						DBOp::Insert { col: _, key, value } => {
 							stats_total_bytes += key.len() + value.len();
 							batch.put_cf(cf, &key, &value);
-						}
+						},
 						DBOp::Delete { col: _, key } => {
 							// We count deletes as writes.
 							stats_total_bytes += key.len();
 							batch.delete_cf(cf, &key);
-						}
+						},
 						DBOp::DeletePrefix { col, prefix } => {
 							let end_prefix = kvdb::end_prefix(&prefix[..]);
 							let no_end = end_prefix.is_none();
@@ -520,7 +538,11 @@ impl Database {
 							if no_end {
 								use crate::iter::IterationHandler as _;
 
-								let prefix = if prefix.len() > end_range.len() { &prefix[..] } else { &end_range[..] };
+								let prefix = if prefix.len() > end_range.len() {
+									&prefix[..]
+								} else {
+									&end_range[..]
+								};
 								// We call `iter_with_prefix` directly on `cfs` to avoid taking a lock twice
 								// See https://github.com/paritytech/parity-common/pull/396.
 								let read_opts = generate_read_options();
@@ -528,13 +550,13 @@ impl Database {
 									batch.delete_cf(cf, &key[..]);
 								}
 							}
-						}
+						},
 					};
 				}
 				self.stats.tally_bytes_written(stats_total_bytes as u64);
 
 				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))
-			}
+			},
 			None => Err(other_io_err("Database is closed")),
 		}
 	}
@@ -544,7 +566,7 @@ impl Database {
 		match *self.db.read() {
 			Some(ref cfs) => {
 				if cfs.column_names.get(col as usize).is_none() {
-					return Err(other_io_err("column index is out of bounds"));
+					return Err(other_io_err("column index is out of bounds"))
 				}
 				self.stats.tally_reads(1);
 				let value = cfs
@@ -556,11 +578,11 @@ impl Database {
 				match value {
 					Ok(Some(ref v)) => self.stats.tally_bytes_read((key.len() + v.len()) as u64),
 					Ok(None) => self.stats.tally_bytes_read(key.len() as u64),
-					_ => {}
+					_ => {},
 				};
 
 				value
-			}
+			},
 			None => Ok(None),
 		}
 	}
@@ -588,7 +610,11 @@ impl Database {
 	/// Iterator over data in the `col` database column index matching the given prefix.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
-	fn iter_with_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
+	fn iter_with_prefix<'a>(
+		&'a self,
+		col: u32,
+		prefix: &'a [u8],
+	) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
 		let read_lock = self.db.read();
 		let optional = if read_lock.is_some() {
 			let mut read_opts = generate_read_options();
@@ -596,7 +622,8 @@ impl Database {
 			if let Some(end_prefix) = kvdb::end_prefix(prefix) {
 				read_opts.set_iterate_upper_bound(end_prefix);
 			}
-			let guarded = iter::ReadGuardedIterator::new_with_prefix(read_lock, col, prefix, read_opts);
+			let guarded =
+				iter::ReadGuardedIterator::new_with_prefix(read_lock, col, prefix, read_opts);
 			Some(guarded)
 		} else {
 			None
@@ -618,23 +645,23 @@ impl Database {
 			Ok(_) => {
 				// ignore errors
 				let _ = fs::remove_dir_all(new_db);
-			}
+			},
 			Err(err) => {
 				debug!("DB atomic swap failed: {}", err);
 				match swap_nonatomic(new_db, &self.path) {
 					Ok(_) => {
 						// ignore errors
 						let _ = fs::remove_dir_all(new_db);
-					}
+					},
 					Err(err) => {
 						warn!("Failed to swap DB directories: {:?}", err);
 						return Err(io::Error::new(
 							io::ErrorKind::Other,
 							"DB restoration failed: could not swap DB directories",
-						));
-					}
+						))
+					},
 				}
-			}
+			},
 		}
 
 		// reopen the database and steal handles into self
@@ -648,7 +675,9 @@ impl Database {
 		self.db
 			.read()
 			.as_ref()
-			.and_then(|db| if db.column_names.is_empty() { None } else { Some(db.column_names.len()) })
+			.and_then(
+				|db| if db.column_names.is_empty() { None } else { Some(db.column_names.len()) },
+			)
 			.map(|n| n as u32)
 			.unwrap_or(0)
 	}
@@ -663,7 +692,7 @@ impl Database {
 					Ok(estimate) => Ok(estimate.unwrap_or_default()),
 					Err(err_string) => Err(other_io_err(err_string)),
 				}
-			}
+			},
 			None => Ok(0),
 		}
 	}
@@ -676,7 +705,7 @@ impl Database {
 					db.drop_cf(&name).map_err(other_io_err)?;
 				}
 				Ok(())
-			}
+			},
 			None => Ok(()),
 		}
 	}
@@ -691,7 +720,7 @@ impl Database {
 				let _ = db.create_cf(&name, &col_config).map_err(other_io_err)?;
 				column_names.push(name);
 				Ok(())
-			}
+			},
 			None => Ok(()),
 		}
 	}
@@ -753,7 +782,11 @@ impl KeyValueDB for Database {
 		Box::new(unboxed.into_iter())
 	}
 
-	fn iter_with_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> Box<dyn Iterator<Item = KeyValuePair> + 'a> {
+	fn iter_with_prefix<'a>(
+		&'a self,
+		col: u32,
+		prefix: &'a [u8],
+	) -> Box<dyn Iterator<Item = KeyValuePair> + 'a> {
 		let unboxed = Database::iter_with_prefix(self, col, prefix);
 		Box::new(unboxed.into_iter())
 	}
@@ -855,7 +888,10 @@ mod tests {
 	fn secondary_db_get() -> io::Result<()> {
 		let primary = TempfileBuilder::new().prefix("").tempdir()?;
 		let config = DatabaseConfig::with_columns(1);
-		let db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
+		let db = Database::open(
+			&config,
+			primary.path().to_str().expect("tempdir path is valid unicode"),
+		)?;
 
 		let key1 = b"key1";
 		let mut transaction = db.transaction();
@@ -863,10 +899,18 @@ mod tests {
 		db.write(transaction)?;
 
 		let config = DatabaseConfig {
-			secondary: TempfileBuilder::new().prefix("").tempdir()?.path().to_str().map(|s| s.to_string()),
+			secondary: TempfileBuilder::new()
+				.prefix("")
+				.tempdir()?
+				.path()
+				.to_str()
+				.map(|s| s.to_string()),
 			..DatabaseConfig::with_columns(1)
 		};
-		let second_db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
+		let second_db = Database::open(
+			&config,
+			primary.path().to_str().expect("tempdir path is valid unicode"),
+		)?;
 		assert_eq!(&*second_db.get(0, key1)?.unwrap(), b"horse");
 		Ok(())
 	}
@@ -875,13 +919,24 @@ mod tests {
 	fn secondary_db_catch_up() -> io::Result<()> {
 		let primary = TempfileBuilder::new().prefix("").tempdir()?;
 		let config = DatabaseConfig::with_columns(1);
-		let db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
+		let db = Database::open(
+			&config,
+			primary.path().to_str().expect("tempdir path is valid unicode"),
+		)?;
 
 		let config = DatabaseConfig {
-			secondary: TempfileBuilder::new().prefix("").tempdir()?.path().to_str().map(|s| s.to_string()),
+			secondary: TempfileBuilder::new()
+				.prefix("")
+				.tempdir()?
+				.path()
+				.to_str()
+				.map(|s| s.to_string()),
 			..DatabaseConfig::with_columns(1)
 		};
-		let second_db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
+		let second_db = Database::open(
+			&config,
+			primary.path().to_str().expect("tempdir path is valid unicode"),
+		)?;
 
 		let mut transaction = db.transaction();
 		transaction.put(0, b"key1", b"mule");
@@ -930,11 +985,12 @@ mod tests {
 		use std::path::PathBuf;
 		// Example df output.
 		let example_df = vec![
-			70, 105, 108, 101, 115, 121, 115, 116, 101, 109, 32, 32, 32, 32, 32, 49, 75, 45, 98, 108, 111, 99, 107,
-			115, 32, 32, 32, 32, 32, 85, 115, 101, 100, 32, 65, 118, 97, 105, 108, 97, 98, 108, 101, 32, 85, 115, 101,
-			37, 32, 77, 111, 117, 110, 116, 101, 100, 32, 111, 110, 10, 47, 100, 101, 118, 47, 115, 100, 97, 49, 32,
-			32, 32, 32, 32, 32, 32, 54, 49, 52, 48, 57, 51, 48, 48, 32, 51, 56, 56, 50, 50, 50, 51, 54, 32, 32, 49, 57,
-			52, 52, 52, 54, 49, 54, 32, 32, 54, 55, 37, 32, 47, 10,
+			70, 105, 108, 101, 115, 121, 115, 116, 101, 109, 32, 32, 32, 32, 32, 49, 75, 45, 98,
+			108, 111, 99, 107, 115, 32, 32, 32, 32, 32, 85, 115, 101, 100, 32, 65, 118, 97, 105,
+			108, 97, 98, 108, 101, 32, 85, 115, 101, 37, 32, 77, 111, 117, 110, 116, 101, 100, 32,
+			111, 110, 10, 47, 100, 101, 118, 47, 115, 100, 97, 49, 32, 32, 32, 32, 32, 32, 32, 54,
+			49, 52, 48, 57, 51, 48, 48, 32, 51, 56, 56, 50, 50, 50, 51, 54, 32, 32, 49, 57, 52, 52,
+			52, 54, 49, 54, 32, 32, 54, 55, 37, 32, 47, 10,
 		];
 		let expected_output = Some(PathBuf::from("/sys/block/sda/queue/rotational"));
 		assert_eq!(rotational_from_df_output(example_df), expected_output);
@@ -987,7 +1043,8 @@ mod tests {
 
 		// open 5, remove 4.
 		{
-			let db = Database::open(&config_5, tempdir.path().to_str().unwrap()).expect("open with 5 columns");
+			let db = Database::open(&config_5, tempdir.path().to_str().unwrap())
+				.expect("open with 5 columns");
 			assert_eq!(db.num_columns(), 5);
 
 			for i in (1..5).rev() {
@@ -1021,7 +1078,11 @@ mod tests {
 	fn default_memory_budget() {
 		let c = DatabaseConfig::default();
 		assert_eq!(c.columns, 1);
-		assert_eq!(c.memory_budget(), DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB, "total memory budget is default");
+		assert_eq!(
+			c.memory_budget(),
+			DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB,
+			"total memory budget is default"
+		);
 		assert_eq!(
 			c.memory_budget_for_col(0),
 			DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB,
@@ -1061,16 +1122,23 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 	#[test]
 	fn rocksdb_settings() {
 		const NUM_COLS: usize = 2;
-		let mut cfg = DatabaseConfig { enable_statistics: true, ..DatabaseConfig::with_columns(NUM_COLS as u32) };
+		let mut cfg = DatabaseConfig {
+			enable_statistics: true,
+			..DatabaseConfig::with_columns(NUM_COLS as u32)
+		};
 		cfg.max_open_files = 123; // is capped by the OS fd limit (typically 1024)
 		cfg.compaction.block_size = 323232;
 		cfg.compaction.initial_file_size = 102030;
 		cfg.memory_budget = [(0, 30), (1, 300)].iter().cloned().collect();
 
-		let db_path = TempfileBuilder::new().prefix("config_test").tempdir().expect("the OS can create tmp dirs");
+		let db_path = TempfileBuilder::new()
+			.prefix("config_test")
+			.tempdir()
+			.expect("the OS can create tmp dirs");
 		let db = Database::open(&cfg, db_path.path().to_str().unwrap()).expect("can open a db");
-		let mut rocksdb_log = std::fs::File::open(format!("{}/LOG", db_path.path().to_str().unwrap()))
-			.expect("rocksdb creates a LOG file");
+		let mut rocksdb_log =
+			std::fs::File::open(format!("{}/LOG", db_path.path().to_str().unwrap()))
+				.expect("rocksdb creates a LOG file");
 		let mut settings = String::new();
 		let statistics = db.get_statistics();
 		assert!(statistics.contains_key("block.cache.hit"));
@@ -1096,10 +1164,14 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 		assert_eq!(lru, NUM_COLS);
 
 		// Index/filters share cache
-		let include_indexes = settings.matches("cache_index_and_filter_blocks: 1").collect::<Vec<_>>().len();
+		let include_indexes =
+			settings.matches("cache_index_and_filter_blocks: 1").collect::<Vec<_>>().len();
 		assert_eq!(include_indexes, NUM_COLS);
 		// Pin index/filters on L0
-		let pins = settings.matches("pin_l0_filter_and_index_blocks_in_cache: 1").collect::<Vec<_>>().len();
+		let pins = settings
+			.matches("pin_l0_filter_and_index_blocks_in_cache: 1")
+			.collect::<Vec<_>>()
+			.len();
 		assert_eq!(pins, NUM_COLS);
 
 		// Check target file size, aka initial file size
@@ -1109,11 +1181,15 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 		assert!(settings.contains("target_file_size_base: 67108864"));
 
 		// Check compression settings
-		let snappy_compression = settings.matches("Options.compression: Snappy").collect::<Vec<_>>().len();
+		let snappy_compression =
+			settings.matches("Options.compression: Snappy").collect::<Vec<_>>().len();
 		// All columns use Snappy
 		assert_eq!(snappy_compression, NUM_COLS + 1);
 		// …even for L7
-		let snappy_bottommost = settings.matches("Options.bottommost_compression: Disabled").collect::<Vec<_>>().len();
+		let snappy_bottommost = settings
+			.matches("Options.bottommost_compression: Disabled")
+			.collect::<Vec<_>>()
+			.len();
 		assert_eq!(snappy_bottommost, NUM_COLS + 1);
 
 		// 7 levels

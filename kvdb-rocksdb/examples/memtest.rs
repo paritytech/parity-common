@@ -20,7 +20,10 @@
 use ethereum_types::H256;
 use keccak_hash::keccak;
 use kvdb_rocksdb::{Database, DatabaseConfig};
-use std::sync::{atomic::AtomicBool, atomic::Ordering as AtomicOrdering, Arc};
+use std::sync::{
+	atomic::{AtomicBool, Ordering as AtomicOrdering},
+	Arc,
+};
 use sysinfo::{get_current_pid, ProcessExt, System, SystemExt};
 
 const COLUMN_COUNT: u32 = 100;
@@ -67,7 +70,9 @@ fn proc_memory_usage() -> u64 {
 	let self_pid = get_current_pid().ok();
 	let memory = if let Some(self_pid) = self_pid {
 		if sys.refresh_process(self_pid) {
-			let proc = sys.get_process(self_pid).expect("Above refresh_process succeeds, this should be Some(), qed");
+			let proc = sys
+				.get_process(self_pid)
+				.expect("Above refresh_process succeeds, this should be Some(), qed");
 			proc.memory()
 		} else {
 			0
@@ -101,7 +106,10 @@ fn main() {
 	}
 	let dir = tempfile::Builder::new().prefix("rocksdb-example").tempdir().unwrap();
 
-	println!("Database is put in: {} (maybe check if it was deleted)", dir.path().to_string_lossy());
+	println!(
+		"Database is put in: {} (maybe check if it was deleted)",
+		dir.path().to_string_lossy()
+	);
 	let db = Database::open(&config, &dir.path().to_string_lossy()).unwrap();
 
 	let mut step = 0;
@@ -139,9 +147,16 @@ fn main() {
 			let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
 
 			println!("{}", timestamp);
-			println!("\tData written: {} keys - {} Mb", step + 1, ((step + 1) * 64 * 128) / 1024 / 1024);
+			println!(
+				"\tData written: {} keys - {} Mb",
+				step + 1,
+				((step + 1) * 64 * 128) / 1024 / 1024
+			);
 			println!("\tProcess memory used as seen by the OS: {} Mb", proc_memory_usage() / 1024);
-			println!("\tMemory used as reported by rocksdb: {} Mb\n", parity_util_mem::malloc_size(&db) / 1024 / 1024);
+			println!(
+				"\tMemory used as reported by rocksdb: {} Mb\n",
+				parity_util_mem::malloc_size(&db) / 1024 / 1024
+			);
 		}
 
 		step += 1;

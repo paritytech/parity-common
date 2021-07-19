@@ -51,9 +51,11 @@ fn test_large_values() {
 		ser::to_string_pretty(&!U256::zero()).unwrap(),
 		"\"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\""
 	);
-	assert!(ser::from_str::<U256>("\"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"")
-		.unwrap_err()
-		.is_data());
+	assert!(ser::from_str::<U256>(
+		"\"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\""
+	)
+	.unwrap_err()
+	.is_data());
 }
 
 #[test]
@@ -77,13 +79,34 @@ fn test_h160() {
 #[test]
 fn test_h256() {
 	let tests = vec![
-		(H256::from_low_u64_be(0), "0x0000000000000000000000000000000000000000000000000000000000000000"),
-		(H256::from_low_u64_be(2), "0x0000000000000000000000000000000000000000000000000000000000000002"),
-		(H256::from_low_u64_be(15), "0x000000000000000000000000000000000000000000000000000000000000000f"),
-		(H256::from_low_u64_be(16), "0x0000000000000000000000000000000000000000000000000000000000000010"),
-		(H256::from_low_u64_be(1_000), "0x00000000000000000000000000000000000000000000000000000000000003e8"),
-		(H256::from_low_u64_be(100_000), "0x00000000000000000000000000000000000000000000000000000000000186a0"),
-		(H256::from_low_u64_be(u64::max_value()), "0x000000000000000000000000000000000000000000000000ffffffffffffffff"),
+		(
+			H256::from_low_u64_be(0),
+			"0x0000000000000000000000000000000000000000000000000000000000000000",
+		),
+		(
+			H256::from_low_u64_be(2),
+			"0x0000000000000000000000000000000000000000000000000000000000000002",
+		),
+		(
+			H256::from_low_u64_be(15),
+			"0x000000000000000000000000000000000000000000000000000000000000000f",
+		),
+		(
+			H256::from_low_u64_be(16),
+			"0x0000000000000000000000000000000000000000000000000000000000000010",
+		),
+		(
+			H256::from_low_u64_be(1_000),
+			"0x00000000000000000000000000000000000000000000000000000000000003e8",
+		),
+		(
+			H256::from_low_u64_be(100_000),
+			"0x00000000000000000000000000000000000000000000000000000000000186a0",
+		),
+		(
+			H256::from_low_u64_be(u64::max_value()),
+			"0x000000000000000000000000000000000000000000000000ffffffffffffffff",
+		),
 	];
 
 	for (number, expected) in tests {
@@ -94,15 +117,21 @@ fn test_h256() {
 
 #[test]
 fn test_invalid() {
-	assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000\"")
-		.unwrap_err()
-		.is_data());
-	assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000g\"")
-		.unwrap_err()
-		.is_data());
-	assert!(ser::from_str::<H256>("\"0x00000000000000000000000000000000000000000000000000000000000000000\"")
-		.unwrap_err()
-		.is_data());
+	assert!(ser::from_str::<H256>(
+		"\"0x000000000000000000000000000000000000000000000000000000000000000\""
+	)
+	.unwrap_err()
+	.is_data());
+	assert!(ser::from_str::<H256>(
+		"\"0x000000000000000000000000000000000000000000000000000000000000000g\""
+	)
+	.unwrap_err()
+	.is_data());
+	assert!(ser::from_str::<H256>(
+		"\"0x00000000000000000000000000000000000000000000000000000000000000000\""
+	)
+	.unwrap_err()
+	.is_data());
 	assert!(ser::from_str::<H256>("\"\"").unwrap_err().is_data());
 	assert!(ser::from_str::<H256>("\"0\"").unwrap_err().is_data());
 	assert!(ser::from_str::<H256>("\"10\"").unwrap_err().is_data());
@@ -110,7 +139,8 @@ fn test_invalid() {
 
 #[test]
 fn test_invalid_char() {
-	const INVALID_STR: &str = "\"0x000000000000000000000000000000000000000000000000000000000000000g\"";
+	const INVALID_STR: &str =
+		"\"0x000000000000000000000000000000000000000000000000000000000000000g\"";
 	const EXPECTED_MSG: &str = "invalid hex character: g, at 65 at line 1 column 68";
 	assert_eq!(ser::from_str::<H256>(INVALID_STR).unwrap_err().to_string(), EXPECTED_MSG);
 }
