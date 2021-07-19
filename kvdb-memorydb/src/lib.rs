@@ -37,10 +37,7 @@ impl KeyValueDB for InMemory {
 	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let columns = self.columns.read();
 		match columns.get(&col) {
-			None => Err(io::Error::new(
-				io::ErrorKind::Other,
-				format!("No such column family: {:?}", col),
-			)),
+			None => Err(io::Error::new(io::ErrorKind::Other, format!("No such column family: {:?}", col))),
 			Some(map) => Ok(map.get(key).cloned()),
 		}
 	}
@@ -76,16 +73,13 @@ impl KeyValueDB for InMemory {
 							col.clear();
 						} else {
 							let start_range = Bound::Included(prefix.to_vec());
-							let keys: Vec<_> =
-								if let Some(end_range) = kvdb::end_prefix(&prefix[..]) {
-									col.range((start_range, Bound::Excluded(end_range)))
-										.map(|(k, _)| k.clone())
-										.collect()
-								} else {
-									col.range((start_range, Bound::Unbounded))
-										.map(|(k, _)| k.clone())
-										.collect()
-								};
+							let keys: Vec<_> = if let Some(end_range) = kvdb::end_prefix(&prefix[..]) {
+								col.range((start_range, Bound::Excluded(end_range)))
+									.map(|(k, _)| k.clone())
+									.collect()
+							} else {
+								col.range((start_range, Bound::Unbounded)).map(|(k, _)| k.clone()).collect()
+							};
 							for key in keys.into_iter() {
 								col.remove(&key[..]);
 							}

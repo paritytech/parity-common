@@ -99,8 +99,7 @@ fn get(c: &mut Criterion) {
 				let start = Instant::now();
 				for _ in 0..iterations {
 					// This has no measurable impact on performance (~30ns)
-					let needle =
-						needles.choose(&mut rand::thread_rng()).expect("needles is not empty");
+					let needle = needles.choose(&mut rand::thread_rng()).expect("needles is not empty");
 					black_box(db.get(0, needle.as_bytes()).unwrap());
 				}
 				elapsed = start.elapsed();
@@ -129,8 +128,7 @@ fn get(c: &mut Criterion) {
 				let start = Instant::now();
 				for _ in 0..iterations {
 					// This has no measurable impact on performance (~30ns)
-					let needle =
-						needles.choose(&mut rand::thread_rng()).expect("needles is not empty");
+					let needle = needles.choose(&mut rand::thread_rng()).expect("needles is not empty");
 					black_box(db.get_by_prefix(0, &needle.as_bytes()[..8]).unwrap());
 				}
 				elapsed = start.elapsed();

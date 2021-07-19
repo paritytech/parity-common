@@ -19,10 +19,8 @@ fn main() {
 	// imagine the field 0..p
 	// where the p is defined below
 	// (it's a prime!)
-	let p = U256::from_dec_str(
-		"38873241744847760218045702002058062581688990428170398542849190507947196700873",
-	)
-	.expect("p to be a good number in the example");
+	let p = U256::from_dec_str("38873241744847760218045702002058062581688990428170398542849190507947196700873")
+		.expect("p to be a good number in the example");
 
 	// then, on this field,
 	// (p-1) + (p+1) = 0

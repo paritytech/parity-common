@@ -53,12 +53,7 @@ impl RlpStream {
 
 	/// Initializes instance of empty `Stream`.
 	pub fn new_with_buffer(buffer: BytesMut) -> Self {
-		RlpStream {
-			unfinished_lists: Vec::with_capacity(16),
-			start_pos: buffer.len(),
-			buffer,
-			finished_list: false,
-		}
+		RlpStream { unfinished_lists: Vec::with_capacity(16), start_pos: buffer.len(), buffer, finished_list: false }
 	}
 
 	/// Initializes the `Stream` as a list.
@@ -311,8 +306,7 @@ impl RlpStream {
 			Some(ref mut x) => {
 				x.current += inserted_items;
 				match x.max {
-					Some(ref max) if x.current > *max =>
-						panic!("You cannot append more items than you expect!"),
+					Some(ref max) if x.current > *max => panic!("You cannot append more items than you expect!"),
 					Some(ref max) => x.current == *max,
 					_ => false,
 				}

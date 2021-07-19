@@ -234,11 +234,10 @@ fn encode_str() {
 		ETestPair::from((
 			"Lorem ipsum dolor sit amet, consectetur adipisicing elit",
 			vec![
-				0xb8, 0x38, b'L', b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ',
-				b'd', b'o', b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm', b'e', b't',
-				b',', b' ', b'c', b'o', b'n', b's', b'e', b'c', b't', b'e', b't', b'u', b'r', b' ',
-				b'a', b'd', b'i', b'p', b'i', b's', b'i', b'c', b'i', b'n', b'g', b' ', b'e', b'l',
-				b'i', b't',
+				0xb8, 0x38, b'L', b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o', b'l',
+				b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm', b'e', b't', b',', b' ', b'c', b'o', b'n', b's',
+				b'e', b'c', b't', b'e', b't', b'u', b'r', b' ', b'a', b'd', b'i', b'p', b'i', b's', b'i', b'c', b'i',
+				b'n', b'g', b' ', b'e', b'l', b'i', b't',
 			],
 		)),
 	];
@@ -265,10 +264,7 @@ fn encode_into_existing_buffer() {
 
 	assert_eq!(
 		&buffer[..],
-		&[
-			b'j', b'u', b'n', b'k', b'!', 0x83, b'c', b'a', b't', b' ', b'a', b'n', b'd', b' ',
-			0x83, b'd', b'o', b'g'
-		]
+		&[b'j', b'u', b'n', b'k', b'!', 0x83, b'c', b'a', b't', b' ', b'a', b'n', b'd', b' ', 0x83, b'd', b'o', b'g']
 	);
 }
 
@@ -328,10 +324,7 @@ fn encode_vector_u64() {
 
 #[test]
 fn encode_vector_str() {
-	let tests = vec![VETestPair(
-		vec!["cat", "dog"],
-		vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'],
-	)];
+	let tests = vec![VETestPair(vec!["cat", "dog"], vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'])];
 	run_encode_tests_list(tests);
 }
 
@@ -444,19 +437,14 @@ fn decode_untrusted_u8() {
 
 #[test]
 fn decode_untrusted_u16() {
-	let tests = vec![
-		DTestPair::from((0x100u16, hex!("820100"))),
-		DTestPair::from((0xffffu16, hex!("82ffff"))),
-	];
+	let tests = vec![DTestPair::from((0x100u16, hex!("820100"))), DTestPair::from((0xffffu16, hex!("82ffff")))];
 	run_decode_tests(tests);
 }
 
 #[test]
 fn decode_untrusted_u32() {
-	let tests = vec![
-		DTestPair::from((0x0001_0000u32, hex!("83010000"))),
-		DTestPair::from((0x00ff_ffffu32, hex!("83ffffff"))),
-	];
+	let tests =
+		vec![DTestPair::from((0x0001_0000u32, hex!("83010000"))), DTestPair::from((0x00ff_ffffu32, hex!("83ffffff")))];
 	run_decode_tests(tests);
 }
 
@@ -502,11 +490,10 @@ fn decode_untrusted_str() {
 		DTestPair::from((
 			"Lorem ipsum dolor sit amet, consectetur adipisicing elit".to_owned(),
 			vec![
-				0xb8, 0x38, b'L', b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ',
-				b'd', b'o', b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm', b'e', b't',
-				b',', b' ', b'c', b'o', b'n', b's', b'e', b'c', b't', b'e', b't', b'u', b'r', b' ',
-				b'a', b'd', b'i', b'p', b'i', b's', b'i', b'c', b'i', b'n', b'g', b' ', b'e', b'l',
-				b'i', b't',
+				0xb8, 0x38, b'L', b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o', b'l',
+				b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm', b'e', b't', b',', b' ', b'c', b'o', b'n', b's',
+				b'e', b'c', b't', b'e', b't', b'u', b'r', b' ', b'a', b'd', b'i', b'p', b'i', b's', b'i', b'c', b'i',
+				b'n', b'g', b' ', b'e', b'l', b'i', b't',
 			],
 		)),
 	];
@@ -673,23 +660,11 @@ fn test_canonical_list_encoding() {
 // https://github.com/paritytech/parity-common/issues/48
 #[test]
 fn test_inner_length_capping_for_short_lists() {
-	assert_eq!(
-		Rlp::new(&[0xc0, 0x82, b'a', b'b']).val_at::<String>(0),
-		Err(DecoderError::RlpIsTooShort)
-	);
-	assert_eq!(
-		Rlp::new(&[0xc0 + 1, 0x82, b'a', b'b']).val_at::<String>(0),
-		Err(DecoderError::RlpIsTooShort)
-	);
-	assert_eq!(
-		Rlp::new(&[0xc0 + 2, 0x82, b'a', b'b']).val_at::<String>(0),
-		Err(DecoderError::RlpIsTooShort)
-	);
+	assert_eq!(Rlp::new(&[0xc0, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&[0xc0 + 1, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
+	assert_eq!(Rlp::new(&[0xc0 + 2, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
 	assert_eq!(Rlp::new(&[0xc0 + 3, 0x82, b'a', b'b']).val_at::<String>(0), Ok("ab".to_owned()));
-	assert_eq!(
-		Rlp::new(&[0xc0 + 4, 0x82, b'a', b'b']).val_at::<String>(0),
-		Err(DecoderError::RlpIsTooShort)
-	);
+	assert_eq!(Rlp::new(&[0xc0 + 4, 0x82, b'a', b'b']).val_at::<String>(0), Err(DecoderError::RlpIsTooShort));
 }
 
 // test described in

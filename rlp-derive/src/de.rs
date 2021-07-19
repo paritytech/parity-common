@@ -35,9 +35,7 @@ pub fn impl_decodable(ast: &syn::DeriveInput) -> TokenStream {
 		.fields
 		.iter()
 		.enumerate()
-		.map(|(i, field)| {
-			decodable_field(i, field, decodable_parse_quotes(), &mut default_attribute_encountered)
-		})
+		.map(|(i, field)| decodable_field(i, field, decodable_parse_quotes(), &mut default_attribute_encountered))
 		.collect();
 	let name = &ast.ident;
 
@@ -73,12 +71,7 @@ pub fn impl_decodable_wrapper(ast: &syn::DeriveInput) -> TokenStream {
 		if fields.len() == 1 {
 			let field = fields.first().expect("fields.len() == 1; qed");
 			let mut default_attribute_encountered = false;
-			decodable_field(
-				0,
-				field,
-				decodable_wrapper_parse_quotes(),
-				&mut default_attribute_encountered,
-			)
+			decodable_field(0, field, decodable_wrapper_parse_quotes(), &mut default_attribute_encountered)
 		} else {
 			panic!("#[derive(RlpEncodableWrapper)] is only defined for structs with one field.")
 		}

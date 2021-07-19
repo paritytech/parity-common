@@ -479,9 +479,7 @@ macro_rules! impl_rand_for_fixed_hash {
 #[doc(hidden)]
 macro_rules! impl_rand_for_fixed_hash {
 	( $name:ident ) => {
-		impl $crate::rand::distributions::Distribution<$name>
-			for $crate::rand::distributions::Standard
-		{
+		impl $crate::rand::distributions::Distribution<$name> for $crate::rand::distributions::Standard {
 			fn sample<R: $crate::rand::Rng + ?Sized>(&self, rng: &mut R) -> $name {
 				let mut ret = $name::zero();
 				for byte in ret.as_bytes_mut().iter_mut() {
@@ -589,9 +587,7 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 			///
 			/// - When encountering invalid non hex-digits
 			/// - Upon empty string input or invalid input length in general
-			fn from_str(
-				input: &str,
-			) -> $crate::core_::result::Result<$name, $crate::rustc_hex::FromHexError> {
+			fn from_str(input: &str) -> $crate::core_::result::Result<$name, $crate::rustc_hex::FromHexError> {
 				let input = input.strip_prefix("0x").unwrap_or(input);
 				let mut iter = $crate::rustc_hex::FromHexIter::new(input);
 				let mut result = Self::zero();
@@ -670,9 +666,7 @@ macro_rules! impl_arbitrary_for_fixed_hash {
 macro_rules! impl_arbitrary_for_fixed_hash {
 	( $name:ident ) => {
 		impl $crate::arbitrary::Arbitrary<'_> for $name {
-			fn arbitrary(
-				u: &mut $crate::arbitrary::Unstructured<'_>,
-			) -> $crate::arbitrary::Result<Self> {
+			fn arbitrary(u: &mut $crate::arbitrary::Unstructured<'_>) -> $crate::arbitrary::Result<Self> {
 				let mut res = Self::zero();
 				u.fill_buffer(&mut res.0)?;
 				Ok(Self::from(res))
@@ -765,14 +759,11 @@ macro_rules! impl_fixed_hash_conversions {
 				let small_ty_size = $small_ty::len_bytes();
 
 				$crate::core_::debug_assert!(
-					large_ty_size > small_ty_size &&
-						large_ty_size % 2 == 0 &&
-						small_ty_size % 2 == 0
+					large_ty_size > small_ty_size && large_ty_size % 2 == 0 && small_ty_size % 2 == 0
 				);
 
 				let mut ret = $large_ty::zero();
-				ret.as_bytes_mut()[(large_ty_size - small_ty_size)..large_ty_size]
-					.copy_from_slice(value.as_bytes());
+				ret.as_bytes_mut()[(large_ty_size - small_ty_size)..large_ty_size].copy_from_slice(value.as_bytes());
 				ret
 			}
 		}
@@ -783,9 +774,7 @@ macro_rules! impl_fixed_hash_conversions {
 				let small_ty_size = $small_ty::len_bytes();
 
 				$crate::core_::debug_assert!(
-					large_ty_size > small_ty_size &&
-						large_ty_size % 2 == 0 &&
-						small_ty_size % 2 == 0
+					large_ty_size > small_ty_size && large_ty_size % 2 == 0 && small_ty_size % 2 == 0
 				);
 
 				let mut ret = $small_ty::zero();

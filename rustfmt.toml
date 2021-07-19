@@ -1,7 +1,7 @@
 # https://github.com/paritytech/substrate/blob/master/rustfmt.toml
 # Basic
 hard_tabs = true
-max_width = 100
+max_width = 120
 use_small_heuristics = "Max"
 # Imports
 imports_granularity = "Crate"

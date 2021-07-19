@@ -47,10 +47,7 @@ pub struct PayloadInfo {
 	pub value_len: usize,
 }
 
-fn calculate_payload_info(
-	header_bytes: &[u8],
-	len_of_len: usize,
-) -> Result<PayloadInfo, DecoderError> {
+fn calculate_payload_info(header_bytes: &[u8], len_of_len: usize) -> Result<PayloadInfo, DecoderError> {
 	let header_len = 1 + len_of_len;
 	match header_bytes.get(1) {
 		Some(&0) => return Err(DecoderError::RlpDataLenWithZeroPrefix),
@@ -113,8 +110,7 @@ impl<'a> fmt::Display for Rlp<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
 		match self.prototype() {
 			Ok(Prototype::Null) => write!(f, "null"),
-			Ok(Prototype::Data(_)) =>
-				write!(f, "\"0x{}\"", self.data().unwrap().to_hex::<String>()),
+			Ok(Prototype::Data(_)) => write!(f, "\"0x{}\"", self.data().unwrap().to_hex::<String>()),
 			Ok(Prototype::List(len)) => {
 				write!(f, "[")?;
 				for i in 0..len - 1 {
@@ -202,10 +198,7 @@ impl<'a> Rlp<'a> {
 	/// raw data slice.
 	///
 	/// Returns an error if this Rlp is not a list or if the index is out of range.
-	pub fn at_with_offset<'view>(
-		&'view self,
-		index: usize,
-	) -> Result<(Rlp<'a>, usize), DecoderError>
+	pub fn at_with_offset<'view>(&'view self, index: usize) -> Result<(Rlp<'a>, usize), DecoderError>
 	where
 		'a: 'view,
 	{
@@ -424,8 +417,7 @@ impl<'a> BasicDecoder<'a> {
 			}
 			let len = decode_usize(&bytes[1..begin_of_value])?;
 
-			let last_index_of_value =
-				begin_of_value.checked_add(len).ok_or(DecoderError::RlpInvalidLength)?;
+			let last_index_of_value = begin_of_value.checked_add(len).ok_or(DecoderError::RlpInvalidLength)?;
 			if bytes.len() < last_index_of_value {
 				return Err(DecoderError::RlpInconsistentLengthAndData)
 			}
