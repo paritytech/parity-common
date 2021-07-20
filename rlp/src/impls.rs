@@ -48,17 +48,19 @@ impl<T: Decodable> Decodable for Box<T> {
 
 impl Encodable for bool {
 	fn rlp_append(&self, s: &mut RlpStream) {
-		s.encoder().encode_iter(once(if *self { 1u8 } else { 0 }));
+		let as_uint = u8::from(*self);
+		Encodable::rlp_append(&as_uint, s);
 	}
 }
 
 impl Decodable for bool {
 	fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
-		rlp.decoder().decode_value(|bytes| match bytes.len() {
+		let as_uint = <u8 as Decodable>::decode(rlp)?;
+		match as_uint {
 			0 => Ok(false),
-			1 => Ok(bytes[0] != 0),
-			_ => Err(DecoderError::RlpIsTooBig),
-		})
+			1 => Ok(true),
+			_ => Err(DecoderError::Custom("invalid boolean value")),
+		}
 	}
 }
 
