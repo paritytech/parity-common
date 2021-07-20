@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- Fix rlp encoding/decoding for bool. [#572](https://github.com/paritytech/parity-common/pull/572)
 
 ## [0.5.0] - 2021-01-05
 ### Breaking
