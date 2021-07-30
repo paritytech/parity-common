@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- Bumped `rocksdb` to 0.17. [#573](https://github.com/paritytech/parity-common/pull/573)
 
 ### Breaking
 - Updated `kvdb` to 0.10. [#556](https://github.com/paritytech/parity-common/pull/556)
