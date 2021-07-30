@@ -619,8 +619,17 @@ fn test_rlp_is_int() {
 	for b in 0xb8..0xc0 {
 		let data: Vec<u8> = vec![b];
 		let rlp = Rlp::new(&data);
-		assert_eq!(rlp.is_int(), false);
+		assert!(!rlp.is_int());
 	}
+}
+
+#[test]
+fn test_bool_same_as_int() {
+	assert_eq!(rlp::encode(&false), rlp::encode(&0x00u8));
+	assert_eq!(rlp::encode(&true), rlp::encode(&0x01u8));
+	let two = rlp::encode(&0x02u8);
+	let invalid: Result<bool, _> = rlp::decode(&two);
+	invalid.unwrap_err();
 }
 
 // test described in
