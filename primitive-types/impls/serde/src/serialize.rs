@@ -6,10 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use alloc::string::String;
-use alloc::vec::Vec;
-use core::fmt;
-use core::result::Result;
+use alloc::{string::String, vec::Vec};
+use core::{fmt, result::Result};
 use serde::{de, Deserializer, Serializer};
 
 static CHARS: &[u8] = b"0123456789abcdef";
@@ -25,12 +23,12 @@ pub fn to_hex(bytes: &[u8], skip_leading_zero: bool) -> String {
 		let non_zero = bytes.iter().take_while(|b| **b == 0).count();
 		let bytes = &bytes[non_zero..];
 		if bytes.is_empty() {
-			return "0x0".into();
+			return "0x0".into()
 		} else {
 			bytes
 		}
 	} else if bytes.is_empty() {
-		return "0x".into();
+		return "0x".into()
 	} else {
 		bytes
 	};
@@ -96,7 +94,7 @@ impl fmt::Display for FromHexError {
 /// or non-hex characters are present.
 pub fn from_hex(v: &str) -> Result<Vec<u8>, FromHexError> {
 	if !v.starts_with("0x") {
-		return Err(FromHexError::MissingPrefix);
+		return Err(FromHexError::MissingPrefix)
 	}
 
 	let mut bytes = vec![0u8; (v.len() - 1) / 2];
@@ -124,12 +122,12 @@ fn from_hex_raw<'a>(v: &str, bytes: &mut [u8]) -> Result<usize, FromHexError> {
 			b'0'..=b'9' => buf |= byte - b'0',
 			b' ' | b'\r' | b'\n' | b'\t' => {
 				buf >>= 4;
-				continue;
-			}
+				continue
+			},
 			b => {
 				let character = char::from(b);
-				return Err(FromHexError::InvalidHex { character, index });
-			}
+				return Err(FromHexError::InvalidHex { character, index })
+			},
 		}
 
 		modulus += 1;
@@ -244,7 +242,7 @@ where
 
 		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
 			if !v.starts_with("0x") {
-				return Err(E::custom(FromHexError::MissingPrefix));
+				return Err(E::custom(FromHexError::MissingPrefix))
 			}
 
 			let len = v.len();
@@ -254,7 +252,7 @@ where
 			};
 
 			if !is_len_valid {
-				return Err(E::invalid_length(v.len() - 2, &self));
+				return Err(E::invalid_length(v.len() - 2, &self))
 			}
 
 			let bytes = match self.len {

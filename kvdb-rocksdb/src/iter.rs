@@ -124,6 +124,7 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 	}
 
 	fn iter_with_prefix(&self, col: u32, prefix: &[u8], read_opts: ReadOptions) -> Self::Iterator {
-		self.db.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::From(prefix, Direction::Forward))
+		self.db
+			.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::From(prefix, Direction::Forward))
 	}
 }

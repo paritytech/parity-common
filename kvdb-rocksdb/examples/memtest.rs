@@ -20,7 +20,10 @@
 use ethereum_types::H256;
 use keccak_hash::keccak;
 use kvdb_rocksdb::{Database, DatabaseConfig};
-use std::sync::{atomic::AtomicBool, atomic::Ordering as AtomicOrdering, Arc};
+use std::sync::{
+	atomic::{AtomicBool, Ordering as AtomicOrdering},
+	Arc,
+};
 use sysinfo::{get_current_pid, ProcessExt, System, SystemExt};
 
 const COLUMN_COUNT: u32 = 100;
@@ -67,7 +70,9 @@ fn proc_memory_usage() -> u64 {
 	let self_pid = get_current_pid().ok();
 	let memory = if let Some(self_pid) = self_pid {
 		if sys.refresh_process(self_pid) {
-			let proc = sys.get_process(self_pid).expect("Above refresh_process succeeds, this should be Some(), qed");
+			let proc = sys
+				.get_process(self_pid)
+				.expect("Above refresh_process succeeds, this should be Some(), qed");
 			proc.memory()
 		} else {
 			0

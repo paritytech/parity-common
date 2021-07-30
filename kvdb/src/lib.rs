@@ -71,7 +71,8 @@ impl DBTransaction {
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.
 	pub fn put(&mut self, col: u32, key: &[u8], value: &[u8]) {
-		self.ops.push(DBOp::Insert { col, key: DBKey::from_slice(key), value: value.to_vec() })
+		self.ops
+			.push(DBOp::Insert { col, key: DBKey::from_slice(key), value: value.to_vec() })
 	}
 
 	/// Insert a key-value pair in the transaction. Any existing value will be overwritten upon write.

@@ -8,8 +8,7 @@
 
 //! Benchmarks for fixed-hash cmp implementation.
 
-use criterion::{black_box, Criterion, ParameterizedBenchmark};
-use criterion::{criterion_group, criterion_main};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, ParameterizedBenchmark};
 
 use fixed_hash::construct_fixed_hash;
 

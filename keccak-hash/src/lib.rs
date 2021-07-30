@@ -129,7 +129,7 @@ pub fn keccak_pipe(r: &mut dyn io::BufRead, w: &mut dyn io::Write) -> Result<H25
 	loop {
 		let some = r.read(&mut input)?;
 		if some == 0 {
-			break;
+			break
 		}
 		keccak256.update(&input[0..some]);
 		w.write_all(&input[0..some])?;
@@ -185,8 +185,10 @@ mod tests {
 	#[cfg(feature = "std")]
 	#[test]
 	fn should_keccak_a_file() {
-		use std::fs;
-		use std::io::{BufReader, Write};
+		use std::{
+			fs,
+			io::{BufReader, Write},
+		};
 
 		// given
 		let tmpdir = tempfile::Builder::new().prefix("keccak").tempdir().unwrap();

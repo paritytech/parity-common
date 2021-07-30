@@ -686,7 +686,10 @@ fn test_nested_list_roundtrip() {
 
 	impl Encodable for Inner {
 		fn rlp_append(&self, s: &mut RlpStream) {
-			s.begin_unbounded_list().append(&self.0).append(&self.1).finalize_unbounded_list();
+			s.begin_unbounded_list()
+				.append(&self.0)
+				.append(&self.1)
+				.finalize_unbounded_list();
 		}
 	}
 

@@ -20,8 +20,10 @@
 const NEEDLES: usize = 10_000;
 const NEEDLES_TO_HAYSTACK_RATIO: usize = 100;
 
-use std::io;
-use std::time::{Duration, Instant};
+use std::{
+	io,
+	time::{Duration, Instant},
+};
 
 use alloc_counter::{count_alloc, AllocCounterSystem};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
@@ -53,7 +55,9 @@ fn n_random_bytes(n: usize) -> Vec<u8> {
 	let variability: i64 = rng.gen_range(0..(n / 5) as i64);
 	let plus_or_minus: i64 = if variability % 2 == 0 { 1 } else { -1 };
 	let range = Uniform::from(0..u8::max_value());
-	rng.sample_iter(&range).take((n as i64 + plus_or_minus * variability) as usize).collect()
+	rng.sample_iter(&range)
+		.take((n as i64 + plus_or_minus * variability) as usize)
+		.collect()
 }
 
 /// Writes `NEEDLES * NEEDLES_TO_HAYSTACK_RATIO` keys to the DB. Keys are random, 32 bytes long and

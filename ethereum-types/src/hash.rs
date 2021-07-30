@@ -46,8 +46,7 @@ impl_fixed_hash_serde!(H128, 16);
 #[cfg(feature = "codec")]
 impl_fixed_hash_codec!(H128, 16);
 
-pub use primitive_types::H160;
-pub use primitive_types::H256;
+pub use primitive_types::{H160, H256};
 
 construct_fixed_hash! { pub struct H264(33); }
 #[cfg(feature = "rlp")]
@@ -136,7 +135,9 @@ mod tests {
 
 	#[test]
 	fn test_parse_0x() {
-		assert!("0x0000000000000000000000000000000000000000000000000000000000000000".parse::<H256>().is_ok())
+		assert!("0x0000000000000000000000000000000000000000000000000000000000000000"
+			.parse::<H256>()
+			.is_ok())
 	}
 
 	#[test]

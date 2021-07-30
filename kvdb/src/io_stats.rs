@@ -58,7 +58,7 @@ impl IoStats {
 	/// Average batch (transaction) size (writes per transaction)
 	pub fn avg_batch_size(&self) -> f64 {
 		if self.writes == 0 {
-			return 0.0;
+			return 0.0
 		}
 		self.transactions as f64 / self.writes as f64
 	}
@@ -66,7 +66,7 @@ impl IoStats {
 	/// Read operations per second.
 	pub fn reads_per_sec(&self) -> f64 {
 		if self.span.as_secs_f64() == 0.0 {
-			return 0.0;
+			return 0.0
 		}
 
 		self.reads as f64 / self.span.as_secs_f64()
@@ -74,7 +74,7 @@ impl IoStats {
 
 	pub fn byte_reads_per_sec(&self) -> f64 {
 		if self.span.as_secs_f64() == 0.0 {
-			return 0.0;
+			return 0.0
 		}
 
 		self.bytes_read as f64 / self.span.as_secs_f64()
@@ -83,7 +83,7 @@ impl IoStats {
 	/// Write operations per second.
 	pub fn writes_per_sec(&self) -> f64 {
 		if self.span.as_secs_f64() == 0.0 {
-			return 0.0;
+			return 0.0
 		}
 
 		self.writes as f64 / self.span.as_secs_f64()
@@ -91,7 +91,7 @@ impl IoStats {
 
 	pub fn byte_writes_per_sec(&self) -> f64 {
 		if self.span.as_secs_f64() == 0.0 {
-			return 0.0;
+			return 0.0
 		}
 
 		self.bytes_written as f64 / self.span.as_secs_f64()
@@ -100,7 +100,7 @@ impl IoStats {
 	/// Total number of operations per second.
 	pub fn ops_per_sec(&self) -> f64 {
 		if self.span.as_secs_f64() == 0.0 {
-			return 0.0;
+			return 0.0
 		}
 
 		(self.writes as f64 + self.reads as f64) / self.span.as_secs_f64()
@@ -109,7 +109,7 @@ impl IoStats {
 	/// Transactions per second.
 	pub fn transactions_per_sec(&self) -> f64 {
 		if self.span.as_secs_f64() == 0.0 {
-			return 0.0;
+			return 0.0
 		}
 
 		(self.transactions as f64) / self.span.as_secs_f64()
@@ -117,7 +117,7 @@ impl IoStats {
 
 	pub fn avg_transaction_size(&self) -> f64 {
 		if self.transactions == 0 {
-			return 0.0;
+			return 0.0
 		}
 
 		self.bytes_written as f64 / self.transactions as f64
@@ -125,7 +125,7 @@ impl IoStats {
 
 	pub fn cache_hit_ratio(&self) -> f64 {
 		if self.reads == 0 {
-			return 0.0;
+			return 0.0
 		}
 
 		self.cache_reads as f64 / self.reads as f64

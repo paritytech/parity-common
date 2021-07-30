@@ -126,7 +126,7 @@ fn decodable_field(
 			panic!("only 1 #[rlp(default)] attribute is allowed in a struct")
 		}
 		match attr.parse_args() {
-			Ok(proc_macro2::TokenTree::Ident(ident)) if ident == "default" => {}
+			Ok(proc_macro2::TokenTree::Ident(ident)) if ident == "default" => {},
 			_ => panic!("only #[rlp(default)] attribute is supported"),
 		}
 		*default_attribute_encountered = true;

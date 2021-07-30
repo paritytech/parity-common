@@ -7,10 +7,12 @@
 // except according to those terms.
 
 use parking_lot::RwLock;
-use std::collections::HashMap;
-use std::str::FromStr;
-use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
-use std::time::Instant;
+use std::{
+	collections::HashMap,
+	str::FromStr,
+	sync::atomic::{AtomicU64, Ordering as AtomicOrdering},
+	time::Instant,
+};
 
 #[derive(Default, Clone, Copy)]
 pub struct RawDbStats {

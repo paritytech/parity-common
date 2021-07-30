@@ -182,7 +182,7 @@ impl RlpStream {
 				self.buffer.put_u8(0xc0u8);
 				self.note_appended(1);
 				self.finished_list = true;
-			}
+			},
 			_ => {
 				// payload is longer than 1 byte only for lists > 55 bytes
 				// by pushing always this 1 byte we may avoid unnecessary shift of data
@@ -190,7 +190,7 @@ impl RlpStream {
 
 				let position = self.total_written();
 				self.unfinished_lists.push(ListInfo::new(position, Some(len)));
-			}
+			},
 		}
 
 		// return chainable self
@@ -212,7 +212,7 @@ impl RlpStream {
 	/// Appends raw (pre-serialised) RLP data. Checks for size overflow.
 	pub fn append_raw_checked(&mut self, bytes: &[u8], item_count: usize, max_size: usize) -> bool {
 		if self.estimate_size(bytes.len()) > max_size {
-			return false;
+			return false
 		}
 		self.append_raw(bytes, item_count);
 		true
@@ -297,7 +297,7 @@ impl RlpStream {
 	/// Try to finish lists
 	fn note_appended(&mut self, inserted_items: usize) {
 		if self.unfinished_lists.is_empty() {
-			return;
+			return
 		}
 
 		let back = self.unfinished_lists.len() - 1;
@@ -310,7 +310,7 @@ impl RlpStream {
 					Some(ref max) => x.current == *max,
 					_ => false,
 				}
-			}
+			},
 		};
 		if should_finish {
 			let x = self.unfinished_lists.pop().unwrap();
@@ -370,11 +370,11 @@ impl<'a> BasicEncoder<'a> {
 		match len {
 			0..=55 => {
 				self.buffer[self.start_pos + pos - 1] = 0xc0u8 + len as u8;
-			}
+			},
 			_ => {
 				let inserted_bytes = self.insert_size(len, pos);
 				self.buffer[self.start_pos + pos - 1] = 0xf7u8 + inserted_bytes;
-			}
+			},
 		};
 	}
 
@@ -392,8 +392,8 @@ impl<'a> BasicEncoder<'a> {
 			(lower, Some(upper)) if lower == upper => lower,
 			_ => {
 				let value = value.collect::<Vec<_>>();
-				return self.encode_iter(value);
-			}
+				return self.encode_iter(value)
+			},
 		};
 		match len {
 			// just 0
@@ -409,7 +409,7 @@ impl<'a> BasicEncoder<'a> {
 					self.buffer.put_u8(first);
 					self.buffer.extend(value);
 				}
-			}
+			},
 			// (prefix + length of length), followed by the length, followd by the string
 			len => {
 				self.buffer.put_u8(0);
@@ -417,7 +417,7 @@ impl<'a> BasicEncoder<'a> {
 				let inserted_bytes = self.insert_size(len, position);
 				self.buffer[self.start_pos + position - 1] = 0xb7 + inserted_bytes;
 				self.buffer.extend(value);
-			}
+			},
 		}
 	}
 }

@@ -110,11 +110,11 @@ impl CompactionProfile {
 				if file.read_exact(&mut buffer).is_ok() {
 					// 0 means not rotational.
 					if buffer == [48] {
-						return Self::ssd();
+						return Self::ssd()
 					}
 					// 1 means rotational.
 					if buffer == [49] {
-						return Self::hdd();
+						return Self::hdd()
 					}
 				}
 			}
@@ -197,7 +197,9 @@ impl DatabaseConfig {
 
 	/// Returns the total memory budget in bytes.
 	pub fn memory_budget(&self) -> MiB {
-		(0..self.columns).map(|i| self.memory_budget.get(&i).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB).sum()
+		(0..self.columns)
+			.map(|i| self.memory_budget.get(&i).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
+			.sum()
 	}
 
 	/// Returns the memory budget of the specified column in bytes.
@@ -261,7 +263,9 @@ impl MallocSizeOf for DBAndColumns {
 
 impl DBAndColumns {
 	fn cf(&self, i: usize) -> &ColumnFamily {
-		self.db.cf_handle(&self.column_names[i]).expect("the specified column name is correct; qed")
+		self.db
+			.cf_handle(&self.column_names[i])
+			.expect("the specified column name is correct; qed")
 	}
 
 	fn static_property_or_warn(&self, col: usize, prop: &str) -> usize {
@@ -270,7 +274,7 @@ impl DBAndColumns {
 			_ => {
 				warn!("Cannot read expected static property of RocksDb database: {}", prop);
 				0
-			}
+			},
 		}
 	}
 }
@@ -307,8 +311,9 @@ fn check_for_corruption<T, P: AsRef<Path>>(path: P, res: result::Result<T, Error
 }
 
 fn is_corrupted(err: &Error) -> bool {
-	err.as_ref().starts_with("Corruption:")
-		|| err.as_ref().starts_with("Invalid argument: You have to open all column families")
+	err.as_ref().starts_with("Corruption:") ||
+		err.as_ref()
+			.starts_with("Invalid argument: You have to open all column families")
 }
 
 /// Generate the options for RocksDB, based on the given `DatabaseConfig`.
@@ -436,10 +441,10 @@ impl Database {
 								.map_err(other_io_err)?;
 						}
 						Ok(db)
-					}
+					},
 					err => err,
 				}
-			}
+			},
 			ok => ok,
 		};
 
@@ -456,7 +461,7 @@ impl Database {
 					.collect();
 
 				DB::open_cf_descriptors(&opts, path, cf_descriptors).map_err(other_io_err)?
-			}
+			},
 			Err(s) => return Err(other_io_err(s)),
 		})
 	}
@@ -477,7 +482,7 @@ impl Database {
 				warn!("DB corrupted: {}, attempting repair", s);
 				DB::repair(&opts, path).map_err(other_io_err)?;
 				DB::open_cf_as_secondary(&opts, path, secondary_path, column_names).map_err(other_io_err)?
-			}
+			},
 			Err(s) => return Err(other_io_err(s)),
 		})
 	}
@@ -506,12 +511,12 @@ impl Database {
 						DBOp::Insert { col: _, key, value } => {
 							stats_total_bytes += key.len() + value.len();
 							batch.put_cf(cf, &key, &value);
-						}
+						},
 						DBOp::Delete { col: _, key } => {
 							// We count deletes as writes.
 							stats_total_bytes += key.len();
 							batch.delete_cf(cf, &key);
-						}
+						},
 						DBOp::DeletePrefix { col, prefix } => {
 							let end_prefix = kvdb::end_prefix(&prefix[..]);
 							let no_end = end_prefix.is_none();
@@ -528,13 +533,13 @@ impl Database {
 									batch.delete_cf(cf, &key[..]);
 								}
 							}
-						}
+						},
 					};
 				}
 				self.stats.tally_bytes_written(stats_total_bytes as u64);
 
 				check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))
-			}
+			},
 			None => Err(other_io_err("Database is closed")),
 		}
 	}
@@ -544,7 +549,7 @@ impl Database {
 		match *self.db.read() {
 			Some(ref cfs) => {
 				if cfs.column_names.get(col as usize).is_none() {
-					return Err(other_io_err("column index is out of bounds"));
+					return Err(other_io_err("column index is out of bounds"))
 				}
 				self.stats.tally_reads(1);
 				let value = cfs
@@ -556,11 +561,11 @@ impl Database {
 				match value {
 					Ok(Some(ref v)) => self.stats.tally_bytes_read((key.len() + v.len()) as u64),
 					Ok(None) => self.stats.tally_bytes_read(key.len() as u64),
-					_ => {}
+					_ => {},
 				};
 
 				value
-			}
+			},
 			None => Ok(None),
 		}
 	}
@@ -618,23 +623,23 @@ impl Database {
 			Ok(_) => {
 				// ignore errors
 				let _ = fs::remove_dir_all(new_db);
-			}
+			},
 			Err(err) => {
 				debug!("DB atomic swap failed: {}", err);
 				match swap_nonatomic(new_db, &self.path) {
 					Ok(_) => {
 						// ignore errors
 						let _ = fs::remove_dir_all(new_db);
-					}
+					},
 					Err(err) => {
 						warn!("Failed to swap DB directories: {:?}", err);
 						return Err(io::Error::new(
 							io::ErrorKind::Other,
 							"DB restoration failed: could not swap DB directories",
-						));
-					}
+						))
+					},
 				}
-			}
+			},
 		}
 
 		// reopen the database and steal handles into self
@@ -663,7 +668,7 @@ impl Database {
 					Ok(estimate) => Ok(estimate.unwrap_or_default()),
 					Err(err_string) => Err(other_io_err(err_string)),
 				}
-			}
+			},
 			None => Ok(0),
 		}
 	}
@@ -676,7 +681,7 @@ impl Database {
 					db.drop_cf(&name).map_err(other_io_err)?;
 				}
 				Ok(())
-			}
+			},
 			None => Ok(()),
 		}
 	}
@@ -691,7 +696,7 @@ impl Database {
 				let _ = db.create_cf(&name, &col_config).map_err(other_io_err)?;
 				column_names.push(name);
 				Ok(())
-			}
+			},
 			None => Ok(()),
 		}
 	}
@@ -863,7 +868,12 @@ mod tests {
 		db.write(transaction)?;
 
 		let config = DatabaseConfig {
-			secondary: TempfileBuilder::new().prefix("").tempdir()?.path().to_str().map(|s| s.to_string()),
+			secondary: TempfileBuilder::new()
+				.prefix("")
+				.tempdir()?
+				.path()
+				.to_str()
+				.map(|s| s.to_string()),
 			..DatabaseConfig::with_columns(1)
 		};
 		let second_db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
@@ -878,7 +888,12 @@ mod tests {
 		let db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
 
 		let config = DatabaseConfig {
-			secondary: TempfileBuilder::new().prefix("").tempdir()?.path().to_str().map(|s| s.to_string()),
+			secondary: TempfileBuilder::new()
+				.prefix("")
+				.tempdir()?
+				.path()
+				.to_str()
+				.map(|s| s.to_string()),
 			..DatabaseConfig::with_columns(1)
 		};
 		let second_db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
@@ -1067,7 +1082,10 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 		cfg.compaction.initial_file_size = 102030;
 		cfg.memory_budget = [(0, 30), (1, 300)].iter().cloned().collect();
 
-		let db_path = TempfileBuilder::new().prefix("config_test").tempdir().expect("the OS can create tmp dirs");
+		let db_path = TempfileBuilder::new()
+			.prefix("config_test")
+			.tempdir()
+			.expect("the OS can create tmp dirs");
 		let db = Database::open(&cfg, db_path.path().to_str().unwrap()).expect("can open a db");
 		let mut rocksdb_log = std::fs::File::open(format!("{}/LOG", db_path.path().to_str().unwrap()))
 			.expect("rocksdb creates a LOG file");
@@ -1099,7 +1117,10 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 		let include_indexes = settings.matches("cache_index_and_filter_blocks: 1").collect::<Vec<_>>().len();
 		assert_eq!(include_indexes, NUM_COLS);
 		// Pin index/filters on L0
-		let pins = settings.matches("pin_l0_filter_and_index_blocks_in_cache: 1").collect::<Vec<_>>().len();
+		let pins = settings
+			.matches("pin_l0_filter_and_index_blocks_in_cache: 1")
+			.collect::<Vec<_>>()
+			.len();
 		assert_eq!(pins, NUM_COLS);
 
 		// Check target file size, aka initial file size
@@ -1113,7 +1134,10 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 		// All columns use Snappy
 		assert_eq!(snappy_compression, NUM_COLS + 1);
 		// …even for L7
-		let snappy_bottommost = settings.matches("Options.bottommost_compression: Disabled").collect::<Vec<_>>().len();
+		let snappy_bottommost = settings
+			.matches("Options.bottommost_compression: Disabled")
+			.collect::<Vec<_>>()
+			.len();
 		assert_eq!(snappy_bottommost, NUM_COLS + 1);
 
 		// 7 levels

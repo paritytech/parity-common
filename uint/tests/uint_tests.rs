@@ -6,9 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use core::convert::TryInto;
-use core::str::FromStr;
-use core::u64::MAX;
+use core::{convert::TryInto, str::FromStr, u64::MAX};
 use crunchy::unroll;
 use uint::{construct_uint, overflowing, FromDecStrErr};
 
@@ -46,7 +44,7 @@ fn const_matching_works() {
 	const ONE: U256 = U256([1, 0, 0, 0]);
 	match U256::zero() {
 		ONE => unreachable!(),
-		_ => {}
+		_ => {},
 	}
 }
 
@@ -446,9 +444,11 @@ fn uint512_mul() {
 #[test]
 fn uint256_mul_overflow() {
 	assert_eq!(
-		U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap().overflowing_mul(
-			U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
-		),
+		U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+			.unwrap()
+			.overflowing_mul(
+				U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
+			),
 		(U256::from_str("1").unwrap(), true)
 	);
 }
@@ -457,8 +457,8 @@ fn uint256_mul_overflow() {
 #[should_panic]
 #[allow(unused_must_use)]
 fn uint256_mul_overflow_panic() {
-	U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
-		* U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap();
+	U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap() *
+		U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap();
 }
 
 #[test]
@@ -499,8 +499,8 @@ fn uint256_shl_words() {
 #[test]
 fn uint256_mul() {
 	assert_eq!(
-		U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
-			* U256::from_str("2").unwrap(),
+		U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap() *
+			U256::from_str("2").unwrap(),
 		U256::from_str("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe").unwrap()
 	);
 }

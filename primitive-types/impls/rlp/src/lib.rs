@@ -64,7 +64,7 @@ macro_rules! impl_fixed_hash_rlp {
 						let mut t = [0u8; $size];
 						t.copy_from_slice(bytes);
 						Ok($name(t))
-					}
+					},
 				})
 			}
 		}

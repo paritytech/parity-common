@@ -46,9 +46,10 @@ impl KeyValueDB for InMemory {
 		let columns = self.columns.read();
 		match columns.get(&col) {
 			None => None,
-			Some(map) => {
-				map.iter().find(|&(ref k, _)| k.starts_with(prefix)).map(|(_, v)| v.to_vec().into_boxed_slice())
-			}
+			Some(map) => map
+				.iter()
+				.find(|&(ref k, _)| k.starts_with(prefix))
+				.map(|(_, v)| v.to_vec().into_boxed_slice()),
 		}
 	}
 
@@ -57,17 +58,15 @@ impl KeyValueDB for InMemory {
 		let ops = transaction.ops;
 		for op in ops {
 			match op {
-				DBOp::Insert { col, key, value } => {
+				DBOp::Insert { col, key, value } =>
 					if let Some(col) = columns.get_mut(&col) {
 						col.insert(key.into_vec(), value);
-					}
-				}
-				DBOp::Delete { col, key } => {
+					},
+				DBOp::Delete { col, key } =>
 					if let Some(col) = columns.get_mut(&col) {
 						col.remove(&*key);
-					}
-				}
-				DBOp::DeletePrefix { col, prefix } => {
+					},
+				DBOp::DeletePrefix { col, prefix } =>
 					if let Some(col) = columns.get_mut(&col) {
 						use std::ops::Bound;
 						if prefix.is_empty() {
@@ -75,7 +74,9 @@ impl KeyValueDB for InMemory {
 						} else {
 							let start_range = Bound::Included(prefix.to_vec());
 							let keys: Vec<_> = if let Some(end_range) = kvdb::end_prefix(&prefix[..]) {
-								col.range((start_range, Bound::Excluded(end_range))).map(|(k, _)| k.clone()).collect()
+								col.range((start_range, Bound::Excluded(end_range)))
+									.map(|(k, _)| k.clone())
+									.collect()
 							} else {
 								col.range((start_range, Bound::Unbounded)).map(|(k, _)| k.clone()).collect()
 							};
@@ -83,8 +84,7 @@ impl KeyValueDB for InMemory {
 								col.remove(&key[..]);
 							}
 						}
-					}
-				}
+					},
 			}
 		}
 		Ok(())
@@ -94,7 +94,9 @@ impl KeyValueDB for InMemory {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				// TODO: worth optimizing at all?
-				map.clone().into_iter().map(|(k, v)| (k.into_boxed_slice(), v.into_boxed_slice())),
+				map.clone()
+					.into_iter()
+					.map(|(k, v)| (k.into_boxed_slice(), v.into_boxed_slice())),
 			),
 			None => Box::new(None.into_iter()),
 		}

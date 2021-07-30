@@ -70,10 +70,11 @@ pub use alloc::boxed::Box;
 use core::ffi::c_void;
 #[cfg(feature = "std")]
 use rstd::hash::Hash;
-use rstd::marker::PhantomData;
-use rstd::mem::size_of;
-use rstd::ops::Range;
-use rstd::ops::{Deref, DerefMut};
+use rstd::{
+	marker::PhantomData,
+	mem::size_of,
+	ops::{Deref, DerefMut, Range},
+};
 #[cfg(feature = "std")]
 use std::hash::BuildHasher;
 #[cfg(feature = "std")]
@@ -125,7 +126,7 @@ impl MallocSizeOfOps {
 		// larger than the required alignment, but small enough that it is
 		// always in the first page of memory and therefore not a legitimate
 		// address.
-		return ptr as *const usize as usize <= 256;
+		return ptr as *const usize as usize <= 256
 	}
 
 	/// Call `size_of_op` on `ptr`, first checking that the allocation isn't
@@ -535,8 +536,8 @@ where
 // trait bounds are ever allowed, this code should be uncommented.
 // (We do have a compile-fail test for this:
 // rc_arc_must_not_derive_malloc_size_of.rs)
-//impl<T> !MallocSizeOf for Arc<T> { }
-//impl<T> !MallocShallowSizeOf for Arc<T> { }
+// impl<T> !MallocSizeOf for Arc<T> { }
+// impl<T> !MallocShallowSizeOf for Arc<T> { }
 
 #[cfg(feature = "std")]
 fn arc_ptr<T>(s: &Arc<T>) -> *const T {
@@ -797,8 +798,7 @@ malloc_size_of_is_0!(std::time::Duration);
 mod tests {
 	use crate::{allocators::new_malloc_size_ops, MallocSizeOf, MallocSizeOfOps};
 	use smallvec::SmallVec;
-	use std::collections::BTreeSet;
-	use std::mem;
+	use std::{collections::BTreeSet, mem};
 	impl_smallvec!(3);
 
 	#[test]

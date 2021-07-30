@@ -55,7 +55,9 @@ fn malloc_size_of_derive(s: synstructure::Structure) -> proc_macro2::TokenStream
 	let mut where_clause = where_clause.unwrap_or(&parse_quote!(where)).clone();
 	for param in ast.generics.type_params() {
 		let ident = &param.ident;
-		where_clause.predicates.push(parse_quote!(#ident: parity_util_mem::MallocSizeOf));
+		where_clause
+			.predicates
+			.push(parse_quote!(#ident: parity_util_mem::MallocSizeOf));
 	}
 
 	let tokens = quote! {
