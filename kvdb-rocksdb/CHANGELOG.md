@@ -5,8 +5,11 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+## [0.12.1] - 2021-07-30
 - Bumped `rocksdb` to 0.17. [#573](https://github.com/paritytech/parity-common/pull/573)
 
+## [0.12.0] - 2021-07-02
 ### Breaking
 - Updated `kvdb` to 0.10. [#556](https://github.com/paritytech/parity-common/pull/556)
 - Updated `parity-util-mem` to 0.10. [#556](https://github.com/paritytech/parity-common/pull/556)
