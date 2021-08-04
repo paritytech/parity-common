@@ -142,6 +142,7 @@ impl CompactionProfile {
 
 /// Database configuration
 #[derive(Clone)]
+#[non_exhaustive]
 pub struct DatabaseConfig {
 	/// Max number of open files.
 	pub max_open_files: i32,
