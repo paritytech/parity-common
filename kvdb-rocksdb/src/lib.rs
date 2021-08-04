@@ -180,6 +180,9 @@ pub struct DatabaseConfig {
 	/// Limit the size (in bytes) of write ahead logs
 	/// More info: https://github.com/facebook/rocksdb/wiki/Write-Ahead-Log
 	pub max_total_wal_size: Option<u64>,
+	/// Creates a new database if no database exists.
+	/// Set to `true` by default for backwards compatibility.
+	pub create_if_missing: bool,
 }
 
 impl DatabaseConfig {
@@ -233,6 +236,7 @@ impl Default for DatabaseConfig {
 			enable_statistics: false,
 			secondary: None,
 			max_total_wal_size: None,
+			create_if_missing: true,
 		}
 	}
 }
@@ -325,7 +329,7 @@ fn generate_options(config: &DatabaseConfig) -> Options {
 		opts.enable_statistics();
 	}
 	opts.set_use_fsync(false);
-	opts.create_if_missing(true);
+	opts.create_if_missing(config.create_if_missing);
 	if config.secondary.is_some() {
 		opts.set_max_open_files(-1)
 	} else {
@@ -376,7 +380,7 @@ fn generate_block_based_options(config: &DatabaseConfig) -> io::Result<BlockBase
 impl Database {
 	const CORRUPTION_FILE_NAME: &'static str = "CORRUPTED";
 
-	/// Open database file. Creates if it does not exist.
+	/// Open database file.
 	///
 	/// # Safety
 	///
@@ -921,6 +925,7 @@ mod tests {
 			enable_statistics: false,
 			secondary: None,
 			max_total_wal_size: None,
+			create_if_missing: true,
 		};
 
 		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
