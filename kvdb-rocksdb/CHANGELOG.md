@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.13.0] - 2021-08-04
+### Breaking
+- `DatabaseConfig` is now `#[non_exhaustive]`. [#576](https://github.com/paritytech/parity-common/pull/576)
+- Added `create_if_missing` to `DatabaseConfig`. [#576](https://github.com/paritytech/parity-common/pull/576)
+
 ## [0.12.1] - 2021-07-30
 - Bumped `rocksdb` to 0.17. [#573](https://github.com/paritytech/parity-common/pull/573)
 
