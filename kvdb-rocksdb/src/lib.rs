@@ -34,8 +34,6 @@ use regex::Regex;
 #[cfg(target_os = "linux")]
 use std::fs::File;
 #[cfg(target_os = "linux")]
-use std::path::PathBuf;
-#[cfg(target_os = "linux")]
 use std::process::Command;
 
 fn other_io_err<E>(e: E) -> io::Error
