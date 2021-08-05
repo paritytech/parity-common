@@ -9,7 +9,14 @@
 mod iter;
 mod stats;
 
-use std::{cmp, collections::HashMap, convert::identity, error, fs, io, mem, path::Path, result};
+use std::{
+	cmp,
+	collections::HashMap,
+	convert::identity,
+	error, fs, io, mem,
+	path::{Path, PathBuf},
+	result,
+};
 
 use parity_util_mem::MallocSizeOf;
 use parking_lot::RwLock;
@@ -26,8 +33,6 @@ use log::{debug, warn};
 use regex::Regex;
 #[cfg(target_os = "linux")]
 use std::fs::File;
-#[cfg(target_os = "linux")]
-use std::path::PathBuf;
 #[cfg(target_os = "linux")]
 use std::process::Command;
 
@@ -96,9 +101,10 @@ pub fn rotational_from_df_output(df_out: Vec<u8>) -> Option<PathBuf> {
 impl CompactionProfile {
 	/// Attempt to determine the best profile automatically, only Linux for now.
 	#[cfg(target_os = "linux")]
-	pub fn auto(db_path: &Path) -> CompactionProfile {
+	pub fn auto<P: AsRef<Path>>(db_path: P) -> CompactionProfile {
 		use std::io::Read;
 		let hdd_check_file = db_path
+			.as_ref()
 			.to_str()
 			.and_then(|path_str| Command::new("df").arg(path_str).output().ok())
 			.and_then(|df_res| if df_res.status.success() { Some(df_res.stdout) } else { None })
@@ -125,7 +131,7 @@ impl CompactionProfile {
 
 	/// Just default for other platforms.
 	#[cfg(not(target_os = "linux"))]
-	pub fn auto(_db_path: &Path) -> CompactionProfile {
+	pub fn auto<P: AsRef<Path>>(_db_path: P) -> CompactionProfile {
 		Self::default()
 	}
 
@@ -177,7 +183,7 @@ pub struct DatabaseConfig {
 	/// May have a negative performance impact on the secondary instance
 	/// if the secondary instance reads and applies state changes before the primary instance compacts them.
 	/// More info: https://github.com/facebook/rocksdb/wiki/Secondary-instance
-	pub secondary: Option<String>,
+	pub secondary: Option<PathBuf>,
 	/// Limit the size (in bytes) of write ahead logs
 	/// More info: https://github.com/facebook/rocksdb/wiki/Write-Ahead-Log
 	pub max_total_wal_size: Option<u64>,
@@ -290,7 +296,8 @@ pub struct Database {
 	db: RwLock<Option<DBAndColumns>>,
 	#[ignore_malloc_size_of = "insignificant"]
 	config: DatabaseConfig,
-	path: String,
+	#[ignore_malloc_size_of = "insignificant"]
+	path: PathBuf,
 	#[ignore_malloc_size_of = "insignificant"]
 	opts: Options,
 	#[ignore_malloc_size_of = "insignificant"]
@@ -386,17 +393,17 @@ impl Database {
 	/// # Safety
 	///
 	/// The number of `config.columns` must not be zero.
-	pub fn open(config: &DatabaseConfig, path: &str) -> io::Result<Database> {
+	pub fn open<P: AsRef<Path>>(config: &DatabaseConfig, path: P) -> io::Result<Database> {
 		assert!(config.columns > 0, "the number of columns must not be zero");
 
 		let opts = generate_options(config);
 		let block_opts = generate_block_based_options(config)?;
 
 		// attempt database repair if it has been previously marked as corrupted
-		let db_corrupted = Path::new(path).join(Database::CORRUPTION_FILE_NAME);
+		let db_corrupted = path.as_ref().join(Database::CORRUPTION_FILE_NAME);
 		if db_corrupted.exists() {
 			warn!("DB has been previously marked as corrupted, attempting repair");
-			DB::repair(&opts, path).map_err(other_io_err)?;
+			DB::repair(&opts, path.as_ref()).map_err(other_io_err)?;
 			fs::remove_file(db_corrupted)?;
 		}
 
@@ -405,16 +412,16 @@ impl Database {
 		let read_opts = generate_read_options();
 
 		let db = if let Some(secondary_path) = &config.secondary {
-			Self::open_secondary(&opts, path, secondary_path.as_str(), column_names.as_slice())?
+			Self::open_secondary(&opts, path.as_ref(), secondary_path.as_ref(), column_names.as_slice())?
 		} else {
 			let column_names: Vec<&str> = column_names.iter().map(|s| s.as_str()).collect();
-			Self::open_primary(&opts, path, config, column_names.as_slice(), &block_opts)?
+			Self::open_primary(&opts, path.as_ref(), config, column_names.as_slice(), &block_opts)?
 		};
 
 		Ok(Database {
 			db: RwLock::new(Some(DBAndColumns { db, column_names })),
 			config: config.clone(),
-			path: path.to_owned(),
+			path: path.as_ref().to_owned(),
 			opts,
 			read_opts,
 			write_opts,
@@ -424,9 +431,9 @@ impl Database {
 	}
 
 	/// Internal api to open a database in primary mode.
-	fn open_primary(
+	fn open_primary<P: AsRef<Path>>(
 		opts: &Options,
-		path: &str,
+		path: P,
 		config: &DatabaseConfig,
 		column_names: &[&str],
 		block_opts: &BlockBasedOptions,
@@ -435,10 +442,10 @@ impl Database {
 			.map(|i| ColumnFamilyDescriptor::new(column_names[i as usize], config.column_config(&block_opts, i)))
 			.collect();
 
-		let db = match DB::open_cf_descriptors(&opts, path, cf_descriptors) {
+		let db = match DB::open_cf_descriptors(&opts, path.as_ref(), cf_descriptors) {
 			Err(_) => {
 				// retry and create CFs
-				match DB::open_cf(&opts, path, &[] as &[&str]) {
+				match DB::open_cf(&opts, path.as_ref(), &[] as &[&str]) {
 					Ok(mut db) => {
 						for (i, name) in column_names.iter().enumerate() {
 							let _ = db
@@ -457,7 +464,7 @@ impl Database {
 			Ok(db) => db,
 			Err(ref s) if is_corrupted(s) => {
 				warn!("DB corrupted: {}, attempting repair", s);
-				DB::repair(&opts, path).map_err(other_io_err)?;
+				DB::repair(&opts, path.as_ref()).map_err(other_io_err)?;
 
 				let cf_descriptors: Vec<_> = (0..config.columns)
 					.map(|i| {
@@ -473,19 +480,19 @@ impl Database {
 
 	/// Internal api to open a database in secondary mode.
 	/// Secondary database needs a seperate path to store its own logs.
-	fn open_secondary(
+	fn open_secondary<P: AsRef<Path>>(
 		opts: &Options,
-		path: &str,
-		secondary_path: &str,
+		path: P,
+		secondary_path: P,
 		column_names: &[String],
 	) -> io::Result<rocksdb::DB> {
-		let db = DB::open_cf_as_secondary(&opts, path, secondary_path, column_names);
+		let db = DB::open_cf_as_secondary(&opts, path.as_ref(), secondary_path.as_ref(), column_names);
 
 		Ok(match db {
 			Ok(db) => db,
 			Err(ref s) if is_corrupted(s) => {
 				warn!("DB corrupted: {}, attempting repair", s);
-				DB::repair(&opts, path).map_err(other_io_err)?;
+				DB::repair(&opts, path.as_ref()).map_err(other_io_err)?;
 				DB::open_cf_as_secondary(&opts, path, secondary_path, column_names).map_err(other_io_err)?
 			},
 			Err(s) => return Err(other_io_err(s)),
@@ -620,18 +627,18 @@ impl Database {
 	}
 
 	/// Restore the database from a copy at given path.
-	pub fn restore(&self, new_db: &str) -> io::Result<()> {
+	pub fn restore<P: AsRef<Path>>(&self, new_db: P) -> io::Result<()> {
 		self.close();
 
 		// swap is guaranteed to be atomic
-		match swap(new_db, &self.path) {
+		match swap(new_db.as_ref(), &self.path) {
 			Ok(_) => {
 				// ignore errors
-				let _ = fs::remove_dir_all(new_db);
+				let _ = fs::remove_dir_all(new_db.as_ref());
 			},
 			Err(err) => {
 				debug!("DB atomic swap failed: {}", err);
-				match swap_nonatomic(new_db, &self.path) {
+				match swap_nonatomic(new_db.as_ref(), &self.path) {
 					Ok(_) => {
 						// ignore errors
 						let _ = fs::remove_dir_all(new_db);
@@ -864,24 +871,17 @@ mod tests {
 	#[test]
 	fn secondary_db_get() -> io::Result<()> {
 		let primary = TempfileBuilder::new().prefix("").tempdir()?;
+		let secondary = TempfileBuilder::new().prefix("").tempdir()?;
 		let config = DatabaseConfig::with_columns(1);
-		let db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
+		let db = Database::open(&config, primary.path()).unwrap();
 
 		let key1 = b"key1";
 		let mut transaction = db.transaction();
 		transaction.put(0, key1, b"horse");
 		db.write(transaction)?;
 
-		let config = DatabaseConfig {
-			secondary: TempfileBuilder::new()
-				.prefix("")
-				.tempdir()?
-				.path()
-				.to_str()
-				.map(|s| s.to_string()),
-			..DatabaseConfig::with_columns(1)
-		};
-		let second_db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
+		let config = DatabaseConfig { secondary: Some(secondary.path().to_owned()), ..DatabaseConfig::with_columns(1) };
+		let second_db = Database::open(&config, primary.path()).unwrap();
 		assert_eq!(&*second_db.get(0, key1)?.unwrap(), b"horse");
 		Ok(())
 	}
@@ -889,19 +889,12 @@ mod tests {
 	#[test]
 	fn secondary_db_catch_up() -> io::Result<()> {
 		let primary = TempfileBuilder::new().prefix("").tempdir()?;
+		let secondary = TempfileBuilder::new().prefix("").tempdir()?;
 		let config = DatabaseConfig::with_columns(1);
-		let db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
+		let db = Database::open(&config, primary.path()).unwrap();
 
-		let config = DatabaseConfig {
-			secondary: TempfileBuilder::new()
-				.prefix("")
-				.tempdir()?
-				.path()
-				.to_str()
-				.map(|s| s.to_string()),
-			..DatabaseConfig::with_columns(1)
-		};
-		let second_db = Database::open(&config, primary.path().to_str().expect("tempdir path is valid unicode"))?;
+		let config = DatabaseConfig { secondary: Some(secondary.path().to_owned()), ..DatabaseConfig::with_columns(1) };
+		let second_db = Database::open(&config, primary.path()).unwrap();
 
 		let mut transaction = db.transaction();
 		transaction.put(0, b"key1", b"mule");
@@ -1008,7 +1001,7 @@ mod tests {
 
 		// open 5, remove 4.
 		{
-			let db = Database::open(&config_5, tempdir.path().to_str().unwrap()).expect("open with 5 columns");
+			let db = Database::open(&config_5, tempdir.path()).expect("open with 5 columns");
 			assert_eq!(db.num_columns(), 5);
 
 			for i in (1..5).rev() {
@@ -1028,7 +1021,7 @@ mod tests {
 	fn test_num_keys() {
 		let tempdir = TempfileBuilder::new().prefix("").tempdir().unwrap();
 		let config = DatabaseConfig::with_columns(1);
-		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
+		let db = Database::open(&config, tempdir.path()).unwrap();
 
 		assert_eq!(db.num_keys(0).unwrap(), 0, "database is empty after creation");
 		let key1 = b"beef";
@@ -1092,7 +1085,7 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 			.prefix("config_test")
 			.tempdir()
 			.expect("the OS can create tmp dirs");
-		let db = Database::open(&cfg, db_path.path().to_str().unwrap()).expect("can open a db");
+		let db = Database::open(&cfg, db_path.path()).expect("can open a db");
 		let mut rocksdb_log = std::fs::File::open(format!("{}/LOG", db_path.path().to_str().unwrap()))
 			.expect("rocksdb creates a LOG file");
 		let mut settings = String::new();

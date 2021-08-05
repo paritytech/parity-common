@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.14.0] - 2021-08-05
+### Breaking
+- `Database` api uses now template argument `P: AsRef<Path>` instead of `&str` [#579](https://github.com/paritytech/parity-common/pull/579)
+
 ## [0.13.0] - 2021-08-04
 ### Breaking
 - `DatabaseConfig` is now `#[non_exhaustive]`. [#576](https://github.com/paritytech/parity-common/pull/576)
