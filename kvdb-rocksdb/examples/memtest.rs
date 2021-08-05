@@ -107,7 +107,7 @@ fn main() {
 	let dir = tempfile::Builder::new().prefix("rocksdb-example").tempdir().unwrap();
 
 	println!("Database is put in: {} (maybe check if it was deleted)", dir.path().to_string_lossy());
-	let db = Database::open(&config, &dir.path().to_string_lossy()).unwrap();
+	let db = Database::open(&config, &dir.path()).unwrap();
 
 	let mut step = 0;
 	let mut keyvalues = KeyValueSeed::new();
