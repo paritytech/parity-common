@@ -1,6 +1,6 @@
 [package]
 name = "parity-util-mem"
-version = "0.10.0"
+version = "0.10.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "Collection of memory related utilities"
@@ -37,6 +37,10 @@ winapi = { version = "0.3.8", features = ["heapapi"] }
 version = "0.3.2"
 optional = true
 
+[target.'cfg(not(target_os = "windows"))'.dependencies.jemalloc-ctl]
+version = "0.3.3"
+optional = true
+
 [features]
 default = ["std", "ethereum-impls", "lru", "hashbrown", "smallvec", "primitive-types"]
 std = ["parking_lot"]
@@ -45,7 +49,7 @@ dlmalloc-global = ["dlmalloc", "estimate-heapsize"]
 # use wee_alloc as global allocator
 weealloc-global = ["wee_alloc", "estimate-heapsize"]
 # use jemalloc as global allocator
-jemalloc-global = ["jemallocator"]
+jemalloc-global = ["jemallocator", "jemalloc-ctl"]
 # use mimalloc as global allocator
 mimalloc-global = ["mimalloc", "libmimalloc-sys"]
 # implement additional types
