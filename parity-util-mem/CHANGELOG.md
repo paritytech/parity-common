@@ -4,7 +4,10 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
-## [Unreleased]
+## [0.10.1] - 2021-09-15
+- Added support for memory stats gathering, ported over from `polkadot`. [#588](https://github.com/paritytech/parity-common/pull/588)
+
+## [0.10.0] - 2021-07-02
 - Fixed `malloc_usable_size` for FreeBSD. [#553](https://github.com/paritytech/parity-common/pull/553)
 
 ### Breaking
