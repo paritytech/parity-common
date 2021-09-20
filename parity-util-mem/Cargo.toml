@@ -1,6 +1,6 @@
 [package]
 name = "parity-util-mem"
-version = "0.10.1"
+version = "0.10.2"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "Collection of memory related utilities"
@@ -33,12 +33,12 @@ primitive-types = { version = "0.10", path = "../primitive-types", default-featu
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3.8", features = ["heapapi"] }
 
-[target.'cfg(not(target_os = "windows"))'.dependencies.jemallocator]
-version = "0.3.2"
+[target.'cfg(not(target_os = "windows"))'.dependencies.tikv-jemallocator]
+version = "0.4.1"
 optional = true
 
-[target.'cfg(not(target_os = "windows"))'.dependencies.jemalloc-ctl]
-version = "0.3.3"
+[target.'cfg(not(target_os = "windows"))'.dependencies.tikv-jemalloc-ctl]
+version = "0.4.2"
 optional = true
 
 [features]
@@ -49,7 +49,7 @@ dlmalloc-global = ["dlmalloc", "estimate-heapsize"]
 # use wee_alloc as global allocator
 weealloc-global = ["wee_alloc", "estimate-heapsize"]
 # use jemalloc as global allocator
-jemalloc-global = ["jemallocator", "jemalloc-ctl"]
+jemalloc-global = ["tikv-jemallocator", "tikv-jemalloc-ctl"]
 # use mimalloc as global allocator
 mimalloc-global = ["mimalloc", "libmimalloc-sys"]
 # implement additional types
