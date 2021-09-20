@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
+## [0.10.2] - 2021-09-20
+- Switched from `jemallocator` to `tikv-jemallocator`. [#589](https://github.com/paritytech/parity-common/pull/589)
+
 ## [0.10.1] - 2021-09-15
 - Added support for memory stats gathering, ported over from `polkadot`. [#588](https://github.com/paritytech/parity-common/pull/588)
 
