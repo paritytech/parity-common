@@ -16,13 +16,13 @@
 //! 	 - mimalloc: use mimallocator crate
 //! - arch x86:
 //! 	 - no features: use default alloc
-//! 	 - jemalloc: use jemallocator crate
+//! 	 - jemalloc: use tikv-jemallocator crate
 //! 	 - weealloc: default to `estimate_size`
 //! 	 - dlmalloc: default to `estimate_size`
 //! 	 - mimalloc: use mimallocator crate
 //! - arch x86/macos:
 //! 	 - no features: use default alloc, requires using `estimate_size`
-//! 	 - jemalloc: use jemallocator crate
+//! 	 - jemalloc: use tikv-jemallocator crate
 //! 	 - weealloc: default to `estimate_size`
 //! 	 - dlmalloc: default to `estimate_size`
 //! 	 - mimalloc: use mimallocator crate
@@ -85,7 +85,7 @@ mod usable_size {
 
 			/// Use of jemalloc usable size C function through jemallocator crate call.
 			pub unsafe extern "C" fn malloc_usable_size(ptr: *const c_void) -> usize {
-				jemallocator::usable_size(ptr)
+				tikv_jemallocator::usable_size(ptr)
 			}
 
 		} else if #[cfg(feature = "mimalloc-global")] {

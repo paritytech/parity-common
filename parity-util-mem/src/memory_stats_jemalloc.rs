@@ -6,12 +6,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-pub use jemalloc_ctl::Error;
-use jemalloc_ctl::{epoch, stats};
+pub use tikv_jemalloc_ctl::Error;
+use tikv_jemalloc_ctl::{epoch, stats};
 
 #[derive(Clone)]
 pub struct MemoryAllocationTracker {
-	epoch: jemalloc_ctl::epoch_mib,
+	epoch: tikv_jemalloc_ctl::epoch_mib,
 	allocated: stats::allocated_mib,
 	resident: stats::resident_mib,
 }

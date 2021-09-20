@@ -23,7 +23,7 @@ cfg_if::cfg_if! {
 	))] {
 		/// Global allocator
 		#[global_allocator]
-		pub static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+		pub static ALLOC: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
 		mod memory_stats_jemalloc;
 		use memory_stats_jemalloc as memory_stats;
