@@ -8,7 +8,7 @@ description = "Ethereum types"
 edition = "2018"
 
 [dependencies]
-ethbloom = { path = "../ethbloom", version = "0.11", default-features = false }
+ethbloom = { path = "../ethbloom", version = "0.11", default-features = false, features = ["codec"] }
 fixed-hash = { path = "../fixed-hash", version = "0.7", default-features = false, features = ["byteorder", "rustc-hex"] }
 uint-crate = { path = "../uint", package = "uint", version = "0.9", default-features = false }
 primitive-types = { path = "../primitive-types", version = "0.10", features = ["byteorder", "rustc-hex"], default-features = false }
