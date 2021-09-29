@@ -30,7 +30,12 @@ impl_fixed_hash_serde!(H32, 4);
 #[cfg(feature = "codec")]
 impl_fixed_hash_codec!(H32, 4);
 
-construct_fixed_hash! { pub struct H64(8); }
+construct_fixed_hash! {
+	//TODO I guess we'll need this on a lot of them. Maybe I can put it in the macro?
+	// But where is the macro defined?
+	#[cfg_attr(feature = "codec", derive(scale_info::TypeInfo))]
+	pub struct H64(8);
+}
 #[cfg(feature = "rlp")]
 impl_fixed_hash_rlp!(H64, 8);
 #[cfg(feature = "serialize")]
