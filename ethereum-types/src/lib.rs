@@ -11,6 +11,7 @@
 mod hash;
 mod uint;
 
+//TODO we need scale_info::TypeInfo on Bloom (and probably others of these)
 pub use ethbloom::{Bloom, BloomRef, Input as BloomInput};
 pub use hash::{BigEndianHash, H128, H160, H256, H264, H32, H512, H520, H64};
 pub use uint::{FromDecStrErr, FromStrRadixErr, FromStrRadixErrKind, U128, U256, U512, U64};

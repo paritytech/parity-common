@@ -14,7 +14,7 @@ impl-serde = { version = "0.3.1", path = "impls/serde", default-features = false
 impl-codec = { version = "0.5.1", path = "impls/codec", default-features = false, optional = true }
 impl-num-traits = { version = "0.1.0", path = "impls/num-traits", default-features = false, optional = true }
 impl-rlp = { version = "0.3", path = "impls/rlp", default-features = false, optional = true }
-scale-info-crate = { package = "scale-info", version = ">=0.9, <2", features = ["derive"], default-features = false, optional = true }
+scale-info = { version = "1.0", features = ["derive"], default-features = false, optional = true }
 
 [features]
 default = ["std"]
@@ -23,8 +23,7 @@ byteorder = ["fixed-hash/byteorder"]
 rustc-hex = ["fixed-hash/rustc-hex"]
 serde = ["std", "impl-serde", "impl-serde/std"]
 serde_no_std = ["impl-serde"]
-codec = ["impl-codec"]
-scale-info = ["codec", "scale-info-crate"]
+codec = ["impl-codec", "scale-info"]
 rlp = ["impl-rlp"]
 arbitrary = ["fixed-hash/arbitrary", "uint/arbitrary"]
 fp-conversion = ["std"]
