@@ -8,7 +8,7 @@ description = "Ethereum types"
 edition = "2018"
 
 [dependencies]
-ethbloom = { path = "../ethbloom", version = "0.11", default-features = false, features = ["codec"] }
+ethbloom = { path = "../ethbloom", version = "0.11", default-features = false }
 fixed-hash = { path = "../fixed-hash", version = "0.7", default-features = false, features = ["byteorder", "rustc-hex"] }
 uint-crate = { path = "../uint", package = "uint", version = "0.9", default-features = false }
 primitive-types = { path = "../primitive-types", version = "0.10", features = ["byteorder", "rustc-hex"], default-features = false }
@@ -26,5 +26,5 @@ std = ["uint-crate/std", "fixed-hash/std", "ethbloom/std", "primitive-types/std"
 serialize = ["impl-serde", "primitive-types/serde_no_std", "ethbloom/serialize"]
 arbitrary = ["ethbloom/arbitrary", "fixed-hash/arbitrary", "uint-crate/arbitrary"]
 rlp = ["impl-rlp", "ethbloom/rlp", "primitive-types/rlp"]
-codec = ["impl-codec", "ethbloom/codec", "scale-info", "primitive-types/scale-info"]
+codec = ["impl-codec", "ethbloom/codec", "scale-info", "primitive-types/codec"]
 num-traits = ["primitive-types/num-traits"]
