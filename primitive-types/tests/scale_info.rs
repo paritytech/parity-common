@@ -9,7 +9,7 @@
 //! Tests for scale-info feature of primitive-types.
 
 use primitive_types::{H256, U256};
-use scale_info::{build::Fields, Path, Type, TypeInfo};
+use scale_info_crate::{build::Fields, Path, Type, TypeInfo};
 
 #[test]
 fn u256_scale_info() {
