@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.12.1] - 2021-09-30
+- Combined `scale-info` feature into `codec`. [#593](https://github.com/paritytech/parity-common/pull/593)
+
+## [0.12.0] - 2021-07-02
 ### Breaking
 - Updated `primitive-types` to 0.10. [#556](https://github.com/paritytech/parity-common/pull/556)
 
