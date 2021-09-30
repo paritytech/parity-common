@@ -66,6 +66,7 @@ const BLOOM_SIZE: usize = 256;
 
 construct_fixed_hash! {
 	/// Bloom hash type with 256 bytes (2048 bits) size.
+	#[cfg_attr(feature = "codec", derive(scale_info::TypeInfo))]
 	pub struct Bloom(BLOOM_SIZE);
 }
 #[cfg(feature = "rlp")]
