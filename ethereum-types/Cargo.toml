@@ -26,5 +26,5 @@ std = ["uint-crate/std", "fixed-hash/std", "ethbloom/std", "primitive-types/std"
 serialize = ["impl-serde", "primitive-types/serde_no_std", "ethbloom/serialize"]
 arbitrary = ["ethbloom/arbitrary", "fixed-hash/arbitrary", "uint-crate/arbitrary"]
 rlp = ["impl-rlp", "ethbloom/rlp", "primitive-types/rlp"]
-codec = ["impl-codec", "ethbloom/codec", "scale-info", "primitive-types/codec"]
+codec = ["impl-codec", "ethbloom/codec", "scale-info", "primitive-types/scale-info"]
 num-traits = ["primitive-types/num-traits"]
