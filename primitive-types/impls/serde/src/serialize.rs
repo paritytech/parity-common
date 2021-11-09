@@ -89,7 +89,7 @@ impl fmt::Display for FromHexError {
 	}
 }
 
-/// Decode given 0x-prefix-stripped hex string into a vector of bytes.
+/// Decode given (both 0x-prefixed or not) hex string into a vector of bytes.
 ///
 /// Returns an error if non-hex characters are present.
 pub fn from_hex(v: &str) -> Result<Vec<u8>, FromHexError> {
@@ -100,7 +100,7 @@ pub fn from_hex(v: &str) -> Result<Vec<u8>, FromHexError> {
 	Ok(bytes)
 }
 
-/// Decode given 0x-prefix-stripped hex string into provided slice.
+/// Decode given (both 0x-prefixed or not) hex string into provided slice.
 /// Used internally by `from_hex` and `deserialize_check_len`.
 ///
 /// The method will panic if `bytes` have incorrect length (make sure to allocate enough beforehand).
@@ -204,7 +204,7 @@ where
 		type Value = Vec<u8>;
 
 		fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-			write!(formatter, "a 0x-prefix-stripped hex string")
+			write!(formatter, "a (both 0x-prefixed or not) hex string")
 		}
 
 		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
@@ -233,7 +233,7 @@ where
 		type Value = usize;
 
 		fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-			write!(formatter, "a 0x-prefix-stripped hex string with {}", self.len)
+			write!(formatter, "a (both 0x-prefixed or not) hex string with {}", self.len)
 		}
 
 		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
