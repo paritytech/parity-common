@@ -100,7 +100,7 @@ pub fn from_hex(v: &str) -> Result<Vec<u8>, FromHexError> {
 	Ok(bytes)
 }
 
-/// Decode given (both 0x-prefixed or not) hex string into provided slice.
+/// Decode given 0x-prefix-stripped hex string into provided slice.
 /// Used internally by `from_hex` and `deserialize_check_len`.
 ///
 /// The method will panic if `bytes` have incorrect length (make sure to allocate enough beforehand).
