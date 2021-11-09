@@ -93,7 +93,7 @@ impl fmt::Display for FromHexError {
 ///
 /// Returns an error if non-hex characters are present.
 pub fn from_hex(v: &str) -> Result<Vec<u8>, FromHexError> {
-	let (v, stripped) = if v.starts_with("0x") { (v.strip_prefix("0x").unwrap(), true) } else { (v, false) };
+	let (v, stripped) = v.strip_prefix("0x").map_or((v, false), |v| (v, true));
 
 	let mut bytes = vec![0u8; (v.len() + 1) / 2];
 	from_hex_raw(v, &mut bytes, stripped)?;
@@ -237,7 +237,7 @@ where
 		}
 
 		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
-			let (v, stripped) = if v.starts_with("0x") { (v.strip_prefix("0x").unwrap(), true) } else { (v, false) };
+			let (v, stripped) = v.strip_prefix("0x").map_or((v, false), |v| (v, true));
 
 			let len = v.len();
 			let is_len_valid = match self.len {
