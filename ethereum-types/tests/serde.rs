@@ -32,12 +32,29 @@ macro_rules! test {
 				assert_eq!(number, ser::from_str(&format!("{:?}", expected)).unwrap());
 			}
 
+			let tests = vec![
+				($name::from(0), "0"),
+				($name::from(1), "1"),
+				($name::from(2), "2"),
+				($name::from(10), "a"),
+				($name::from(15), "f"),
+				($name::from(15), "f"),
+				($name::from(16), "10"),
+				($name::from(1_000), "3e8"),
+				($name::from(100_000), "186a0"),
+				($name::from(u64::max_value()), "ffffffffffffffff"),
+				($name::from(u64::max_value()) + $name::from(1u64), "10000000000000000"),
+			];
+
+			for (number, expected) in tests {
+				assert_eq!(format!("{:?}", "0x".to_string() + expected), ser::to_string_pretty(&number).unwrap());
+				assert_eq!(number, ser::from_str(&format!("{:?}", expected)).unwrap());
+			}
+
 			// Invalid examples
 			assert!(ser::from_str::<$name>("\"0x\"").unwrap_err().is_data());
 			assert!(ser::from_str::<$name>("\"0xg\"").unwrap_err().is_data());
 			assert!(ser::from_str::<$name>("\"\"").unwrap_err().is_data());
-			assert!(ser::from_str::<$name>("\"10\"").unwrap_err().is_data());
-			assert!(ser::from_str::<$name>("\"0\"").unwrap_err().is_data());
 		}
 	};
 }
@@ -109,8 +126,15 @@ fn test_invalid() {
 }
 
 #[test]
-fn test_invalid_char() {
+fn test_invalid_char_with_prefix() {
 	const INVALID_STR: &str = "\"0x000000000000000000000000000000000000000000000000000000000000000g\"";
 	const EXPECTED_MSG: &str = "invalid hex character: g, at 65 at line 1 column 68";
+	assert_eq!(ser::from_str::<H256>(INVALID_STR).unwrap_err().to_string(), EXPECTED_MSG);
+}
+
+#[test]
+fn test_invalid_char_without_prefix() {
+	const INVALID_STR: &str = "\"000000000000000000000000000000000000000000000000000000000000000g\"";
+	const EXPECTED_MSG: &str = "invalid hex character: g, at 63 at line 1 column 66";
 	assert_eq!(ser::from_str::<H256>(INVALID_STR).unwrap_err().to_string(), EXPECTED_MSG);
 }

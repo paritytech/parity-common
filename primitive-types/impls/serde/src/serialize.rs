@@ -93,10 +93,10 @@ impl fmt::Display for FromHexError {
 ///
 /// Returns an error if non-hex characters are present.
 pub fn from_hex(v: &str) -> Result<Vec<u8>, FromHexError> {
-	let v = v.strip_prefix("0x").unwrap_or(v);
+	let (v, stripped) = if v.starts_with("0x") { (v.strip_prefix("0x").unwrap(), true) } else { (v, false) };
 
 	let mut bytes = vec![0u8; (v.len() + 1) / 2];
-	from_hex_raw(v, &mut bytes)?;
+	from_hex_raw(v, &mut bytes, stripped)?;
 	Ok(bytes)
 }
 
@@ -104,7 +104,7 @@ pub fn from_hex(v: &str) -> Result<Vec<u8>, FromHexError> {
 /// Used internally by `from_hex` and `deserialize_check_len`.
 ///
 /// The method will panic if `bytes` have incorrect length (make sure to allocate enough beforehand).
-fn from_hex_raw<'a>(v: &str, bytes: &mut [u8]) -> Result<usize, FromHexError> {
+fn from_hex_raw<'a>(v: &str, bytes: &mut [u8], stripped: bool) -> Result<usize, FromHexError> {
 	let bytes_len = v.len();
 	let mut modulus = bytes_len % 2;
 	let mut buf = 0;
@@ -122,7 +122,7 @@ fn from_hex_raw<'a>(v: &str, bytes: &mut [u8]) -> Result<usize, FromHexError> {
 			},
 			b => {
 				let character = char::from(b);
-				return Err(FromHexError::InvalidHex { character, index })
+				return Err(FromHexError::InvalidHex { character, index: index + if stripped { 2 } else { 0 } })
 			},
 		}
 
@@ -237,7 +237,7 @@ where
 		}
 
 		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
-			let v = v.strip_prefix("0x").unwrap_or(v);
+			let (v, stripped) = if v.starts_with("0x") { (v.strip_prefix("0x").unwrap(), true) } else { (v, false) };
 
 			let len = v.len();
 			let is_len_valid = match self.len {
@@ -254,7 +254,7 @@ where
 				ExpectedLen::Between(_, slice) => slice,
 			};
 
-			from_hex_raw(v, bytes).map_err(E::custom)
+			from_hex_raw(v, bytes, stripped).map_err(E::custom)
 		}
 
 		fn visit_string<E: de::Error>(self, v: String) -> Result<Self::Value, E> {
