@@ -30,7 +30,7 @@ fn malloc_size_of_derive(s: synstructure::Structure) -> proc_macro2::TokenStream
 					"#[ignore_malloc_size_of] should have an explanation, \
 					 e.g. #[ignore_malloc_size_of = \"because reasons\"]"
 				);
-			}
+			},
 			syn::Meta::NameValue(syn::MetaNameValue { ref path, .. }) if path.is_ident("ignore_malloc_size_of") => true,
 			_ => false,
 		});
