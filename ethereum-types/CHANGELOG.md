@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.12.1] - 2021-11-10
+- Updated `impl-serde` to 0.3.2. [#598](https://github.com/paritytech/parity-common/pull/598)
+
 ### Breaking
 - Updated `primitive-types` to 0.10. [#556](https://github.com/paritytech/parity-common/pull/556)
 
