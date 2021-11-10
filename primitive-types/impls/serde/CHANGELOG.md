@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.3.2] - 2021-10-11
+- Supported decoding of hex strings without `0x` prefix. [#598](https://github.com/paritytech/parity-common/pull/598)
+
 ## [0.3.1] - 2020-05-05
 - Added `no_std` support. [#385](https://github.com/paritytech/parity-common/pull/385)
 
