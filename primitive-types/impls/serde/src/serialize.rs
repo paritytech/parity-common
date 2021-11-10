@@ -83,6 +83,7 @@ impl std::error::Error for FromHexError {}
 impl fmt::Display for FromHexError {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
+			#[allow(deprecated)]
 			Self::MissingPrefix => write!(fmt, "0x prefix is missing"),
 			Self::InvalidHex { character, index } => write!(fmt, "invalid hex character: {}, at {}", character, index),
 		}
