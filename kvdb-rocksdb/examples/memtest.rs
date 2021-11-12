@@ -71,7 +71,7 @@ fn proc_memory_usage() -> u64 {
 	let memory = if let Some(self_pid) = self_pid {
 		if sys.refresh_process(self_pid) {
 			let proc = sys
-				.get_process(self_pid)
+				.process(self_pid)
 				.expect("Above refresh_process succeeds, this should be Some(), qed");
 			proc.memory()
 		} else {
