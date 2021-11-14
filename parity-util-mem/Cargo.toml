@@ -5,7 +5,7 @@ authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "Collection of memory related utilities"
 license = "MIT OR Apache-2.0"
-edition = "2018"
+edition = "2021"
 
 # Prevent multiple versions from being linked into the same program.
 links = "parity-util-mem-ban-duplicates"

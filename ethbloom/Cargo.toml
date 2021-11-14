@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 documentation = "https://docs.rs/ethbloom"
 homepage = "https://github.com/paritytech/parity-common"
 repository = "https://github.com/paritytech/parity-common"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 tiny-keccak = { version = "2.0", features = ["keccak"] }

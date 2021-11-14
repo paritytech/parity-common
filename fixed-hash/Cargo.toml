@@ -8,7 +8,7 @@ repository = "https://github.com/paritytech/parity-common"
 description = "Macros to define custom fixed-size hash types"
 documentation = "https://docs.rs/fixed-hash/"
 readme = "README.md"
-edition = "2018"
+edition = "2021"
 
 [package.metadata.docs.rs]
 features = ["quickcheck", "api-dummy"]
