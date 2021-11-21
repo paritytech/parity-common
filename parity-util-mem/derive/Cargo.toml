@@ -5,6 +5,8 @@ authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT OR Apache-2.0"
 description = "Crate for memory reporting"
 repository = "https://github.com/paritytech/pariry-common/parity-util-mem/derive"
+edition = "2021"
+rust-version = "1.56.1"
 
 [lib]
 path = "lib.rs"

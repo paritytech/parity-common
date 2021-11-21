@@ -5,7 +5,8 @@ authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
 description = "num-traits implementation for uint."
-edition = "2018"
+edition = "2021"
+rust-version = "1.56.1"
 
 [dependencies]
 num-traits = { version = "0.2", default-features = false }

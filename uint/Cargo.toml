@@ -7,7 +7,8 @@ name = "uint"
 version = "0.9.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 readme = "README.md"
-edition = "2018"
+edition = "2021"
+rust-version = "1.56.1"
 
 [dependencies]
 byteorder = { version = "1.4.2", default-features = false }

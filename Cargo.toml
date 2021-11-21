@@ -1,5 +1,4 @@
 [workspace]
-resolver = "2"
 members = [
 	"fixed-hash",
 	"keccak-hash",
