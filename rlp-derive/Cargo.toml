@@ -6,6 +6,7 @@ license = "MIT OR Apache-2.0"
 description = "Derive macro for #[derive(RlpEncodable, RlpDecodable)]"
 homepage = "http://parity.io"
 edition = "2021"
+rust-version = "1.56.1"
 
 [lib]
 proc-macro = true

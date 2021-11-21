@@ -7,6 +7,7 @@ repository = "https://github.com/paritytech/parity-common"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 edition = "2021"
+rust-version = "1.56.1"
 
 [dependencies]
 tiny-keccak = { version = "2.0", features = ["keccak"] }

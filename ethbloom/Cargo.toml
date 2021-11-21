@@ -8,6 +8,7 @@ documentation = "https://docs.rs/ethbloom"
 homepage = "https://github.com/paritytech/parity-common"
 repository = "https://github.com/paritytech/parity-common"
 edition = "2021"
+rust-version = "1.56.1"
 
 [dependencies]
 tiny-keccak = { version = "2.0", features = ["keccak"] }

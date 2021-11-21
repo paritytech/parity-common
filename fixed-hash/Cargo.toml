@@ -9,6 +9,7 @@ description = "Macros to define custom fixed-size hash types"
 documentation = "https://docs.rs/fixed-hash/"
 readme = "README.md"
 edition = "2021"
+rust-version = "1.56.1"
 
 [package.metadata.docs.rs]
 features = ["quickcheck", "api-dummy"]
