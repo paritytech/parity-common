@@ -274,7 +274,6 @@ macro_rules! construct_fixed_hash {
 		impl $crate::core_::hash::Hash for $name {
 			fn hash<H>(&self, state: &mut H) where H: $crate::core_::hash::Hasher {
 				state.write(&self.0);
-				state.finish();
 			}
 		}
 
