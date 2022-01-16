@@ -470,6 +470,39 @@ fn uint256_sub_overflow() {
 }
 
 #[test]
+fn uint256_neg_overflow() {
+	assert_eq!(U256::from_str("0").unwrap().overflowing_neg(), (U256::from_str("0").unwrap(), false));
+	assert_eq!(
+		U256::from_str("1").unwrap().overflowing_neg(),
+		(U256::from_str("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap(), true)
+	);
+	assert_eq!(
+		U256::from_str("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+			.unwrap()
+			.overflowing_neg(),
+		(U256::from_str("1").unwrap(), true)
+	);
+	assert_eq!(
+		U256::from_str("8000000000000000000000000000000000000000000000000000000000000000")
+			.unwrap()
+			.overflowing_neg(),
+		(U256::from_str("8000000000000000000000000000000000000000000000000000000000000000").unwrap(), true)
+	);
+	assert_eq!(
+		U256::from_str("ffffffffffffffff0000000000000000ffffffffffffffff0000000000000000")
+			.unwrap()
+			.overflowing_neg(),
+		(U256::from_str("0000000000000000ffffffffffffffff00000000000000010000000000000000").unwrap(), true)
+	);
+	assert_eq!(
+		U256::from_str("0000000000000000ffffffffffffffff0000000000000000ffffffffffffffff")
+			.unwrap()
+			.overflowing_neg(),
+		(U256::from_str("ffffffffffffffff0000000000000000ffffffffffffffff0000000000000001").unwrap(), true)
+	);
+}
+
+#[test]
 #[should_panic]
 #[allow(unused_must_use)]
 fn uint256_sub_overflow_panic() {
