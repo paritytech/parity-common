@@ -11,6 +11,7 @@ rust-version = "1.56.1"
 [dependencies]
 bytes = { version = "1", default-features = false }
 rustc-hex = { version = "2.0.1", default-features = false }
+rlp-derive = { version = "0.1", path = "../rlp-derive", optional = true } 
 
 [dev-dependencies]
 criterion = "0.3.0"
@@ -20,6 +21,7 @@ primitive-types = { path = "../primitive-types", version = "0.10", features = ["
 [features]
 default = ["std"]
 std = ["bytes/std", "rustc-hex/std"]
+derive = ["rlp-derive"]
 
 [[bench]]
 name = "rlp"

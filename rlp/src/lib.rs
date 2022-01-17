@@ -48,6 +48,9 @@ use alloc::vec::Vec;
 use bytes::BytesMut;
 use core::borrow::Borrow;
 
+#[cfg(feature = "derive")]
+pub use rlp_derive::{RlpDecodable, RlpDecodableWrapper, RlpEncodable, RlpEncodableWrapper};
+
 pub use self::{
 	error::DecoderError,
 	rlpin::{PayloadInfo, Prototype, Rlp, RlpIterator},
