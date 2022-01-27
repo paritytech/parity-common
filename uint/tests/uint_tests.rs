@@ -531,13 +531,27 @@ fn uint256_from_dec_str() {
 
 #[test]
 fn display_uint() {
-	let s = "12345678987654321023456789";
-	assert_eq!(format!("{}", U256::from_dec_str(s).unwrap()), s);
+	let s = U256::from_dec_str("12345678987654321023456789").unwrap();
+	assert_eq!(format!("{}", s), "12345678987654321023456789");
+	assert_eq!(format!("{:x}", s), "a364c995584f929f39615");
+	assert_eq!(format!("{:X}", s), "A364C995584F929F39615");
+	assert_eq!(format!("{:032}", s), "00000012345678987654321023456789");
+	assert_eq!(format!("{:032x}", s), "00000000000a364c995584f929f39615");
+	assert_eq!(format!("{:032X}", s), "00000000000A364C995584F929F39615");
+	assert_eq!(format!("{:#032x}", s), "0x000000000a364c995584f929f39615");
+	assert_eq!(format!("{:#032X}", s), "0x000000000A364C995584F929F39615");
 }
 
 #[test]
 fn display_uint_zero() {
-	assert_eq!(format!("{}", U256::from(0)), "0");
+	let s = U256::from(0);
+	assert_eq!(format!("{}", s), "0");
+	assert_eq!(format!("{:x}", s), "0");
+	assert_eq!(format!("{:X}", s), "0");
+	assert_eq!(format!("{:032x}", s), "00000000000000000000000000000000");
+	assert_eq!(format!("{:032X}", s), "00000000000000000000000000000000");
+	assert_eq!(format!("{:#032x}", s), "0x000000000000000000000000000000");
+	assert_eq!(format!("{:#032X}", s), "0x000000000000000000000000000000");
 }
 
 #[test]
