@@ -1310,7 +1310,7 @@ macro_rules! construct_uint {
 				}
 
 				let mut latch = false;
-				let mut buf = [0_u8; $n_words*16];
+				let mut buf = [0_u8; $n_words * 16];
 				let mut i = 0;
 				for ch in data.iter().rev() {
 					for x in 0..16 {
