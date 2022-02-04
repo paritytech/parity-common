@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog].
 - Updated `primitive-types` to 0.11. [#623](https://github.com/paritytech/parity-common/pull/623)
 - Updated `ethereum-types` to 0.13. [#623](https://github.com/paritytech/parity-common/pull/623)
 - Updated `lru` to 0.7. [#595](https://github.com/paritytech/parity-common/pull/595)
-- Updated `parkin_lot` to 0.12. [#619](https://github.com/paritytech/parity-common/pull/619)
+- Updated `parking_lot` to 0.12. [#619](https://github.com/paritytech/parity-common/pull/619)
 - Updated `hashbrown` to 0.12. [#612](https://github.com/paritytech/parity-common/pull/612)
 
 ## [0.10.2] - 2021-09-20
