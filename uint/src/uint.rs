@@ -1162,7 +1162,7 @@ macro_rules! construct_uint {
 			pub fn overflowing_neg(self) -> ($name, bool) {
 				if self.is_zero() {
 					(self, false)
-				else {
+				} else {
 					(!self + 1, true)
 				}
 			}
