@@ -19,7 +19,7 @@ build = "build.rs"
 cfg-if = "1.0.0"
 dlmalloc = { version = "0.2.1", features = ["global"], optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
-lru = { version = "0.6", optional = true }
+lru = { version = "0.7", optional = true }
 hashbrown = { version = "0.11", optional = true }
 mimalloc = { version = "0.1.18", optional = true }
 libmimalloc-sys = { version = "0.1.14", optional = true }
