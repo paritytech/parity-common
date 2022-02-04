@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog].
 ### Breaking
 - Migrated to 2021 edition, enforcing MSRV of `1.56.1`. [#601](https://github.com/paritytech/parity-common/pull/601)
 - Updated `impl-codec` to 0.6. [#623](https://github.com/paritytech/parity-common/pull/623)
-- Updated `primtiive-types` to 0.11. [#623](https://github.com/paritytech/parity-common/pull/623)
+- Updated `primitive-types` to 0.11. [#623](https://github.com/paritytech/parity-common/pull/623)
+- Updated `ethbloom` to 0.12. [#623](https://github.com/paritytech/parity-common/pull/623)
 
 ## [0.12.1] - 2021-09-30
 - Combined `scale-info` feature into `codec`. [#593](https://github.com/paritytech/parity-common/pull/593)

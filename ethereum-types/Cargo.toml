@@ -9,7 +9,7 @@ edition = "2021"
 rust-version = "1.56.1"
 
 [dependencies]
-ethbloom = { path = "../ethbloom", version = "0.11", default-features = false }
+ethbloom = { path = "../ethbloom", version = "0.12", default-features = false }
 fixed-hash = { path = "../fixed-hash", version = "0.7", default-features = false, features = ["byteorder", "rustc-hex"] }
 uint-crate = { path = "../uint", package = "uint", version = "0.9", default-features = false }
 primitive-types = { path = "../primitive-types", version = "0.11", features = ["byteorder", "rustc-hex"], default-features = false }
