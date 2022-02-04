@@ -1157,7 +1157,7 @@ macro_rules! construct_uint {
 				if self.is_zero() {
 					(self, false)
 				} else {
-					(!self, true)
+					(!self + 1, true)
 				}
 			}
 
