@@ -1,6 +1,6 @@
 [package]
 name = "kvdb-memorydb"
-version = "0.10.0"
+version = "0.11.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "A key-value in-memory database that implements the  `KeyValueDB` trait"
@@ -9,9 +9,9 @@ edition = "2021"
 rust-version = "1.56.1"
 
 [dependencies]
-parity-util-mem = { path = "../parity-util-mem", version = "0.10", default-features = false, features = ["std"] }
+parity-util-mem = { path = "../parity-util-mem", version = "0.11", default-features = false, features = ["std"] }
 parking_lot = "0.12.0"
-kvdb = { version = "0.10", path = "../kvdb" }
+kvdb = { version = "0.11", path = "../kvdb" }
 
 [dev-dependencies]
 kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.8" }
