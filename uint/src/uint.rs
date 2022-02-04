@@ -1160,50 +1160,11 @@ macro_rules! construct_uint {
 
 			/// Negation with overflow.
 			pub fn overflowing_neg(self) -> ($name, bool) {
-				use $crate::core_ as core;
-				let $name(ref me) = self;
-
-				let mut ret = [0u64; $n_words];
-				let ret_ptr = &mut ret as *mut [u64; $n_words] as *mut u64;
-				$crate::static_assertions::const_assert!(
-					core::isize::MAX as usize / core::mem::size_of::<u64>() > $n_words
-				);
-
-				// `unroll!` is recursive, but doesn’t use `$crate::unroll`, so we need to ensure that it
-				// is in scope unqualified.
-				use $crate::unroll;
-				let (res, overflow) = u64::overflowing_neg(me[0]);
-				let mut seen_one: bool = overflow;
-				unsafe {
-					// SAFETY: accesses first entry of non-empty array
-					*ret_ptr = res
+				if self.is_zero() {
+					(self, false)
+				else {
+					(!self + 1, true)
 				}
-				unroll! {
-					for i in 1..$n_words {
-						use core::ptr;
-
-						// compute two's complement negation, until we have seen the first 1 bit,
-						// then switch to bit-wise NOT
-						if !seen_one {
-							let (res, overflow) = u64::overflowing_neg(me[i]);
-							seen_one = overflow;
-
-							unsafe {
-								// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
-								*ret_ptr.offset(i as _) = res
-							}
-						} else {
-							let res = !me[i];
-
-							unsafe {
-								// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
-								*ret_ptr.offset(i as _) = res
-							}
-						}
-					}
-				}
-
-				($name(ret), seen_one)
 			}
 
 			/// Checked negation. Returns `None` unless `self == 0`.
