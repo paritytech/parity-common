@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog].
 ## [0.11.0] - 2022-02-04
 ### Breaking
 - Migrated to 2021 edition, enforcing MSRV of `1.56.1`. [#601](https://github.com/paritytech/parity-common/pull/601)
+- Updated `primitive-types` to 0.11. [#623](https://github.com/paritytech/parity-common/pull/623)
 - Updated `lru` to 0.7. [#595](https://github.com/paritytech/parity-common/pull/595)
 - Updated `parkin_lot` to 0.12. [#619](https://github.com/paritytech/parity-common/pull/619)
 - Updated `hashbrown` to 0.12. [#612](https://github.com/paritytech/parity-common/pull/612)
