@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.9.3] - 2022-02-04
+- Simplified and faster `div_mod`. [#478](https://github.com/paritytech/parity-common/pull/478)
+- Fixed `overflowing_neg`. [#611](https://github.com/paritytech/parity-common/pull/611)
+
 ## [0.9.2] - 2022-01-28
 - Migrated to 2021 edition, enforcing MSRV of `1.56.1`. [#601](https://github.com/paritytech/parity-common/pull/601)
 - Display formatting support. [#603](ttps://github.com/paritytech/parity-common/pull/603)
