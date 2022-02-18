@@ -380,7 +380,7 @@ fn generate_block_based_options(config: &DatabaseConfig) -> io::Result<BlockBase
 		// Don't evict L0 filter/index blocks from the cache
 		block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
 	}
-	block_opts.set_bloom_filter(10, true);
+	block_opts.set_bloom_filter(10.0, true);
 
 	Ok(block_opts)
 }
