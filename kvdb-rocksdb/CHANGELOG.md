@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+## [0.15.1] - 2022-02-18
 - Updated `rocksdb` to 0.18. [#629](https://github.com/paritytech/parity-common/pull/629)
 
 ## [0.15.0] - 2022-02-04
