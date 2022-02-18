@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog].
 ## [Unreleased]
 
 ## [0.15.1] - 2022-02-18
-- Updated `rocksdb` to 0.18. [#629](https://github.com/paritytech/parity-common/pull/629)
+- Updated `rocksdb` to 0.18 and enable `jemalloc` feature. [#629](https://github.com/paritytech/parity-common/pull/629)
 
 ## [0.15.0] - 2022-02-04
 ### Breaking
