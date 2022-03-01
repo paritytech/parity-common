@@ -18,8 +18,8 @@ impl-rlp = { version = "0.3", path = "impls/rlp", default-features = false, opti
 scale-info-crate = { package = "scale-info", version = ">=0.9, <3", features = ["derive"], default-features = false, optional = true }
 
 [features]
-default = ["std"]
-std = ["uint/std", "fixed-hash/std", "impl-codec/std"]
+default = ["std", "impl-codec/std"]
+std = ["uint/std", "fixed-hash/std"]
 byteorder = ["fixed-hash/byteorder"]
 rustc-hex = ["fixed-hash/rustc-hex"]
 serde = ["std", "impl-serde", "impl-serde/std"]
