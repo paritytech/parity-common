@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- Disable `jemalloc` feature for `rocksdb` where it is not working. [#633](https://github.com/paritytech/parity-common/pull/633)
 
 ## [0.15.1] - 2022-02-18
 - Updated `rocksdb` to 0.18 and enable `jemalloc` feature. [#629](https://github.com/paritytech/parity-common/pull/629)
