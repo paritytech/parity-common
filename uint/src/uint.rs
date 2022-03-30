@@ -673,9 +673,10 @@ macro_rules! construct_uint {
 
 			/// Whether this is zero.
 			#[inline]
-			pub fn is_zero(&self) -> bool {
+			pub const fn is_zero(&self) -> bool {
 				let &$name(ref arr) = self;
-				for i in 0..$n_words { if arr[i] != 0 { return false; } }
+				let mut i = 0;
+				while i < $n_words { if arr[i] != 0 { return false; } else { i += 1; } }
 				return true;
 			}
 
