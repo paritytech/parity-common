@@ -1057,7 +1057,7 @@ macro_rules! construct_uint {
 				}
 			}
 
-			/// Add with overflow.
+			/// Addition which overflows and returns a flag if it does.
 			#[inline(always)]
 			pub fn overflowing_add(self, other: $name) -> ($name, bool) {
 				$crate::uint_overflowing_binop!(
