@@ -5,3 +5,8 @@ updates:
     labels: ["A2-insubstantial", "M5-dependencies"]
     schedule:
       interval: "daily"
+  - package-ecosystem: github-actions
+    directory: '/'
+    labels: ["A2-insubstantial", "M5-dependencies"]
+    schedule:
+      interval: daily
