@@ -793,8 +793,10 @@ macro_rules! construct_uint {
 
 			/// One (multiplicative identity) of this type.
 			#[inline]
-			pub fn one() -> Self {
-				From::from(1u64)
+			pub const fn one() -> Self {
+				let mut words = [0; $n_words];
+				words[0] = 1u64;
+				Self(words)
 			}
 
 			/// The maximum value which can be inhabited by this type.
