@@ -49,6 +49,27 @@ fn const_matching_works() {
 }
 
 #[test]
+fn max() {
+	let max = U256::MAX;
+	assert_eq!(max.0, [0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF]);
+
+	let max = U512::MAX;
+	assert_eq!(
+		max.0,
+		[
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF
+		]
+	);
+}
+
+#[test]
 fn one() {
 	let one = U256::one();
 	assert_eq!(one.0, [1, 0, 0, 0]);
