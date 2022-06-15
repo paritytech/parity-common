@@ -800,6 +800,7 @@ macro_rules! construct_uint {
 			}
 
 			/// The maximum value which can be inhabited by this type.
+			#[deprecated(note = "replaced by the `MAX` associated constant on this type")]
 			#[inline]
 			pub const fn max_value() -> Self {
 				Self::MAX
@@ -1067,10 +1068,10 @@ macro_rules! construct_uint {
 				)
 			}
 
-			/// Addition which saturates at the maximum value (Self::max_value()).
+			/// Addition which saturates at the maximum value (Self::MAX).
 			pub fn saturating_add(self, other: $name) -> $name {
 				match self.overflowing_add(other) {
-					(_, true) => $name::max_value(),
+					(_, true) => $name::MAX,
 					(val, false) => val,
 				}
 			}
@@ -1120,7 +1121,7 @@ macro_rules! construct_uint {
 			/// Multiplication which saturates at the maximum value..
 			pub fn saturating_mul(self, other: $name) -> $name {
 				match self.overflowing_mul(other) {
-					(_, true) => $name::max_value(),
+					(_, true) => $name::MAX,
 					(val, false) => val,
 				}
 			}
