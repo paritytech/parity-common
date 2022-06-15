@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- Make `one` const. [#650](https://github.com/paritytech/parity-common/pull/650)
 
 ## [0.9.3] - 2022-02-04
 - Simplified and faster `div_mod`. [#478](https://github.com/paritytech/parity-common/pull/478)

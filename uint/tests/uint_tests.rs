@@ -49,6 +49,21 @@ fn const_matching_works() {
 }
 
 #[test]
+fn one() {
+	let one = U256::one();
+	assert_eq!(one.0, [1, 0, 0, 0]);
+
+	let one = U512::one();
+	assert_eq!(one.0, [1, 0, 0, 0, 0, 0, 0, 0]);
+
+	let any = U256::from(123456789);
+	assert_eq!(any * U256::one(), any);
+
+	let any = U512::from(123456789);
+	assert_eq!(any * U512::one(), any);
+}
+
+#[test]
 fn u128_conversions() {
 	let mut a = U256::from(u128::max_value());
 	assert_eq!(a.low_u128(), u128::max_value());
