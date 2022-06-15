@@ -64,6 +64,27 @@ fn one() {
 }
 
 #[test]
+fn max_value() {
+	let max = U256::max_value();
+	assert_eq!(max.0, [0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF]);
+
+	let max = U512::max_value();
+	assert_eq!(
+		max.0,
+		[
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF
+		]
+	);
+}
+
+#[test]
 fn u128_conversions() {
 	let mut a = U256::from(u128::max_value());
 	assert_eq!(a.low_u128(), u128::max_value());

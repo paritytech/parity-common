@@ -801,12 +801,8 @@ macro_rules! construct_uint {
 
 			/// The maximum value which can be inhabited by this type.
 			#[inline]
-			pub fn max_value() -> Self {
-				let mut result = [0; $n_words];
-				for i in 0..$n_words {
-					result[i] = u64::max_value();
-				}
-				$name(result)
+			pub const fn max_value() -> Self {
+				Self::MAX
 			}
 
 			fn full_shl(self, shift: u32) -> [u64; $n_words + 1] {
