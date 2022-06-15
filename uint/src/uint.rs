@@ -800,7 +800,7 @@ macro_rules! construct_uint {
 			}
 
 			/// The maximum value which can be inhabited by this type.
-			#[deprecated(note = "replaced by the `MAX` associated constant on this type")]
+			#[deprecated(since = "0.10.0", note = "replaced by the `MAX` associated constant on this type")]
 			#[inline]
 			pub const fn max_value() -> Self {
 				Self::MAX
