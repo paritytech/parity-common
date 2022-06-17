@@ -218,7 +218,6 @@ macro_rules! uint_overflowing_binop {
 		let $name(ref you) = $other;
 
 		let mut ret = [0u64; $n_words];
-		let ret_ptr = &mut ret as *mut [u64; $n_words] as *mut u64;
 		let mut carry = 0u64;
 		$crate::static_assertions::const_assert!(core::isize::MAX as usize / core::mem::size_of::<u64>() > $n_words);
 
@@ -233,19 +232,12 @@ macro_rules! uint_overflowing_binop {
 					let (res1, overflow1) = ($fn)(me[i], you[i]);
 					let (res2, overflow2) = ($fn)(res1, carry);
 
-					unsafe {
-						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
-						*ret_ptr.offset(i as _) = res2
-					}
+					ret[i] = res2;
 					carry = (overflow1 as u8 + overflow2 as u8) as u64;
 				} else {
 					let (res, overflow) = ($fn)(me[i], you[i]);
 
-					unsafe {
-						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
-						*ret_ptr.offset(i as _) = res
-					}
-
+					ret[i] = res;
 					carry = overflow as u64;
 				}
 			}
