@@ -29,8 +29,7 @@ use sysinfo::{get_current_pid, ProcessExt, System, SystemExt};
 const COLUMN_COUNT: u32 = 100;
 
 #[derive(Clone)]
-struct KeyValueSeed {
-	seed: H256,
+struct KeyValue {
 	key: H256,
 	val: H256,
 }
@@ -43,9 +42,9 @@ fn next(seed: H256) -> H256 {
 	keccak(&buf[..])
 }
 
-impl KeyValueSeed {
+impl KeyValue {
 	fn with_seed(seed: H256) -> Self {
-		KeyValueSeed { seed, key: next(seed), val: next(next(seed)) }
+		KeyValue { key: next(seed), val: next(next(seed)) }
 	}
 
 	fn new() -> Self {
@@ -53,7 +52,7 @@ impl KeyValueSeed {
 	}
 }
 
-impl Iterator for KeyValueSeed {
+impl Iterator for KeyValue {
 	type Item = (H256, H256);
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -110,7 +109,7 @@ fn main() {
 	let db = Database::open(&config, &dir.path()).unwrap();
 
 	let mut step = 0;
-	let mut keyvalues = KeyValueSeed::new();
+	let mut keyvalues = KeyValue::new();
 	while !exit.load(AtomicOrdering::Relaxed) {
 		let col = step % 100;
 
@@ -138,7 +137,7 @@ fn main() {
 		}
 		db.write(transaction).expect("delete failed");
 
-		keyvalues = KeyValueSeed::with_seed(seed);
+		keyvalues = KeyValue::with_seed(seed);
 
 		if step % 10000 == 9999 {
 			let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
