@@ -793,12 +793,8 @@ macro_rules! construct_uint {
 
 			/// The maximum value which can be inhabited by this type.
 			#[inline]
-			pub fn max_value() -> Self {
-				let mut result = [0; $n_words];
-				for i in 0..$n_words {
-					result[i] = u64::max_value();
-				}
-				$name(result)
+			pub const fn max_value() -> Self {
+				Self::MAX
 			}
 
 			fn full_shl(self, shift: u32) -> [u64; $n_words + 1] {
@@ -1063,10 +1059,10 @@ macro_rules! construct_uint {
 				)
 			}
 
-			/// Addition which saturates at the maximum value (Self::max_value()).
+			/// Addition which saturates at the maximum value (Self::MAX).
 			pub fn saturating_add(self, other: $name) -> $name {
 				match self.overflowing_add(other) {
-					(_, true) => $name::max_value(),
+					(_, true) => $name::MAX,
 					(val, false) => val,
 				}
 			}
@@ -1116,7 +1112,7 @@ macro_rules! construct_uint {
 			/// Multiplication which saturates at the maximum value..
 			pub fn saturating_mul(self, other: $name) -> $name {
 				match self.overflowing_mul(other) {
-					(_, true) => $name::max_value(),
+					(_, true) => $name::MAX,
 					(val, false) => val,
 				}
 			}

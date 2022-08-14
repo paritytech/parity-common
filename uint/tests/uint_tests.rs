@@ -49,6 +49,27 @@ fn const_matching_works() {
 }
 
 #[test]
+fn max() {
+	let max = U256::MAX;
+	assert_eq!(max.0, [0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF]);
+
+	let max = U512::MAX;
+	assert_eq!(
+		max.0,
+		[
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF
+		]
+	);
+}
+
+#[test]
 fn one() {
 	let one = U256::one();
 	assert_eq!(one.0, [1, 0, 0, 0]);
@@ -61,6 +82,28 @@ fn one() {
 
 	let any = U512::from(123456789);
 	assert_eq!(any * U512::one(), any);
+}
+
+#[test]
+#[allow(deprecated)]
+fn max_value() {
+	let max = U256::max_value();
+	assert_eq!(max.0, [0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF]);
+
+	let max = U512::max_value();
+	assert_eq!(
+		max.0,
+		[
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF
+		]
+	);
 }
 
 #[test]
@@ -85,7 +128,7 @@ fn uint256_checked_ops() {
 	assert_eq!(U256::from(10).checked_pow(U256::from(3)), Some(U256::from(1000)));
 	assert_eq!(U256::from(10).checked_pow(U256::from(20)), Some(U256::exp10(20)));
 	assert_eq!(U256::from(2).checked_pow(U256::from(0x100)), None);
-	assert_eq!(U256::max_value().checked_pow(U256::from(2)), None);
+	assert_eq!(U256::MAX.checked_pow(U256::from(2)), None);
 
 	assert_eq!(a.checked_add(b), None);
 	assert_eq!(a.checked_add(a), Some(20.into()));

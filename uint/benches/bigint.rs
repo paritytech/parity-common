@@ -142,7 +142,7 @@ fn u256_sub(c: &mut Criterion) {
 					black_box(x.overflowing_sub(y).0)
 				})
 			},
-			vec![(U256::max_value(), 1u64), (U256::from(3), 2)],
+			vec![(U256::MAX, 1u64), (U256::from(3), 2)],
 		),
 	);
 }
@@ -159,7 +159,7 @@ fn u256_mul(c: &mut Criterion) {
 				})
 			},
 			vec![
-				(U256::max_value(), 1u64),
+				(U256::MAX, 1u64),
 				(U256::from(3), u64::max_value()),
 				(U256::from_dec_str("21674844646682989462120101885968193938394323990565507610662749").unwrap(), 173),
 			],
@@ -179,7 +179,7 @@ fn u512_div_mod(c: &mut Criterion) {
 				})
 			},
 			vec![
-				(U512::max_value(), U512::from(1u64)),
+				(U512::MAX, U512::from(1u64)),
 				(U512::from(u64::max_value()), U512::from(u32::max_value())),
 				(U512::from(u64::max_value()), U512::from(u64::max_value() - 1)),
 				(U512::from(u64::max_value()), U512::from(u64::max_value() - 1)),
@@ -240,7 +240,7 @@ fn u256_rem(c: &mut Criterion) {
 			"",
 			|b, (x, y)| b.iter(|| black_box(x % y)),
 			vec![
-				(U256::max_value(), U256::from(1u64)),
+				(U256::MAX, U256::from(1u64)),
 				(U256::from(u64::max_value()), U256::from(u64::from(u32::max_value()) + 1)),
 				(
 					U256([12767554894655550452, 16333049135534778834, 140317443000293558, 598963]),
