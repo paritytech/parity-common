@@ -128,9 +128,6 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 		prefix: &'a [u8],
 	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
 
-	/// Attempt to replace this database with a new one located at the given path.
-	fn restore(&self, new_db: &str) -> io::Result<()>;
-
 	/// Query statistics.
 	///
 	/// Not all kvdb implementations are able or expected to implement this, so by

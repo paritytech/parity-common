@@ -117,10 +117,6 @@ impl KeyValueDB for InMemory {
 			None => Box::new(None.into_iter()),
 		}
 	}
-
-	fn restore(&self, _new_db: &str) -> io::Result<()> {
-		Err(io::Error::new(io::ErrorKind::Other, "Attempted to restore in-memory database"))
-	}
 }
 
 #[cfg(test)]
