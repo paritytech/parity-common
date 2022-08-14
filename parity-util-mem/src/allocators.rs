@@ -102,7 +102,7 @@ mod usable_size {
 			target_os = "android",
 			target_os = "freebsd",
 		))] {
-			/// Linux/BSD call system allocator (currently malloc).
+			// Linux/BSD call system allocator (currently malloc).
 			extern "C" {
 				pub fn malloc_usable_size(ptr: *const c_void) -> usize;
 			}

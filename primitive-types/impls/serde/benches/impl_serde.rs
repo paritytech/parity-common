@@ -12,10 +12,9 @@
 //! cargo bench
 //! ```
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, ParameterizedBenchmark};
-use serde_derive::{Deserialize, Serialize};
-// TODO(niklasad1): use `uint::construct_uint` when a new version of `uint` is released
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use impl_serde::impl_uint_serde;
+use serde_derive::{Deserialize, Serialize};
 use uint::*;
 
 mod input;
@@ -33,56 +32,41 @@ criterion_group!(impl_serde, u256_to_hex, hex_to_u256, bytes_to_hex, hex_to_byte
 criterion_main!(impl_serde);
 
 fn u256_to_hex(c: &mut Criterion) {
-	c.bench(
-		"u256_to_hex",
-		ParameterizedBenchmark::new(
-			"",
-			|b, x| b.iter(|| black_box(serde_json::to_string(&x))),
-			vec![
-				U256::from(0),
-				U256::from(100),
-				U256::from(u32::max_value()),
-				U256::from(u64::max_value()),
-				U256::from(u128::max_value()),
-				U256([1, 2, 3, 4]),
-			],
-		),
-	);
+	let mut group = c.benchmark_group("u256_to_hex");
+	for input in [
+		U256::from(0),
+		U256::from(100),
+		U256::from(u32::max_value()),
+		U256::from(u64::max_value()),
+		U256::from(u128::max_value()),
+		U256([1, 2, 3, 4]),
+	] {
+		group.bench_with_input(BenchmarkId::from_parameter(input), &input, |b, x| {
+			b.iter(|| black_box(serde_json::to_string(&x)))
+		});
+	}
+	group.finish();
 }
 
 fn hex_to_u256(c: &mut Criterion) {
-	let parameters = vec![
-		r#""0x0""#,
-		r#""0x1""#,
-		r#""0x10""#,
-		r#""0x100""#,
-		r#""0x1000000000000000000000000000000000000000000000000000000000000100""#,
-	];
-
-	c.bench(
-		"hex_to_u256",
-		ParameterizedBenchmark::new("", |b, x| b.iter(|| black_box(serde_json::from_str::<U256>(&x))), parameters),
-	);
+	let mut group = c.benchmark_group("hex_to_u256");
+	for input in [
+		"\"0x0\"",
+		"\"0x1\"",
+		"\"0x10\"",
+		"\"0x100\"",
+		"\"0x1000000000000000000000000000000000000000000000000000000000000100\"",
+	] {
+		group.bench_with_input(BenchmarkId::from_parameter(input), &input, |b, x| {
+			b.iter(|| black_box(serde_json::from_str::<U256>(&x)))
+		});
+	}
+	group.finish();
 }
 
 fn bytes_to_hex(c: &mut Criterion) {
-	let parameters = vec![
-		serde_json::from_str::<Bytes>(&input::HEX_64_CHARS).unwrap(),
-		serde_json::from_str::<Bytes>(&input::HEX_256_CHARS).unwrap(),
-		serde_json::from_str::<Bytes>(&input::HEX_1024_CHARS).unwrap(),
-		serde_json::from_str::<Bytes>(&input::HEX_4096_CHARS).unwrap(),
-		serde_json::from_str::<Bytes>(&input::HEX_16384_CHARS).unwrap(),
-		serde_json::from_str::<Bytes>(&input::HEX_65536_CHARS).unwrap(),
-	];
-
-	c.bench(
-		"bytes to hex",
-		ParameterizedBenchmark::new("", |b, x| b.iter(|| black_box(serde_json::to_string(&x))), parameters),
-	);
-}
-
-fn hex_to_bytes(c: &mut Criterion) {
-	let parameters = vec![
+	let mut group = c.benchmark_group("bytes_to_hex");
+	let params = [
 		input::HEX_64_CHARS,
 		input::HEX_256_CHARS,
 		input::HEX_1024_CHARS,
@@ -90,9 +74,28 @@ fn hex_to_bytes(c: &mut Criterion) {
 		input::HEX_16384_CHARS,
 		input::HEX_65536_CHARS,
 	];
+	for param in params {
+		let input = serde_json::from_str::<Bytes>(&param).unwrap();
+		group.bench_with_input(BenchmarkId::from_parameter(param.len()), &input, |b, x| {
+			b.iter(|| black_box(serde_json::to_string(&x)))
+		});
+	}
+	group.finish();
+}
 
-	c.bench(
-		"hex to bytes",
-		ParameterizedBenchmark::new("", |b, x| b.iter(|| black_box(serde_json::from_str::<Bytes>(&x))), parameters),
-	);
+fn hex_to_bytes(c: &mut Criterion) {
+	let mut group = c.benchmark_group("hex_to_bytes");
+	for input in [
+		input::HEX_64_CHARS,
+		input::HEX_256_CHARS,
+		input::HEX_1024_CHARS,
+		input::HEX_4096_CHARS,
+		input::HEX_16384_CHARS,
+		input::HEX_65536_CHARS,
+	] {
+		group.bench_with_input(BenchmarkId::from_parameter(input.len()), &input, |b, x| {
+			b.iter(|| black_box(serde_json::from_str::<Bytes>(&x)))
+		});
+	}
+	group.finish();
 }
