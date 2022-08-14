@@ -37,14 +37,31 @@ pub trait IterationHandler {
 }
 
 impl<'a> IterationHandler for &'a DBAndColumns {
-	type Iterator = DBIterator<'a>;
+	type Iterator = EndOnErrorIterator<'a>;
 
 	fn iter(&self, col: u32, read_opts: ReadOptions) -> Self::Iterator {
-		self.db.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::Start)
+		let inner = self.db.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::Start);
+		EndOnErrorIterator(inner)
 	}
 
 	fn iter_with_prefix(&self, col: u32, prefix: &[u8], read_opts: ReadOptions) -> Self::Iterator {
-		self.db
-			.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::From(prefix, Direction::Forward))
+		let inner = self.db
+			.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::From(prefix, Direction::Forward));
+		EndOnErrorIterator(inner)
+	}
+}
+
+/// This iterator will stop early in case of `rocksdb::Error` is returned
+/// while iterating.
+pub struct EndOnErrorIterator<'a>(DBIterator<'a>);
+
+impl<'a> Iterator for EndOnErrorIterator<'a> {
+	type Item = KeyValuePair;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		match self.0.next() {
+			Some(Ok(kv)) => Some(kv),
+			_ => None,
+		}
 	}
 }
