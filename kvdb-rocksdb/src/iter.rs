@@ -66,7 +66,7 @@ impl<'a> Iterator for EndOnErrorIterator<'a> {
 				log::warn!("RocksDB error while iterating: {}", e);
 				None
 			},
-			_ => None,
+			None => None,
 		}
 	}
 }
