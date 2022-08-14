@@ -62,6 +62,10 @@ impl<'a> Iterator for EndOnErrorIterator<'a> {
 	fn next(&mut self) -> Option<Self::Item> {
 		match self.0.next() {
 			Some(Ok(kv)) => Some(kv),
+			Some(Err(e)) => {
+				log::warn!("RocksDB error while iterating: {}", e);
+				None
+			},
 			_ => None,
 		}
 	}
