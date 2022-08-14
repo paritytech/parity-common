@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 - Make `one` const. [#650](https://github.com/paritytech/parity-common/pull/650)
-- Make `max_value` const and deprecate it. [#652](https://github.com/paritytech/parity-common/pull/652)
+- Make `max_value` const. [#652](https://github.com/paritytech/parity-common/pull/652)
 
 ## [0.9.3] - 2022-02-04
 - Simplified and faster `div_mod`. [#478](https://github.com/paritytech/parity-common/pull/478)
