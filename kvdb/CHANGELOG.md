@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 ### Breaking
-- Removed `fn remove` from `KeyValueDB` trait. [662](https://github.com/paritytech/parity-common/pull/662)
+- Removed `fn restore` from `KeyValueDB` trait. [662](https://github.com/paritytech/parity-common/pull/662)
 
 ## [0.11.0] - 2022-02-04
 ### Breaking
