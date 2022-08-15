@@ -187,7 +187,7 @@ fn iter(c: &mut Criterion) {
 			let (alloc_stats, _) = count_alloc(|| {
 				let start = Instant::now();
 				for _ in 0..iterations {
-					black_box(db.iter(0).next().unwrap());
+					black_box(db.iter(0).next().unwrap().unwrap());
 				}
 				elapsed = start.elapsed();
 			});

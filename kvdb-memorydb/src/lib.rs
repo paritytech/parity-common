@@ -33,23 +33,27 @@ pub fn create(num_cols: u32) -> InMemory {
 	InMemory { columns: RwLock::new(cols) }
 }
 
+fn invalid_column(col: u32) -> io::Error {
+	io::Error::new(io::ErrorKind::Other, format!("No such column family: {:?}", col))
+}
+
 impl KeyValueDB for InMemory {
 	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let columns = self.columns.read();
 		match columns.get(&col) {
-			None => Err(io::Error::new(io::ErrorKind::Other, format!("No such column family: {:?}", col))),
+			None => Err(invalid_column(col)),
 			Some(map) => Ok(map.get(key).cloned()),
 		}
 	}
 
-	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>> {
+	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> io::Result<Option<DBValue>> {
 		let columns = self.columns.read();
 		match columns.get(&col) {
-			None => None,
-			Some(map) => map
+			None => Err(invalid_column(col)),
+			Some(map) => Ok(map
 				.iter()
 				.find(|&(ref k, _)| k.starts_with(prefix))
-				.map(|(_, v)| v.to_vec().into_boxed_slice()),
+				.map(|(_, v)| v.to_vec())),
 		}
 	}
 
@@ -90,15 +94,17 @@ impl KeyValueDB for InMemory {
 		Ok(())
 	}
 
-	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
+	fn iter<'a>(&'a self, col: u32)
+		-> Box<dyn Iterator<Item = io::Result<(Box<[u8]>, Box<[u8]>)>> + 'a>
+	{
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				// TODO: worth optimizing at all?
 				map.clone()
 					.into_iter()
-					.map(|(k, v)| (k.into_boxed_slice(), v.into_boxed_slice())),
+					.map(|(k, v)| Ok((k.into_boxed_slice(), v.into_boxed_slice()))),
 			),
-			None => Box::new(None.into_iter()),
+			None => Box::new(std::iter::once(Err(invalid_column(col)))),
 		}
 	}
 
@@ -106,15 +112,15 @@ impl KeyValueDB for InMemory {
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
-	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a> {
+	) -> Box<dyn Iterator<Item = io::Result<(Box<[u8]>, Box<[u8]>)>> + 'a> {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				map.clone()
 					.into_iter()
 					.filter(move |&(ref k, _)| k.starts_with(prefix))
-					.map(|(k, v)| (k.into_boxed_slice(), v.into_boxed_slice())),
+					.map(|(k, v)| Ok((k.into_boxed_slice(), v.into_boxed_slice()))),
 			),
-			None => Box::new(None.into_iter()),
+			None => Box::new(std::iter::once(Err(invalid_column(col)))),
 		}
 	}
 }
