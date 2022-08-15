@@ -257,7 +257,12 @@ impl MallocSizeOf for DBAndColumns {
 	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
 		let mut total = self.column_names.size_of(ops)
 			// we have at least one column always, so we can call property on it
-			+ self.static_property_or_warn(0, "rocksdb.block-cache-usage");
+			+ self.cf(0).map(|cf| self.db
+				.property_int_value_cf(cf, "rocksdb.block-cache-usage")
+				.unwrap_or(Some(0))
+				.map(|x| x as usize)
+				.unwrap_or(0)
+			).unwrap_or(0);
 
 		for v in 0..self.column_names.len() {
 			total += self.static_property_or_warn(v, "rocksdb.estimate-table-readers-mem");
