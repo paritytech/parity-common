@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
+use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB, KeyValuePair};
 use parity_util_mem::MallocSizeOf;
 use parking_lot::RwLock;
 use std::{
@@ -50,10 +50,7 @@ impl KeyValueDB for InMemory {
 		let columns = self.columns.read();
 		match columns.get(&col) {
 			None => Err(invalid_column(col)),
-			Some(map) => Ok(map
-				.iter()
-				.find(|&(ref k, _)| k.starts_with(prefix))
-				.map(|(_, v)| v.to_vec())),
+			Some(map) => Ok(map.iter().find(|&(ref k, _)| k.starts_with(prefix)).map(|(_, v)| v.to_vec())),
 		}
 	}
 
@@ -94,9 +91,7 @@ impl KeyValueDB for InMemory {
 		Ok(())
 	}
 
-	fn iter<'a>(&'a self, col: u32)
-		-> Box<dyn Iterator<Item = io::Result<(Box<[u8]>, Box<[u8]>)>> + 'a>
-	{
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = io::Result<KeyValuePair>> + 'a> {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				// TODO: worth optimizing at all?
@@ -112,7 +107,7 @@ impl KeyValueDB for InMemory {
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
-	) -> Box<dyn Iterator<Item = io::Result<(Box<[u8]>, Box<[u8]>)>> + 'a> {
+	) -> Box<dyn Iterator<Item = io::Result<KeyValuePair>> + 'a> {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				map.clone()

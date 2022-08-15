@@ -20,6 +20,8 @@ pub const PREFIX_LEN: usize = 12;
 pub type DBValue = Vec<u8>;
 /// Database keys.
 pub type DBKey = SmallVec<[u8; 32]>;
+/// A tuple holding key and value data, used in the iterator item type.
+pub type KeyValuePair = (Box<[u8]>, Box<[u8]>);
 
 pub use io_stats::{IoStats, Kind as IoStatsKind};
 
@@ -118,8 +120,7 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	fn write(&self, transaction: DBTransaction) -> io::Result<()>;
 
 	/// Iterate over the data for a given column.
-	fn iter<'a>(&'a self, col: u32)
-		-> Box<dyn Iterator<Item = io::Result<(Box<[u8]>, Box<[u8]>)>> + 'a>;
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = io::Result<KeyValuePair>> + 'a>;
 
 	/// Iterate over the data for a given column, returning all key/value pairs
 	/// where the key starts with the given prefix.
@@ -127,7 +128,7 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
-	) -> Box<dyn Iterator<Item = io::Result<(Box<[u8]>, Box<[u8]>)>> + 'a>;
+	) -> Box<dyn Iterator<Item = io::Result<KeyValuePair>> + 'a>;
 
 	/// Query statistics.
 	///

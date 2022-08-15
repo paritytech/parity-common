@@ -15,12 +15,9 @@
 //! To work around this we set an upper bound to the prefix successor.
 //! See https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes for details.
 
-use crate::{DBAndColumns, other_io_err};
+use crate::{other_io_err, DBAndColumns, KeyValuePair};
 use rocksdb::{DBIterator, Direction, IteratorMode, ReadOptions};
 use std::io;
-
-/// A tuple holding key and value data, used as the iterator item type.
-pub type KeyValuePair = (Box<[u8]>, Box<[u8]>);
 
 /// Instantiate iterators yielding `KeyValuePair`s.
 pub trait IterationHandler {

@@ -22,8 +22,7 @@ use rocksdb::{
 	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB,
 };
 
-use crate::iter::KeyValuePair;
-use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
+use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB, KeyValuePair};
 use log::warn;
 
 #[cfg(target_os = "linux")]
@@ -569,7 +568,10 @@ impl Database {
 
 	/// Get value by partial key. Prefix size should match configured prefix size.
 	pub fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> io::Result<Option<DBValue>> {
-		self.iter_with_prefix(col, prefix).next().transpose().map(|m| m.map(|(_k, v)| v.into_vec()))
+		self.iter_with_prefix(col, prefix)
+			.next()
+			.transpose()
+			.map(|m| m.map(|(_k, v)| v.into_vec()))
 	}
 
 	/// Iterator over the data in the given database column index.
@@ -583,9 +585,11 @@ impl Database {
 	/// Iterator over data in the `col` database column index matching the given prefix.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
-	fn iter_with_prefix<'a>(&'a self, col: u32, prefix: &'a [u8])
-		-> impl Iterator<Item = io::Result<KeyValuePair>> + 'a
-	{
+	fn iter_with_prefix<'a>(
+		&'a self,
+		col: u32,
+		prefix: &'a [u8],
+	) -> impl Iterator<Item = io::Result<KeyValuePair>> + 'a {
 		let mut read_opts = generate_read_options();
 		// rocksdb doesn't work with an empty upper bound
 		if let Some(end_prefix) = kvdb::end_prefix(prefix) {
@@ -684,9 +688,11 @@ impl KeyValueDB for Database {
 		Box::new(unboxed.into_iter())
 	}
 
-	fn iter_with_prefix<'a>(&'a self, col: u32, prefix: &'a [u8])
-		-> Box<dyn Iterator<Item = io::Result<KeyValuePair>> + 'a>
-	{
+	fn iter_with_prefix<'a>(
+		&'a self,
+		col: u32,
+		prefix: &'a [u8],
+	) -> Box<dyn Iterator<Item = io::Result<KeyValuePair>> + 'a> {
 		let unboxed = Database::iter_with_prefix(self, col, prefix);
 		Box::new(unboxed.into_iter())
 	}
