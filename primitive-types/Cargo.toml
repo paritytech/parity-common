@@ -6,7 +6,7 @@ license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
 description = "Primitive types shared by Ethereum and Substrate"
 edition = "2021"
-rust-version = "1.56.1"
+rust-version = "1.60.0"
 
 [dependencies]
 fixed-hash = { version = "0.7", path = "../fixed-hash", default-features = false }
@@ -19,7 +19,7 @@ scale-info-crate = { package = "scale-info", version = ">=0.9, <3", features = [
 
 [features]
 default = ["std"]
-std = ["uint/std", "fixed-hash/std", "impl-codec/std"]
+std = ["uint/std", "fixed-hash/std", "impl-codec?/std"]
 byteorder = ["fixed-hash/byteorder"]
 rustc-hex = ["fixed-hash/rustc-hex"]
 serde = ["std", "impl-serde", "impl-serde/std"]
