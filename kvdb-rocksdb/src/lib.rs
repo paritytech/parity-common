@@ -22,8 +22,7 @@ use rocksdb::{
 	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB,
 };
 
-use crate::iter::KeyValuePair;
-use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB};
+use kvdb::{DBKeyValue, DBOp, DBTransaction, DBValue, KeyValueDB};
 use log::warn;
 
 #[cfg(target_os = "linux")]
@@ -38,6 +37,10 @@ where
 	E: Into<Box<dyn error::Error + Send + Sync>>,
 {
 	io::Error::new(io::ErrorKind::Other, e)
+}
+
+fn invalid_column(col: u32) -> io::Error {
+	other_io_err(format!("No such column family: {:?}", col))
 }
 
 // Used for memory budget.
@@ -254,11 +257,12 @@ impl MallocSizeOf for DBAndColumns {
 	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
 		let mut total = self.column_names.size_of(ops)
 			// we have at least one column always, so we can call property on it
-			+ self.db
-				.property_int_value_cf(self.cf(0), "rocksdb.block-cache-usage")
+			+ self.cf(0).map(|cf| self.db
+				.property_int_value_cf(cf, "rocksdb.block-cache-usage")
 				.unwrap_or(Some(0))
 				.map(|x| x as usize)
-				.unwrap_or(0);
+				.unwrap_or(0)
+			).unwrap_or(0);
 
 		for v in 0..self.column_names.len() {
 			total += self.static_property_or_warn(v, "rocksdb.estimate-table-readers-mem");
@@ -270,14 +274,22 @@ impl MallocSizeOf for DBAndColumns {
 }
 
 impl DBAndColumns {
-	fn cf(&self, i: usize) -> &ColumnFamily {
+	fn cf(&self, i: usize) -> io::Result<&ColumnFamily> {
+		let name = self.column_names.get(i).ok_or_else(|| invalid_column(i as u32))?;
 		self.db
-			.cf_handle(&self.column_names[i])
-			.expect("the specified column name is correct; qed")
+			.cf_handle(&name)
+			.ok_or_else(|| other_io_err(format!("invalid column name: {name}")))
 	}
 
 	fn static_property_or_warn(&self, col: usize, prop: &str) -> usize {
-		match self.db.property_int_value_cf(self.cf(col), prop) {
+		let cf = match self.cf(col) {
+			Ok(cf) => cf,
+			Err(_) => {
+				warn!("RocksDB column index out of range: {}", col);
+				return 0
+			},
+		};
+		match self.db.property_int_value_cf(cf, prop) {
 			Ok(Some(v)) => v as usize,
 			_ => {
 				warn!("Cannot read expected static property of RocksDb database: {}", prop);
@@ -513,7 +525,8 @@ impl Database {
 		let mut stats_total_bytes = 0;
 
 		for op in ops {
-			let cf = cfs.cf(op.col() as usize);
+			let col = op.col();
+			let cf = cfs.cf(col as usize)?;
 
 			match op {
 				DBOp::Insert { col: _, key, value } => {
@@ -531,13 +544,9 @@ impl Database {
 					let end_range = end_prefix.unwrap_or_else(|| vec![u8::max_value(); 16]);
 					batch.delete_range_cf(cf, &prefix[..], &end_range[..]);
 					if no_end {
-						use crate::iter::IterationHandler as _;
-
 						let prefix = if prefix.len() > end_range.len() { &prefix[..] } else { &end_range[..] };
-						// We call `iter_with_prefix` directly on `cfs` to avoid taking a lock twice
-						// See https://github.com/paritytech/parity-common/pull/396.
-						let read_opts = generate_read_options();
-						for (key, _) in cfs.iter_with_prefix(col, prefix, read_opts) {
+						for result in self.iter_with_prefix(col, prefix) {
+							let (key, _) = result?;
 							batch.delete_cf(cf, &key[..]);
 						}
 					}
@@ -552,13 +561,11 @@ impl Database {
 	/// Get value by key.
 	pub fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let cfs = &self.inner;
-		if cfs.column_names.get(col as usize).is_none() {
-			return Err(other_io_err("column index is out of bounds"))
-		}
+		let cf = cfs.cf(col as usize)?;
 		self.stats.tally_reads(1);
 		let value = cfs
 			.db
-			.get_pinned_cf_opt(cfs.cf(col as usize), key, &self.read_opts)
+			.get_pinned_cf_opt(cf, key, &self.read_opts)
 			.map(|r| r.map(|v| v.to_vec()))
 			.map_err(other_io_err);
 
@@ -572,28 +579,31 @@ impl Database {
 	}
 
 	/// Get value by partial key. Prefix size should match configured prefix size.
-	pub fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>> {
-		self.iter_with_prefix(col, prefix).next().map(|(_, v)| v)
+	pub fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> io::Result<Option<DBValue>> {
+		self.iter_with_prefix(col, prefix)
+			.next()
+			.transpose()
+			.map(|m| m.map(|(_k, v)| v))
 	}
 
 	/// Iterator over the data in the given database column index.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
-	pub fn iter<'a>(&'a self, col: u32) -> impl Iterator<Item = KeyValuePair> + 'a {
+	pub fn iter<'a>(&'a self, col: u32) -> impl Iterator<Item = io::Result<DBKeyValue>> + 'a {
 		let read_opts = generate_read_options();
-		iter::IterationHandler::iter(&&self.inner, col, read_opts)
+		iter::IterationHandler::iter(&self.inner, col, read_opts)
 	}
 
 	/// Iterator over data in the `col` database column index matching the given prefix.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
-	fn iter_with_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> impl Iterator<Item = iter::KeyValuePair> + 'a {
+	fn iter_with_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> impl Iterator<Item = io::Result<DBKeyValue>> + 'a {
 		let mut read_opts = generate_read_options();
 		// rocksdb doesn't work with an empty upper bound
 		if let Some(end_prefix) = kvdb::end_prefix(prefix) {
 			read_opts.set_iterate_upper_bound(end_prefix);
 		}
-		iter::IterationHandler::iter_with_prefix(&&self.inner, col, prefix, read_opts)
+		iter::IterationHandler::iter_with_prefix(&self.inner, col, prefix, read_opts)
 	}
 
 	/// The number of column families in the db.
@@ -605,7 +615,7 @@ impl Database {
 	pub fn num_keys(&self, col: u32) -> io::Result<u64> {
 		const ESTIMATE_NUM_KEYS: &str = "rocksdb.estimate-num-keys";
 		let cfs = &self.inner;
-		let cf = cfs.cf(col as usize);
+		let cf = cfs.cf(col as usize)?;
 		match cfs.db.property_int_value_cf(cf, ESTIMATE_NUM_KEYS) {
 			Ok(estimate) => Ok(estimate.unwrap_or_default()),
 			Err(err_string) => Err(other_io_err(err_string)),
@@ -673,7 +683,7 @@ impl KeyValueDB for Database {
 		Database::get(self, col, key)
 	}
 
-	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>> {
+	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> io::Result<Option<DBValue>> {
 		Database::get_by_prefix(self, col, prefix)
 	}
 
@@ -681,12 +691,16 @@ impl KeyValueDB for Database {
 		Database::write(self, transaction)
 	}
 
-	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = KeyValuePair> + 'a> {
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = io::Result<DBKeyValue>> + 'a> {
 		let unboxed = Database::iter(self, col);
 		Box::new(unboxed.into_iter())
 	}
 
-	fn iter_with_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> Box<dyn Iterator<Item = KeyValuePair> + 'a> {
+	fn iter_with_prefix<'a>(
+		&'a self,
+		col: u32,
+		prefix: &'a [u8],
+	) -> Box<dyn Iterator<Item = io::Result<DBKeyValue>> + 'a> {
 		let unboxed = Database::iter_with_prefix(self, col, prefix);
 		Box::new(unboxed.into_iter())
 	}

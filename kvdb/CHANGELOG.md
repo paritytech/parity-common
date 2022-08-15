@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog].
 ## [Unreleased]
 ### Breaking
 - Removed `fn restore` from `KeyValueDB` trait. [662](https://github.com/paritytech/parity-common/pull/662)
+- Streamlined API. [661](https://github.com/paritytech/parity-common/pull/661)
+  - `fn get_by_prefix` return type changed to `io::Result<Option<DBValue>>`
+  - `fn has_prefix` return type changed to `io::Result<bool>`
+  - Iterator item changed to `io::Result<DBKeyValue>`
 
 ## [0.11.0] - 2022-02-04
 ### Breaking

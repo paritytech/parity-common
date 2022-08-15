@@ -71,7 +71,7 @@ pub fn test_iter(db: &dyn KeyValueDB) -> io::Result<()> {
 	transaction.put(0, key2, key2);
 	db.write(transaction)?;
 
-	let contents: Vec<_> = db.iter(0).into_iter().collect();
+	let contents: Vec<_> = db.iter(0).into_iter().map(Result::unwrap).collect();
 	assert_eq!(contents.len(), 2);
 	assert_eq!(&*contents[0].0, key1);
 	assert_eq!(&*contents[0].1, key1);
@@ -95,7 +95,7 @@ pub fn test_iter_with_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 	db.write(batch)?;
 
 	// empty prefix
-	let contents: Vec<_> = db.iter_with_prefix(0, b"").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"").into_iter().map(Result::unwrap).collect();
 	assert_eq!(contents.len(), 4);
 	assert_eq!(&*contents[0].0, key1);
 	assert_eq!(&*contents[1].0, key2);
@@ -103,24 +103,24 @@ pub fn test_iter_with_prefix(db: &dyn KeyValueDB) -> io::Result<()> {
 	assert_eq!(&*contents[3].0, key4);
 
 	// prefix a
-	let contents: Vec<_> = db.iter_with_prefix(0, b"a").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"a").into_iter().map(Result::unwrap).collect();
 	assert_eq!(contents.len(), 3);
 	assert_eq!(&*contents[0].0, key2);
 	assert_eq!(&*contents[1].0, key3);
 	assert_eq!(&*contents[2].0, key4);
 
 	// prefix abc
-	let contents: Vec<_> = db.iter_with_prefix(0, b"abc").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"abc").into_iter().map(Result::unwrap).collect();
 	assert_eq!(contents.len(), 2);
 	assert_eq!(&*contents[0].0, key3);
 	assert_eq!(&*contents[1].0, key4);
 
 	// prefix abcde
-	let contents: Vec<_> = db.iter_with_prefix(0, b"abcde").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"abcde").into_iter().map(Result::unwrap).collect();
 	assert_eq!(contents.len(), 0);
 
 	// prefix 0
-	let contents: Vec<_> = db.iter_with_prefix(0, b"0").into_iter().collect();
+	let contents: Vec<_> = db.iter_with_prefix(0, b"0").into_iter().map(Result::unwrap).collect();
 	assert_eq!(contents.len(), 1);
 	assert_eq!(&*contents[0].0, key1);
 	Ok(())
@@ -254,7 +254,7 @@ pub fn test_complex(db: &dyn KeyValueDB) -> io::Result<()> {
 
 	assert_eq!(&*db.get(0, key1)?.unwrap(), b"cat");
 
-	let contents: Vec<_> = db.iter(0).into_iter().collect();
+	let contents: Vec<_> = db.iter(0).into_iter().map(Result::unwrap).collect();
 	assert_eq!(contents.len(), 5);
 	assert_eq!(contents[0].0.to_vec(), key1.to_vec());
 	assert_eq!(&*contents[0].1, b"cat");
@@ -262,9 +262,9 @@ pub fn test_complex(db: &dyn KeyValueDB) -> io::Result<()> {
 	assert_eq!(&*contents[1].1, b"dog");
 
 	let mut prefix_iter = db.iter_with_prefix(0, b"04c0");
-	assert_eq!(*prefix_iter.next().unwrap().1, b"caterpillar"[..]);
-	assert_eq!(*prefix_iter.next().unwrap().1, b"beef"[..]);
-	assert_eq!(*prefix_iter.next().unwrap().1, b"fish"[..]);
+	assert_eq!(*prefix_iter.next().unwrap().unwrap().1, b"caterpillar"[..]);
+	assert_eq!(*prefix_iter.next().unwrap().unwrap().1, b"beef"[..]);
+	assert_eq!(*prefix_iter.next().unwrap().unwrap().1, b"fish"[..]);
 
 	let mut batch = db.transaction();
 	batch.delete(0, key1);
@@ -283,8 +283,8 @@ pub fn test_complex(db: &dyn KeyValueDB) -> io::Result<()> {
 	assert!(db.get(0, key1)?.is_none());
 	assert_eq!(&*db.get(0, key3)?.unwrap(), b"elephant");
 
-	assert_eq!(&*db.get_by_prefix(0, key3).unwrap(), b"elephant");
-	assert_eq!(&*db.get_by_prefix(0, key2).unwrap(), b"dog");
+	assert_eq!(&*db.get_by_prefix(0, key3).unwrap().unwrap(), b"elephant");
+	assert_eq!(&*db.get_by_prefix(0, key2).unwrap().unwrap(), b"dog");
 
 	let mut transaction = db.transaction();
 	transaction.put(0, key1, b"horse");
