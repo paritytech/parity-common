@@ -21,7 +21,7 @@ pub type DBValue = Vec<u8>;
 /// Database keys.
 pub type DBKey = SmallVec<[u8; 32]>;
 /// A tuple holding key and value data, used in the iterator item type.
-pub type KeyValuePair = (Box<[u8]>, Box<[u8]>);
+pub type DBKeyValue = (DBKey, DBValue);
 
 pub use io_stats::{IoStats, Kind as IoStatsKind};
 
@@ -120,7 +120,7 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	fn write(&self, transaction: DBTransaction) -> io::Result<()>;
 
 	/// Iterate over the data for a given column.
-	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = io::Result<KeyValuePair>> + 'a>;
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = io::Result<DBKeyValue>> + 'a>;
 
 	/// Iterate over the data for a given column, returning all key/value pairs
 	/// where the key starts with the given prefix.
@@ -128,7 +128,7 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
-	) -> Box<dyn Iterator<Item = io::Result<KeyValuePair>> + 'a>;
+	) -> Box<dyn Iterator<Item = io::Result<DBKeyValue>> + 'a>;
 
 	/// Query statistics.
 	///

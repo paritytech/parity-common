@@ -22,7 +22,7 @@ use rocksdb::{
 	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB,
 };
 
-use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB, KeyValuePair};
+use kvdb::{DBKeyValue, DBOp, DBTransaction, DBValue, KeyValueDB};
 use log::warn;
 
 #[cfg(target_os = "linux")]
@@ -571,13 +571,13 @@ impl Database {
 		self.iter_with_prefix(col, prefix)
 			.next()
 			.transpose()
-			.map(|m| m.map(|(_k, v)| v.into_vec()))
+			.map(|m| m.map(|(_k, v)| v))
 	}
 
 	/// Iterator over the data in the given database column index.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
-	pub fn iter<'a>(&'a self, col: u32) -> impl Iterator<Item = io::Result<KeyValuePair>> + 'a {
+	pub fn iter<'a>(&'a self, col: u32) -> impl Iterator<Item = io::Result<DBKeyValue>> + 'a {
 		let read_opts = generate_read_options();
 		iter::IterationHandler::iter(&self.inner, col, read_opts)
 	}
@@ -585,11 +585,7 @@ impl Database {
 	/// Iterator over data in the `col` database column index matching the given prefix.
 	/// Will hold a lock until the iterator is dropped
 	/// preventing the database from being closed.
-	fn iter_with_prefix<'a>(
-		&'a self,
-		col: u32,
-		prefix: &'a [u8],
-	) -> impl Iterator<Item = io::Result<KeyValuePair>> + 'a {
+	fn iter_with_prefix<'a>(&'a self, col: u32, prefix: &'a [u8]) -> impl Iterator<Item = io::Result<DBKeyValue>> + 'a {
 		let mut read_opts = generate_read_options();
 		// rocksdb doesn't work with an empty upper bound
 		if let Some(end_prefix) = kvdb::end_prefix(prefix) {
@@ -683,7 +679,7 @@ impl KeyValueDB for Database {
 		Database::write(self, transaction)
 	}
 
-	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = io::Result<KeyValuePair>> + 'a> {
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = io::Result<DBKeyValue>> + 'a> {
 		let unboxed = Database::iter(self, col);
 		Box::new(unboxed.into_iter())
 	}
@@ -692,7 +688,7 @@ impl KeyValueDB for Database {
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
-	) -> Box<dyn Iterator<Item = io::Result<KeyValuePair>> + 'a> {
+	) -> Box<dyn Iterator<Item = io::Result<DBKeyValue>> + 'a> {
 		let unboxed = Database::iter_with_prefix(self, col, prefix);
 		Box::new(unboxed.into_iter())
 	}

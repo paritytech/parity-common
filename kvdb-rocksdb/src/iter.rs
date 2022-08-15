@@ -15,13 +15,13 @@
 //! To work around this we set an upper bound to the prefix successor.
 //! See https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes for details.
 
-use crate::{other_io_err, DBAndColumns, KeyValuePair};
+use crate::{other_io_err, DBAndColumns, DBKeyValue};
 use rocksdb::{DBIterator, Direction, IteratorMode, ReadOptions};
 use std::io;
 
 /// Instantiate iterators yielding `KeyValuePair`s.
 pub trait IterationHandler {
-	type Iterator: Iterator<Item = io::Result<KeyValuePair>>;
+	type Iterator: Iterator<Item = io::Result<DBKeyValue>>;
 
 	/// Create an `Iterator` over a `ColumnFamily` corresponding to the passed index. Takes
 	/// `ReadOptions` to allow configuration of the new iterator (see
@@ -54,9 +54,11 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 pub struct Iter<'a>(DBIterator<'a>);
 
 impl<'a> Iterator for Iter<'a> {
-	type Item = io::Result<KeyValuePair>;
+	type Item = io::Result<DBKeyValue>;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		self.0.next().map(|r| r.map_err(other_io_err))
+		self.0
+			.next()
+			.map(|r| r.map_err(other_io_err).map(|(k, v)| (k.into_vec().into(), v.into())))
 	}
 }

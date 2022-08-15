@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use kvdb::{DBOp, DBTransaction, DBValue, KeyValueDB, KeyValuePair};
+use kvdb::{DBKeyValue, DBOp, DBTransaction, DBValue, KeyValueDB};
 use parity_util_mem::MallocSizeOf;
 use parking_lot::RwLock;
 use std::{
@@ -91,13 +91,11 @@ impl KeyValueDB for InMemory {
 		Ok(())
 	}
 
-	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = io::Result<KeyValuePair>> + 'a> {
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = io::Result<DBKeyValue>> + 'a> {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				// TODO: worth optimizing at all?
-				map.clone()
-					.into_iter()
-					.map(|(k, v)| Ok((k.into_boxed_slice(), v.into_boxed_slice()))),
+				map.clone().into_iter().map(|(k, v)| Ok((k.into(), v))),
 			),
 			None => Box::new(std::iter::once(Err(invalid_column(col)))),
 		}
@@ -107,13 +105,13 @@ impl KeyValueDB for InMemory {
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
-	) -> Box<dyn Iterator<Item = io::Result<KeyValuePair>> + 'a> {
+	) -> Box<dyn Iterator<Item = io::Result<DBKeyValue>> + 'a> {
 		match self.columns.read().get(&col) {
 			Some(map) => Box::new(
 				map.clone()
 					.into_iter()
 					.filter(move |&(ref k, _)| k.starts_with(prefix))
-					.map(|(k, v)| Ok((k.into_boxed_slice(), v.into_boxed_slice()))),
+					.map(|(k, v)| Ok((k.into(), v))),
 			),
 			None => Box::new(std::iter::once(Err(invalid_column(col)))),
 		}

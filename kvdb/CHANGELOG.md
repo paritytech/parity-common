@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog].
 - Streamlined API. [661](https://github.com/paritytech/parity-common/pull/661)
   - `fn get_by_prefix` return type changed to `io::Result<Option<DBValue>>`
   - `fn has_prefix` return type changed to `io::Result<bool>`
-  - Iterator item changed to `io::Result<KeyValuePair>`
+  - Iterator item changed to `io::Result<DBKeyValue>`
 
 ## [0.11.0] - 2022-02-04
 ### Breaking
