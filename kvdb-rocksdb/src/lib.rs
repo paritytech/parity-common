@@ -274,15 +274,17 @@ impl MallocSizeOf for DBAndColumns {
 }
 
 impl DBAndColumns {
-	fn cf(&self, i: usize) -> Option<&ColumnFamily> {
-		let name = self.column_names.get(i)?;
-		self.db.cf_handle(&name)
+	fn cf(&self, i: usize) -> io::Result<&ColumnFamily> {
+		let name = self.column_names.get(i).ok_or_else(|| invalid_column(i as u32))?;
+		self.db
+			.cf_handle(&name)
+			.ok_or_else(|| other_io_err(format!("invalid column name: {name}")))
 	}
 
 	fn static_property_or_warn(&self, col: usize, prop: &str) -> usize {
 		let cf = match self.cf(col) {
-			Some(cf) => cf,
-			None => {
+			Ok(cf) => cf,
+			Err(_) => {
 				warn!("RocksDB column index out of range: {}", col);
 				return 0
 			},
@@ -524,10 +526,7 @@ impl Database {
 
 		for op in ops {
 			let col = op.col();
-			let cf = match cfs.cf(col as usize) {
-				Some(cf) => cf,
-				None => return Err(invalid_column(col)),
-			};
+			let cf = cfs.cf(col as usize)?;
 
 			match op {
 				DBOp::Insert { col: _, key, value } => {
@@ -562,10 +561,7 @@ impl Database {
 	/// Get value by key.
 	pub fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let cfs = &self.inner;
-		let cf = match cfs.cf(col as usize) {
-			Some(cf) => cf,
-			None => return Err(invalid_column(col)),
-		};
+		let cf = cfs.cf(col as usize)?;
 		self.stats.tally_reads(1);
 		let value = cfs
 			.db
@@ -619,10 +615,7 @@ impl Database {
 	pub fn num_keys(&self, col: u32) -> io::Result<u64> {
 		const ESTIMATE_NUM_KEYS: &str = "rocksdb.estimate-num-keys";
 		let cfs = &self.inner;
-		let cf = match cfs.cf(col as usize) {
-			Some(cf) => cf,
-			None => return Err(invalid_column(col)),
-		};
+		let cf = cfs.cf(col as usize)?;
 		match cfs.db.property_int_value_cf(cf, ESTIMATE_NUM_KEYS) {
 			Ok(estimate) => Ok(estimate.unwrap_or_default()),
 			Err(err_string) => Err(other_io_err(err_string)),

@@ -15,7 +15,7 @@
 //! To work around this we set an upper bound to the prefix successor.
 //! See https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes for details.
 
-use crate::{invalid_column, other_io_err, DBAndColumns, DBKeyValue};
+use crate::{other_io_err, DBAndColumns, DBKeyValue};
 use rocksdb::{DBIterator, Direction, IteratorMode, ReadOptions};
 use std::io;
 
@@ -39,19 +39,19 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 
 	fn iter(self, col: u32, read_opts: ReadOptions) -> Self::Iterator {
 		match self.cf(col as usize) {
-			Some(cf) => EitherIter::A(KvdbAdapter(self.db.iterator_cf_opt(cf, read_opts, IteratorMode::Start))),
-			None => EitherIter::B(std::iter::once(Err(invalid_column(col)))),
+			Ok(cf) => EitherIter::A(KvdbAdapter(self.db.iterator_cf_opt(cf, read_opts, IteratorMode::Start))),
+			Err(e) => EitherIter::B(std::iter::once(Err(e))),
 		}
 	}
 
 	fn iter_with_prefix(self, col: u32, prefix: &[u8], read_opts: ReadOptions) -> Self::Iterator {
 		match self.cf(col as usize) {
-			Some(cf) => EitherIter::A(KvdbAdapter(self.db.iterator_cf_opt(
+			Ok(cf) => EitherIter::A(KvdbAdapter(self.db.iterator_cf_opt(
 				cf,
 				read_opts,
 				IteratorMode::From(prefix, Direction::Forward),
 			))),
-			None => EitherIter::B(std::iter::once(Err(invalid_column(col)))),
+			Err(e) => EitherIter::B(std::iter::once(Err(e))),
 		}
 	}
 }
