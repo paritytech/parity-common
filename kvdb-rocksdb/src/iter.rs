@@ -15,11 +15,11 @@
 //! To work around this we set an upper bound to the prefix successor.
 //! See https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes for details.
 
-use crate::{other_io_err, DBAndColumns, DBKeyValue};
+use crate::{invalid_column, other_io_err, DBAndColumns, DBKeyValue};
 use rocksdb::{DBIterator, Direction, IteratorMode, ReadOptions};
 use std::io;
 
-/// Instantiate iterators yielding `KeyValuePair`s.
+/// Instantiate iterators yielding `io::Result<DBKeyValue>`s.
 pub trait IterationHandler {
 	type Iterator: Iterator<Item = io::Result<DBKeyValue>>;
 
@@ -35,25 +35,55 @@ pub trait IterationHandler {
 }
 
 impl<'a> IterationHandler for &'a DBAndColumns {
-	type Iterator = Iter<'a>;
+	type Iterator = EitherIter<KvdbAdapter<DBIterator<'a>>, std::iter::Once<io::Result<DBKeyValue>>>;
 
 	fn iter(self, col: u32, read_opts: ReadOptions) -> Self::Iterator {
-		let inner = self.db.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::Start);
-		Iter(inner)
+		match self.cf(col as usize) {
+			Some(cf) => EitherIter::A(KvdbAdapter(self.db.iterator_cf_opt(cf, read_opts, IteratorMode::Start))),
+			None => EitherIter::B(std::iter::once(Err(invalid_column(col)))),
+		}
 	}
 
 	fn iter_with_prefix(self, col: u32, prefix: &[u8], read_opts: ReadOptions) -> Self::Iterator {
-		let inner =
-			self.db
-				.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::From(prefix, Direction::Forward));
-		Iter(inner)
+		match self.cf(col as usize) {
+			Some(cf) => EitherIter::A(KvdbAdapter(self.db.iterator_cf_opt(
+				cf,
+				read_opts,
+				IteratorMode::From(prefix, Direction::Forward),
+			))),
+			None => EitherIter::B(std::iter::once(Err(invalid_column(col)))),
+		}
 	}
 }
 
-/// A simple wrapper around `DBIterator` that maps errors to `io::Error`.
-pub struct Iter<'a>(DBIterator<'a>);
+/// Small enum to avoid boxing iterators.
+pub enum EitherIter<A, B> {
+	A(A),
+	B(B),
+}
 
-impl<'a> Iterator for Iter<'a> {
+impl<A, B, I> Iterator for EitherIter<A, B>
+where
+	A: Iterator<Item = I>,
+	B: Iterator<Item = I>,
+{
+	type Item = I;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		match self {
+			Self::A(a) => a.next(),
+			Self::B(b) => b.next(),
+		}
+	}
+}
+
+/// A simple wrapper that adheres to the `kvdb` interface.
+pub struct KvdbAdapter<T>(T);
+
+impl<T> Iterator for KvdbAdapter<T>
+where
+	T: Iterator<Item = Result<(Box<[u8]>, Box<[u8]>), rocksdb::Error>>,
+{
 	type Item = io::Result<DBKeyValue>;
 
 	fn next(&mut self) -> Option<Self::Item> {

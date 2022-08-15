@@ -39,6 +39,10 @@ where
 	io::Error::new(io::ErrorKind::Other, e)
 }
 
+fn invalid_column(col: u32) -> io::Error {
+	other_io_err(format!("No such column family: {:?}", col))
+}
+
 // Used for memory budget.
 type MiB = usize;
 
@@ -253,11 +257,7 @@ impl MallocSizeOf for DBAndColumns {
 	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
 		let mut total = self.column_names.size_of(ops)
 			// we have at least one column always, so we can call property on it
-			+ self.db
-				.property_int_value_cf(self.cf(0), "rocksdb.block-cache-usage")
-				.unwrap_or(Some(0))
-				.map(|x| x as usize)
-				.unwrap_or(0);
+			+ self.static_property_or_warn(0, "rocksdb.block-cache-usage");
 
 		for v in 0..self.column_names.len() {
 			total += self.static_property_or_warn(v, "rocksdb.estimate-table-readers-mem");
@@ -269,14 +269,20 @@ impl MallocSizeOf for DBAndColumns {
 }
 
 impl DBAndColumns {
-	fn cf(&self, i: usize) -> &ColumnFamily {
-		self.db
-			.cf_handle(&self.column_names[i])
-			.expect("the specified column name is correct; qed")
+	fn cf(&self, i: usize) -> Option<&ColumnFamily> {
+		let name = self.column_names.get(i)?;
+		self.db.cf_handle(&name)
 	}
 
 	fn static_property_or_warn(&self, col: usize, prop: &str) -> usize {
-		match self.db.property_int_value_cf(self.cf(col), prop) {
+		let cf = match self.cf(col) {
+			Some(cf) => cf,
+			None => {
+				warn!("RocksDB column index out of range: {}", col);
+				return 0
+			},
+		};
+		match self.db.property_int_value_cf(cf, prop) {
 			Ok(Some(v)) => v as usize,
 			_ => {
 				warn!("Cannot read expected static property of RocksDb database: {}", prop);
@@ -512,7 +518,11 @@ impl Database {
 		let mut stats_total_bytes = 0;
 
 		for op in ops {
-			let cf = cfs.cf(op.col() as usize);
+			let col = op.col();
+			let cf = match cfs.cf(col as usize) {
+				Some(cf) => cf,
+				None => return Err(invalid_column(col)),
+			};
 
 			match op {
 				DBOp::Insert { col: _, key, value } => {
@@ -547,13 +557,14 @@ impl Database {
 	/// Get value by key.
 	pub fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
 		let cfs = &self.inner;
-		if cfs.column_names.get(col as usize).is_none() {
-			return Err(other_io_err("column index is out of bounds"))
-		}
+		let cf = match cfs.cf(col as usize) {
+			Some(cf) => cf,
+			None => return Err(invalid_column(col)),
+		};
 		self.stats.tally_reads(1);
 		let value = cfs
 			.db
-			.get_pinned_cf_opt(cfs.cf(col as usize), key, &self.read_opts)
+			.get_pinned_cf_opt(cf, key, &self.read_opts)
 			.map(|r| r.map(|v| v.to_vec()))
 			.map_err(other_io_err);
 
@@ -603,7 +614,10 @@ impl Database {
 	pub fn num_keys(&self, col: u32) -> io::Result<u64> {
 		const ESTIMATE_NUM_KEYS: &str = "rocksdb.estimate-num-keys";
 		let cfs = &self.inner;
-		let cf = cfs.cf(col as usize);
+		let cf = match cfs.cf(col as usize) {
+			Some(cf) => cf,
+			None => return Err(invalid_column(col)),
+		};
 		match cfs.db.property_int_value_cf(cf, ESTIMATE_NUM_KEYS) {
 			Ok(estimate) => Ok(estimate.unwrap_or_default()),
 			Err(err_string) => Err(other_io_err(err_string)),
