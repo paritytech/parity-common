@@ -150,6 +150,17 @@ fn uint256_checked_ops() {
 }
 
 #[test]
+fn uint256_abs_diff() {
+	let zero = U256::zero();
+	let max = U256::MAX;
+
+	assert_eq!(zero.abs_diff(zero), zero);
+	assert_eq!(max.abs_diff(max), zero);
+	assert_eq!(zero.abs_diff(max), max);
+	assert_eq!(max.abs_diff(zero), max);
+}
+
+#[test]
 fn uint256_from() {
 	let e = U256([10, 0, 0, 0]);
 

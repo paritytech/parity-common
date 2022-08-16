@@ -1103,6 +1103,15 @@ macro_rules! construct_uint {
 				}
 			}
 
+			/// Computes the absolute difference between self and other.
+			pub fn abs_diff(self, other: $name) -> $name {
+				if self > other {
+					self.overflowing_sub(other).0
+				} else {
+					other.overflowing_sub(self).0
+				}
+			}
+
 			/// Multiply with overflow, returning a flag if it does.
 			#[inline(always)]
 			pub fn overflowing_mul(self, other: $name) -> ($name, bool) {
