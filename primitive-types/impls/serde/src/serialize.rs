@@ -407,25 +407,25 @@ mod tests {
 		type BytesDeserializer<'a> = serde::de::value::BytesDeserializer<'a, serde::de::value::Error>;
 
 		// using `deserialize` to decode owned bytes.
-		let des = BytesDeserializer::new(&[1,2,3,4,5]);
+		let des = BytesDeserializer::new(&[1, 2, 3, 4, 5]);
 		let deserialized: Vec<u8> = deserialize(des).unwrap();
-		assert_eq!(deserialized, vec![1,2,3,4,5]);
+		assert_eq!(deserialized, vec![1, 2, 3, 4, 5]);
 
 		// using `deserialize` to decode owned bytes into buffer with fixed length.
-		let des = BytesDeserializer::new(&[1,2,3,4,5]);
-		let mut output = vec![0,0,0,0,0];
+		let des = BytesDeserializer::new(&[1, 2, 3, 4, 5]);
+		let mut output = vec![0, 0, 0, 0, 0];
 		let expected_len = ExpectedLen::Exact(&mut *output);
 		let n = deserialize_check_len(des, expected_len).unwrap();
 		assert_eq!(n, 5);
-		assert_eq!(output, vec![1,2,3,4,5]);
+		assert_eq!(output, vec![1, 2, 3, 4, 5]);
 
 		// using `deserialize` to decode owned bytes into buffer with min/max length.
-		let des = BytesDeserializer::new(&[1,2,3]);
-		let mut output = vec![0,0,0,0,0];
+		let des = BytesDeserializer::new(&[1, 2, 3]);
+		let mut output = vec![0, 0, 0, 0, 0];
 		let expected_len = ExpectedLen::Between(2, &mut *output);
 		let n = deserialize_check_len(des, expected_len).unwrap();
 		assert_eq!(n, 3);
-		assert_eq!(output, vec![1,2,3,0,0]);
+		assert_eq!(output, vec![1, 2, 3, 0, 0]);
 	}
 
 	#[test]
@@ -433,24 +433,24 @@ mod tests {
 		type BytesDeserializer<'a> = serde::de::value::BorrowedBytesDeserializer<'a, serde::de::value::Error>;
 
 		// using `deserialize` to decode owned bytes.
-		let des = BytesDeserializer::new(&[1,2,3,4,5]);
+		let des = BytesDeserializer::new(&[1, 2, 3, 4, 5]);
 		let deserialized: Vec<u8> = deserialize(des).unwrap();
-		assert_eq!(deserialized, vec![1,2,3,4,5]);
+		assert_eq!(deserialized, vec![1, 2, 3, 4, 5]);
 
 		// using `deserialize` to decode owned bytes into buffer with fixed length.
-		let des = BytesDeserializer::new(&[1,2,3,4,5]);
-		let mut output = vec![0,0,0,0,0];
+		let des = BytesDeserializer::new(&[1, 2, 3, 4, 5]);
+		let mut output = vec![0, 0, 0, 0, 0];
 		let expected_len = ExpectedLen::Exact(&mut *output);
 		let n = deserialize_check_len(des, expected_len).unwrap();
 		assert_eq!(n, 5);
-		assert_eq!(output, vec![1,2,3,4,5]);
+		assert_eq!(output, vec![1, 2, 3, 4, 5]);
 
 		// using `deserialize` to decode owned bytes into buffer with min/max length.
-		let des = BytesDeserializer::new(&[1,2,3]);
-		let mut output = vec![0,0,0,0,0];
+		let des = BytesDeserializer::new(&[1, 2, 3]);
+		let mut output = vec![0, 0, 0, 0, 0];
 		let expected_len = ExpectedLen::Between(2, &mut *output);
 		let n = deserialize_check_len(des, expected_len).unwrap();
 		assert_eq!(n, 3);
-		assert_eq!(output, vec![1,2,3,0,0]);
+		assert_eq!(output, vec![1, 2, 3, 0, 0]);
 	}
 }
