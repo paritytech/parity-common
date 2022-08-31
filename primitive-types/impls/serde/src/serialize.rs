@@ -223,6 +223,14 @@ where
 		fn visit_byte_buf<E: de::Error>(self, v: Vec<u8>) -> Result<Self::Value, E> {
 			Ok(v)
 		}
+
+		fn visit_seq<A: de::SeqAccess<'b>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+			let mut bytes = vec![];
+			while let Some(n) = seq.next_element::<u8>()? {
+				bytes.push(n);
+			}
+			Ok(bytes)
+		}
 	}
 
 	deserializer.deserialize_str(Visitor)
@@ -286,14 +294,20 @@ where
 				ExpectedLen::Between(_, slice) => slice,
 			};
 
-			for (index, byte) in v.iter().enumerate() {
-				bytes[index] = *byte;
-			}
+			bytes[..len].copy_from_slice(v);
 			Ok(len)
 		}
 
 		fn visit_byte_buf<E: de::Error>(self, v: Vec<u8>) -> Result<Self::Value, E> {
 			self.visit_bytes(&v)
+		}
+
+		fn visit_seq<A: de::SeqAccess<'b>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+			let mut v = vec![];
+			while let Some(n) = seq.next_element::<u8>()? {
+				v.push(n);
+			}
+			self.visit_byte_buf(v)
 		}
 	}
 
@@ -447,6 +461,32 @@ mod tests {
 
 		// using `deserialize` to decode borrowed bytes into buffer with min/max length.
 		let des = BytesDeserializer::new(&[1, 2, 3]);
+		let mut output = vec![0, 0, 0, 0, 0];
+		let expected_len = ExpectedLen::Between(2, &mut *output);
+		let n = deserialize_check_len(des, expected_len).unwrap();
+		assert_eq!(n, 3);
+		assert_eq!(output, vec![1, 2, 3, 0, 0]);
+	}
+
+	#[test]
+	fn should_deserialize_from_u8_sequence() {
+		use serde::de::value::SeqDeserializer;
+
+		// using `deserialize` to decode a sequence of bytes.
+		let des = SeqDeserializer::<_, serde::de::value::Error>::new([1u8, 2, 3, 4, 5].into_iter());
+		let deserialized: Vec<u8> = deserialize(des).unwrap();
+		assert_eq!(deserialized, vec![1, 2, 3, 4, 5]);
+
+		// using `deserialize` to decode a sequence of bytes into a buffer with fixed length.
+		let des = SeqDeserializer::<_, serde::de::value::Error>::new([1u8, 2, 3, 4, 5].into_iter());
+		let mut output = vec![0, 0, 0, 0, 0];
+		let expected_len = ExpectedLen::Exact(&mut *output);
+		let n = deserialize_check_len(des, expected_len).unwrap();
+		assert_eq!(n, 5);
+		assert_eq!(output, vec![1, 2, 3, 4, 5]);
+
+		// using `deserialize` to decode a sequence of bytes into a buffer with min/max length.
+		let des = SeqDeserializer::<_, serde::de::value::Error>::new([1u8, 2, 3].into_iter());
 		let mut output = vec![0, 0, 0, 0, 0];
 		let expected_len = ExpectedLen::Between(2, &mut *output);
 		let n = deserialize_check_len(des, expected_len).unwrap();
