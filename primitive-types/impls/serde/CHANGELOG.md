@@ -4,7 +4,8 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
-## [Unreleased]
+## [0.4.0] - 2022-08-31
+- Support deserializing H256 et al from bytes or sequences of bytes, too. [#668](https://github.com/paritytech/parity-common/pull/668)
 - Migrated to 2021 edition, enforcing MSRV of `1.56.1`. [#601](https://github.com/paritytech/parity-common/pull/601)
 
 ## [0.3.2] - 2021-11-10
