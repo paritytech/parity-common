@@ -1741,8 +1741,8 @@ macro_rules! construct_uint {
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_uint {
 	($uint: ty, $n_bytes: tt) => {
-		impl $crate::qc::Arbitrary for $uint {
-			fn arbitrary(g: &mut $crate::qc::Gen) -> Self {
+		impl $crate::quickcheck::Arbitrary for $uint {
+			fn arbitrary(g: &mut $crate::quickcheck::Gen) -> Self {
 				let p = usize::arbitrary(g) % 100;
 				// make it more likely to generate smaller numbers that
 				// don't use up the full $n_bytes

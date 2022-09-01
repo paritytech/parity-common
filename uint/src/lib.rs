@@ -23,7 +23,7 @@ pub use hex;
 
 #[cfg(feature = "quickcheck")]
 #[doc(hidden)]
-pub use qc;
+pub use quickcheck;
 
 #[cfg(feature = "arbitrary")]
 #[doc(hidden)]
