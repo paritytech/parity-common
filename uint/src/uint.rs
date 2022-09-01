@@ -47,7 +47,7 @@ pub enum FromStrRadixErrKind {
 
 #[derive(Debug)]
 enum FromStrRadixErrSrc {
-	Hex(FromHexError),
+	Hex(FromHexStrErr),
 	Dec(FromDecStrErr),
 }
 
@@ -115,14 +115,12 @@ impl From<FromDecStrErr> for FromStrRadixErr {
 	}
 }
 
-impl From<FromHexError> for FromStrRadixErr {
-	fn from(e: FromHexError) -> Self {
-		let kind = match e.inner {
-			hex::FromHexError::InvalidHexCharacter { .. } => FromStrRadixErrKind::InvalidCharacter,
-			hex::FromHexError::InvalidStringLength => FromStrRadixErrKind::InvalidLength,
-			hex::FromHexError::OddLength => FromStrRadixErrKind::InvalidLength,
+impl From<FromHexStrErr> for FromStrRadixErr {
+	fn from(e: FromHexStrErr) -> Self {
+		let kind = match e {
+			FromHexStrErr::InvalidCharacter => FromStrRadixErrKind::InvalidCharacter,
+			FromHexStrErr::InvalidLength => FromStrRadixErrKind::InvalidLength,
 		};
-
 		Self { kind, source: Some(FromStrRadixErrSrc::Hex(e)) }
 	}
 }
@@ -152,30 +150,27 @@ impl fmt::Display for FromDecStrErr {
 #[cfg(feature = "std")]
 impl std::error::Error for FromDecStrErr {}
 
-#[derive(Debug)]
-pub struct FromHexError {
-	inner: hex::FromHexError,
+/// Conversion from hex string error
+#[derive(Debug, PartialEq)]
+pub enum FromHexStrErr {
+	/// Char not from range 0-9 or 'a'-'f' or 'A'-'F'
+	InvalidCharacter,
+	/// Value does not fit into type
+	InvalidLength,
 }
 
-impl fmt::Display for FromHexError {
+impl fmt::Display for FromHexStrErr {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "{}", self.inner)
+		let s = match self {
+			FromHexStrErr::InvalidCharacter => "a character is not in the range 0-9 or 'a'-'f' or 'A'-'F'",
+			FromHexStrErr::InvalidLength => "the number is too large for the type",
+		};
+		write!(f, "{}", s)
 	}
 }
 
 #[cfg(feature = "std")]
-impl std::error::Error for FromHexError {
-	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-		Some(&self.inner)
-	}
-}
-
-#[doc(hidden)]
-impl From<hex::FromHexError> for FromHexError {
-	fn from(inner: hex::FromHexError) -> Self {
-		Self { inner }
-	}
-}
+impl std::error::Error for FromHexStrErr {}
 
 #[macro_export]
 #[doc(hidden)]
@@ -1275,35 +1270,33 @@ macro_rules! construct_uint {
 					return f.pad_integral(true, "0x", "0");
 				}
 
-				let mut latch = false;
-				let mut buf = [0_u8; $n_words * 16];
-				let mut i = 0;
-				for ch in data.iter().rev() {
-					for x in 0..16 {
-						// nibble < 16
-						let nibble = (ch & (15u64 << ((15 - x) * 4) as u64)) >> (((15 - x) * 4) as u64);
-						if !latch {
-							latch = nibble != 0;
-						}
+				let mut be = [0u8; $n_words * 8];
 
-						if latch {
-							// nibble is `'0'..'9' 'a'..'f' 'A'..'F'` because nibble < 16
-							let nibble = match nibble {
-								0..=9 => nibble as u8 + b'0',
-								_ if is_lower => nibble as u8 - 10 + b'a',
-								_ => nibble as u8 - 10 + b'A',
-							};
-							buf[i] = nibble;
-							i += 1;
-						}
+				let mut pos = $n_words * 8;
+				for i in (0..$n_words).rev() {
+					use $crate::byteorder::{ByteOrder, BigEndian};
+					let x = self.0[$n_words - i - 1];
+					if x != 0 {
+						BigEndian::write_u64(&mut be[8 * i..], x);
+						pos = 8 * i;
+					}
+				}
+				for i in 0..8 {
+					if be[pos + i] != 0 {
+						pos += i;
+						break;
 					}
 				}
 
-				// sequence of `'0'..'9' 'a'..'f' 'A'..'F'` chars is guaranteed to be a valid UTF8 string
-				let s = unsafe {
-					$crate::core_::str::from_utf8_unchecked(&buf[0..i])
-				};
-				f.pad_integral(true, "0x", s)
+				let src = &be[pos..];
+				let mut dst = [0u8; $n_words * 16];
+
+				let out = $crate::hex_simd::OutBuf::new(&mut dst);
+				let case = if is_lower {$crate::hex_simd::AsciiCase::Lower}else{$crate::hex_simd::AsciiCase::Upper};
+				let encoded = $crate::hex_simd::encode(src, out, case).unwrap();
+				let s = encoded.strip_prefix(&[b'0']).unwrap_or(encoded);
+
+				f.pad_integral(true, "0x", unsafe{ core::str::from_utf8_unchecked(s) })
 			}
 		}
 
@@ -1688,35 +1681,36 @@ macro_rules! construct_uint {
 		}
 
 		impl $crate::core_::str::FromStr for $name {
-			type Err = $crate::FromHexError;
+			type Err = $crate::FromHexStrErr;
 
 			fn from_str(value: &str) -> $crate::core_::result::Result<$name, Self::Err> {
 				let value = value.strip_prefix("0x").unwrap_or(value);
 				const BYTES_LEN: usize = $n_words * 8;
 				const MAX_ENCODED_LEN: usize = BYTES_LEN * 2;
 
-				let mut bytes = [0_u8; BYTES_LEN];
-
 				let encoded = value.as_bytes();
-
 				if encoded.len() > MAX_ENCODED_LEN {
-					return Err($crate::hex::FromHexError::InvalidStringLength.into());
+					return Err($crate::FromHexStrErr::InvalidLength.into());
 				}
 
-				if encoded.len() % 2 == 0 {
-					let out = &mut bytes[BYTES_LEN - encoded.len() / 2..];
-
-					$crate::hex::decode_to_slice(encoded, out).map_err(Self::Err::from)?;
+				let mut bytes = [0_u8; BYTES_LEN];
+				let (src, dst) = if encoded.len() % 2 == 0 {
+					let pos = BYTES_LEN - encoded.len() / 2;
+					(encoded, &mut bytes[pos..])
 				} else {
-					// Prepend '0' by overlaying our value on a scratch buffer filled with '0' characters.
-					let mut s = [b'0'; MAX_ENCODED_LEN];
-					s[MAX_ENCODED_LEN - encoded.len()..].copy_from_slice(encoded);
-					let encoded = &s[MAX_ENCODED_LEN - encoded.len() - 1..];
+					let pos = BYTES_LEN - encoded.len() / 2 - 1;
+					bytes[pos] = match encoded[0] {
+						x @ b'0'..=b'9' => x - b'0',
+						x @ b'a'..=b'f' => x - b'a' + 10,
+						x @ b'A'..=b'F' => x - b'A' + 10,
+						_ => return Err($crate::FromHexStrErr::InvalidCharacter)
+					};
 
-					let out = &mut bytes[BYTES_LEN - encoded.len() / 2..];
+					(&encoded[1..], &mut bytes[pos + 1..])
+				};
 
-					$crate::hex::decode_to_slice(encoded, out).map_err(Self::Err::from)?;
-				}
+				let out  = $crate::hex_simd::OutBuf::new(dst);
+				$crate::hex_simd::decode(src, out).map_err(|_|$crate::FromHexStrErr::InvalidCharacter)?;
 
 				let bytes_ref: &[u8] = &bytes;
 				Ok(From::from(bytes_ref))
