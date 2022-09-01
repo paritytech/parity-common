@@ -501,5 +501,4 @@ mod tests {
 		assert_eq!(n, 3);
 		assert_eq!(output, vec![1, 2, 3, 0, 0]);
 	}
-
 }
