@@ -25,10 +25,6 @@ pub use hex;
 #[doc(hidden)]
 pub use qc;
 
-#[cfg(feature = "quickcheck")]
-#[doc(hidden)]
-pub use rand07;
-
 #[cfg(feature = "arbitrary")]
 #[doc(hidden)]
 pub use arbitrary;

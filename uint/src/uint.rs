@@ -1742,11 +1742,8 @@ macro_rules! construct_uint {
 macro_rules! impl_quickcheck_arbitrary_for_uint {
 	($uint: ty, $n_bytes: tt) => {
 		impl $crate::qc::Arbitrary for $uint {
-			fn arbitrary<G: $crate::qc::Gen>(g: &mut G) -> Self {
-				let mut res = [0u8; $n_bytes];
-
-				use $crate::rand07::Rng;
-				let p: f64 = $crate::rand07::rngs::OsRng.gen();
+			fn arbitrary(g: &mut $crate::qc::Gen) -> Self {
+				let p = f64::arbitrary(g) % 1.;
 				// make it more likely to generate smaller numbers that
 				// don't use up the full $n_bytes
 				let range =
@@ -1761,8 +1758,15 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 						$n_bytes / 5
 					};
 
-				let size = g.gen_range(0, range);
-				g.fill_bytes(&mut res[..size]);
+				let size: usize = usize::arbitrary(g) % range;
+
+				let res: [u8; $n_bytes] = $crate::core_::array::from_fn(|i| {
+					if i > range {
+						0
+					} else {
+						u8::arbitrary(g)
+					}
+				});
 
 				res.as_ref().into()
 			}
