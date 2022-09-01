@@ -1758,6 +1758,7 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 						$n_bytes / 5
 					};
 
+				let range = $crate::core_::cmp::max(range, 1);
 				let size: usize = usize::arbitrary(g) % range;
 
 				let res: [u8; $n_bytes] = $crate::core_::array::from_fn(|i| {
