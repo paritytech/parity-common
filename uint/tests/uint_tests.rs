@@ -1157,7 +1157,7 @@ pub mod laws {
 	macro_rules! uint_laws {
 		($mod_name:ident, $uint_ty:ident) => {
 			mod $mod_name {
-				use qc::{TestResult, quickcheck};
+				use quickcheck::{TestResult, quickcheck};
 				use super::$uint_ty;
 
 				quickcheck! {
