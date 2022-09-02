@@ -6,10 +6,10 @@ license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
 description = "Ethereum types"
 edition = "2021"
-rust-version = "1.56.1"
+rust-version = "1.60.0"
 
 [dependencies]
-ethbloom = { path = "../ethbloom", version = "0.12", default-features = false }
+ethbloom = { path = "../ethbloom", version = "0.12", optional = true, default-features = false }
 fixed-hash = { path = "../fixed-hash", version = "0.7", default-features = false, features = ["byteorder", "rustc-hex"] }
 uint-crate = { path = "../uint", package = "uint", version = "0.9", default-features = false }
 primitive-types = { path = "../primitive-types", version = "0.11", features = ["byteorder", "rustc-hex"], default-features = false }
@@ -22,8 +22,8 @@ scale-info = { version = ">=1.0, <3", features = ["derive"], default-features = 
 serde_json = "1.0.41"
 
 [features]
-default = ["std", "rlp", "serialize"]
-std = ["uint-crate/std", "fixed-hash/std", "ethbloom/std", "primitive-types/std"]
+default = ["std", "ethbloom", "rlp", "serialize"]
+std = ["uint-crate/std", "fixed-hash/std", "ethbloom?/std", "primitive-types/std"]
 serialize = ["impl-serde", "primitive-types/serde_no_std", "ethbloom/serialize"]
 arbitrary = ["ethbloom/arbitrary", "fixed-hash/arbitrary", "uint-crate/arbitrary"]
 rlp = ["impl-rlp", "ethbloom/rlp", "primitive-types/rlp"]
