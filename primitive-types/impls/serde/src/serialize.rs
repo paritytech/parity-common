@@ -231,6 +231,10 @@ where
 			}
 			Ok(bytes)
 		}
+
+		fn visit_newtype_struct<D: Deserializer<'b>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
+			deserializer.deserialize_bytes(self)
+		}
 	}
 
 	deserializer.deserialize_str(Visitor)
@@ -308,6 +312,10 @@ where
 				v.push(n);
 			}
 			self.visit_byte_buf(v)
+		}
+
+		fn visit_newtype_struct<D: Deserializer<'b>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
+			deserializer.deserialize_bytes(self)
 		}
 	}
 
