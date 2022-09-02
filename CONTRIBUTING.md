@@ -4,9 +4,7 @@ parity-common welcomes contribution from everyone in the form of suggestions, bu
 reports, pull requests, and feedback. This document gives some guidance if you
 are thinking of helping us.
 
-Please reach out here in a GitHub issue or in the parity channel on [gitter] if we can do anything to help you contribute.
-
-[gitter]: https://gitter.im/paritytech/parity
+Please reach out here in a GitHub issue if we can do anything to help you contribute.
 
 ## Submitting bug reports and feature requests
 
@@ -24,7 +22,7 @@ solve with the feature, any ideas for how parity-common could support solving th
 
 As many crates in the rust ecosystem, all crates in parity-common follow [semantic versioning]. This means bumping PATCH version on bug fixes that don't break backwards compatibility, MINOR version on new features and MAJOR version otherwise (MAJOR.MINOR.PATCH). Versions < 1.0 are considered to have the format 0.MAJOR.MINOR, which means bumping MINOR version for all non-breaking changes.
 
-If you bump a dependency that is publicly exposed in a crate's API (e.g. `pub use dependency;` or `pub field: dependency::Dependency`) and the version transition for the dependency was semver-breaking, then it is considered to be a breaking change for the consuming crate as well. To put it simply, if your change could cause a compilation error in user's code, it is a breaking change.
+For checking whether a change is SemVer-breaking, please refer to https://doc.rust-lang.org/cargo/reference/semver.html.
 
 Bumping versions should be done in a separate from regular code changes PR.
 
