@@ -12,14 +12,13 @@ mod stats;
 use std::{
 	cmp,
 	collections::HashMap,
-	error, fs, io,
+	error, io,
 	path::{Path, PathBuf},
-	result,
 };
 
 use parity_util_mem::MallocSizeOf;
 use rocksdb::{
-	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Error, Options, ReadOptions, WriteBatch, WriteOptions, DB,
+	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Options, ReadOptions, WriteBatch, WriteOptions, DB,
 };
 
 use kvdb::{DBKeyValue, DBOp, DBTransaction, DBValue, KeyValueDB};
@@ -319,24 +318,6 @@ pub struct Database {
 	stats: stats::RunningDbStats,
 }
 
-#[inline]
-fn check_for_corruption<T, P: AsRef<Path>>(path: P, res: result::Result<T, Error>) -> io::Result<T> {
-	if let Err(ref s) = res {
-		if is_corrupted(s) {
-			warn!("DB corrupted: {}. Repair will be triggered on next restart", s);
-			let _ = fs::File::create(path.as_ref().join(Database::CORRUPTION_FILE_NAME));
-		}
-	}
-
-	res.map_err(other_io_err)
-}
-
-fn is_corrupted(err: &Error) -> bool {
-	err.as_ref().starts_with("Corruption:") ||
-		err.as_ref()
-			.starts_with("Invalid argument: You have to open all column families")
-}
-
 /// Generate the options for RocksDB, based on the given `DatabaseConfig`.
 fn generate_options(config: &DatabaseConfig) -> Options {
 	let mut opts = Options::default();
@@ -395,8 +376,6 @@ fn generate_block_based_options(config: &DatabaseConfig) -> io::Result<BlockBase
 }
 
 impl Database {
-	const CORRUPTION_FILE_NAME: &'static str = "CORRUPTED";
-
 	/// Open database file.
 	///
 	/// # Safety
@@ -407,14 +386,6 @@ impl Database {
 
 		let opts = generate_options(config);
 		let block_opts = generate_block_based_options(config)?;
-
-		// attempt database repair if it has been previously marked as corrupted
-		let db_corrupted = path.as_ref().join(Database::CORRUPTION_FILE_NAME);
-		if db_corrupted.exists() {
-			warn!("DB has been previously marked as corrupted, attempting repair");
-			DB::repair(&opts, path.as_ref()).map_err(other_io_err)?;
-			fs::remove_file(db_corrupted)?;
-		}
 
 		let column_names: Vec<_> = (0..config.columns).map(|c| format!("col{}", c)).collect();
 		let write_opts = WriteOptions::default();
@@ -471,18 +442,6 @@ impl Database {
 
 		Ok(match db {
 			Ok(db) => db,
-			Err(ref s) if is_corrupted(s) => {
-				warn!("DB corrupted: {}, attempting repair", s);
-				DB::repair(&opts, path.as_ref()).map_err(other_io_err)?;
-
-				let cf_descriptors: Vec<_> = (0..config.columns)
-					.map(|i| {
-						ColumnFamilyDescriptor::new(column_names[i as usize], config.column_config(&block_opts, i))
-					})
-					.collect();
-
-				DB::open_cf_descriptors(&opts, path, cf_descriptors).map_err(other_io_err)?
-			},
 			Err(s) => return Err(other_io_err(s)),
 		})
 	}
@@ -499,11 +458,6 @@ impl Database {
 
 		Ok(match db {
 			Ok(db) => db,
-			Err(ref s) if is_corrupted(s) => {
-				warn!("DB corrupted: {}, attempting repair", s);
-				DB::repair(&opts, path.as_ref()).map_err(other_io_err)?;
-				DB::open_cf_as_secondary(&opts, path, secondary_path, column_names).map_err(other_io_err)?
-			},
 			Err(s) => return Err(other_io_err(s)),
 		})
 	}
@@ -555,7 +509,7 @@ impl Database {
 		}
 		self.stats.tally_bytes_written(stats_total_bytes as u64);
 
-		check_for_corruption(&self.path, cfs.db.write_opt(batch, &self.write_opts))
+		cfs.db.write_opt(batch, &self.write_opts).map_err(other_io_err)
 	}
 
 	/// Get value by key.
