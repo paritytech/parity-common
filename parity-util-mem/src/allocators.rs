@@ -10,25 +10,21 @@
 //! Features are:
 //! - windows:
 //! 	 - no features: default implementation from servo `heapsize` crate
-//! 	 - weealloc: default to `estimate_size`
 //! 	 - dlmalloc: default to `estimate_size`
 //! 	 - jemalloc: default windows allocator is used instead
 //! 	 - mimalloc: use mimallocator crate
 //! - arch x86:
 //! 	 - no features: use default alloc
 //! 	 - jemalloc: use tikv-jemallocator crate
-//! 	 - weealloc: default to `estimate_size`
 //! 	 - dlmalloc: default to `estimate_size`
 //! 	 - mimalloc: use mimallocator crate
 //! - arch x86/macos:
 //! 	 - no features: use default alloc, requires using `estimate_size`
 //! 	 - jemalloc: use tikv-jemallocator crate
-//! 	 - weealloc: default to `estimate_size`
 //! 	 - dlmalloc: default to `estimate_size`
 //! 	 - mimalloc: use mimallocator crate
 //! - arch wasm32:
 //! 	 - no features: default to `estimate_size`
-//! 	 - weealloc: default to `estimate_size`
 //! 	 - dlmalloc: default to `estimate_size`
 //! 	 - jemalloc: compile error
 //! 	 - mimalloc: compile error (until https://github.com/microsoft/mimalloc/pull/32 is merged)
@@ -50,7 +46,6 @@ mod usable_size {
 		if #[cfg(any(
 			target_arch = "wasm32",
 			feature = "estimate-heapsize",
-			feature = "weealloc-global",
 			feature = "dlmalloc-global",
 		))] {
 

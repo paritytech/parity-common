@@ -34,13 +34,6 @@ cfg_if::cfg_if! {
 
 		mod memory_stats_noop;
 		use memory_stats_noop as memory_stats;
-	} else if #[cfg(feature = "weealloc-global")] {
-		/// Global allocator
-		#[global_allocator]
-		pub static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-		mod memory_stats_noop;
-		use memory_stats_noop as memory_stats;
 	} else if #[cfg(all(
 			feature = "mimalloc-global",
 			not(target_arch = "wasm32")
