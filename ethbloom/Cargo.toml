@@ -20,7 +20,7 @@ impl-codec = { version = "0.6.0", path = "../primitive-types/impls/codec", defau
 scale-info = { version = ">=1.0, <3", features = ["derive"], default-features = false, optional = true }
 
 [dev-dependencies]
-criterion = "0.3.0"
+criterion = "0.4.0"
 rand = "0.8.0"
 hex-literal = "0.3.1"
 
