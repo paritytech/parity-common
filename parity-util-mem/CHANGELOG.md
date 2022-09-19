@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+## [0.12.0] - 2022-09-19
+### Breaking
+- Updated `tikv-jemallocator` to 0.5. [#661](https://github.com/paritytech/parity-common/pull/661)
+- Updated `lru` to 0.8. [#675](https://github.com/paritytech/parity-common/pull/675)
+- Removed `weealloc-global` feature. [#678](https://github.com/paritytech/parity-common/pull/678)
 
 ## [0.11.0] - 2022-02-04
 ### Breaking
