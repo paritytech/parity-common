@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.13.0] - 2022-09-20
+- Updated `fixed-hash` to 0.8. [#680](https://github.com/paritytech/parity-common/pull/680)
+
 ## [0.12.1] - 2022-02-07
 - Updated `scale-info` to ">=1.0, <3". [#627](https://github.com/paritytech/parity-common/pull/627)
 
