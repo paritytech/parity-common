@@ -1,12 +1,11 @@
 [package]
 name = "kvdb-shared-tests"
-version = "0.9.0"
+version = "0.10.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2021"
 rust-version = "1.56.1"
 description = "Shared tests for kvdb functionality, to be executed against actual implementations"
 license = "MIT OR Apache-2.0"
-publish = false
 
 [dependencies]
 kvdb = { path = "../kvdb", version = "0.12" }
