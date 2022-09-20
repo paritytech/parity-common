@@ -5,8 +5,12 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
-- Make `one` const. [#650](https://github.com/paritytech/parity-common/pull/650)
-- Make `max_value` const. [#652](https://github.com/paritytech/parity-common/pull/652)
+
+## [0.9.4] - 2022-09-20
+- Made `one` const. [#650](https://github.com/paritytech/parity-common/pull/650)
+- Made `max_value` const. [#652](https://github.com/paritytech/parity-common/pull/652)
+- Made `is_zero` const. [#639](https://github.com/paritytech/parity-common/pull/639)
+- Added `abs_diff`. [#665](https://github.com/paritytech/parity-common/pull/665)
 
 ## [0.9.3] - 2022-02-04
 - Simplified and faster `div_mod`. [#478](https://github.com/paritytech/parity-common/pull/478)

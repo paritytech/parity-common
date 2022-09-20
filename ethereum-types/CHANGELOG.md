@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog].
 - Updated `fixed-hash` to 0.8. [#680](https://github.com/paritytech/parity-common/pull/680)
 - Updated `primitive-types` to 0.12. [#680](https://github.com/paritytech/parity-common/pull/680)
 - Updated `ethbloom` to 0.13. [#680](https://github.com/paritytech/parity-common/pull/680)
+- Made `ethbloom` optional. [#625](https://github.com/paritytech/parity-common/pull/625)
 
 ## [0.13.1] - 2022-02-07
 - Updated `scale-info` to ">=1.0, <3". [#627](https://github.com/paritytech/parity-common/pull/627)

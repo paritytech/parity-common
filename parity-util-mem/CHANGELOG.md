@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
 ## [0.12.0] - 2022-09-20
 ### Breaking
 - Updated `tikv-jemallocator` to 0.5. [#661](https://github.com/paritytech/parity-common/pull/661)
