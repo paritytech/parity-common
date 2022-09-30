@@ -20,3 +20,19 @@ pub type Address = H160;
 pub type Secret = H256;
 pub type Public = H512;
 pub type Signature = H520;
+
+/// Conditional compilation depending on whether ethereum-types is built with ethbloom support.
+#[cfg(feature = "ethbloom")]
+#[macro_export]
+macro_rules! if_ethbloom {
+    ($($tt:tt)*) => {
+        $($tt)*
+    };
+}
+
+#[cfg(not(feature = "ethbloom"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! if_ethbloom {
+	($($tt:tt)*) => {};
+}
