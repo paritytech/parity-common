@@ -23,11 +23,7 @@ pub use hex;
 
 #[cfg(feature = "quickcheck")]
 #[doc(hidden)]
-pub use qc;
-
-#[cfg(feature = "quickcheck")]
-#[doc(hidden)]
-pub use rand07;
+pub use quickcheck;
 
 #[cfg(feature = "arbitrary")]
 #[doc(hidden)]

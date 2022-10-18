@@ -20,6 +20,8 @@ pub const PREFIX_LEN: usize = 12;
 pub type DBValue = Vec<u8>;
 /// Database keys.
 pub type DBKey = SmallVec<[u8; 32]>;
+/// A tuple holding key and value data, used in the iterator item type.
+pub type DBKeyValue = (DBKey, DBValue);
 
 pub use io_stats::{IoStats, Kind as IoStatsKind};
 
@@ -112,13 +114,13 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>>;
 
 	/// Get the first value matching the given prefix.
-	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> Option<Box<[u8]>>;
+	fn get_by_prefix(&self, col: u32, prefix: &[u8]) -> io::Result<Option<DBValue>>;
 
 	/// Write a transaction of changes to the backing store.
 	fn write(&self, transaction: DBTransaction) -> io::Result<()>;
 
 	/// Iterate over the data for a given column.
-	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
+	fn iter<'a>(&'a self, col: u32) -> Box<dyn Iterator<Item = io::Result<DBKeyValue>> + 'a>;
 
 	/// Iterate over the data for a given column, returning all key/value pairs
 	/// where the key starts with the given prefix.
@@ -126,15 +128,12 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 		&'a self,
 		col: u32,
 		prefix: &'a [u8],
-	) -> Box<dyn Iterator<Item = (Box<[u8]>, Box<[u8]>)> + 'a>;
-
-	/// Attempt to replace this database with a new one located at the given path.
-	fn restore(&self, new_db: &str) -> io::Result<()>;
+	) -> Box<dyn Iterator<Item = io::Result<DBKeyValue>> + 'a>;
 
 	/// Query statistics.
 	///
 	/// Not all kvdb implementations are able or expected to implement this, so by
-	/// default, empty statistics is returned. Also, not all kvdb implementation
+	/// default, empty statistics is returned. Also, not all kvdb implementations
 	/// can return every statistic or configured to do so (some statistics gathering
 	/// may impede the performance and might be off by default).
 	fn io_stats(&self, _kind: IoStatsKind) -> IoStats {
@@ -147,8 +146,8 @@ pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
 	}
 
 	/// Check for the existence of a value by prefix.
-	fn has_prefix(&self, col: u32, prefix: &[u8]) -> bool {
-		self.get_by_prefix(col, prefix).is_some()
+	fn has_prefix(&self, col: u32, prefix: &[u8]) -> io::Result<bool> {
+		self.get_by_prefix(col, prefix).map(|opt| opt.is_some())
 	}
 }
 

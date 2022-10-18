@@ -629,9 +629,8 @@ macro_rules! impl_quickcheck_for_fixed_hash {
 macro_rules! impl_quickcheck_for_fixed_hash {
 	( $name:ident ) => {
 		impl $crate::quickcheck::Arbitrary for $name {
-			fn arbitrary<G: $crate::quickcheck::Gen>(g: &mut G) -> Self {
-				let mut res = [0u8; $crate::core_::mem::size_of::<Self>()];
-				g.fill_bytes(&mut res[..Self::len_bytes()]);
+			fn arbitrary(g: &mut $crate::quickcheck::Gen) -> Self {
+				let res: [u8; Self::len_bytes()] = $crate::core_::array::from_fn(|_| u8::arbitrary(g));
 				Self::from(res)
 			}
 		}

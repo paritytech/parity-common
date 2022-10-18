@@ -15,116 +15,80 @@
 //! To work around this we set an upper bound to the prefix successor.
 //! See https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes for details.
 
-use crate::DBAndColumns;
-use owning_ref::{OwningHandle, StableAddress};
-use parking_lot::RwLockReadGuard;
+use crate::{other_io_err, DBAndColumns, DBKeyValue};
 use rocksdb::{DBIterator, Direction, IteratorMode, ReadOptions};
-use std::ops::{Deref, DerefMut};
+use std::io;
 
-/// A tuple holding key and value data, used as the iterator item type.
-pub type KeyValuePair = (Box<[u8]>, Box<[u8]>);
-
-/// Iterator with built-in synchronization.
-pub struct ReadGuardedIterator<'a, I, T> {
-	inner: OwningHandle<UnsafeStableAddress<'a, Option<T>>, DerefWrapper<Option<I>>>,
-}
-
-// We can't implement `StableAddress` for a `RwLockReadGuard`
-// directly due to orphan rules.
-#[repr(transparent)]
-struct UnsafeStableAddress<'a, T>(RwLockReadGuard<'a, T>);
-
-impl<'a, T> Deref for UnsafeStableAddress<'a, T> {
-	type Target = T;
-
-	fn deref(&self) -> &Self::Target {
-		self.0.deref()
-	}
-}
-
-// RwLockReadGuard dereferences to a stable address; qed
-unsafe impl<'a, T> StableAddress for UnsafeStableAddress<'a, T> {}
-
-struct DerefWrapper<T>(T);
-
-impl<T> Deref for DerefWrapper<T> {
-	type Target = T;
-
-	fn deref(&self) -> &Self::Target {
-		&self.0
-	}
-}
-
-impl<T> DerefMut for DerefWrapper<T> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.0
-	}
-}
-
-impl<'a, I: Iterator, T> Iterator for ReadGuardedIterator<'a, I, T> {
-	type Item = I::Item;
-
-	fn next(&mut self) -> Option<Self::Item> {
-		self.inner.deref_mut().as_mut().and_then(|iter| iter.next())
-	}
-}
-
-/// Instantiate iterators yielding `KeyValuePair`s.
+/// Instantiate iterators yielding `io::Result<DBKeyValue>`s.
 pub trait IterationHandler {
-	type Iterator: Iterator<Item = KeyValuePair>;
+	type Iterator: Iterator<Item = io::Result<DBKeyValue>>;
 
 	/// Create an `Iterator` over a `ColumnFamily` corresponding to the passed index. Takes
 	/// `ReadOptions` to allow configuration of the new iterator (see
 	/// https://github.com/facebook/rocksdb/blob/master/include/rocksdb/options.h#L1169).
-	fn iter(&self, col: u32, read_opts: ReadOptions) -> Self::Iterator;
+	fn iter(self, col: u32, read_opts: ReadOptions) -> Self::Iterator;
 	/// Create an `Iterator` over a `ColumnFamily` corresponding to the passed index. Takes
 	/// `ReadOptions` to allow configuration of the new iterator (see
 	/// https://github.com/facebook/rocksdb/blob/master/include/rocksdb/options.h#L1169).
 	/// The `Iterator` iterates over keys which start with the provided `prefix`.
-	fn iter_with_prefix(&self, col: u32, prefix: &[u8], read_opts: ReadOptions) -> Self::Iterator;
-}
-
-impl<'a, T> ReadGuardedIterator<'a, <&'a T as IterationHandler>::Iterator, T>
-where
-	&'a T: IterationHandler,
-{
-	/// Creates a new `ReadGuardedIterator` that maps `RwLock<RocksDB>` to `RwLock<DBIterator>`,
-	/// where `DBIterator` iterates over all keys.
-	pub fn new(read_lock: RwLockReadGuard<'a, Option<T>>, col: u32, read_opts: ReadOptions) -> Self {
-		Self { inner: Self::new_inner(read_lock, |db| db.iter(col, read_opts)) }
-	}
-
-	/// Creates a new `ReadGuardedIterator` that maps `RwLock<RocksDB>` to `RwLock<DBIterator>`,
-	/// where `DBIterator` iterates over keys which start with the given prefix.
-	pub fn new_with_prefix(
-		read_lock: RwLockReadGuard<'a, Option<T>>,
-		col: u32,
-		prefix: &[u8],
-		read_opts: ReadOptions,
-	) -> Self {
-		Self { inner: Self::new_inner(read_lock, |db| db.iter_with_prefix(col, prefix, read_opts)) }
-	}
-
-	fn new_inner(
-		rlock: RwLockReadGuard<'a, Option<T>>,
-		f: impl FnOnce(&'a T) -> <&'a T as IterationHandler>::Iterator,
-	) -> OwningHandle<UnsafeStableAddress<'a, Option<T>>, DerefWrapper<Option<<&'a T as IterationHandler>::Iterator>>> {
-		OwningHandle::new_with_fn(UnsafeStableAddress(rlock), move |rlock| {
-			let rlock = unsafe { rlock.as_ref().expect("initialized as non-null; qed") };
-			DerefWrapper(rlock.as_ref().map(f))
-		})
-	}
+	fn iter_with_prefix(self, col: u32, prefix: &[u8], read_opts: ReadOptions) -> Self::Iterator;
 }
 
 impl<'a> IterationHandler for &'a DBAndColumns {
-	type Iterator = DBIterator<'a>;
+	type Iterator = EitherIter<KvdbAdapter<DBIterator<'a>>, std::iter::Once<io::Result<DBKeyValue>>>;
 
-	fn iter(&self, col: u32, read_opts: ReadOptions) -> Self::Iterator {
-		self.db.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::Start)
+	fn iter(self, col: u32, read_opts: ReadOptions) -> Self::Iterator {
+		match self.cf(col as usize) {
+			Ok(cf) => EitherIter::A(KvdbAdapter(self.db.iterator_cf_opt(cf, read_opts, IteratorMode::Start))),
+			Err(e) => EitherIter::B(std::iter::once(Err(e))),
+		}
 	}
 
-	fn iter_with_prefix(&self, col: u32, prefix: &[u8], read_opts: ReadOptions) -> Self::Iterator {
-		self.db
-			.iterator_cf_opt(self.cf(col as usize), read_opts, IteratorMode::From(prefix, Direction::Forward))
+	fn iter_with_prefix(self, col: u32, prefix: &[u8], read_opts: ReadOptions) -> Self::Iterator {
+		match self.cf(col as usize) {
+			Ok(cf) => EitherIter::A(KvdbAdapter(self.db.iterator_cf_opt(
+				cf,
+				read_opts,
+				IteratorMode::From(prefix, Direction::Forward),
+			))),
+			Err(e) => EitherIter::B(std::iter::once(Err(e))),
+		}
+	}
+}
+
+/// Small enum to avoid boxing iterators.
+pub enum EitherIter<A, B> {
+	A(A),
+	B(B),
+}
+
+impl<A, B, I> Iterator for EitherIter<A, B>
+where
+	A: Iterator<Item = I>,
+	B: Iterator<Item = I>,
+{
+	type Item = I;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		match self {
+			Self::A(a) => a.next(),
+			Self::B(b) => b.next(),
+		}
+	}
+}
+
+/// A simple wrapper that adheres to the `kvdb` interface.
+pub struct KvdbAdapter<T>(T);
+
+impl<T> Iterator for KvdbAdapter<T>
+where
+	T: Iterator<Item = Result<(Box<[u8]>, Box<[u8]>), rocksdb::Error>>,
+{
+	type Item = io::Result<DBKeyValue>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.0
+			.next()
+			.map(|r| r.map_err(other_io_err).map(|(k, v)| (k.into_vec().into(), v.into())))
 	}
 }

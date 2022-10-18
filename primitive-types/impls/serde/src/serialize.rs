@@ -187,8 +187,8 @@ pub enum ExpectedLen<'a> {
 impl<'a> fmt::Display for ExpectedLen<'a> {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
-			ExpectedLen::Exact(ref v) => write!(fmt, "length of {}", v.len() * 2),
-			ExpectedLen::Between(min, ref v) => write!(fmt, "length between ({}; {}]", min * 2, v.len() * 2),
+			ExpectedLen::Exact(ref v) => write!(fmt, "{} bytes", v.len()),
+			ExpectedLen::Between(min, ref v) => write!(fmt, "between ({}; {}] bytes", min, v.len()),
 		}
 	}
 }
@@ -205,7 +205,7 @@ where
 		type Value = Vec<u8>;
 
 		fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-			write!(formatter, "a (both 0x-prefixed or not) hex string")
+			write!(formatter, "a (both 0x-prefixed or not) hex string or byte array")
 		}
 
 		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
@@ -214,6 +214,26 @@ where
 
 		fn visit_string<E: de::Error>(self, v: String) -> Result<Self::Value, E> {
 			self.visit_str(&v)
+		}
+
+		fn visit_bytes<E: de::Error>(self, v: &[u8]) -> Result<Self::Value, E> {
+			Ok(v.to_vec())
+		}
+
+		fn visit_byte_buf<E: de::Error>(self, v: Vec<u8>) -> Result<Self::Value, E> {
+			Ok(v)
+		}
+
+		fn visit_seq<A: de::SeqAccess<'b>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+			let mut bytes = vec![];
+			while let Some(n) = seq.next_element::<u8>()? {
+				bytes.push(n);
+			}
+			Ok(bytes)
+		}
+
+		fn visit_newtype_struct<D: Deserializer<'b>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
+			deserializer.deserialize_bytes(self)
 		}
 	}
 
@@ -234,7 +254,7 @@ where
 		type Value = usize;
 
 		fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-			write!(formatter, "a (both 0x-prefixed or not) hex string with {}", self.len)
+			write!(formatter, "a (both 0x-prefixed or not) hex string or byte array containing {}", self.len)
 		}
 
 		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
@@ -260,6 +280,42 @@ where
 
 		fn visit_string<E: de::Error>(self, v: String) -> Result<Self::Value, E> {
 			self.visit_str(&v)
+		}
+
+		fn visit_bytes<E: de::Error>(self, v: &[u8]) -> Result<Self::Value, E> {
+			let len = v.len();
+			let is_len_valid = match self.len {
+				ExpectedLen::Exact(ref slice) => len == slice.len(),
+				ExpectedLen::Between(min, ref slice) => len <= slice.len() && len > min,
+			};
+
+			if !is_len_valid {
+				return Err(E::invalid_length(v.len(), &self))
+			}
+
+			let bytes = match self.len {
+				ExpectedLen::Exact(slice) => slice,
+				ExpectedLen::Between(_, slice) => slice,
+			};
+
+			bytes[..len].copy_from_slice(v);
+			Ok(len)
+		}
+
+		fn visit_byte_buf<E: de::Error>(self, v: Vec<u8>) -> Result<Self::Value, E> {
+			self.visit_bytes(&v)
+		}
+
+		fn visit_seq<A: de::SeqAccess<'b>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+			let mut v = vec![];
+			while let Some(n) = seq.next_element::<u8>()? {
+				v.push(n);
+			}
+			self.visit_byte_buf(v)
+		}
+
+		fn visit_newtype_struct<D: Deserializer<'b>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
+			deserializer.deserialize_bytes(self)
 		}
 	}
 
@@ -366,5 +422,83 @@ mod tests {
 		assert_eq!(from_hex("0102"), Ok(vec![1, 2]));
 		assert_eq!(from_hex("102"), Ok(vec![1, 2]));
 		assert_eq!(from_hex("f"), Ok(vec![0xf]));
+	}
+
+	#[test]
+	fn should_deserialize_from_owned_bytes() {
+		type BytesDeserializer<'a> = serde::de::value::BytesDeserializer<'a, serde::de::value::Error>;
+
+		// using `deserialize` to decode owned bytes.
+		let des = BytesDeserializer::new(&[1, 2, 3, 4, 5]);
+		let deserialized: Vec<u8> = deserialize(des).unwrap();
+		assert_eq!(deserialized, vec![1, 2, 3, 4, 5]);
+
+		// using `deserialize` to decode owned bytes into buffer with fixed length.
+		let des = BytesDeserializer::new(&[1, 2, 3, 4, 5]);
+		let mut output = vec![0, 0, 0, 0, 0];
+		let expected_len = ExpectedLen::Exact(&mut *output);
+		let n = deserialize_check_len(des, expected_len).unwrap();
+		assert_eq!(n, 5);
+		assert_eq!(output, vec![1, 2, 3, 4, 5]);
+
+		// using `deserialize` to decode owned bytes into buffer with min/max length.
+		let des = BytesDeserializer::new(&[1, 2, 3]);
+		let mut output = vec![0, 0, 0, 0, 0];
+		let expected_len = ExpectedLen::Between(2, &mut *output);
+		let n = deserialize_check_len(des, expected_len).unwrap();
+		assert_eq!(n, 3);
+		assert_eq!(output, vec![1, 2, 3, 0, 0]);
+	}
+
+	#[test]
+	fn should_deserialize_from_borrowed_bytes() {
+		type BytesDeserializer<'a> = serde::de::value::BorrowedBytesDeserializer<'a, serde::de::value::Error>;
+
+		// using `deserialize` to decode borrowed bytes.
+		let des = BytesDeserializer::new(&[1, 2, 3, 4, 5]);
+		let deserialized: Vec<u8> = deserialize(des).unwrap();
+		assert_eq!(deserialized, vec![1, 2, 3, 4, 5]);
+
+		// using `deserialize` to decode borrowed bytes into buffer with fixed length.
+		let des = BytesDeserializer::new(&[1, 2, 3, 4, 5]);
+		let mut output = vec![0, 0, 0, 0, 0];
+		let expected_len = ExpectedLen::Exact(&mut *output);
+		let n = deserialize_check_len(des, expected_len).unwrap();
+		assert_eq!(n, 5);
+		assert_eq!(output, vec![1, 2, 3, 4, 5]);
+
+		// using `deserialize` to decode borrowed bytes into buffer with min/max length.
+		let des = BytesDeserializer::new(&[1, 2, 3]);
+		let mut output = vec![0, 0, 0, 0, 0];
+		let expected_len = ExpectedLen::Between(2, &mut *output);
+		let n = deserialize_check_len(des, expected_len).unwrap();
+		assert_eq!(n, 3);
+		assert_eq!(output, vec![1, 2, 3, 0, 0]);
+	}
+
+	#[test]
+	fn should_deserialize_from_u8_sequence() {
+		use serde::de::value::SeqDeserializer;
+
+		// using `deserialize` to decode a sequence of bytes.
+		let des = SeqDeserializer::<_, serde::de::value::Error>::new([1u8, 2, 3, 4, 5].into_iter());
+		let deserialized: Vec<u8> = deserialize(des).unwrap();
+		assert_eq!(deserialized, vec![1, 2, 3, 4, 5]);
+
+		// using `deserialize` to decode a sequence of bytes into a buffer with fixed length.
+		let des = SeqDeserializer::<_, serde::de::value::Error>::new([1u8, 2, 3, 4, 5].into_iter());
+		let mut output = vec![0, 0, 0, 0, 0];
+		let expected_len = ExpectedLen::Exact(&mut *output);
+		let n = deserialize_check_len(des, expected_len).unwrap();
+		assert_eq!(n, 5);
+		assert_eq!(output, vec![1, 2, 3, 4, 5]);
+
+		// using `deserialize` to decode a sequence of bytes into a buffer with min/max length.
+		let des = SeqDeserializer::<_, serde::de::value::Error>::new([1u8, 2, 3].into_iter());
+		let mut output = vec![0, 0, 0, 0, 0];
+		let expected_len = ExpectedLen::Between(2, &mut *output);
+		let n = deserialize_check_len(des, expected_len).unwrap();
+		assert_eq!(n, 3);
+		assert_eq!(output, vec![1, 2, 3, 0, 0]);
 	}
 }

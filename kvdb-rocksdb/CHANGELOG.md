@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.16.0] - 2022-09-20
+- Removed `owning_ref` from dependencies :tada:. [#662](https://github.com/paritytech/parity-common/pull/662)
+- No longer attempt to repair on `open`. [#667](https://github.com/paritytech/parity-common/pull/667)
+### Breaking
+- Updated `kvdb` to 0.12. [#662](https://github.com/paritytech/parity-common/pull/662)
+  - `add_column` and `remove_last_column` now require `&mut self`
+
 ## [0.15.2] - 2022-03-20
 - Disable `jemalloc` feature for `rocksdb` where it is not working. [#633](https://github.com/paritytech/parity-common/pull/633)
 

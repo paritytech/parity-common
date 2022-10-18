@@ -218,7 +218,6 @@ macro_rules! uint_overflowing_binop {
 		let $name(ref you) = $other;
 
 		let mut ret = [0u64; $n_words];
-		let ret_ptr = &mut ret as *mut [u64; $n_words] as *mut u64;
 		let mut carry = 0u64;
 		$crate::static_assertions::const_assert!(core::isize::MAX as usize / core::mem::size_of::<u64>() > $n_words);
 
@@ -233,19 +232,12 @@ macro_rules! uint_overflowing_binop {
 					let (res1, overflow1) = ($fn)(me[i], you[i]);
 					let (res2, overflow2) = ($fn)(res1, carry);
 
-					unsafe {
-						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
-						*ret_ptr.offset(i as _) = res2
-					}
+					ret[i] = res2;
 					carry = (overflow1 as u8 + overflow2 as u8) as u64;
 				} else {
 					let (res, overflow) = ($fn)(me[i], you[i]);
 
-					unsafe {
-						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
-						*ret_ptr.offset(i as _) = res
-					}
-
+					ret[i] = res;
 					carry = overflow as u64;
 				}
 			}
@@ -793,18 +785,16 @@ macro_rules! construct_uint {
 
 			/// One (multiplicative identity) of this type.
 			#[inline]
-			pub fn one() -> Self {
-				From::from(1u64)
+			pub const fn one() -> Self {
+				let mut words = [0; $n_words];
+				words[0] = 1u64;
+				Self(words)
 			}
 
 			/// The maximum value which can be inhabited by this type.
 			#[inline]
-			pub fn max_value() -> Self {
-				let mut result = [0; $n_words];
-				for i in 0..$n_words {
-					result[i] = u64::max_value();
-				}
-				$name(result)
+			pub const fn max_value() -> Self {
+				Self::MAX
 			}
 
 			fn full_shl(self, shift: u32) -> [u64; $n_words + 1] {
@@ -1069,10 +1059,10 @@ macro_rules! construct_uint {
 				)
 			}
 
-			/// Addition which saturates at the maximum value (Self::max_value()).
+			/// Addition which saturates at the maximum value (Self::MAX).
 			pub fn saturating_add(self, other: $name) -> $name {
 				match self.overflowing_add(other) {
-					(_, true) => $name::max_value(),
+					(_, true) => $name::MAX,
 					(val, false) => val,
 				}
 			}
@@ -1113,6 +1103,15 @@ macro_rules! construct_uint {
 				}
 			}
 
+			/// Computes the absolute difference between self and other.
+			pub fn abs_diff(self, other: $name) -> $name {
+				if self > other {
+					self.overflowing_sub(other).0
+				} else {
+					other.overflowing_sub(self).0
+				}
+			}
+
 			/// Multiply with overflow, returning a flag if it does.
 			#[inline(always)]
 			pub fn overflowing_mul(self, other: $name) -> ($name, bool) {
@@ -1122,7 +1121,7 @@ macro_rules! construct_uint {
 			/// Multiplication which saturates at the maximum value..
 			pub fn saturating_mul(self, other: $name) -> $name {
 				match self.overflowing_mul(other) {
-					(_, true) => $name::max_value(),
+					(_, true) => $name::MAX,
 					(val, false) => val,
 				}
 			}
@@ -1742,28 +1741,33 @@ macro_rules! construct_uint {
 #[doc(hidden)]
 macro_rules! impl_quickcheck_arbitrary_for_uint {
 	($uint: ty, $n_bytes: tt) => {
-		impl $crate::qc::Arbitrary for $uint {
-			fn arbitrary<G: $crate::qc::Gen>(g: &mut G) -> Self {
-				let mut res = [0u8; $n_bytes];
-
-				use $crate::rand07::Rng;
-				let p: f64 = $crate::rand07::rngs::OsRng.gen();
+		impl $crate::quickcheck::Arbitrary for $uint {
+			fn arbitrary(g: &mut $crate::quickcheck::Gen) -> Self {
+				let p = usize::arbitrary(g) % 100;
 				// make it more likely to generate smaller numbers that
 				// don't use up the full $n_bytes
 				let range =
 					// 10% chance to generate number that uses up to $n_bytes
-					if p < 0.1 {
+					if p < 10 {
 						$n_bytes
 					// 10% chance to generate number that uses up to $n_bytes / 2
-					} else if p < 0.2 {
+					} else if p < 20 {
 						$n_bytes / 2
 					// 80% chance to generate number that uses up to $n_bytes / 5
 					} else {
 						$n_bytes / 5
 					};
 
-				let size = g.gen_range(0, range);
-				g.fill_bytes(&mut res[..size]);
+				let range = $crate::core_::cmp::max(range, 1);
+				let size: usize = usize::arbitrary(g) % range;
+
+				let res: [u8; $n_bytes] = $crate::core_::array::from_fn(|i| {
+					if i > size {
+						0
+					} else {
+						u8::arbitrary(g)
+					}
+				});
 
 				res.as_ref().into()
 			}

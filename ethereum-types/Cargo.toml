@@ -1,19 +1,19 @@
 [package]
 name = "ethereum-types"
-version = "0.13.1"
+version = "0.14.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
 description = "Ethereum types"
 edition = "2021"
-rust-version = "1.56.1"
+rust-version = "1.60.0"
 
 [dependencies]
-ethbloom = { path = "../ethbloom", version = "0.12", default-features = false }
-fixed-hash = { path = "../fixed-hash", version = "0.7", default-features = false, features = ["byteorder", "rustc-hex"] }
+ethbloom = { path = "../ethbloom", version = "0.13", optional = true, default-features = false }
+fixed-hash = { path = "../fixed-hash", version = "0.8", default-features = false, features = ["byteorder", "rustc-hex"] }
 uint-crate = { path = "../uint", package = "uint", version = "0.9", default-features = false }
-primitive-types = { path = "../primitive-types", version = "0.11", features = ["byteorder", "rustc-hex"], default-features = false }
-impl-serde = { path = "../primitive-types/impls/serde", version = "0.3.2", default-features = false, optional = true }
+primitive-types = { path = "../primitive-types", version = "0.12", features = ["byteorder", "rustc-hex"], default-features = false }
+impl-serde = { path = "../primitive-types/impls/serde", version = "0.4.0", default-features = false, optional = true }
 impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.3", default-features = false, optional = true }
 impl-codec = { version = "0.6.0", path = "../primitive-types/impls/codec", default-features = false, optional = true }
 scale-info = { version = ">=1.0, <3", features = ["derive"], default-features = false, optional = true }
@@ -22,8 +22,8 @@ scale-info = { version = ">=1.0, <3", features = ["derive"], default-features = 
 serde_json = "1.0.41"
 
 [features]
-default = ["std", "rlp", "serialize"]
-std = ["uint-crate/std", "fixed-hash/std", "ethbloom/std", "primitive-types/std"]
+default = ["std", "ethbloom", "rlp", "serialize"]
+std = ["uint-crate/std", "fixed-hash/std", "ethbloom?/std", "primitive-types/std"]
 serialize = ["impl-serde", "primitive-types/serde_no_std", "ethbloom/serialize"]
 arbitrary = ["ethbloom/arbitrary", "fixed-hash/arbitrary", "uint-crate/arbitrary"]
 rlp = ["impl-rlp", "ethbloom/rlp", "primitive-types/rlp"]

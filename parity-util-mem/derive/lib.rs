@@ -17,7 +17,6 @@ extern crate syn;
 #[macro_use]
 extern crate synstructure;
 
-#[cfg(not(test))]
 decl_derive!([MallocSizeOf, attributes(ignore_malloc_size_of)] => malloc_size_of_derive);
 
 fn malloc_size_of_derive(s: synstructure::Structure) -> proc_macro2::TokenStream {

@@ -49,6 +49,64 @@ fn const_matching_works() {
 }
 
 #[test]
+fn max() {
+	let max = U256::MAX;
+	assert_eq!(max.0, [0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF]);
+
+	let max = U512::MAX;
+	assert_eq!(
+		max.0,
+		[
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF
+		]
+	);
+}
+
+#[test]
+fn one() {
+	let one = U256::one();
+	assert_eq!(one.0, [1, 0, 0, 0]);
+
+	let one = U512::one();
+	assert_eq!(one.0, [1, 0, 0, 0, 0, 0, 0, 0]);
+
+	let any = U256::from(123456789);
+	assert_eq!(any * U256::one(), any);
+
+	let any = U512::from(123456789);
+	assert_eq!(any * U512::one(), any);
+}
+
+#[test]
+#[allow(deprecated)]
+fn max_value() {
+	let max = U256::max_value();
+	assert_eq!(max.0, [0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF]);
+
+	let max = U512::max_value();
+	assert_eq!(
+		max.0,
+		[
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF,
+			0xFFFFFFFFFFFFFFFF
+		]
+	);
+}
+
+#[test]
 fn u128_conversions() {
 	let mut a = U256::from(u128::max_value());
 	assert_eq!(a.low_u128(), u128::max_value());
@@ -70,7 +128,7 @@ fn uint256_checked_ops() {
 	assert_eq!(U256::from(10).checked_pow(U256::from(3)), Some(U256::from(1000)));
 	assert_eq!(U256::from(10).checked_pow(U256::from(20)), Some(U256::exp10(20)));
 	assert_eq!(U256::from(2).checked_pow(U256::from(0x100)), None);
-	assert_eq!(U256::max_value().checked_pow(U256::from(2)), None);
+	assert_eq!(U256::MAX.checked_pow(U256::from(2)), None);
 
 	assert_eq!(a.checked_add(b), None);
 	assert_eq!(a.checked_add(a), Some(20.into()));
@@ -89,6 +147,17 @@ fn uint256_checked_ops() {
 
 	assert_eq!(a.checked_neg(), None);
 	assert_eq!(z.checked_neg(), Some(z));
+}
+
+#[test]
+fn uint256_abs_diff() {
+	let zero = U256::zero();
+	let max = U256::MAX;
+
+	assert_eq!(zero.abs_diff(zero), zero);
+	assert_eq!(max.abs_diff(max), zero);
+	assert_eq!(zero.abs_diff(max), max);
+	assert_eq!(max.abs_diff(zero), max);
 }
 
 #[test]
@@ -1088,7 +1157,7 @@ pub mod laws {
 	macro_rules! uint_laws {
 		($mod_name:ident, $uint_ty:ident) => {
 			mod $mod_name {
-				use qc::{TestResult, quickcheck};
+				use quickcheck::{TestResult, quickcheck};
 				use super::$uint_ty;
 
 				quickcheck! {
