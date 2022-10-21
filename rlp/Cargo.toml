@@ -1,12 +1,11 @@
 [package]
 name = "rlp"
-version = "0.5.1"
+version = "0.5.2"
 description = "Recursive-length prefix encoding, decoding, and compression"
 repository = "https://github.com/paritytech/parity-common"
 license = "MIT OR Apache-2.0"
 authors = ["Parity Technologies <admin@parity.io>"]
-edition = "2021"
-rust-version = "1.56.1"
+edition = "2018"
 
 [dependencies]
 bytes = { version = "1", default-features = false }
