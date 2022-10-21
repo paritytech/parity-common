@@ -1,6 +1,6 @@
 [package]
 name = "rlp"
-version = "0.5.1"
+version = "0.5.2"
 description = "Recursive-length prefix encoding, decoding, and compression"
 repository = "https://github.com/paritytech/parity-common"
 license = "MIT OR Apache-2.0"
