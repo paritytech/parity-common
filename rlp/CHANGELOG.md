@@ -5,8 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
-
-## [0.5.2] - 2022-10-21
+- Migrated to 2021 edition, enforcing MSRV of `1.56.1`. [#601](https://github.com/paritytech/parity-common/pull/601)
 - Add optional `derive` feature. [#613](https://github.com/paritytech/parity-common/pull/613)
 
 ## [0.5.1] - 2021-07-30
