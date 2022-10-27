@@ -99,7 +99,6 @@ mod serde {
 
 	impl_fixed_hash_serde!(H128, 16);
 	impl_fixed_hash_serde!(H160, 20);
-	impl_fixed_hash_serde!(H384, 48);
 	impl_fixed_hash_serde!(H256, 32);
 	impl_fixed_hash_serde!(H384, 48);
 	impl_fixed_hash_serde!(H512, 64);
