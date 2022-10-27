@@ -99,8 +99,11 @@ mod serde {
 
 	impl_fixed_hash_serde!(H128, 16);
 	impl_fixed_hash_serde!(H160, 20);
+	impl_fixed_hash_serde!(H384, 48);
 	impl_fixed_hash_serde!(H256, 32);
+	impl_fixed_hash_serde!(H384, 48);
 	impl_fixed_hash_serde!(H512, 64);
+	impl_fixed_hash_serde!(H768, 96);
 }
 
 #[cfg(feature = "impl-codec")]
@@ -115,7 +118,9 @@ mod codec {
 	impl_fixed_hash_codec!(H128, 16);
 	impl_fixed_hash_codec!(H160, 20);
 	impl_fixed_hash_codec!(H256, 32);
+	impl_fixed_hash_codec!(H384, 48);
 	impl_fixed_hash_codec!(H512, 64);
+	impl_fixed_hash_codec!(H768, 96);
 }
 
 #[cfg(feature = "impl-rlp")]
@@ -130,7 +135,9 @@ mod rlp {
 	impl_fixed_hash_rlp!(H128, 16);
 	impl_fixed_hash_rlp!(H160, 20);
 	impl_fixed_hash_rlp!(H256, 32);
+	impl_fixed_hash_rlp!(H384, 48);
 	impl_fixed_hash_rlp!(H512, 64);
+	impl_fixed_hash_rlp!(H768, 96);
 }
 
 impl_fixed_hash_conversions!(H256, H160);
