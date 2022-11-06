@@ -1188,8 +1188,8 @@ fn bit_assign() {
 
 	check(U256::from(9), U256::from(999999));
 	check(U256::from(0), U256::from(0));
-	check(U256::from(23432), U256::from(u32::MAX));	
-	check(U256::MAX, U256::zero());	
+	check(U256::from(23432), U256::from(u32::MAX));
+	check(U256::MAX, U256::zero());
 }
 
 #[cfg(feature = "quickcheck")]
