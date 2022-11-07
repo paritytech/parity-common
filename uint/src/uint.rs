@@ -1508,6 +1508,12 @@ macro_rules! construct_uint {
 			}
 		}
 
+		impl $crate::core_::ops::BitAndAssign<$name> for $name {
+			fn bitand_assign(&mut self, rhs: $name) {
+				*self = *self & rhs;
+			}
+		}
+
 		impl $crate::core_::ops::BitXor<$name> for $name {
 			type Output = $name;
 
@@ -1523,6 +1529,12 @@ macro_rules! construct_uint {
 			}
 		}
 
+		impl $crate::core_::ops::BitXorAssign<$name> for $name {
+			fn bitxor_assign(&mut self, rhs: $name) {
+				*self = *self ^ rhs;
+			}
+		}
+
 		impl $crate::core_::ops::BitOr<$name> for $name {
 			type Output = $name;
 
@@ -1535,6 +1547,12 @@ macro_rules! construct_uint {
 					ret[i] = arr1[i] | arr2[i];
 				}
 				$name(ret)
+			}
+		}
+
+		impl $crate::core_::ops::BitOrAssign<$name> for $name {
+			fn bitor_assign(&mut self, rhs: $name) {
+				*self = *self | rhs;
 			}
 		}
 

@@ -1151,6 +1151,47 @@ fn trailing_zeros() {
 	assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 256);
 }
 
+#[test]
+fn bit_assign() {
+	fn check(a: U256, b: U256) {
+		// and
+		{
+			let mut x = a;
+			x &= b;
+			assert_eq!(x, a & b);
+		}
+		// or
+		{
+			let mut x = a;
+			x |= b;
+			assert_eq!(x, a | b);
+		}
+		// xor
+		{
+			let mut x = a;
+			x ^= b;
+			assert_eq!(x, a ^ b);
+		}
+		// shr
+		{
+			let mut x = a;
+			x >>= b;
+			assert_eq!(x, a >> b);
+		}
+		// shl
+		{
+			let mut x = a;
+			x <<= b;
+			assert_eq!(x, a << b);
+		}
+	}
+
+	check(U256::from(9), U256::from(999999));
+	check(U256::from(0), U256::from(0));
+	check(U256::from(23432), U256::from(u32::MAX));
+	check(U256::MAX, U256::zero());
+}
+
 #[cfg(feature = "quickcheck")]
 pub mod laws {
 	use super::construct_uint;
