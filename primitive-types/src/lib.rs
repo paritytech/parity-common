@@ -88,6 +88,7 @@ mod num_traits {
 	use super::*;
 	use impl_num_traits::impl_uint_num_traits;
 
+	impl_uint_num_traits!(U64, 1);
 	impl_uint_num_traits!(U128, 2);
 	impl_uint_num_traits!(U256, 4);
 	impl_uint_num_traits!(U512, 8);
@@ -98,6 +99,7 @@ mod serde {
 	use super::*;
 	use impl_serde::{impl_fixed_hash_serde, impl_uint_serde};
 
+	impl_uint_serde!(U64, 1);
 	impl_uint_serde!(U128, 2);
 	impl_uint_serde!(U256, 4);
 	impl_uint_serde!(U512, 8);
@@ -115,6 +117,7 @@ mod codec {
 	use super::*;
 	use impl_codec::{impl_fixed_hash_codec, impl_uint_codec};
 
+	impl_uint_codec!(U64, 1);
 	impl_uint_codec!(U128, 2);
 	impl_uint_codec!(U256, 4);
 	impl_uint_codec!(U512, 8);
@@ -132,6 +135,7 @@ mod rlp {
 	use super::*;
 	use impl_rlp::{impl_fixed_hash_rlp, impl_uint_rlp};
 
+	impl_uint_rlp!(U64, 1);
 	impl_uint_rlp!(U128, 2);
 	impl_uint_rlp!(U256, 4);
 	impl_uint_rlp!(U512, 8);

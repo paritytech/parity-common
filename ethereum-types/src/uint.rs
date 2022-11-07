@@ -6,32 +6,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[cfg(feature = "codec")]
-use impl_codec::impl_uint_codec;
-#[cfg(feature = "rlp")]
-use impl_rlp::impl_uint_rlp;
-#[cfg(feature = "serialize")]
-use impl_serde::impl_uint_serde;
-use uint_crate::*;
-
 pub use uint_crate::{FromDecStrErr, FromStrRadixErr, FromStrRadixErrKind};
-
-construct_uint! {
-	/// Unsigned 64-bit integer.
-	pub struct U64(1);
-}
-#[cfg(feature = "rlp")]
-impl_uint_rlp!(U64, 1);
-#[cfg(feature = "serialize")]
-impl_uint_serde!(U64, 1);
-#[cfg(feature = "codec")]
-impl_uint_codec!(U64, 1);
-
-pub use primitive_types::{U128, U256, U512};
+pub use primitive_types::{U64, U128, U256, U512};
 
 #[cfg(test)]
 mod tests {
-	use super::{U256, U512};
+	use super::{U64, U256, U512};
 	use serde_json as ser;
 	use std::u64::MAX;
 
@@ -95,6 +75,17 @@ mod tests {
 			"\"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\""
 		);
 		assert!(ser::from_str::<U256>("\"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"")
+			.unwrap_err()
+			.is_data());
+	}
+
+	#[test]
+	fn test_serialize_u64() {
+		assert_eq!(
+			ser::to_string_pretty(&!U64::zero()).unwrap(),
+			"\"0xffffffffffffffff\""
+		);
+		assert!(ser::from_str::<U64>("\"0x1ffffffffffffffff\"")
 			.unwrap_err()
 			.is_data());
 	}
