@@ -66,7 +66,7 @@ jobs:
           args: -p uint --all-features
 
       - name: Test fixed-hash no_std
-        run: cargo test -p fixed-hash --no-default-features --features='byteorder,rustc-hex'
+        run: cargo test -p fixed-hash --no-default-features --features='array-bytes,byteorder'
 
       - name: Test fixed-hash all-features
         uses: actions-rs/cargo@v1
@@ -114,16 +114,16 @@ jobs:
           command: test
           args: -p parity-util-mem --target=aarch64-linux-android
 
-      - name: Test parity-util-mem estimate-heapsize 
+      - name: Test parity-util-mem estimate-heapsize
         run: cargo test -p parity-util-mem --features='estimate-heapsize'
 
-      - name: Test parity-util-mem jemalloc-global 
+      - name: Test parity-util-mem jemalloc-global
         run: cargo test -p parity-util-mem --features='jemalloc-global'
 
-      - name: Test parity-util-mem mimalloc-global 
+      - name: Test parity-util-mem mimalloc-global
         run: cargo test -p parity-util-mem --features='mimalloc-global'
 
-      - name: Test parity-util-mem dlmalloc-global 
+      - name: Test parity-util-mem dlmalloc-global
         run: cargo test -p parity-util-mem --no-default-features --features='dlmalloc-global'
 
   test_windows:

@@ -10,8 +10,6 @@
 use alloc::{string::String, vec::Vec};
 use core::{cell::Cell, fmt};
 
-use rustc_hex::ToHex;
-
 use crate::{error::DecoderError, impls::decode_usize, traits::Decodable};
 
 /// rlp offset
@@ -110,7 +108,7 @@ impl<'a> fmt::Display for Rlp<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
 		match self.prototype() {
 			Ok(Prototype::Null) => write!(f, "null"),
-			Ok(Prototype::Data(_)) => write!(f, "\"0x{}\"", self.data().unwrap().to_hex::<String>()),
+			Ok(Prototype::Data(_)) => write!(f, "\"{}\"", array_bytes::bytes2hex("0x", self.data().unwrap())),
 			Ok(Prototype::List(len)) => {
 				write!(f, "[")?;
 				for i in 0..len - 1 {

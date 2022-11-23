@@ -249,7 +249,7 @@ mod rand {
 	}
 }
 
-#[cfg(feature = "rustc-hex")]
+#[cfg(feature = "array-bytes")]
 mod from_str {
 	use super::*;
 

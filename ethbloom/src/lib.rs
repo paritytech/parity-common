@@ -273,9 +273,11 @@ impl<'a> From<&'a Bloom> for BloomRef<'a> {
 
 #[cfg(test)]
 mod tests {
-	use super::{Bloom, Input};
 	use core::str::FromStr;
-	use hex_literal::hex;
+
+	use super::{Bloom, Input};
+
+	use array_bytes::hex2bytes_unchecked;
 
 	#[test]
 	#[rustfmt::skip]
@@ -298,8 +300,8 @@ mod tests {
 			 00000000000000000000000000000000\
 			 00000000000000000000000000000000",
 		).unwrap();
-		let address = hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106");
-		let topic = hex!("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc");
+		let address = hex2bytes_unchecked("ef2d6d194084c2de36e0dabfce45d046b37d1106");
+		let topic = hex2bytes_unchecked("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc");
 
 		let mut my_bloom = Bloom::default();
 		assert!(!my_bloom.contains_input(Input::Raw(&address)));

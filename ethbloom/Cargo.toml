@@ -20,18 +20,27 @@ impl-codec = { version = "0.6.0", path = "../primitive-types/impls/codec", defau
 scale-info = { version = ">=1.0, <3", features = ["derive"], default-features = false, optional = true }
 
 [dev-dependencies]
+array-bytes = "4.2"
 criterion = "0.4.0"
 rand = "0.8.0"
-hex-literal = "0.3.1"
 
 [features]
-default = ["std", "rlp", "serialize", "rustc-hex"]
-std = ["fixed-hash/std", "crunchy/std"]
-serialize = ["impl-serde"]
-rustc-hex = ["fixed-hash/rustc-hex"]
+default = [
+	"std",
+	"array-bytes",
+	"rlp",
+	"serialize",
+]
+std = [
+	"crunchy/std",
+	"fixed-hash/std",
+]
+
 arbitrary = ["fixed-hash/arbitrary"]
-rlp = ["impl-rlp"]
+array-bytes = ["fixed-hash/array-bytes"]
 codec = ["impl-codec", "scale-info"]
+rlp = ["impl-rlp"]
+serialize = ["impl-serde"]
 
 [[bench]]
 name = "bloom"
