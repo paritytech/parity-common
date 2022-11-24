@@ -6,9 +6,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use array_bytes::hex2bytes_unchecked;
 use criterion::{criterion_group, criterion_main, Criterion};
 use ethbloom::{Bloom, Input};
-use hex_literal::hex;
 use tiny_keccak::{Hasher, Keccak};
 
 fn test_bloom() -> Bloom {
@@ -43,11 +43,11 @@ fn keccak256(input: &[u8]) -> [u8; 32] {
 }
 
 fn test_topic() -> Vec<u8> {
-	hex!("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc").to_vec()
+	hex2bytes_unchecked("02c69be41d0b7e40352fc85be1cd65eb03d40ef8427a0ca4596b1ead9a00e9fc")
 }
 
 fn test_address() -> Vec<u8> {
-	hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106").to_vec()
+	hex2bytes_unchecked("ef2d6d194084c2de36e0dabfce45d046b37d1106")
 }
 
 fn test_dummy() -> Vec<u8> {
