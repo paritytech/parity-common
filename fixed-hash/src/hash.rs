@@ -313,7 +313,7 @@ macro_rules! construct_fixed_hash {
 		impl_byteorder_for_fixed_hash!($name);
 		impl_rand_for_fixed_hash!($name);
 		impl_cmp_for_fixed_hash!($name);
-		impl_rustc_hex_for_fixed_hash!($name);
+		impl_array_bytes_for_fixed_hash!($name);
 		impl_quickcheck_for_fixed_hash!($name);
 		impl_arbitrary_for_fixed_hash!($name);
 	}
@@ -557,7 +557,7 @@ macro_rules! impl_cmp_for_fixed_hash {
 #[cfg(not(feature = "array-bytes"))]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_rustc_hex_for_fixed_hash {
+macro_rules! impl_array_bytes_for_fixed_hash {
 	( $name:ident ) => {};
 }
 
@@ -571,7 +571,7 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 #[cfg(feature = "array-bytes")]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_rustc_hex_for_fixed_hash {
+macro_rules! impl_array_bytes_for_fixed_hash {
 	( $name:ident ) => {
 		impl $crate::core_::str::FromStr for $name {
 			type Err = $crate::array_bytes::Error;
@@ -587,7 +587,7 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 			/// - When encountering invalid non hex-digits
 			/// - Upon empty string input or invalid input length in general
 			fn from_str(input: &str) -> $crate::core_::result::Result<$name, $crate::array_bytes::Error> {
-				$crate::array_bytes::hex_n_into::<Self, { Self::len_bytes() }>(input)
+				$crate::array_bytes::hex_n_into::<&str, Self, { Self::len_bytes() }>(input)
 			}
 		}
 	};

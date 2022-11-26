@@ -217,7 +217,7 @@ fn encode_u256() {
 		ETestPair::from((U256::from(0x0100_0000_u64), hex2bytes_unchecked("8401000000"))),
 		ETestPair::from((U256::from(0xffff_ffff_u64), hex2bytes_unchecked("84ffffffff"))),
 		ETestPair::from((
-			hex_n_into_unchecked::<_, 32>("8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
+			hex_n_into_unchecked::<_, _, 32>("8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
 			hex2bytes_unchecked("a08090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
 		)),
 	];
@@ -271,7 +271,7 @@ fn encode_into_existing_buffer() {
 #[test]
 fn encode_address() {
 	let tests = vec![ETestPair::from((
-		H160::from(hex_n_into_unchecked::<H160, 20>("ef2d6d194084c2de36e0dabfce45d046b37d1106")),
+		H160::from(hex_n_into_unchecked::<_, H160, 20>("ef2d6d194084c2de36e0dabfce45d046b37d1106")),
 		hex2bytes_unchecked("94ef2d6d194084c2de36e0dabfce45d046b37d1106"),
 	))];
 	run_encode_tests(tests);
@@ -478,7 +478,7 @@ fn decode_untrusted_u256() {
 		DTestPair::from((U256::from(0x0100_0000_u64), hex2bytes_unchecked("8401000000"))),
 		DTestPair::from((U256::from(0xffff_ffff_u64), hex2bytes_unchecked("84ffffffff"))),
 		DTestPair::from((
-			hex_n_into_unchecked::<_, 32>("8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
+			hex_n_into_unchecked::<_, _, 32>("8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
 			hex2bytes_unchecked("a08090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
 		)),
 	];
@@ -508,7 +508,7 @@ fn decode_untrusted_str() {
 #[test]
 fn decode_untrusted_address() {
 	let tests = vec![DTestPair::from((
-		hex_n_into_unchecked::<H160, 20>("ef2d6d194084c2de36e0dabfce45d046b37d1106"),
+		hex_n_into_unchecked::<_, H160, 20>("ef2d6d194084c2de36e0dabfce45d046b37d1106"),
 		hex2bytes_unchecked("94ef2d6d194084c2de36e0dabfce45d046b37d1106"),
 	))];
 	run_decode_tests(tests);

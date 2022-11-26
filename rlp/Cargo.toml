@@ -9,7 +9,7 @@ edition = "2021"
 rust-version = "1.56.1"
 
 [dependencies]
-array-bytes = { version = "4.2" }
+array-bytes = { version = "6.0" }
 bytes = { version = "1", default-features = false }
 rlp-derive = { version = "0.1", path = "../rlp-derive", optional = true }
 

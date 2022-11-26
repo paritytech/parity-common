@@ -10,7 +10,7 @@
 
 // Rust Bitcoin Library
 // Written in 2014 by
-//	   Andrew Poelstra <apoelstra@wpsoftware.net>
+// 	   Andrew Poelstra <apoelstra@wpsoftware.net>
 //
 // To the extent possible under law, the author(s) have dedicated all
 // copyright and related and neighboring rights to this software to
@@ -82,7 +82,7 @@ impl FromStrRadixErr {
 impl fmt::Display for FromStrRadixErr {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		if let Some(ref src) = self.source {
-			return write!(f, "{}", src);
+			return write!(f, "{}", src)
 		}
 
 		match self.kind {
@@ -118,9 +118,10 @@ impl From<FromDecStrErr> for FromStrRadixErr {
 impl From<FromHexError> for FromStrRadixErr {
 	fn from(e: FromHexError) -> Self {
 		let kind = match e.inner {
-			hex::FromHexError::InvalidHexCharacter { .. } => FromStrRadixErrKind::InvalidCharacter,
-			hex::FromHexError::InvalidStringLength => FromStrRadixErrKind::InvalidLength,
-			hex::FromHexError::OddLength => FromStrRadixErrKind::InvalidLength,
+			array_bytes::Error::InvalidCharacter { .. } | array_bytes::Error::ParseIntError(_) =>
+				FromStrRadixErrKind::InvalidCharacter,
+			array_bytes::Error::InvalidLength | array_bytes::Error::MismatchedLength { .. } =>
+				FromStrRadixErrKind::InvalidLength,
 		};
 
 		Self { kind, source: Some(FromStrRadixErrSrc::Hex(e)) }
@@ -154,25 +155,27 @@ impl std::error::Error for FromDecStrErr {}
 
 #[derive(Debug)]
 pub struct FromHexError {
-	inner: hex::FromHexError,
+	inner: array_bytes::Error,
 }
 
 impl fmt::Display for FromHexError {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "{}", self.inner)
+		write!(f, "{:?}", self.inner)
 	}
 }
 
 #[cfg(feature = "std")]
 impl std::error::Error for FromHexError {
 	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-		Some(&self.inner)
+		// Some(&self.inner)
+		// TODO: <https://github.com/rust-lang/project-error-handling/issues/3>
+		None
 	}
 }
 
 #[doc(hidden)]
-impl From<hex::FromHexError> for FromHexError {
-	fn from(inner: hex::FromHexError) -> Self {
+impl From<array_bytes::Error> for FromHexError {
+	fn from(inner: array_bytes::Error) -> Self {
 		Self { inner }
 	}
 }
@@ -1718,13 +1721,13 @@ macro_rules! construct_uint {
 				let encoded = value.as_bytes();
 
 				if encoded.len() > MAX_ENCODED_LEN {
-					return Err($crate::hex::FromHexError::InvalidStringLength.into());
+					return Err($crate::array_bytes::Error::InvalidLength.into());
 				}
 
 				if encoded.len() % 2 == 0 {
 					let out = &mut bytes[BYTES_LEN - encoded.len() / 2..];
 
-					$crate::hex::decode_to_slice(encoded, out).map_err(Self::Err::from)?;
+					$crate::array_bytes::hex2slice(encoded, out).map_err(Self::Err::from)?;
 				} else {
 					// Prepend '0' by overlaying our value on a scratch buffer filled with '0' characters.
 					let mut s = [b'0'; MAX_ENCODED_LEN];
@@ -1733,7 +1736,7 @@ macro_rules! construct_uint {
 
 					let out = &mut bytes[BYTES_LEN - encoded.len() / 2..];
 
-					$crate::hex::decode_to_slice(encoded, out).map_err(Self::Err::from)?;
+					$crate::array_bytes::hex2slice(encoded, out).map_err(Self::Err::from)?;
 				}
 
 				let bytes_ref: &[u8] = &bytes;
