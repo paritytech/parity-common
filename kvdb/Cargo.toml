@@ -10,4 +10,3 @@ rust-version = "1.56.1"
 
 [dependencies]
 smallvec = "1.0.0"
-parity-util-mem = { path = "../parity-util-mem", version = "0.12", default-features = false }

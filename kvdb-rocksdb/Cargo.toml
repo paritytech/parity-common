@@ -19,7 +19,6 @@ log = "0.4.8"
 num_cpus = "1.10.1"
 parking_lot = "0.12.0"
 regex = "1.3.1"
-parity-util-mem = { path = "../parity-util-mem", version = "0.12", default-features = false, features = ["std", "smallvec"] }
 
 # OpenBSD and MSVC are unteested and shouldn't enable jemalloc:
 # https://github.com/tikv/jemallocator/blob/52de4257fab3e770f73d5174c12a095b49572fba/jemalloc-sys/build.rs#L26-L27
