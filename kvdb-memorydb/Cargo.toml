@@ -10,7 +10,7 @@ rust-version = "1.56.1"
 
 [dependencies]
 parking_lot = "0.12.0"
-kvdb = { version = "0.12", path = "../kvdb" }
+kvdb = { version = "0.13", path = "../kvdb" }
 
 [dev-dependencies]
 kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.10" }
