@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.17.0] - 2022-11-29
+- Removed `parity-util-mem` support. [#696](https://github.com/paritytech/parity-common/pull/696)
+
+
 ## [0.16.0] - 2022-09-20
 - Removed `owning_ref` from dependencies :tada:. [#662](https://github.com/paritytech/parity-common/pull/662)
 - No longer attempt to repair on `open`. [#667](https://github.com/paritytech/parity-common/pull/667)

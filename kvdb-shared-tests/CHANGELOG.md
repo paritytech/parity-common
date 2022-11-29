@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.11.0] - 2022-11-29
+- Removed `parity-util-mem` support. [#696](https://github.com/paritytech/parity-common/pull/696)
+
 ## [0.10.0] - 2022-09-20
 ### Breaking
 - Migrated to 2021 edition, enforcing MSRV of `1.56.1`. [#601](https://github.com/paritytech/parity-common/pull/601)
