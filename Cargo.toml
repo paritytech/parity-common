@@ -10,9 +10,7 @@ members = [
 	"rlp",
 	"rlp-derive",
 	"uint",
-	"parity-util-mem",
 	"primitive-types",
 	"ethereum-types",
 	"ethbloom",
-	"parity-util-mem/derive"
 ]

@@ -21,7 +21,6 @@ use rocksdb::{
 };
 
 use kvdb::{DBKeyValue, DBOp, DBTransaction, DBValue, KeyValueDB};
-use log::warn;
 
 #[cfg(target_os = "linux")]
 use regex::Regex;
@@ -258,30 +257,12 @@ impl DBAndColumns {
 			.cf_handle(&name)
 			.ok_or_else(|| other_io_err(format!("invalid column name: {name}")))
 	}
-
-	fn static_property_or_warn(&self, col: usize, prop: &str) -> usize {
-		let cf = match self.cf(col) {
-			Ok(cf) => cf,
-			Err(_) => {
-				warn!("RocksDB column index out of range: {}", col);
-				return 0
-			},
-		};
-		match self.db.property_int_value_cf(cf, prop) {
-			Ok(Some(v)) => v as usize,
-			_ => {
-				warn!("Cannot read expected static property of RocksDb database: {}", prop);
-				0
-			},
-		}
-	}
 }
 
 /// Key-Value database.
 pub struct Database {
 	inner: DBAndColumns,
 	config: DatabaseConfig,
-	path: PathBuf,
 	opts: Options,
 	write_opts: WriteOptions,
 	read_opts: ReadOptions,
@@ -372,7 +353,6 @@ impl Database {
 		Ok(Database {
 			inner: DBAndColumns { db, column_names },
 			config: config.clone(),
-			path: path.as_ref().to_owned(),
 			opts,
 			read_opts,
 			write_opts,
@@ -755,33 +735,6 @@ mod tests {
 		second_db.try_catch_up_with_primary()?;
 		assert_eq!(&*second_db.get(0, b"key2")?.unwrap(), b"cat");
 		Ok(())
-	}
-
-	#[test]
-	fn mem_tables_size() {
-		let tempdir = TempfileBuilder::new().prefix("").tempdir().unwrap();
-
-		let config = DatabaseConfig {
-			max_open_files: 512,
-			memory_budget: HashMap::new(),
-			compaction: CompactionProfile::default(),
-			columns: 11,
-			keep_log_file_num: 1,
-			enable_statistics: false,
-			secondary: None,
-			max_total_wal_size: None,
-			create_if_missing: true,
-		};
-
-		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
-
-		let mut batch = db.transaction();
-		for i in 0u32..10000u32 {
-			batch.put(i / 1000 + 1, &i.to_le_bytes(), &(i * 17).to_le_bytes());
-		}
-		db.write(batch).unwrap();
-
-		assert!(db.inner.static_property_or_warn(0, "rocksdb.cur-size-all-mem-tables") > 512);
 	}
 
 	#[test]

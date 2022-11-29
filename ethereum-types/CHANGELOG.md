@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.14.1] - 2022-11-29
+- Added `if_ethbloom` conditional macro. [#682](https://github.com/paritytech/parity-common/pull/682)
+
 ## [0.14.0] - 2022-09-20
 - Updated `fixed-hash` to 0.8. [#680](https://github.com/paritytech/parity-common/pull/680)
 - Updated `primitive-types` to 0.12. [#680](https://github.com/paritytech/parity-common/pull/680)
