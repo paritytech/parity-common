@@ -106,26 +106,6 @@ jobs:
           command: test
           args: -p uint --target=mips64-unknown-linux-gnuabi64
 
-      - name: Test parity-util-mem on Android
-        if: runner.os == 'Linux'
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: test
-          args: -p parity-util-mem --target=aarch64-linux-android
-
-      - name: Test parity-util-mem estimate-heapsize 
-        run: cargo test -p parity-util-mem --features='estimate-heapsize'
-
-      - name: Test parity-util-mem jemalloc-global 
-        run: cargo test -p parity-util-mem --features='jemalloc-global'
-
-      - name: Test parity-util-mem mimalloc-global 
-        run: cargo test -p parity-util-mem --features='mimalloc-global'
-
-      - name: Test parity-util-mem dlmalloc-global 
-        run: cargo test -p parity-util-mem --no-default-features --features='dlmalloc-global'
-
   test_windows:
     name: Test Windows
     runs-on: windows-latest
