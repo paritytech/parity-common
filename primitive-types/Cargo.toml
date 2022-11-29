@@ -12,6 +12,7 @@ rust-version = "1.60.0"
 fixed-hash = { version = "0.8", path = "../fixed-hash", default-features = false }
 uint = { version = "0.9.0", path = "../uint", default-features = false }
 impl-serde = { version = "0.4.0", path = "impls/serde", default-features = false, optional = true }
+impl-borsh = { version = "0.1.0", path = "impls/borsh", default-features = false, optional = true }
 impl-codec = { version = "0.6.0", path = "impls/codec", default-features = false, optional = true }
 impl-num-traits = { version = "0.1.0", path = "impls/num-traits", default-features = false, optional = true }
 impl-rlp = { version = "0.3", path = "impls/rlp", default-features = false, optional = true }
@@ -30,6 +31,7 @@ rlp = ["impl-rlp"]
 arbitrary = ["fixed-hash/arbitrary", "uint/arbitrary"]
 fp-conversion = ["std"]
 num-traits = ["impl-num-traits"]
+borsh = ["impl-borsh"]
 
 [[test]]
 name = "scale_info"

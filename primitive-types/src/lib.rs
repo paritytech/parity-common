@@ -139,6 +139,21 @@ mod rlp {
 	impl_fixed_hash_rlp!(H768, 96);
 }
 
+#[cfg(feature = "impl-borsh")]
+mod borsh {
+	use super::*;
+	use impl_borsh::{impl_fixed_hash_borsh, impl_uint_borsh};
+
+	impl_uint_borsh!(U128, 2);
+	impl_uint_borsh!(U256, 4);
+	impl_uint_borsh!(U512, 8);
+
+	impl_fixed_hash_borsh!(H128, 16);
+	impl_fixed_hash_borsh!(H160, 20);
+	impl_fixed_hash_borsh!(H256, 32);
+	impl_fixed_hash_borsh!(H512, 64);
+}
+
 impl_fixed_hash_conversions!(H256, H160);
 
 impl U128 {
