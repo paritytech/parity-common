@@ -16,7 +16,6 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use parity_util_mem::MallocSizeOf;
 use rocksdb::{
 	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Options, ReadOptions, WriteBatch, WriteOptions, DB,
 };
@@ -252,26 +251,6 @@ struct DBAndColumns {
 	column_names: Vec<String>,
 }
 
-impl MallocSizeOf for DBAndColumns {
-	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
-		let mut total = self.column_names.size_of(ops)
-			// we have at least one column always, so we can call property on it
-			+ self.cf(0).map(|cf| self.db
-				.property_int_value_cf(cf, "rocksdb.block-cache-usage")
-				.unwrap_or(Some(0))
-				.map(|x| x as usize)
-				.unwrap_or(0)
-			).unwrap_or(0);
-
-		for v in 0..self.column_names.len() {
-			total += self.static_property_or_warn(v, "rocksdb.estimate-table-readers-mem");
-			total += self.static_property_or_warn(v, "rocksdb.cur-size-all-mem-tables");
-		}
-
-		total
-	}
-}
-
 impl DBAndColumns {
 	fn cf(&self, i: usize) -> io::Result<&ColumnFamily> {
 		let name = self.column_names.get(i).ok_or_else(|| invalid_column(i as u32))?;
@@ -299,22 +278,14 @@ impl DBAndColumns {
 }
 
 /// Key-Value database.
-#[derive(MallocSizeOf)]
 pub struct Database {
 	inner: DBAndColumns,
-	#[ignore_malloc_size_of = "insignificant"]
 	config: DatabaseConfig,
-	#[ignore_malloc_size_of = "insignificant"]
 	path: PathBuf,
-	#[ignore_malloc_size_of = "insignificant"]
 	opts: Options,
-	#[ignore_malloc_size_of = "insignificant"]
 	write_opts: WriteOptions,
-	#[ignore_malloc_size_of = "insignificant"]
 	read_opts: ReadOptions,
-	#[ignore_malloc_size_of = "insignificant"]
 	block_opts: BlockBasedOptions,
-	#[ignore_malloc_size_of = "insignificant"]
 	stats: stats::RunningDbStats,
 }
 

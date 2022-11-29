@@ -145,7 +145,6 @@ fn main() {
 			println!("{}", timestamp);
 			println!("\tData written: {} keys - {} Mb", step + 1, ((step + 1) * 64 * 128) / 1024 / 1024);
 			println!("\tProcess memory used as seen by the OS: {} Mb", proc_memory_usage() / 1024);
-			println!("\tMemory used as reported by rocksdb: {} Mb\n", parity_util_mem::malloc_size(&db) / 1024 / 1024);
 		}
 
 		step += 1;

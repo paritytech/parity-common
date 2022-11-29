@@ -104,7 +104,7 @@ impl DBTransaction {
 ///
 /// The API laid out here, along with the `Sync` bound implies interior synchronization for
 /// implementation.
-pub trait KeyValueDB: Sync + Send + parity_util_mem::MallocSizeOf {
+pub trait KeyValueDB: Sync + Send {
 	/// Helper to create a new transaction.
 	fn transaction(&self) -> DBTransaction {
 		DBTransaction::new()
