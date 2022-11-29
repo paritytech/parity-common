@@ -281,7 +281,6 @@ impl DBAndColumns {
 pub struct Database {
 	inner: DBAndColumns,
 	config: DatabaseConfig,
-	path: PathBuf,
 	opts: Options,
 	write_opts: WriteOptions,
 	read_opts: ReadOptions,
@@ -372,7 +371,6 @@ impl Database {
 		Ok(Database {
 			inner: DBAndColumns { db, column_names },
 			config: config.clone(),
-			path: path.as_ref().to_owned(),
 			opts,
 			read_opts,
 			write_opts,
