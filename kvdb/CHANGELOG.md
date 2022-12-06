@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+
+## [0.13.0] - 2022-11-29
+- Removed `parity-util-mem` support. [#696](https://github.com/paritytech/parity-common/pull/696)
+
 ## [0.12.0] - 2022-09-20
 ### Breaking
 - Removed `fn restore` from `KeyValueDB` trait. [#662](https://github.com/paritytech/parity-common/pull/662)

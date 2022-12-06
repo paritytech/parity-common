@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.9.5] - 2022-11-29
+- Implemented bitwise assign traits. [#690](https://github.com/paritytech/parity-common/pull/690)
+
 ## [0.9.4] - 2022-09-20
 - Made `one` const. [#650](https://github.com/paritytech/parity-common/pull/650)
 - Made `max_value` const. [#652](https://github.com/paritytech/parity-common/pull/652)
