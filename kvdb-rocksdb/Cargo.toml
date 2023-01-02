@@ -39,6 +39,6 @@ kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.11" }
 rand = "0.8.0"
 tempfile = "3.1.0"
 keccak-hash = { path = "../keccak-hash" }
-sysinfo = "0.26.0"
+sysinfo = "0.27.2"
 ctrlc = "3.1.4"
 chrono = "0.4"
