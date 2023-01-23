@@ -370,10 +370,7 @@ impl<K, V, S> codec::DecodeLength for BoundedBTreeMap<K, V, S> {
 	}
 }
 
-impl<K, V, S> codec::EncodeLike<BTreeMap<K, V>> for BoundedBTreeMap<K, V, S> where
-	BTreeMap<K, V>: Encode
-{
-}
+impl<K, V, S> codec::EncodeLike<BTreeMap<K, V>> for BoundedBTreeMap<K, V, S> where BTreeMap<K, V>: Encode {}
 
 impl<I, K, V, Bound> TryCollect<BoundedBTreeMap<K, V, Bound>> for I
 where
@@ -528,13 +525,11 @@ pub mod test {
 	#[test]
 	fn can_be_collected() {
 		let b1 = boundedmap_from_keys::<u32, ConstU32<5>>(&[1, 2, 3, 4]);
-		let b2: BoundedBTreeMap<u32, (), ConstU32<5>> =
-			b1.iter().map(|(k, v)| (k + 1, *v)).try_collect().unwrap();
+		let b2: BoundedBTreeMap<u32, (), ConstU32<5>> = b1.iter().map(|(k, v)| (k + 1, *v)).try_collect().unwrap();
 		assert_eq!(b2.into_iter().map(|(k, _)| k).collect::<Vec<_>>(), vec![2, 3, 4, 5]);
 
 		// can also be collected into a collection of length 4.
-		let b2: BoundedBTreeMap<u32, (), ConstU32<4>> =
-			b1.iter().map(|(k, v)| (k + 1, *v)).try_collect().unwrap();
+		let b2: BoundedBTreeMap<u32, (), ConstU32<4>> = b1.iter().map(|(k, v)| (k + 1, *v)).try_collect().unwrap();
 		assert_eq!(b2.into_iter().map(|(k, _)| k).collect::<Vec<_>>(), vec![2, 3, 4, 5]);
 
 		// can be mutated further into iterators that are `ExactSizedIterator`.
@@ -548,8 +543,7 @@ pub mod test {
 		assert_eq!(b2.into_iter().map(|(k, _)| k).collect::<Vec<_>>(), vec![2, 3]);
 
 		// but these won't work
-		let b2: Result<BoundedBTreeMap<u32, (), ConstU32<3>>, _> =
-			b1.iter().map(|(k, v)| (k + 1, *v)).try_collect();
+		let b2: Result<BoundedBTreeMap<u32, (), ConstU32<3>>, _> = b1.iter().map(|(k, v)| (k + 1, *v)).try_collect();
 		assert!(b2.is_err());
 
 		let b2: Result<BoundedBTreeMap<u32, (), ConstU32<1>>, _> =
@@ -608,16 +602,14 @@ pub mod test {
 
 	#[test]
 	fn try_map_short_circuit() {
-		let b1: BoundedBTreeMap<u8, u8, ConstU32<7>> =
-			[1, 2, 3, 4].into_iter().map(|k| (k, k)).try_collect().unwrap();
+		let b1: BoundedBTreeMap<u8, u8, ConstU32<7>> = [1, 2, 3, 4].into_iter().map(|k| (k, k)).try_collect().unwrap();
 
 		assert_eq!(Err("overflow"), b1.try_map(|(_, v)| v.checked_mul(100).ok_or("overflow")));
 	}
 
 	#[test]
 	fn try_map_ok() {
-		let b1: BoundedBTreeMap<u8, u8, ConstU32<7>> =
-			[1, 2, 3, 4].into_iter().map(|k| (k, k)).try_collect().unwrap();
+		let b1: BoundedBTreeMap<u8, u8, ConstU32<7>> = [1, 2, 3, 4].into_iter().map(|k| (k, k)).try_collect().unwrap();
 		let b2: BoundedBTreeMap<u8, u16, ConstU32<7>> =
 			[1, 2, 3, 4].into_iter().map(|k| (k, (k as u16) * 100)).try_collect().unwrap();
 

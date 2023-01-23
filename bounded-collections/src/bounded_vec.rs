@@ -22,7 +22,7 @@ use super::WeakBoundedVec;
 use crate::{Get, TryCollect};
 use codec::{Decode, Encode, EncodeLike, MaxEncodedLen};
 use core::{
-    marker::PhantomData,
+	marker::PhantomData,
 	ops::{Deref, Index, IndexMut, RangeBounds},
 	slice::SliceIndex,
 };
@@ -42,10 +42,7 @@ use serde::{
 #[cfg_attr(feature = "std", derive(Serialize), serde(transparent))]
 #[derive(Encode, scale_info::TypeInfo)]
 #[scale_info(skip_type_params(S))]
-pub struct BoundedVec<T, S>(
-	pub(super) Vec<T>,
-	#[cfg_attr(feature = "std", serde(skip_serializing))] PhantomData<S>,
-);
+pub struct BoundedVec<T, S>(pub(super) Vec<T>, #[cfg_attr(feature = "std", serde(skip_serializing))] PhantomData<S>);
 
 /// Create an object through truncation.
 pub trait TruncateFrom<T> {
@@ -131,17 +128,10 @@ where
 		scale_info::Type::builder()
 			.path(scale_info::Path::new("BoundedSlice", "sp_runtime::bounded::bounded_vec"))
 			.type_params(<[_]>::into_vec(Box::new([
-				scale_info::TypeParameter::new(
-					"T",
-					core::option::Option::Some(::scale_info::meta_type::<T>()),
-				),
+				scale_info::TypeParameter::new("T", core::option::Option::Some(::scale_info::meta_type::<T>())),
 				scale_info::TypeParameter::new("S", ::core::option::Option::None),
 			])))
-			.docs(&[
-				"A bounded slice.",
-				"",
-				"Similar to a `BoundedVec`, but not owned and cannot be decoded.",
-			])
+			.docs(&["A bounded slice.", "", "Similar to a `BoundedVec`, but not owned and cannot be decoded."])
 			.composite(
 				scale_info::build::Fields::unnamed()
 					.field(|f| f.ty::<&'static [T]>().type_name("&'static[T]").docs(&[]))
@@ -153,14 +143,10 @@ where
 // `BoundedSlice`s encode to something which will always decode into a `BoundedVec`,
 // `WeakBoundedVec`, or a `Vec`.
 impl<'a, T: Encode + Decode, S: Get<u32>> EncodeLike<BoundedVec<T, S>> for BoundedSlice<'a, T, S> {}
-impl<'a, T: Encode + Decode, S: Get<u32>> EncodeLike<WeakBoundedVec<T, S>>
-	for BoundedSlice<'a, T, S>
-{
-}
+impl<'a, T: Encode + Decode, S: Get<u32>> EncodeLike<WeakBoundedVec<T, S>> for BoundedSlice<'a, T, S> {}
 impl<'a, T: Encode + Decode, S: Get<u32>> EncodeLike<Vec<T>> for BoundedSlice<'a, T, S> {}
 
-impl<'a, T, BoundSelf, BoundRhs> PartialEq<BoundedSlice<'a, T, BoundRhs>>
-	for BoundedSlice<'a, T, BoundSelf>
+impl<'a, T, BoundSelf, BoundRhs> PartialEq<BoundedSlice<'a, T, BoundRhs>> for BoundedSlice<'a, T, BoundSelf>
 where
 	T: PartialEq,
 	BoundSelf: Get<u32>,
@@ -171,8 +157,7 @@ where
 	}
 }
 
-impl<'a, T, BoundSelf, BoundRhs> PartialEq<BoundedVec<T, BoundRhs>>
-	for BoundedSlice<'a, T, BoundSelf>
+impl<'a, T, BoundSelf, BoundRhs> PartialEq<BoundedVec<T, BoundRhs>> for BoundedSlice<'a, T, BoundSelf>
 where
 	T: PartialEq,
 	BoundSelf: Get<u32>,
@@ -183,8 +168,7 @@ where
 	}
 }
 
-impl<'a, T, BoundSelf, BoundRhs> PartialEq<WeakBoundedVec<T, BoundRhs>>
-	for BoundedSlice<'a, T, BoundSelf>
+impl<'a, T, BoundSelf, BoundRhs> PartialEq<WeakBoundedVec<T, BoundRhs>> for BoundedSlice<'a, T, BoundSelf>
 where
 	T: PartialEq,
 	BoundSelf: Get<u32>,
@@ -197,8 +181,7 @@ where
 
 impl<'a, T, S: Get<u32>> Eq for BoundedSlice<'a, T, S> where T: Eq {}
 
-impl<'a, T, BoundSelf, BoundRhs> PartialOrd<BoundedSlice<'a, T, BoundRhs>>
-	for BoundedSlice<'a, T, BoundSelf>
+impl<'a, T, BoundSelf, BoundRhs> PartialOrd<BoundedSlice<'a, T, BoundRhs>> for BoundedSlice<'a, T, BoundSelf>
 where
 	T: PartialOrd,
 	BoundSelf: Get<u32>,
@@ -209,8 +192,7 @@ where
 	}
 }
 
-impl<'a, T, BoundSelf, BoundRhs> PartialOrd<BoundedVec<T, BoundRhs>>
-	for BoundedSlice<'a, T, BoundSelf>
+impl<'a, T, BoundSelf, BoundRhs> PartialOrd<BoundedVec<T, BoundRhs>> for BoundedSlice<'a, T, BoundSelf>
 where
 	T: PartialOrd,
 	BoundSelf: Get<u32>,
@@ -221,8 +203,7 @@ where
 	}
 }
 
-impl<'a, T, BoundSelf, BoundRhs> PartialOrd<WeakBoundedVec<T, BoundRhs>>
-	for BoundedSlice<'a, T, BoundSelf>
+impl<'a, T, BoundSelf, BoundRhs> PartialOrd<WeakBoundedVec<T, BoundRhs>> for BoundedSlice<'a, T, BoundSelf>
 where
 	T: PartialOrd,
 	BoundSelf: Get<u32>,
@@ -394,10 +375,7 @@ impl<T, S> BoundedVec<T, S> {
 	}
 
 	/// Exactly the same semantics as `slice::get_mut`.
-	pub fn get_mut<I: SliceIndex<[T]>>(
-		&mut self,
-		index: I,
-	) -> Option<&mut <I as SliceIndex<[T]>>::Output> {
+	pub fn get_mut<I: SliceIndex<[T]>>(&mut self, index: I) -> Option<&mut <I as SliceIndex<[T]>>::Output> {
 		self.0.get_mut(index)
 	}
 
@@ -480,11 +458,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 	/// Returns `Ok(maybe_removed)` if the item was inserted, where `maybe_removed` is
 	/// `Some(removed)` if an item was removed to make room for the new one. Returns `Err(())` if
 	/// `element` cannot be inserted.
-	pub fn force_insert_keep_right(
-		&mut self,
-		index: usize,
-		mut element: T,
-	) -> Result<Option<T>, ()> {
+	pub fn force_insert_keep_right(&mut self, index: usize, mut element: T) -> Result<Option<T>, ()> {
 		// Check against panics.
 		if Self::bound() < index || self.len() < index {
 			Err(())
@@ -609,10 +583,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 
 	/// Exactly the same semantics as [`Vec::extend`], but returns an error and does nothing if the
 	/// length of the outcome is larger than the bound.
-	pub fn try_extend(
-		&mut self,
-		with: impl IntoIterator<Item = T> + ExactSizeIterator,
-	) -> Result<(), ()> {
+	pub fn try_extend(&mut self, with: impl IntoIterator<Item = T> + ExactSizeIterator) -> Result<(), ()> {
 		if with.len().saturating_add(self.len()) <= Self::bound() {
 			self.0.extend(with);
 			Ok(())
@@ -832,8 +803,7 @@ where
 	}
 }
 
-impl<'a, T, BoundSelf, BoundRhs> PartialEq<BoundedSlice<'a, T, BoundRhs>>
-	for BoundedVec<T, BoundSelf>
+impl<'a, T, BoundSelf, BoundRhs> PartialEq<BoundedSlice<'a, T, BoundRhs>> for BoundedVec<T, BoundSelf>
 where
 	T: PartialEq,
 	BoundSelf: Get<u32>,
@@ -880,8 +850,7 @@ where
 	}
 }
 
-impl<'a, T, BoundSelf, BoundRhs> PartialOrd<BoundedSlice<'a, T, BoundRhs>>
-	for BoundedVec<T, BoundSelf>
+impl<'a, T, BoundSelf, BoundRhs> PartialOrd<BoundedSlice<'a, T, BoundRhs>> for BoundedVec<T, BoundSelf>
 where
 	T: PartialOrd,
 	BoundSelf: Get<u32>,
@@ -1233,30 +1202,24 @@ pub mod test {
 		assert_eq!(b2, vec![2, 3, 4, 5]);
 
 		// can be mutated further into iterators that are `ExactSizedIterator`.
-		let b2: BoundedVec<u32, ConstU32<4>> =
-			b1.iter().map(|x| x + 1).rev().try_collect().unwrap();
+		let b2: BoundedVec<u32, ConstU32<4>> = b1.iter().map(|x| x + 1).rev().try_collect().unwrap();
 		assert_eq!(b2, vec![5, 4, 3, 2]);
 
-		let b2: BoundedVec<u32, ConstU32<4>> =
-			b1.iter().map(|x| x + 1).rev().skip(2).try_collect().unwrap();
+		let b2: BoundedVec<u32, ConstU32<4>> = b1.iter().map(|x| x + 1).rev().skip(2).try_collect().unwrap();
 		assert_eq!(b2, vec![3, 2]);
-		let b2: BoundedVec<u32, ConstU32<2>> =
-			b1.iter().map(|x| x + 1).rev().skip(2).try_collect().unwrap();
+		let b2: BoundedVec<u32, ConstU32<2>> = b1.iter().map(|x| x + 1).rev().skip(2).try_collect().unwrap();
 		assert_eq!(b2, vec![3, 2]);
 
-		let b2: BoundedVec<u32, ConstU32<4>> =
-			b1.iter().map(|x| x + 1).rev().take(2).try_collect().unwrap();
+		let b2: BoundedVec<u32, ConstU32<4>> = b1.iter().map(|x| x + 1).rev().take(2).try_collect().unwrap();
 		assert_eq!(b2, vec![5, 4]);
-		let b2: BoundedVec<u32, ConstU32<2>> =
-			b1.iter().map(|x| x + 1).rev().take(2).try_collect().unwrap();
+		let b2: BoundedVec<u32, ConstU32<2>> = b1.iter().map(|x| x + 1).rev().take(2).try_collect().unwrap();
 		assert_eq!(b2, vec![5, 4]);
 
 		// but these worn't work
 		let b2: Result<BoundedVec<u32, ConstU32<3>>, _> = b1.iter().map(|x| x + 1).try_collect();
 		assert!(b2.is_err());
 
-		let b2: Result<BoundedVec<u32, ConstU32<1>>, _> =
-			b1.iter().map(|x| x + 1).rev().take(2).try_collect();
+		let b2: Result<BoundedVec<u32, ConstU32<1>>, _> = b1.iter().map(|x| x + 1).rev().take(2).try_collect();
 		assert!(b2.is_err());
 	}
 

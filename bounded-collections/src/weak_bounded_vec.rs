@@ -22,7 +22,7 @@ use super::{BoundedSlice, BoundedVec};
 use crate::Get;
 use codec::{Decode, Encode, MaxEncodedLen};
 use core::{
-    marker::PhantomData,
+	marker::PhantomData,
 	ops::{Deref, Index, IndexMut},
 	slice::SliceIndex,
 };
@@ -100,9 +100,9 @@ where
 		}
 
 		let visitor: VecVisitor<T, S> = VecVisitor(PhantomData);
-		deserializer.deserialize_seq(visitor).map(|v| {
-			WeakBoundedVec::<T, S>::try_from(v).map_err(|_| Error::custom("out of bounds"))
-		})?
+		deserializer
+			.deserialize_seq(visitor)
+			.map(|v| WeakBoundedVec::<T, S>::try_from(v).map_err(|_| Error::custom("out of bounds")))?
 	}
 }
 
@@ -157,10 +157,7 @@ impl<T, S> WeakBoundedVec<T, S> {
 	}
 
 	/// Exactly the same semantics as [`slice::get_mut`].
-	pub fn get_mut<I: SliceIndex<[T]>>(
-		&mut self,
-		index: I,
-	) -> Option<&mut <I as SliceIndex<[T]>>::Output> {
+	pub fn get_mut<I: SliceIndex<[T]>>(&mut self, index: I) -> Option<&mut <I as SliceIndex<[T]>>::Output> {
 		self.0.get_mut(index)
 	}
 }
@@ -373,8 +370,7 @@ where
 	}
 }
 
-impl<'a, T, BoundSelf, BoundRhs> PartialEq<BoundedSlice<'a, T, BoundRhs>>
-	for WeakBoundedVec<T, BoundSelf>
+impl<'a, T, BoundSelf, BoundRhs> PartialEq<BoundedSlice<'a, T, BoundRhs>> for WeakBoundedVec<T, BoundSelf>
 where
 	T: PartialEq,
 	BoundSelf: Get<u32>,
@@ -393,8 +389,7 @@ impl<T: PartialEq, S: Get<u32>> PartialEq<Vec<T>> for WeakBoundedVec<T, S> {
 
 impl<T, S: Get<u32>> Eq for WeakBoundedVec<T, S> where T: Eq {}
 
-impl<T, BoundSelf, BoundRhs> PartialOrd<WeakBoundedVec<T, BoundRhs>>
-	for WeakBoundedVec<T, BoundSelf>
+impl<T, BoundSelf, BoundRhs> PartialOrd<WeakBoundedVec<T, BoundRhs>> for WeakBoundedVec<T, BoundSelf>
 where
 	T: PartialOrd,
 	BoundSelf: Get<u32>,
@@ -416,8 +411,7 @@ where
 	}
 }
 
-impl<'a, T, BoundSelf, BoundRhs> PartialOrd<BoundedSlice<'a, T, BoundRhs>>
-	for WeakBoundedVec<T, BoundSelf>
+impl<'a, T, BoundSelf, BoundRhs> PartialOrd<BoundedSlice<'a, T, BoundRhs>> for WeakBoundedVec<T, BoundSelf>
 where
 	T: PartialOrd,
 	BoundSelf: Get<u32>,

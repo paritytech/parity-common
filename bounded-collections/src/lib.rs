@@ -54,7 +54,7 @@ impl<T: Default> Get<T> for GetDefault {
 
 macro_rules! impl_const_get {
 	($name:ident, $t:ty) => {
-		#[doc = "Const getter for a basic type."]
+		/// Const getter for a basic type.
 		#[cfg_attr(feature = "std", derive(core::fmt::Debug))]
 		pub struct $name<const T: $t>;
 		#[cfg(not(feature = "std"))]
