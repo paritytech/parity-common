@@ -120,8 +120,8 @@ pub trait TryCollect<C> {
 /// # Examples
 ///
 /// ```
-/// # use core_types::Get;
-/// # use core_types::parameter_types;
+/// # use bounded_collections::Get;
+/// # use bounded_collections::parameter_types;
 /// // This function cannot be used in a const context.
 /// fn non_const_expression() -> u64 { 99 }
 ///
