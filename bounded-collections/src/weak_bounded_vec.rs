@@ -445,7 +445,7 @@ where
 }
 
 #[cfg(test)]
-pub mod test {
+mod test {
 	use super::*;
 	use crate::ConstU32;
 

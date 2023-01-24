@@ -900,7 +900,7 @@ where
 }
 
 #[cfg(all(test, feature = "std"))]
-pub mod test {
+mod test {
 	use super::*;
 	use crate::{bounded_vec, ConstU32};
 
