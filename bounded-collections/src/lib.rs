@@ -58,7 +58,7 @@ macro_rules! impl_const_get {
 		#[cfg_attr(feature = "std", derive(core::fmt::Debug))]
 		pub struct $name<const T: $t>;
 		#[cfg(not(feature = "std"))]
-		impl core::fmt::Debug for $name {
+		impl<const T: $t> core::fmt::Debug for $name<T> {
 			fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
 				fmt.write_str("<wasm:stripped>")
 			}
