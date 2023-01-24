@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Collection types that have an upper limit on how many elements that they can contain.
+//! Core collection types that have an upper limit on how many elements that they can contain.
 
 extern crate alloc;
 
@@ -120,8 +120,8 @@ pub trait TryCollect<C> {
 /// # Examples
 ///
 /// ```
-/// # use bounded_collections::Get;
-/// # use bounded_collections::parameter_types;
+/// # use core_types::Get;
+/// # use core_types::parameter_types;
 /// // This function cannot be used in a const context.
 /// fn non_const_expression() -> u64 { 99 }
 ///

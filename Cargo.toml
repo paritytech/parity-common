@@ -11,7 +11,7 @@ members = [
 	"rlp-derive",
 	"uint",
 	"primitive-types",
-	"bounded-collections",
+	"core-types",
 	"ethereum-types",
 	"ethbloom",
 ]
