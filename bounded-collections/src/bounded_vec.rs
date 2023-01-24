@@ -899,7 +899,7 @@ where
 	}
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 pub mod test {
 	use super::*;
 	use crate::{bounded_vec, ConstU32};
