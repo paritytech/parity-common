@@ -9,7 +9,7 @@
 //! Collection types that have an upper limit on how many elements that they can contain, and
 //! supporting traits that aid in defining the limit.
 
-extern crate alloc;
+pub extern crate alloc;
 
 pub mod bounded_btree_map;
 pub mod bounded_btree_set;
