@@ -20,7 +20,7 @@
 
 use super::WeakBoundedVec;
 use crate::{Get, TryCollect};
-use codec::{Decode, Encode, EncodeLike, MaxEncodedLen};
+use codec::{decode_vec_with_len, Compact, Decode, Encode, EncodeLike, MaxEncodedLen};
 use core::{
 	marker::PhantomData,
 	ops::{Deref, Index, IndexMut, RangeBounds},
@@ -289,10 +289,11 @@ impl<'a, T, S: Get<u32>> BoundedSlice<'a, T, S> {
 
 impl<T: Decode, S: Get<u32>> Decode for BoundedVec<T, S> {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let inner = Vec::<T>::decode(input)?;
-		if inner.len() > S::get() as usize {
+		let len: u32 = <Compact<u32>>::decode(input)?.into();
+		if len > S::get() {
 			return Err("BoundedVec exceeds its limit".into())
 		}
+		let inner = decode_vec_with_len(input, len as usize)?;
 		Ok(Self(inner, PhantomData))
 	}
 
