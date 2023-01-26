@@ -6,7 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Core collection types that have an upper limit on how many elements that they can contain.
+//! Collection types that have an upper limit on how many elements that they can contain, and
+//! supporting traits that aid in defining the limit.
 
 extern crate alloc;
 
