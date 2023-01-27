@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
+## [0.1.3] - 2023-01-27
+- Removed non-existent `bounded` mod reference. [#715](https://github.com/paritytech/parity-common/pull/715)
+
 ## [0.1.2] - 2023-01-27
 - Ensured `bounded-collections` crate compiles under `no_std`. [#712](https://github.com/paritytech/parity-common/pull/712)
 
