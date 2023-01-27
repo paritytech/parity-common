@@ -449,6 +449,7 @@ where
 mod test {
 	use super::*;
 	use crate::ConstU32;
+	use alloc::vec;
 
 	#[test]
 	fn bound_returns_correct_value() {
