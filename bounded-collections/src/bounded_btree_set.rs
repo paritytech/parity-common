@@ -323,6 +323,7 @@ where
 mod test {
 	use super::*;
 	use crate::ConstU32;
+	use alloc::{vec, vec::Vec};
 
 	fn set_from_keys<T>(keys: &[T]) -> BTreeSet<T>
 	where
@@ -403,13 +404,13 @@ mod test {
 		impl Eq for Unequal {}
 
 		impl Ord for Unequal {
-			fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+			fn cmp(&self, other: &Self) -> core::cmp::Ordering {
 				self.0.cmp(&other.0)
 			}
 		}
 
 		impl PartialOrd for Unequal {
-			fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+			fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
 				Some(self.cmp(other))
 			}
 		}

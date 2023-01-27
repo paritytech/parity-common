@@ -98,6 +98,18 @@ jobs:
           command: test
           args: -p ethbloom --all-features
 
+      - name: Test bounded-collections no_std
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p bounded-collections --no-default-features
+
+      - name: Test bounded-collections all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p bounded-collections --all-features
+
       - name: Test uint on bigendian
         if: runner.os == 'Linux'
         uses: actions-rs/cargo@v1

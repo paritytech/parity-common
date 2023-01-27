@@ -393,12 +393,13 @@ where
 mod test {
 	use super::*;
 	use crate::ConstU32;
+	use alloc::{vec, vec::Vec};
 
 	fn map_from_keys<K>(keys: &[K]) -> BTreeMap<K, ()>
 	where
 		K: Ord + Copy,
 	{
-		keys.iter().copied().zip(std::iter::repeat(())).collect()
+		keys.iter().copied().zip(core::iter::repeat(())).collect()
 	}
 
 	fn boundedmap_from_keys<K, S>(keys: &[K]) -> BoundedBTreeMap<K, (), S>
@@ -473,13 +474,13 @@ mod test {
 		impl Eq for Unequal {}
 
 		impl Ord for Unequal {
-			fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+			fn cmp(&self, other: &Self) -> core::cmp::Ordering {
 				self.0.cmp(&other.0)
 			}
 		}
 
 		impl PartialOrd for Unequal {
-			fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+			fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
 				Some(self.cmp(other))
 			}
 		}
