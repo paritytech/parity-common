@@ -21,6 +21,7 @@
 use super::WeakBoundedVec;
 use crate::{Get, TryCollect};
 use codec::{decode_vec_with_len, Compact, Decode, Encode, EncodeLike, MaxEncodedLen};
+use alloc::{boxed::Box, vec::Vec};
 use core::{
 	marker::PhantomData,
 	ops::{Deref, Index, IndexMut, RangeBounds},

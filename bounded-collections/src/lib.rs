@@ -9,6 +9,8 @@
 //! Collection types that have an upper limit on how many elements that they can contain, and
 //! supporting traits that aid in defining the limit.
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 pub extern crate alloc;
 
 pub mod bounded_btree_map;
@@ -256,7 +258,7 @@ macro_rules! bounded_vec {
 macro_rules! bounded_btree_map {
 	($ ( $key:expr => $value:expr ),* $(,)?) => {
 		{
-			$crate::TryCollect::<$crate::bounded::BoundedBTreeMap<_, _, _>>::try_collect(
+			$crate::TryCollect::<$crate::BoundedBTreeMap<_, _, _>>::try_collect(
 				$crate::alloc::vec![$(($key, $value)),*].into_iter()
 			).unwrap()
 		}
