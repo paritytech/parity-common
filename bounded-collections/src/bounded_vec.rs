@@ -40,7 +40,7 @@ use serde::{
 ///
 /// As the name suggests, the length of the queue is always bounded. All internal operations ensure
 /// this bound is respected.
-#[cfg_attr(feature = "std", derive(Serialize), serde(transparent))]
+#[cfg_attr(feature = "std", derive(Hash, Serialize), serde(transparent))]
 #[derive(Encode, scale_info::TypeInfo)]
 #[scale_info(skip_type_params(S))]
 pub struct BoundedVec<T, S>(pub(super) Vec<T>, #[cfg_attr(feature = "std", serde(skip_serializing))] PhantomData<S>);
@@ -108,6 +108,7 @@ where
 /// A bounded slice.
 ///
 /// Similar to a `BoundedVec`, but not owned and cannot be decoded.
+#[cfg_attr(feature = "std", derive(Hash))]
 #[derive(Encode)]
 pub struct BoundedSlice<'a, T, S>(pub(super) &'a [T], PhantomData<S>);
 
@@ -290,6 +291,8 @@ impl<'a, T, S: Get<u32>> BoundedSlice<'a, T, S> {
 
 impl<T: Decode, S: Get<u32>> Decode for BoundedVec<T, S> {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		// Same as the underlying implementation for `Decode` on `Vec`, except we fail early if the
+		// len is too big.
 		let len: u32 = <Compact<u32>>::decode(input)?.into();
 		if len > S::get() {
 			return Err("BoundedVec exceeds its limit".into())
