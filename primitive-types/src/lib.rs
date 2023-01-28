@@ -31,6 +31,11 @@ pub enum Error {
 }
 
 construct_uint! {
+	/// 64-bit unsigned integer.
+	#[cfg_attr(feature = "scale-info", derive(TypeInfo))]
+	pub struct U64(1);
+}
+construct_uint! {
 	/// 128-bit unsigned integer.
 	#[cfg_attr(feature = "scale-info", derive(TypeInfo))]
 	pub struct U128(2);
@@ -83,6 +88,7 @@ mod num_traits {
 	use super::*;
 	use impl_num_traits::impl_uint_num_traits;
 
+	impl_uint_num_traits!(U64, 1);
 	impl_uint_num_traits!(U128, 2);
 	impl_uint_num_traits!(U256, 4);
 	impl_uint_num_traits!(U512, 8);
@@ -93,6 +99,7 @@ mod serde {
 	use super::*;
 	use impl_serde::{impl_fixed_hash_serde, impl_uint_serde};
 
+	impl_uint_serde!(U64, 1);
 	impl_uint_serde!(U128, 2);
 	impl_uint_serde!(U256, 4);
 	impl_uint_serde!(U512, 8);
@@ -110,6 +117,7 @@ mod codec {
 	use super::*;
 	use impl_codec::{impl_fixed_hash_codec, impl_uint_codec};
 
+	impl_uint_codec!(U64, 1);
 	impl_uint_codec!(U128, 2);
 	impl_uint_codec!(U256, 4);
 	impl_uint_codec!(U512, 8);
@@ -127,6 +135,7 @@ mod rlp {
 	use super::*;
 	use impl_rlp::{impl_fixed_hash_rlp, impl_uint_rlp};
 
+	impl_uint_rlp!(U64, 1);
 	impl_uint_rlp!(U128, 2);
 	impl_uint_rlp!(U256, 4);
 	impl_uint_rlp!(U512, 8);
@@ -140,6 +149,15 @@ mod rlp {
 }
 
 impl_fixed_hash_conversions!(H256, H160);
+
+impl U64 {
+	/// Multiplies two 64-bit integers to produce full 128-bit integer.
+	/// Overflow is not possible.
+	#[inline(always)]
+	pub fn full_mul(self, other: Self) -> U128 {
+		U128(uint_full_mul_reg!(Self, 1, self, other))
+	}
+}
 
 impl U128 {
 	/// Multiplies two 128-bit integers to produce full 256-bit integer.
@@ -159,6 +177,24 @@ impl U256 {
 	}
 }
 
+impl From<U64> for U128 {
+	fn from(value: U64) -> Self {
+		Self([value.0[0], 0])
+	}
+}
+
+impl From<U64> for U256 {
+	fn from(value: U64) -> Self {
+		Self([value.0[0], 0, 0, 0])
+	}
+}
+
+impl From<U64> for U512 {
+	fn from(value: U64) -> Self {
+		Self([value.0[0], 0, 0, 0, 0, 0, 0, 0])
+	}
+}
+
 impl From<U256> for U512 {
 	fn from(value: U256) -> U512 {
 		let U256(ref arr) = value;
@@ -168,6 +204,42 @@ impl From<U256> for U512 {
 		ret[2] = arr[2];
 		ret[3] = arr[3];
 		U512(ret)
+	}
+}
+
+impl TryFrom<U128> for U64 {
+	type Error = Error;
+
+	fn try_from(value: U128) -> Result<Self, Error> {
+		let U128(ref arr) = value;
+		if arr[1] != 0 {
+			return Err(Error::Overflow)
+		}
+		Ok(Self([arr[0]]))
+	}
+}
+
+impl TryFrom<U256> for U64 {
+	type Error = Error;
+
+	fn try_from(value: U256) -> Result<Self, Error> {
+		let U256(ref arr) = value;
+		if arr[1] | arr[2]| arr[3] != 0 {
+			return Err(Error::Overflow)
+		}
+		Ok(Self([arr[0]]))
+	}
+}
+
+impl TryFrom<U512> for U64 {
+	type Error = Error;
+
+	fn try_from(value: U512) -> Result<Self, Error> {
+		let U512(ref arr) = value;
+		if arr[1] | arr[2]| arr[3]| arr[4] | arr[5] | arr[6] | arr[7] != 0 {
+			return Err(Error::Overflow)
+		}
+		Ok(Self([arr[0]]))
 	}
 }
 
