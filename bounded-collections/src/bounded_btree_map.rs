@@ -400,6 +400,7 @@ mod test {
 	use super::*;
 	use crate::ConstU32;
 	use alloc::{vec, vec::Vec};
+	use codec::CompactLen;
 
 	fn map_from_keys<K>(keys: &[K]) -> BTreeMap<K, ()>
 	where
@@ -414,6 +415,14 @@ mod test {
 		S: Get<u32>,
 	{
 		map_from_keys(keys).try_into().unwrap()
+	}
+
+	#[test]
+	fn encoding_same_as_unbounded_map() {
+		let b = boundedmap_from_keys::<u32, ConstU32<7>>(&[1, 2, 3, 4, 5, 6]);
+		let m = map_from_keys(&[1, 2, 3, 4, 5, 6]);
+
+		assert_eq!(b.encode(), m.encode());
 	}
 
 	#[test]
@@ -464,6 +473,16 @@ mod test {
 			BoundedBTreeMap::<u32, u32, ConstU32<4>>::decode(&mut &v.encode()[..]),
 			Err("BoundedBTreeMap exceeds its limit".into()),
 		);
+	}
+
+	#[test]
+	fn dont_consume_more_data_than_bounded_len() {
+		let m = map_from_keys(&[1, 2, 3, 4, 5, 6]);
+		let data = m.encode();
+		let data_input = &mut &data[..];
+
+		BoundedBTreeMap::<u32, u32, ConstU32<4>>::decode(data_input).unwrap_err();
+		assert_eq!(data_input.len(), data.len() - Compact::<u32>::compact_len(&(data.len() as u32)));
 	}
 
 	#[test]

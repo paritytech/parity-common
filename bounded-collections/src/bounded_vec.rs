@@ -908,6 +908,15 @@ where
 mod test {
 	use super::*;
 	use crate::{bounded_vec, ConstU32};
+	use codec::CompactLen;
+
+	#[test]
+	fn encoding_same_as_unbounded_vec() {
+		let b: BoundedVec<u32, ConstU32<6>> = bounded_vec![0, 1, 2, 3, 4, 5];
+		let v: Vec<u32> = vec![0, 1, 2, 3, 4, 5];
+
+		assert_eq!(b.encode(), v.encode());
+	}
 
 	#[test]
 	fn slice_truncate_from_works() {
@@ -1103,6 +1112,16 @@ mod test {
 			BoundedVec::<u32, ConstU32<4>>::decode(&mut &v.encode()[..]),
 			Err("BoundedVec exceeds its limit".into()),
 		);
+	}
+
+	#[test]
+	fn dont_consume_more_data_than_bounded_len() {
+		let v: Vec<u32> = vec![1, 2, 3, 4, 5];
+		let data = v.encode();
+		let data_input = &mut &data[..];
+
+		BoundedVec::<u32, ConstU32<4>>::decode(data_input).unwrap_err();
+		assert_eq!(data_input.len(), data.len() - Compact::<u32>::compact_len(&(data.len() as u32)));
 	}
 
 	#[test]

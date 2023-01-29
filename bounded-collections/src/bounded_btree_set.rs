@@ -330,6 +330,7 @@ mod test {
 	use super::*;
 	use crate::ConstU32;
 	use alloc::{vec, vec::Vec};
+	use codec::CompactLen;
 
 	fn set_from_keys<T>(keys: &[T]) -> BTreeSet<T>
 	where
@@ -344,6 +345,14 @@ mod test {
 		S: Get<u32>,
 	{
 		set_from_keys(keys).try_into().unwrap()
+	}
+
+	#[test]
+	fn encoding_same_as_unbounded_set() {
+		let b = boundedset_from_keys::<u32, ConstU32<7>>(&[1, 2, 3, 4, 5, 6]);
+		let m = set_from_keys(&[1, 2, 3, 4, 5, 6]);
+
+		assert_eq!(b.encode(), m.encode());
 	}
 
 	#[test]
@@ -394,6 +403,16 @@ mod test {
 			BoundedBTreeSet::<u32, ConstU32<4>>::decode(&mut &v.encode()[..]),
 			Err("BoundedBTreeSet exceeds its limit".into()),
 		);
+	}
+
+	#[test]
+	fn dont_consume_more_data_than_bounded_len() {
+		let s = set_from_keys(&[1, 2, 3, 4, 5, 6]);
+		let data = s.encode();
+		let data_input = &mut &data[..];
+
+		BoundedBTreeSet::<u32, ConstU32<4>>::decode(data_input).unwrap_err();
+		assert_eq!(data_input.len(), data.len() - Compact::<u32>::compact_len(&(data.len() as u32)));
 	}
 
 	#[test]
