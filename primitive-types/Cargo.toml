@@ -17,6 +17,9 @@ impl-num-traits = { version = "0.1.0", path = "impls/num-traits", default-featur
 impl-rlp = { version = "0.3", path = "impls/rlp", default-features = false, optional = true }
 scale-info-crate = { package = "scale-info", version = ">=0.9, <3", features = ["derive"], default-features = false, optional = true }
 
+[dev-dependencies]
+num-traits = "0.2"
+
 [features]
 default = ["std"]
 std = ["uint/std", "fixed-hash/std", "impl-codec?/std"]

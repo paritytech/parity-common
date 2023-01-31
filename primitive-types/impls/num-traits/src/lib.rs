@@ -57,5 +57,33 @@ macro_rules! impl_uint_num_traits {
 				Some(self.integer_sqrt())
 			}
 		}
+
+		impl $crate::num_traits::ops::checked::CheckedAdd for $name {
+			#[inline]
+			fn checked_add(&self, v: &Self) -> Option<Self> {
+				$name::checked_add(*self, *v)
+			}
+		}
+
+		impl $crate::num_traits::ops::checked::CheckedSub for $name {
+			#[inline]
+			fn checked_sub(&self, v: &Self) -> Option<Self> {
+				$name::checked_sub(*self, *v)
+			}
+		}
+
+		impl $crate::num_traits::ops::checked::CheckedDiv for $name {
+			#[inline]
+			fn checked_div(&self, v: &Self) -> Option<Self> {
+				$name::checked_div(*self, *v)
+			}
+		}
+
+		impl $crate::num_traits::ops::checked::CheckedMul for $name {
+			#[inline]
+			fn checked_mul(&self, v: &Self) -> Option<Self> {
+				$name::checked_mul(*self, *v)
+			}
+		}
 	};
 }
