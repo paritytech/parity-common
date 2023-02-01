@@ -19,7 +19,7 @@
 
 use crate::{Get, TryCollect};
 use alloc::collections::BTreeMap;
-use codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Compact, Decode, Encode, MaxEncodedLen};
 use core::{borrow::Borrow, marker::PhantomData, ops::Deref};
 
 /// A bounded map based on a B-Tree.
@@ -29,6 +29,7 @@ use core::{borrow::Borrow, marker::PhantomData, ops::Deref};
 ///
 /// Unlike a standard `BTreeMap`, there is an enforced upper limit to the number of items in the
 /// map. All internal operations ensure this bound is respected.
+#[cfg_attr(feature = "std", derive(Hash))]
 #[derive(Encode, scale_info::TypeInfo)]
 #[scale_info(skip_type_params(S))]
 pub struct BoundedBTreeMap<K, V, S>(BTreeMap<K, V>, PhantomData<S>);
@@ -40,10 +41,15 @@ where
 	S: Get<u32>,
 {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let inner = BTreeMap::<K, V>::decode(input)?;
-		if inner.len() > S::get() as usize {
+		// Same as the underlying implementation for `Decode` on `BTreeMap`, except we fail early if
+		// the len is too big.
+		let len: u32 = <Compact<u32>>::decode(input)?.into();
+		if len > S::get() {
 			return Err("BoundedBTreeMap exceeds its limit".into())
 		}
+		input.descend_ref()?;
+		let inner = Result::from_iter((0..len).map(|_| Decode::decode(input)))?;
+		input.ascend_ref();
 		Ok(Self(inner, PhantomData))
 	}
 
@@ -394,6 +400,7 @@ mod test {
 	use super::*;
 	use crate::ConstU32;
 	use alloc::{vec, vec::Vec};
+	use codec::CompactLen;
 
 	fn map_from_keys<K>(keys: &[K]) -> BTreeMap<K, ()>
 	where
@@ -408,6 +415,14 @@ mod test {
 		S: Get<u32>,
 	{
 		map_from_keys(keys).try_into().unwrap()
+	}
+
+	#[test]
+	fn encoding_same_as_unbounded_map() {
+		let b = boundedmap_from_keys::<u32, ConstU32<7>>(&[1, 2, 3, 4, 5, 6]);
+		let m = map_from_keys(&[1, 2, 3, 4, 5, 6]);
+
+		assert_eq!(b.encode(), m.encode());
 	}
 
 	#[test]
@@ -458,6 +473,16 @@ mod test {
 			BoundedBTreeMap::<u32, u32, ConstU32<4>>::decode(&mut &v.encode()[..]),
 			Err("BoundedBTreeMap exceeds its limit".into()),
 		);
+	}
+
+	#[test]
+	fn dont_consume_more_data_than_bounded_len() {
+		let m = map_from_keys(&[1, 2, 3, 4, 5, 6]);
+		let data = m.encode();
+		let data_input = &mut &data[..];
+
+		BoundedBTreeMap::<u32, u32, ConstU32<4>>::decode(data_input).unwrap_err();
+		assert_eq!(data_input.len(), data.len() - Compact::<u32>::compact_len(&(data.len() as u32)));
 	}
 
 	#[test]

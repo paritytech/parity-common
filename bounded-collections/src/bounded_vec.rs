@@ -21,7 +21,7 @@
 use super::WeakBoundedVec;
 use crate::{Get, TryCollect};
 use alloc::{boxed::Box, vec::Vec};
-use codec::{Decode, Encode, EncodeLike, MaxEncodedLen};
+use codec::{decode_vec_with_len, Compact, Decode, Encode, EncodeLike, MaxEncodedLen};
 use core::{
 	marker::PhantomData,
 	ops::{Deref, Index, IndexMut, RangeBounds},
@@ -40,7 +40,7 @@ use serde::{
 ///
 /// As the name suggests, the length of the queue is always bounded. All internal operations ensure
 /// this bound is respected.
-#[cfg_attr(feature = "std", derive(Serialize), serde(transparent))]
+#[cfg_attr(feature = "std", derive(Hash, Serialize), serde(transparent))]
 #[derive(Encode, scale_info::TypeInfo)]
 #[scale_info(skip_type_params(S))]
 pub struct BoundedVec<T, S>(pub(super) Vec<T>, #[cfg_attr(feature = "std", serde(skip_serializing))] PhantomData<S>);
@@ -108,6 +108,7 @@ where
 /// A bounded slice.
 ///
 /// Similar to a `BoundedVec`, but not owned and cannot be decoded.
+#[cfg_attr(feature = "std", derive(Hash))]
 #[derive(Encode)]
 pub struct BoundedSlice<'a, T, S>(pub(super) &'a [T], PhantomData<S>);
 
@@ -290,10 +291,13 @@ impl<'a, T, S: Get<u32>> BoundedSlice<'a, T, S> {
 
 impl<T: Decode, S: Get<u32>> Decode for BoundedVec<T, S> {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let inner = Vec::<T>::decode(input)?;
-		if inner.len() > S::get() as usize {
+		// Same as the underlying implementation for `Decode` on `Vec`, except we fail early if the
+		// len is too big.
+		let len: u32 = <Compact<u32>>::decode(input)?.into();
+		if len > S::get() {
 			return Err("BoundedVec exceeds its limit".into())
 		}
+		let inner = decode_vec_with_len(input, len as usize)?;
 		Ok(Self(inner, PhantomData))
 	}
 
@@ -904,6 +908,15 @@ where
 mod test {
 	use super::*;
 	use crate::{bounded_vec, ConstU32};
+	use codec::CompactLen;
+
+	#[test]
+	fn encoding_same_as_unbounded_vec() {
+		let b: BoundedVec<u32, ConstU32<6>> = bounded_vec![0, 1, 2, 3, 4, 5];
+		let v: Vec<u32> = vec![0, 1, 2, 3, 4, 5];
+
+		assert_eq!(b.encode(), v.encode());
+	}
 
 	#[test]
 	fn slice_truncate_from_works() {
@@ -1099,6 +1112,16 @@ mod test {
 			BoundedVec::<u32, ConstU32<4>>::decode(&mut &v.encode()[..]),
 			Err("BoundedVec exceeds its limit".into()),
 		);
+	}
+
+	#[test]
+	fn dont_consume_more_data_than_bounded_len() {
+		let v: Vec<u32> = vec![1, 2, 3, 4, 5];
+		let data = v.encode();
+		let data_input = &mut &data[..];
+
+		BoundedVec::<u32, ConstU32<4>>::decode(data_input).unwrap_err();
+		assert_eq!(data_input.len(), data.len() - Compact::<u32>::compact_len(&(data.len() as u32)));
 	}
 
 	#[test]
