@@ -29,7 +29,6 @@ use core::{borrow::Borrow, marker::PhantomData, ops::Deref};
 ///
 /// Unlike a standard `BTreeMap`, there is an enforced upper limit to the number of items in the
 /// map. All internal operations ensure this bound is respected.
-#[cfg_attr(feature = "std", derive(Hash))]
 #[derive(Encode, scale_info::TypeInfo)]
 #[scale_info(skip_type_params(S))]
 pub struct BoundedBTreeMap<K, V, S>(BTreeMap<K, V>, PhantomData<S>);
@@ -234,6 +233,15 @@ where
 {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		f.debug_tuple("BoundedBTreeMap").field(&self.0).field(&Self::bound()).finish()
+	}
+}
+
+// Custom implementation of `Hash` since deriving it would require all generic bounds to also
+// implement it.
+#[cfg(feature = "std")]
+impl<K: std::hash::Hash, V: std::hash::Hash, S> std::hash::Hash for BoundedBTreeMap<K, V, S> {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		self.0.hash(state);
 	}
 }
 
@@ -640,5 +648,17 @@ mod test {
 			[1, 2, 3, 4].into_iter().map(|k| (k, (k as u16) * 100)).try_collect().unwrap();
 
 		assert_eq!(Ok(b2), b1.try_map(|(_, v)| (v as u16).checked_mul(100_u16).ok_or("overflow")));
+	}
+
+	// Just a test that structs containing `BoundedBTreeMap` can derive `Hash`. (This was broken
+	// when it was deriving `Hash`).
+	#[test]
+	#[cfg(feature = "std")]
+	fn container_can_derive_hash() {
+		#[derive(Hash)]
+		struct Foo {
+			bar: u8,
+			map: BoundedBTreeMap<String, usize, ConstU32<16>>,
+		}
 	}
 }

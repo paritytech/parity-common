@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
+## [0.1.5] - 2023-02-13
+- Fixed `Hash` impl (previously it could not be used in practice, because the size bound was required to also implement `Hash`).
+
 ## [0.1.4] - 2023-01-28
 - Fixed unnecessary decoding and allocations for bounded types, when the decoded length is greater than the allowed bound.
 - Add `Hash` derivation (when `feature = "std"`) for bounded types.

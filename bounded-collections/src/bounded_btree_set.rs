@@ -29,7 +29,6 @@ use core::{borrow::Borrow, marker::PhantomData, ops::Deref};
 ///
 /// Unlike a standard `BTreeSet`, there is an enforced upper limit to the number of items in the
 /// set. All internal operations ensure this bound is respected.
-#[cfg_attr(feature = "std", derive(Hash))]
 #[derive(Encode, scale_info::TypeInfo)]
 #[scale_info(skip_type_params(S))]
 pub struct BoundedBTreeSet<T, S>(BTreeSet<T>, PhantomData<S>);
@@ -173,6 +172,15 @@ where
 {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		f.debug_tuple("BoundedBTreeSet").field(&self.0).field(&Self::bound()).finish()
+	}
+}
+
+// Custom implementation of `Hash` since deriving it would require all generic bounds to also
+// implement it.
+#[cfg(feature = "std")]
+impl<T: std::hash::Hash, S> std::hash::Hash for BoundedBTreeSet<T, S> {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		self.0.hash(state);
 	}
 }
 
@@ -501,5 +509,17 @@ mod test {
 
 		let b2: Result<BoundedBTreeSet<u32, ConstU32<1>>, _> = b1.iter().map(|k| k + 1).skip(2).try_collect();
 		assert!(b2.is_err());
+	}
+
+	// Just a test that structs containing `BoundedBTreeSet` can derive `Hash`. (This was broken
+	// when it was deriving `Hash`).
+	#[test]
+	#[cfg(feature = "std")]
+	fn container_can_derive_hash() {
+		#[derive(Hash)]
+		struct Foo {
+			bar: u8,
+			set: BoundedBTreeSet<String, ConstU32<16>>,
+		}
 	}
 }
