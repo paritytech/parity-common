@@ -84,12 +84,12 @@ macro_rules! impl_const_get {
 				fmt.write_str("<wasm:stripped>")
 			}
 		}
-		impl<const T: $t> Get<$t> for $name<T> {
+		impl<const T: $t> ConstGet<$t> for $name<T> {
 			fn get() -> $t {
 				T
 			}
 		}
-		impl<const T: $t> Get<Option<$t>> for $name<T> {
+		impl<const T: $t> ConstGet<Option<$t>> for $name<T> {
 			fn get() -> Option<$t> {
 				Some(T)
 			}
