@@ -208,7 +208,7 @@ macro_rules! parameter_types {
 			}
 		}
 
-		impl<I: From<$type>> $crate::Get<I> for $name {
+		impl<I: From<$type>> $crate::ConstGet<I> for $name {
 			fn get() -> I {
 				I::from(Self::get())
 			}
