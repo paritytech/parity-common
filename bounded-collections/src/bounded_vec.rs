@@ -40,7 +40,7 @@ use serde::{
 ///
 /// As the name suggests, the length of the queue is always bounded. All internal operations ensure
 /// this bound is respected.
-#[cfg_attr(feature = "std", derive(Hash, Serialize), serde(transparent))]
+#[cfg_attr(feature = "std", derive(Serialize), serde(transparent))]
 #[derive(Encode, scale_info::TypeInfo)]
 #[scale_info(skip_type_params(S))]
 pub struct BoundedVec<T, S>(pub(super) Vec<T>, #[cfg_attr(feature = "std", serde(skip_serializing))] PhantomData<S>);
@@ -108,7 +108,6 @@ where
 /// A bounded slice.
 ///
 /// Similar to a `BoundedVec`, but not owned and cannot be decoded.
-#[cfg_attr(feature = "std", derive(Hash))]
 #[derive(Encode)]
 pub struct BoundedSlice<'a, T, S>(pub(super) &'a [T], PhantomData<S>);
 
@@ -270,6 +269,15 @@ impl<'a, T, S> Deref for BoundedSlice<'a, T, S> {
 
 	fn deref(&self) -> &Self::Target {
 		self.0
+	}
+}
+
+// Custom implementation of `Hash` since deriving it would require all generic bounds to also
+// implement it.
+#[cfg(feature = "std")]
+impl<'a, T: std::hash::Hash, S> std::hash::Hash for BoundedSlice<'a, T, S> {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		self.0.hash(state);
 	}
 }
 
@@ -703,6 +711,15 @@ impl<T, S: Get<u32>> TruncateFrom<Vec<T>> for BoundedVec<T, S> {
 	}
 }
 
+// Custom implementation of `Hash` since deriving it would require all generic bounds to also
+// implement it.
+#[cfg(feature = "std")]
+impl<T: std::hash::Hash, S> std::hash::Hash for BoundedVec<T, S> {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		self.0.hash(state);
+	}
+}
+
 // It is okay to give a non-mutable reference of the inner vec to anyone.
 impl<T, S> AsRef<Vec<T>> for BoundedVec<T, S> {
 	fn as_ref(&self) -> &Vec<T> {
@@ -907,7 +924,7 @@ where
 #[cfg(all(test, feature = "std"))]
 mod test {
 	use super::*;
-	use crate::{bounded_vec, ConstU32};
+	use crate::{bounded_vec, ConstU32, ConstU8};
 	use codec::CompactLen;
 
 	#[test]
@@ -1288,5 +1305,18 @@ mod test {
 
 		assert_eq!(bound, &unbound[..]);
 		assert!(bound == &unbound[..]);
+	}
+
+	// Just a test that structs containing `BoundedVec` and `BoundedSlice` can derive `Hash`. (This was broken when
+	// they were deriving `Hash`).
+	#[test]
+	#[cfg(feature = "std")]
+	fn container_can_derive_hash() {
+		#[derive(Hash)]
+		struct Foo<'a> {
+			bar: u8,
+			slice: BoundedSlice<'a, usize, ConstU8<8>>,
+			map: BoundedVec<String, ConstU32<16>>,
+		}
 	}
 }
