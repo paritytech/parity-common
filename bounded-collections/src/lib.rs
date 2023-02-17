@@ -44,18 +44,14 @@ pub trait Get<T> {
 /// A trait for querying a single value from a type.
 ///
 /// The value should be a constant.
-pub trait ConstGet<T> {
+pub trait ConstGet<T>: Get<T> {
 	/// Return the constant value.
 	fn get() -> T;
 }
 
-/// Implement Get for any type that implements ConstGet.
-impl<T, U> Get<U> for T
-where
-	T: ConstGet<U>,
-{
-	fn get() -> U {
-		<T as ConstGet<U>>::get()
+impl<T: Default> Get<T> for () {
+	fn get() -> T {
+		T::default()
 	}
 }
 
@@ -67,6 +63,13 @@ impl<T: Default> ConstGet<T> for () {
 
 /// Implement ConstGet by returning Default for any type that implements Default.
 pub struct GetDefault;
+
+impl<T: Default> Get<T> for GetDefault {
+	fn get() -> T {
+		T::default()
+	}
+}
+
 impl<T: Default> ConstGet<T> for GetDefault {
 	fn get() -> T {
 		T::default()
@@ -82,6 +85,16 @@ macro_rules! impl_const_get {
 		impl<const T: $t> core::fmt::Debug for $name<T> {
 			fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
 				fmt.write_str("<wasm:stripped>")
+			}
+		}
+		impl<const T: $t> Get<$t> for $name<T> {
+			fn get() -> $t {
+				T
+			}
+		}
+		impl<const T: $t> Get<Option<$t>> for $name<T> {
+			fn get() -> Option<$t> {
+				Some(T)
 			}
 		}
 		impl<const T: $t> ConstGet<$t> for $name<T> {
@@ -205,6 +218,12 @@ macro_rules! parameter_types {
 			/// Returns the value of this parameter type.
 			pub const fn get() -> $type {
 				$value
+			}
+		}
+
+		impl<I: From<$type>> $crate::Get<I> for $name {
+			fn get() -> I {
+				I::from(Self::get())
 			}
 		}
 
