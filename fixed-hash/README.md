@@ -39,7 +39,7 @@ construct_fixed_hash!{
 
 ## Features
 
-By default this is an standard library depending crate.  
+By default this is an standard library depending crate.
 For a `#[no_std]` environment use it as follows:
 
 ```
@@ -50,7 +50,6 @@ fixed-hash = { version = "0.3", default-features = false }
 
 - `std`: Use the standard library instead of the core library.
 	- Using this feature enables the following features
-		- `rustc-hex/std`
 		- `rand/std`
 		- `byteorder/std`
     - Enabled by default.

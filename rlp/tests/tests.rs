@@ -8,21 +8,21 @@
 
 use core::{cmp, fmt};
 
+use array_bytes::{hex2bytes_unchecked, hex_n_into_unchecked};
 use bytes::{Bytes, BytesMut};
-use hex_literal::hex;
 use primitive_types::{H160, U256};
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
 #[test]
 fn test_rlp_display() {
-	let data = hex!("f84d0589010efbef67941f79b2a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+	let data = hex2bytes_unchecked("f84d0589010efbef67941f79b2a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
 	let rlp = Rlp::new(&data);
 	assert_eq!(format!("{}", rlp), "[\"0x05\", \"0x010efbef67941f79b2\", \"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421\", \"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470\"]");
 }
 
 #[test]
 fn length_overflow() {
-	let bs = hex!("bfffffffffffffffffffffffe5");
+	let bs = hex2bytes_unchecked("bfffffffffffffffffffffffe5");
 	let rlp = Rlp::new(&bs);
 	let res: Result<u8, DecoderError> = rlp.as_val();
 	assert_eq!(Err(DecoderError::RlpInvalidLength), res);
@@ -173,9 +173,9 @@ where
 #[test]
 fn encode_u16() {
 	let tests = vec![
-		ETestPair::from((0_u16, hex!("80"))),
-		ETestPair::from((0x100_u16, hex!("820100"))),
-		ETestPair::from((0xffff_u16, hex!("82ffff"))),
+		ETestPair::from((0_u16, hex2bytes_unchecked("80"))),
+		ETestPair::from((0x100_u16, hex2bytes_unchecked("820100"))),
+		ETestPair::from((0xffff_u16, hex2bytes_unchecked("82ffff"))),
 	];
 	run_encode_tests(tests);
 }
@@ -183,9 +183,9 @@ fn encode_u16() {
 #[test]
 fn encode_u32() {
 	let tests = vec![
-		ETestPair::from((0_u32, hex!("80"))),
-		ETestPair::from((0x0001_0000_u32, hex!("83010000"))),
-		ETestPair::from((0x00ff_ffff_u32, hex!("83ffffff"))),
+		ETestPair::from((0_u32, hex2bytes_unchecked("80"))),
+		ETestPair::from((0x0001_0000_u32, hex2bytes_unchecked("83010000"))),
+		ETestPair::from((0x00ff_ffff_u32, hex2bytes_unchecked("83ffffff"))),
 	];
 	run_encode_tests(tests);
 }
@@ -193,9 +193,9 @@ fn encode_u32() {
 #[test]
 fn encode_u64() {
 	let tests = vec![
-		ETestPair::from((0_u64, hex!("80"))),
-		ETestPair::from((0x0100_0000_u64, hex!("8401000000"))),
-		ETestPair::from((0xFFFF_FFFF_u64, hex!("84ffffffff"))),
+		ETestPair::from((0_u64, hex2bytes_unchecked("80"))),
+		ETestPair::from((0x0100_0000_u64, hex2bytes_unchecked("8401000000"))),
+		ETestPair::from((0xFFFF_FFFF_u64, hex2bytes_unchecked("84ffffffff"))),
 	];
 	run_encode_tests(tests);
 }
@@ -203,9 +203,9 @@ fn encode_u64() {
 #[test]
 fn encode_u128() {
 	let tests = vec![
-		ETestPair::from((0_u128, hex!("80"))),
-		ETestPair::from((0x0100_0000_0000_0000_u128, hex!("880100000000000000"))),
-		ETestPair::from((0xFFFF_FFFF_FFFF_FFFF_u128, hex!("88ffffffffffffffff"))),
+		ETestPair::from((0_u128, hex2bytes_unchecked("80"))),
+		ETestPair::from((0x0100_0000_0000_0000_u128, hex2bytes_unchecked("880100000000000000"))),
+		ETestPair::from((0xFFFF_FFFF_FFFF_FFFF_u128, hex2bytes_unchecked("88ffffffffffffffff"))),
 	];
 	run_encode_tests(tests);
 }
@@ -213,12 +213,12 @@ fn encode_u128() {
 #[test]
 fn encode_u256() {
 	let tests = vec![
-		ETestPair::from((U256::from(0_u64), hex!("80"))),
-		ETestPair::from((U256::from(0x0100_0000_u64), hex!("8401000000"))),
-		ETestPair::from((U256::from(0xffff_ffff_u64), hex!("84ffffffff"))),
+		ETestPair::from((U256::from(0_u64), hex2bytes_unchecked("80"))),
+		ETestPair::from((U256::from(0x0100_0000_u64), hex2bytes_unchecked("8401000000"))),
+		ETestPair::from((U256::from(0xffff_ffff_u64), hex2bytes_unchecked("84ffffffff"))),
 		ETestPair::from((
-			hex!("  8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0").into(),
-			hex!("a08090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
+			hex_n_into_unchecked::<_, _, 32>("8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
+			hex2bytes_unchecked("a08090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
 		)),
 	];
 	run_encode_tests(tests);
@@ -230,7 +230,7 @@ fn encode_str() {
 		ETestPair::from(("cat", vec![0x83, b'c', b'a', b't'])),
 		ETestPair::from(("dog", vec![0x83, b'd', b'o', b'g'])),
 		ETestPair::from(("Marek", vec![0x85, b'M', b'a', b'r', b'e', b'k'])),
-		ETestPair::from(("", hex!("80"))),
+		ETestPair::from(("", hex2bytes_unchecked("80"))),
 		ETestPair::from((
 			"Lorem ipsum dolor sit amet, consectetur adipisicing elit",
 			vec![
@@ -271,8 +271,8 @@ fn encode_into_existing_buffer() {
 #[test]
 fn encode_address() {
 	let tests = vec![ETestPair::from((
-		H160::from(hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106")),
-		hex!("94ef2d6d194084c2de36e0dabfce45d046b37d1106"),
+		H160::from(hex_n_into_unchecked::<_, H160, 20>("ef2d6d194084c2de36e0dabfce45d046b37d1106")),
+		hex2bytes_unchecked("94ef2d6d194084c2de36e0dabfce45d046b37d1106"),
 	))];
 	run_encode_tests(tests);
 }
@@ -281,10 +281,10 @@ fn encode_address() {
 #[test]
 fn encode_vector_u8() {
 	let tests = vec![
-		ETestPair::from((vec![], hex!("80"))),
-		ETestPair::from((vec![0u8], hex!("00"))),
-		ETestPair::from((vec![0x15], hex!("15"))),
-		ETestPair::from((vec![0x40, 0x00], hex!("824000"))),
+		ETestPair::from((vec![], hex2bytes_unchecked("80"))),
+		ETestPair::from((vec![0u8], hex2bytes_unchecked("00"))),
+		ETestPair::from((vec![0x15], hex2bytes_unchecked("15"))),
+		ETestPair::from((vec![0x40, 0x00], hex2bytes_unchecked("824000"))),
 	];
 	run_encode_tests(tests);
 }
@@ -292,10 +292,10 @@ fn encode_vector_u8() {
 #[test]
 fn encode_bytes() {
 	let tests = vec![
-		ETestPair::from((Bytes::from_static(&hex!("")), hex!("80"))),
-		ETestPair::from((Bytes::from_static(&hex!("00")), hex!("00"))),
-		ETestPair::from((Bytes::from_static(&hex!("15")), hex!("15"))),
-		ETestPair::from((Bytes::from_static(&hex!("4000")), hex!("824000"))),
+		ETestPair::from((Bytes::from_static([].as_slice()), hex2bytes_unchecked("80"))),
+		ETestPair::from((Bytes::from_static([0].as_slice()), hex2bytes_unchecked("00"))),
+		ETestPair::from((Bytes::from_static([21].as_slice()), hex2bytes_unchecked("15"))),
+		ETestPair::from((Bytes::from_static([64, 0].as_slice()), hex2bytes_unchecked("824000"))),
 	];
 	run_encode_tests(tests);
 }
@@ -303,10 +303,10 @@ fn encode_bytes() {
 #[test]
 fn encode_bytesmut() {
 	let tests = vec![
-		ETestPair::from((BytesMut::from(&[] as &[u8]), hex!("80"))),
-		ETestPair::from((BytesMut::from(&hex!("00") as &[u8]), hex!("00"))),
-		ETestPair::from((BytesMut::from(&hex!("15") as &[u8]), hex!("15"))),
-		ETestPair::from((BytesMut::from(&hex!("4000") as &[u8]), hex!("824000"))),
+		ETestPair::from((BytesMut::from([].as_slice()), hex2bytes_unchecked("80"))),
+		ETestPair::from((BytesMut::from([0].as_slice()), hex2bytes_unchecked("00"))),
+		ETestPair::from((BytesMut::from([21].as_slice()), hex2bytes_unchecked("15"))),
+		ETestPair::from((BytesMut::from([64, 0].as_slice()), hex2bytes_unchecked("824000"))),
 	];
 	run_encode_tests(tests);
 }
@@ -314,10 +314,10 @@ fn encode_bytesmut() {
 #[test]
 fn encode_vector_u64() {
 	let tests = vec![
-		VETestPair::from((vec![], hex!("c0"))),
-		VETestPair::from((vec![15_u64], hex!("c10f"))),
-		VETestPair::from((vec![1, 2, 3, 7, 0xff], hex!("c60102030781ff"))),
-		VETestPair::from((vec![0xffff_ffff, 1, 2, 3, 7, 0xff], hex!("cb84ffffffff0102030781ff"))),
+		VETestPair::from((vec![], hex2bytes_unchecked("c0"))),
+		VETestPair::from((vec![15_u64], hex2bytes_unchecked("c10f"))),
+		VETestPair::from((vec![1, 2, 3, 7, 0xff], hex2bytes_unchecked("c60102030781ff"))),
+		VETestPair::from((vec![0xffff_ffff, 1, 2, 3, 7, 0xff], hex2bytes_unchecked("cb84ffffffff0102030781ff"))),
 	];
 	run_encode_tests_list(tests);
 }
@@ -395,10 +395,10 @@ where
 #[test]
 fn decode_vector_u8() {
 	let tests = vec![
-		DTestPair::from((vec![], hex!("80"))),
-		DTestPair::from((vec![0_u8], hex!("00"))),
-		DTestPair::from((vec![0x15], hex!("15"))),
-		DTestPair::from((vec![0x40, 0x00], hex!("824000"))),
+		DTestPair::from((vec![], hex2bytes_unchecked("80"))),
+		DTestPair::from((vec![0_u8], hex2bytes_unchecked("00"))),
+		DTestPair::from((vec![0x15], hex2bytes_unchecked("15"))),
+		DTestPair::from((vec![0x40, 0x00], hex2bytes_unchecked("824000"))),
 	];
 	run_decode_tests(tests);
 }
@@ -406,10 +406,10 @@ fn decode_vector_u8() {
 #[test]
 fn decode_bytes() {
 	let tests = vec![
-		DTestPair::from((Bytes::from_static(&hex!("")), hex!("80"))),
-		DTestPair::from((Bytes::from_static(&hex!("00")), hex!("00"))),
-		DTestPair::from((Bytes::from_static(&hex!("15")), hex!("15"))),
-		DTestPair::from((Bytes::from_static(&hex!("4000")), hex!("824000"))),
+		DTestPair::from((Bytes::from_static([].as_slice()), hex2bytes_unchecked("80"))),
+		DTestPair::from((Bytes::from_static([0].as_slice()), hex2bytes_unchecked("00"))),
+		DTestPair::from((Bytes::from_static([21].as_slice()), hex2bytes_unchecked("15"))),
+		DTestPair::from((Bytes::from_static([64, 0].as_slice()), hex2bytes_unchecked("824000"))),
 	];
 	run_decode_tests(tests);
 }
@@ -417,10 +417,10 @@ fn decode_bytes() {
 #[test]
 fn decode_bytesmut() {
 	let tests = vec![
-		DTestPair::from((BytesMut::from(&hex!("") as &[u8]), hex!("80"))),
-		DTestPair::from((BytesMut::from(&hex!("00") as &[u8]), hex!("00"))),
-		DTestPair::from((BytesMut::from(&hex!("15") as &[u8]), hex!("15"))),
-		DTestPair::from((BytesMut::from(&hex!("4000") as &[u8]), hex!("824000"))),
+		DTestPair::from((BytesMut::from([].as_slice()), hex2bytes_unchecked("80"))),
+		DTestPair::from((BytesMut::from([0].as_slice()), hex2bytes_unchecked("00"))),
+		DTestPair::from((BytesMut::from([21].as_slice()), hex2bytes_unchecked("15"))),
+		DTestPair::from((BytesMut::from([64, 0].as_slice()), hex2bytes_unchecked("824000"))),
 	];
 	run_decode_tests(tests);
 }
@@ -428,31 +428,36 @@ fn decode_bytesmut() {
 #[test]
 fn decode_untrusted_u8() {
 	let tests = vec![
-		DTestPair::from((0x0_u8, hex!("80"))),
-		DTestPair::from((0x77_u8, hex!("77"))),
-		DTestPair::from((0xcc_u8, hex!("81cc"))),
+		DTestPair::from((0x0_u8, hex2bytes_unchecked("80"))),
+		DTestPair::from((0x77_u8, hex2bytes_unchecked("77"))),
+		DTestPair::from((0xcc_u8, hex2bytes_unchecked("81cc"))),
 	];
 	run_decode_tests(tests);
 }
 
 #[test]
 fn decode_untrusted_u16() {
-	let tests = vec![DTestPair::from((0x100u16, hex!("820100"))), DTestPair::from((0xffffu16, hex!("82ffff")))];
+	let tests = vec![
+		DTestPair::from((0x100u16, hex2bytes_unchecked("820100"))),
+		DTestPair::from((0xffffu16, hex2bytes_unchecked("82ffff"))),
+	];
 	run_decode_tests(tests);
 }
 
 #[test]
 fn decode_untrusted_u32() {
-	let tests =
-		vec![DTestPair::from((0x0001_0000u32, hex!("83010000"))), DTestPair::from((0x00ff_ffffu32, hex!("83ffffff")))];
+	let tests = vec![
+		DTestPair::from((0x0001_0000u32, hex2bytes_unchecked("83010000"))),
+		DTestPair::from((0x00ff_ffffu32, hex2bytes_unchecked("83ffffff"))),
+	];
 	run_decode_tests(tests);
 }
 
 #[test]
 fn decode_untrusted_u64() {
 	let tests = vec![
-		DTestPair::from((0x0100_0000_u64, hex!("8401000000"))),
-		DTestPair::from((0xFFFF_FFFF_u64, hex!("84ffffffff"))),
+		DTestPair::from((0x0100_0000_u64, hex2bytes_unchecked("8401000000"))),
+		DTestPair::from((0xFFFF_FFFF_u64, hex2bytes_unchecked("84ffffffff"))),
 	];
 	run_decode_tests(tests);
 }
@@ -460,8 +465,8 @@ fn decode_untrusted_u64() {
 #[test]
 fn decode_untrusted_u128() {
 	let tests = vec![
-		DTestPair::from((0x0100_0000_0000_0000_u128, hex!("880100000000000000"))),
-		DTestPair::from((0xFFFF_FFFF_FFFF_FFFF_u128, hex!("88ffffffffffffffff"))),
+		DTestPair::from((0x0100_0000_0000_0000_u128, hex2bytes_unchecked("880100000000000000"))),
+		DTestPair::from((0xFFFF_FFFF_FFFF_FFFF_u128, hex2bytes_unchecked("88ffffffffffffffff"))),
 	];
 	run_decode_tests(tests);
 }
@@ -469,12 +474,12 @@ fn decode_untrusted_u128() {
 #[test]
 fn decode_untrusted_u256() {
 	let tests = vec![
-		DTestPair::from((U256::from(0_u64), hex!("80"))),
-		DTestPair::from((U256::from(0x0100_0000_u64), hex!("8401000000"))),
-		DTestPair::from((U256::from(0xffff_ffff_u64), hex!("84ffffffff"))),
+		DTestPair::from((U256::from(0_u64), hex2bytes_unchecked("80"))),
+		DTestPair::from((U256::from(0x0100_0000_u64), hex2bytes_unchecked("8401000000"))),
+		DTestPair::from((U256::from(0xffff_ffff_u64), hex2bytes_unchecked("84ffffffff"))),
 		DTestPair::from((
-			hex!("  8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0").into(),
-			hex!("a08090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
+			hex_n_into_unchecked::<_, _, 32>("8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
+			hex2bytes_unchecked("a08090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
 		)),
 	];
 	run_decode_tests(tests);
@@ -486,7 +491,7 @@ fn decode_untrusted_str() {
 		DTestPair::from(("cat".to_owned(), vec![0x83, b'c', b'a', b't'])),
 		DTestPair::from(("dog".to_owned(), vec![0x83, b'd', b'o', b'g'])),
 		DTestPair::from(("Marek".to_owned(), vec![0x85, b'M', b'a', b'r', b'e', b'k'])),
-		DTestPair::from(("".to_owned(), hex!("80"))),
+		DTestPair::from(("".to_owned(), hex2bytes_unchecked("80"))),
 		DTestPair::from((
 			"Lorem ipsum dolor sit amet, consectetur adipisicing elit".to_owned(),
 			vec![
@@ -503,8 +508,8 @@ fn decode_untrusted_str() {
 #[test]
 fn decode_untrusted_address() {
 	let tests = vec![DTestPair::from((
-		H160::from(hex!("ef2d6d194084c2de36e0dabfce45d046b37d1106")),
-		hex!("94ef2d6d194084c2de36e0dabfce45d046b37d1106"),
+		hex_n_into_unchecked::<_, H160, 20>("ef2d6d194084c2de36e0dabfce45d046b37d1106"),
+		hex2bytes_unchecked("94ef2d6d194084c2de36e0dabfce45d046b37d1106"),
 	))];
 	run_decode_tests(tests);
 }
@@ -512,10 +517,10 @@ fn decode_untrusted_address() {
 #[test]
 fn decode_untrusted_vector_u64() {
 	let tests = vec![
-		VDTestPair::from((vec![], hex!("c0"))),
-		VDTestPair::from((vec![15_u64], hex!("c10f"))),
-		VDTestPair::from((vec![1, 2, 3, 7, 0xff], hex!("c60102030781ff"))),
-		VDTestPair::from((vec![0xffff_ffff, 1, 2, 3, 7, 0xff], hex!("cb84ffffffff0102030781ff"))),
+		VDTestPair::from((vec![], hex2bytes_unchecked("c0"))),
+		VDTestPair::from((vec![15_u64], hex2bytes_unchecked("c10f"))),
+		VDTestPair::from((vec![1, 2, 3, 7, 0xff], hex2bytes_unchecked("c60102030781ff"))),
+		VDTestPair::from((vec![0xffff_ffff, 1, 2, 3, 7, 0xff], hex2bytes_unchecked("cb84ffffffff0102030781ff"))),
 	];
 	run_decode_tests_list(tests);
 }
@@ -540,7 +545,7 @@ fn test_rlp_data_length_check() {
 
 #[test]
 fn test_rlp_long_data_length_check() {
-	let mut data = hex!("b8ff").to_vec();
+	let mut data = hex2bytes_unchecked("b8ff").to_vec();
 	for _ in 0..253 {
 		data.push(b'c');
 	}
@@ -553,7 +558,7 @@ fn test_rlp_long_data_length_check() {
 
 #[test]
 fn test_the_exact_long_string() {
-	let mut data = hex!("b8ff").to_vec();
+	let mut data = hex2bytes_unchecked("b8ff").to_vec();
 	for _ in 0..255 {
 		data.push(b'c');
 	}
@@ -566,7 +571,7 @@ fn test_the_exact_long_string() {
 
 #[test]
 fn test_rlp_2bytes_data_length_check() {
-	let mut data = hex!("b902ff").to_vec(); // 512+255
+	let mut data = hex2bytes_unchecked("b902ff").to_vec(); // 512+255
 	for _ in 0..700 {
 		data.push(b'c');
 	}
@@ -582,12 +587,12 @@ fn test_rlp_nested_empty_list_encode() {
 	let mut stream = RlpStream::new_list(2);
 	stream.append_list(&(Vec::new() as Vec<u32>));
 	stream.append(&0x28_u32);
-	assert_eq!(stream.out()[..], hex!("c2c028")[..]);
+	assert_eq!(stream.out()[..], hex2bytes_unchecked("c2c028")[..]);
 }
 
 #[test]
 fn test_rlp_list_length_overflow() {
-	let data = hex!("ffffffffffffffffff000000");
+	let data = hex2bytes_unchecked("ffffffffffffffffff000000");
 	let rlp = Rlp::new(&data);
 	let as_val: Result<String, DecoderError> = rlp.val_at(0);
 	assert_eq!(Err(DecoderError::RlpIsTooShort), as_val);
@@ -735,7 +740,7 @@ fn test_nested_list_roundtrip() {
 // https://github.com/paritytech/parity-ethereum/pull/9663
 #[test]
 fn test_list_at() {
-	let raw = hex!("f83e82022bd79020010db83c4d001500000000abcdef12820cfa8215a8d79020010db885a308d313198a2e037073488208ae82823a8443b9a355c5010203040531b9019afde696e582a78fa8d95ea13ce3297d4afb8ba6433e4154caa5ac6431af1b80ba76023fa4090c408f6b4bc3701562c031041d4702971d102c9ab7fa5eed4cd6bab8f7af956f7d565ee1917084a95398b6a21eac920fe3dd1345ec0a7ef39367ee69ddf092cbfe5b93e5e568ebc491983c09c76d922dc3");
+	let raw = hex2bytes_unchecked("f83e82022bd79020010db83c4d001500000000abcdef12820cfa8215a8d79020010db885a308d313198a2e037073488208ae82823a8443b9a355c5010203040531b9019afde696e582a78fa8d95ea13ce3297d4afb8ba6433e4154caa5ac6431af1b80ba76023fa4090c408f6b4bc3701562c031041d4702971d102c9ab7fa5eed4cd6bab8f7af956f7d565ee1917084a95398b6a21eac920fe3dd1345ec0a7ef39367ee69ddf092cbfe5b93e5e568ebc491983c09c76d922dc3");
 
 	let rlp = Rlp::new(&raw);
 	let _rlp1 = rlp.at(1).unwrap();

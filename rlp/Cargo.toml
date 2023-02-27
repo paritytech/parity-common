@@ -9,18 +9,18 @@ edition = "2021"
 rust-version = "1.56.1"
 
 [dependencies]
+array-bytes = { version = "6.0" }
 bytes = { version = "1", default-features = false }
-rustc-hex = { version = "2.0.1", default-features = false }
 rlp-derive = { version = "0.1", path = "../rlp-derive", optional = true }
 
 [dev-dependencies]
 criterion = "0.4.0"
-hex-literal = "0.3.1"
 primitive-types = { path = "../primitive-types", version = "0.12", features = ["impl-rlp"] }
 
 [features]
 default = ["std"]
-std = ["bytes/std", "rustc-hex/std"]
+std = ["bytes/std"]
+
 derive = ["rlp-derive"]
 
 [[bench]]

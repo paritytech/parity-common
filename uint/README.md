@@ -65,7 +65,7 @@ see fuzz [README.md](fuzz/README.md)
 ## Crate Features
 
 - `std`: Use Rust's standard library.
-	- Enables `byteorder/std`, `rustc-hex/std`
+	- Enables `byteorder/std`
 	- Enabled by default.
 - `quickcheck`: Enable quickcheck-style property testing
 	- Use with `cargo test --release --features=quickcheck`.

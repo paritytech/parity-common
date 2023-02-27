@@ -23,16 +23,17 @@ num-traits = "0.2"
 [features]
 default = ["std"]
 std = ["uint/std", "fixed-hash/std", "impl-codec?/std"]
+
+arbitrary = ["fixed-hash/arbitrary", "uint/arbitrary"]
+array-bytes = ["fixed-hash/array-bytes"]
 byteorder = ["fixed-hash/byteorder"]
-rustc-hex = ["fixed-hash/rustc-hex"]
-serde = ["std", "impl-serde", "impl-serde/std"]
-serde_no_std = ["impl-serde"]
 codec = ["impl-codec"]
 scale-info = ["codec", "scale-info-crate"]
-rlp = ["impl-rlp"]
-arbitrary = ["fixed-hash/arbitrary", "uint/arbitrary"]
 fp-conversion = ["std"]
 num-traits = ["impl-num-traits"]
+rlp = ["impl-rlp"]
+serde = ["std", "impl-serde", "impl-serde/std"]
+serde_no_std = ["impl-serde"]
 
 [[test]]
 name = "scale_info"

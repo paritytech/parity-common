@@ -34,9 +34,9 @@ pub use static_assertions::const_assert;
 #[doc(hidden)]
 pub use byteorder;
 
-#[cfg(feature = "rustc-hex")]
+#[cfg(feature = "array-bytes")]
 #[doc(hidden)]
-pub use rustc_hex;
+pub use array_bytes;
 
 #[cfg(feature = "rand")]
 #[doc(hidden)]

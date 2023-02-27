@@ -66,7 +66,7 @@ jobs:
           args: -p uint --all-features
 
       - name: Test fixed-hash no_std
-        run: cargo test -p fixed-hash --no-default-features --features='byteorder,rustc-hex'
+        run: cargo test -p fixed-hash --no-default-features --features='array-bytes,byteorder'
 
       - name: Test fixed-hash all-features
         uses: actions-rs/cargo@v1

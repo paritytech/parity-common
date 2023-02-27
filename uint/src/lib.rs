@@ -19,7 +19,7 @@ pub use byteorder;
 pub use core as core_;
 
 #[doc(hidden)]
-pub use hex;
+pub use array_bytes;
 
 #[cfg(feature = "quickcheck")]
 #[doc(hidden)]

@@ -313,7 +313,7 @@ macro_rules! construct_fixed_hash {
 		impl_byteorder_for_fixed_hash!($name);
 		impl_rand_for_fixed_hash!($name);
 		impl_cmp_for_fixed_hash!($name);
-		impl_rustc_hex_for_fixed_hash!($name);
+		impl_array_bytes_for_fixed_hash!($name);
 		impl_quickcheck_for_fixed_hash!($name);
 		impl_arbitrary_for_fixed_hash!($name);
 	}
@@ -547,34 +547,34 @@ macro_rules! impl_cmp_for_fixed_hash {
 	};
 }
 
-// Implementation for disabled rustc-hex crate support.
+// Implementation for disabled array-bytes crate support.
 //
 // # Note
 //
 // Feature guarded macro definitions instead of feature guarded impl blocks
-// to work around the problems of introducing `rustc-hex` crate feature in
+// to work around the problems of introducing `array-bytes` crate feature in
 // a user crate.
-#[cfg(not(feature = "rustc-hex"))]
+#[cfg(not(feature = "array-bytes"))]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_rustc_hex_for_fixed_hash {
+macro_rules! impl_array_bytes_for_fixed_hash {
 	( $name:ident ) => {};
 }
 
-// Implementation for enabled rustc-hex crate support.
+// Implementation for enabled array-bytes crate support.
 //
 // # Note
 //
 // Feature guarded macro definitions instead of feature guarded impl blocks
-// to work around the problems of introducing `rustc-hex` crate feature in
+// to work around the problems of introducing `array-bytes` crate feature in
 // a user crate.
-#[cfg(feature = "rustc-hex")]
+#[cfg(feature = "array-bytes")]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_rustc_hex_for_fixed_hash {
+macro_rules! impl_array_bytes_for_fixed_hash {
 	( $name:ident ) => {
 		impl $crate::core_::str::FromStr for $name {
-			type Err = $crate::rustc_hex::FromHexError;
+			type Err = $crate::array_bytes::Error;
 
 			/// Creates a hash type instance from the given string.
 			///
@@ -586,17 +586,8 @@ macro_rules! impl_rustc_hex_for_fixed_hash {
 			///
 			/// - When encountering invalid non hex-digits
 			/// - Upon empty string input or invalid input length in general
-			fn from_str(input: &str) -> $crate::core_::result::Result<$name, $crate::rustc_hex::FromHexError> {
-				let input = input.strip_prefix("0x").unwrap_or(input);
-				let mut iter = $crate::rustc_hex::FromHexIter::new(input);
-				let mut result = Self::zero();
-				for byte in result.as_mut() {
-					*byte = iter.next().ok_or(Self::Err::InvalidHexLength)??;
-				}
-				if iter.next().is_some() {
-					return Err(Self::Err::InvalidHexLength)
-				}
-				Ok(result)
+			fn from_str(input: &str) -> $crate::core_::result::Result<$name, $crate::array_bytes::Error> {
+				$crate::array_bytes::hex_n_into::<&str, Self, { Self::len_bytes() }>(input)
 			}
 		}
 	};
