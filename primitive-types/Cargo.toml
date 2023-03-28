@@ -1,6 +1,6 @@
 [package]
 name = "primitive-types"
-version = "0.12.0"
+version = "0.12.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
@@ -10,12 +10,15 @@ rust-version = "1.60.0"
 
 [dependencies]
 fixed-hash = { version = "0.8", path = "../fixed-hash", default-features = false }
-uint = { version = "0.9.0", path = "../uint", default-features = false }
+uint = { version = "0.9.5", path = "../uint", default-features = false }
 impl-serde = { version = "0.4.0", path = "impls/serde", default-features = false, optional = true }
 impl-codec = { version = "0.6.0", path = "impls/codec", default-features = false, optional = true }
 impl-num-traits = { version = "0.1.0", path = "impls/num-traits", default-features = false, optional = true }
 impl-rlp = { version = "0.3", path = "impls/rlp", default-features = false, optional = true }
 scale-info-crate = { package = "scale-info", version = ">=0.9, <3", features = ["derive"], default-features = false, optional = true }
+
+[dev-dependencies]
+num-traits = "0.2"
 
 [features]
 default = ["std"]

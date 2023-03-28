@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.12.1] - 2022-20-27
+- Added `H384` and `H768` types. [#684](https://github.com/paritytech/parity-common/pull/684)
+
 ## [0.12.0] - 2022-09-20
 ### Breaking
 - Updated `fixed-hash` to 0.8. [#680](https://github.com/paritytech/parity-common/pull/680)

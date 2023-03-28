@@ -19,7 +19,7 @@ jobs:
           override: true
 
       - name: Rust Cache
-        uses: Swatinem/rust-cache@22c9328bcba27aa81a32b1bef27c7e3c78052531 # v2.0.1
+        uses: Swatinem/rust-cache@6fd3edff6979b79f87531400ad694fb7f2c84b1f # v2.2.1
 
       - uses: actions-rs/cargo@v1
         with:
@@ -43,7 +43,7 @@ jobs:
           override: true
 
       - name: Rust Cache
-        uses: Swatinem/rust-cache@22c9328bcba27aa81a32b1bef27c7e3c78052531 # v2.0.1
+        uses: Swatinem/rust-cache@6fd3edff6979b79f87531400ad694fb7f2c84b1f # v2.2.1
 
       - run: rustup target add wasm32-unknown-unknown
 
@@ -98,6 +98,18 @@ jobs:
           command: test
           args: -p ethbloom --all-features
 
+      - name: Test bounded-collections no_std
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p bounded-collections --no-default-features
+
+      - name: Test bounded-collections all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p bounded-collections --all-features
+
       - name: Test uint on bigendian
         if: runner.os == 'Linux'
         uses: actions-rs/cargo@v1
@@ -105,26 +117,6 @@ jobs:
           use-cross: true
           command: test
           args: -p uint --target=mips64-unknown-linux-gnuabi64
-
-      - name: Test parity-util-mem on Android
-        if: runner.os == 'Linux'
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: test
-          args: -p parity-util-mem --target=aarch64-linux-android
-
-      - name: Test parity-util-mem estimate-heapsize 
-        run: cargo test -p parity-util-mem --features='estimate-heapsize'
-
-      - name: Test parity-util-mem jemalloc-global 
-        run: cargo test -p parity-util-mem --features='jemalloc-global'
-
-      - name: Test parity-util-mem mimalloc-global 
-        run: cargo test -p parity-util-mem --features='mimalloc-global'
-
-      - name: Test parity-util-mem dlmalloc-global 
-        run: cargo test -p parity-util-mem --no-default-features --features='dlmalloc-global'
 
   test_windows:
     name: Test Windows
@@ -138,7 +130,7 @@ jobs:
           override: true
 
       - name: Rust Cache
-        uses: Swatinem/rust-cache@22c9328bcba27aa81a32b1bef27c7e3c78052531 # v2.0.1
+        uses: Swatinem/rust-cache@6fd3edff6979b79f87531400ad694fb7f2c84b1f # v2.2.1
 
       - uses: actions-rs/cargo@v1
         with:

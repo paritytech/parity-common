@@ -128,7 +128,7 @@ impl From<FromHexError> for FromStrRadixErr {
 }
 
 /// Conversion from decimal string error
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FromDecStrErr {
 	/// Char not from range 0-9
 	InvalidCharacter,
@@ -1001,13 +1001,13 @@ macro_rules! construct_uint {
 				while n > u_one {
 					if is_even(&n) {
 						x = x * x;
-						n = n >> 1usize;
+						n >>= 1usize;
 					} else {
 						y = x * y;
 						x = x * x;
 						// to reduce odd number by 1 we should just clear the last bit
-						n.0[$n_words-1] = n.0[$n_words-1] & ((!0u64)>>1);
-						n = n >> 1usize;
+						n.0[$n_words-1] &= (!0u64)>>1;
+						n >>= 1usize;
 					}
 				}
 				x * y
@@ -1028,7 +1028,7 @@ macro_rules! construct_uint {
 				while n > u_one {
 					if is_even(&n) {
 						x = $crate::overflowing!(x.overflowing_mul(x), overflow);
-						n = n >> 1usize;
+						n >>= 1usize;
 					} else {
 						y = $crate::overflowing!(x.overflowing_mul(y), overflow);
 						x = $crate::overflowing!(x.overflowing_mul(x), overflow);
@@ -1508,6 +1508,12 @@ macro_rules! construct_uint {
 			}
 		}
 
+		impl $crate::core_::ops::BitAndAssign<$name> for $name {
+			fn bitand_assign(&mut self, rhs: $name) {
+				*self = *self & rhs;
+			}
+		}
+
 		impl $crate::core_::ops::BitXor<$name> for $name {
 			type Output = $name;
 
@@ -1523,6 +1529,12 @@ macro_rules! construct_uint {
 			}
 		}
 
+		impl $crate::core_::ops::BitXorAssign<$name> for $name {
+			fn bitxor_assign(&mut self, rhs: $name) {
+				*self = *self ^ rhs;
+			}
+		}
+
 		impl $crate::core_::ops::BitOr<$name> for $name {
 			type Output = $name;
 
@@ -1535,6 +1547,12 @@ macro_rules! construct_uint {
 					ret[i] = arr1[i] | arr2[i];
 				}
 				$name(ret)
+			}
+		}
+
+		impl $crate::core_::ops::BitOrAssign<$name> for $name {
+			fn bitor_assign(&mut self, rhs: $name) {
+				*self = *self | rhs;
 			}
 		}
 
@@ -1660,7 +1678,7 @@ macro_rules! construct_uint {
 				loop {
 					let digit = (current % ten).low_u64() as u8;
 					buf[i] = digit + b'0';
-					current = current / ten;
+					current /= ten;
 					if current.is_zero() {
 						break;
 					}

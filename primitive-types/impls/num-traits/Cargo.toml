@@ -1,6 +1,6 @@
 [package]
 name = "impl-num-traits"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
@@ -11,4 +11,4 @@ rust-version = "1.56.1"
 [dependencies]
 num-traits = { version = "0.2", default-features = false }
 integer-sqrt = "0.1"
-uint = { version = "0.9.1", path = "../../../uint", default-features = false }
+uint = { version = "0.9.5", path = "../../../uint", default-features = false }

@@ -16,13 +16,11 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use parity_util_mem::MallocSizeOf;
 use rocksdb::{
 	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Options, ReadOptions, WriteBatch, WriteOptions, DB,
 };
 
 use kvdb::{DBKeyValue, DBOp, DBTransaction, DBValue, KeyValueDB};
-use log::warn;
 
 #[cfg(target_os = "linux")]
 use regex::Regex;
@@ -252,26 +250,6 @@ struct DBAndColumns {
 	column_names: Vec<String>,
 }
 
-impl MallocSizeOf for DBAndColumns {
-	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
-		let mut total = self.column_names.size_of(ops)
-			// we have at least one column always, so we can call property on it
-			+ self.cf(0).map(|cf| self.db
-				.property_int_value_cf(cf, "rocksdb.block-cache-usage")
-				.unwrap_or(Some(0))
-				.map(|x| x as usize)
-				.unwrap_or(0)
-			).unwrap_or(0);
-
-		for v in 0..self.column_names.len() {
-			total += self.static_property_or_warn(v, "rocksdb.estimate-table-readers-mem");
-			total += self.static_property_or_warn(v, "rocksdb.cur-size-all-mem-tables");
-		}
-
-		total
-	}
-}
-
 impl DBAndColumns {
 	fn cf(&self, i: usize) -> io::Result<&ColumnFamily> {
 		let name = self.column_names.get(i).ok_or_else(|| invalid_column(i as u32))?;
@@ -279,42 +257,16 @@ impl DBAndColumns {
 			.cf_handle(&name)
 			.ok_or_else(|| other_io_err(format!("invalid column name: {name}")))
 	}
-
-	fn static_property_or_warn(&self, col: usize, prop: &str) -> usize {
-		let cf = match self.cf(col) {
-			Ok(cf) => cf,
-			Err(_) => {
-				warn!("RocksDB column index out of range: {}", col);
-				return 0
-			},
-		};
-		match self.db.property_int_value_cf(cf, prop) {
-			Ok(Some(v)) => v as usize,
-			_ => {
-				warn!("Cannot read expected static property of RocksDb database: {}", prop);
-				0
-			},
-		}
-	}
 }
 
 /// Key-Value database.
-#[derive(MallocSizeOf)]
 pub struct Database {
 	inner: DBAndColumns,
-	#[ignore_malloc_size_of = "insignificant"]
 	config: DatabaseConfig,
-	#[ignore_malloc_size_of = "insignificant"]
-	path: PathBuf,
-	#[ignore_malloc_size_of = "insignificant"]
 	opts: Options,
-	#[ignore_malloc_size_of = "insignificant"]
 	write_opts: WriteOptions,
-	#[ignore_malloc_size_of = "insignificant"]
 	read_opts: ReadOptions,
-	#[ignore_malloc_size_of = "insignificant"]
 	block_opts: BlockBasedOptions,
-	#[ignore_malloc_size_of = "insignificant"]
 	stats: stats::RunningDbStats,
 }
 
@@ -401,7 +353,6 @@ impl Database {
 		Ok(Database {
 			inner: DBAndColumns { db, column_names },
 			config: config.clone(),
-			path: path.as_ref().to_owned(),
 			opts,
 			read_opts,
 			write_opts,
@@ -784,33 +735,6 @@ mod tests {
 		second_db.try_catch_up_with_primary()?;
 		assert_eq!(&*second_db.get(0, b"key2")?.unwrap(), b"cat");
 		Ok(())
-	}
-
-	#[test]
-	fn mem_tables_size() {
-		let tempdir = TempfileBuilder::new().prefix("").tempdir().unwrap();
-
-		let config = DatabaseConfig {
-			max_open_files: 512,
-			memory_budget: HashMap::new(),
-			compaction: CompactionProfile::default(),
-			columns: 11,
-			keep_log_file_num: 1,
-			enable_statistics: false,
-			secondary: None,
-			max_total_wal_size: None,
-			create_if_missing: true,
-		};
-
-		let db = Database::open(&config, tempdir.path().to_str().unwrap()).unwrap();
-
-		let mut batch = db.transaction();
-		for i in 0u32..10000u32 {
-			batch.put(i / 1000 + 1, &i.to_le_bytes(), &(i * 17).to_le_bytes());
-		}
-		db.write(batch).unwrap();
-
-		assert!(db.inner.static_property_or_warn(0, "rocksdb.cur-size-all-mem-tables") > 512);
 	}
 
 	#[test]
