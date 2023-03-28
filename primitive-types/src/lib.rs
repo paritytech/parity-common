@@ -77,6 +77,16 @@ construct_fixed_hash! {
 	#[cfg_attr(feature = "scale-info", derive(TypeInfo))]
 	pub struct H768(96);
 }
+construct_fixed_hash! {
+	/// Fixed-size uninterpreted hash type with 160 bytes (896 bits) size.
+	#[cfg_attr(feature = "scale-info", derive(TypeInfo))]
+	pub struct H896(112);
+}
+construct_fixed_hash! {
+	/// Fixed-size uninterpreted hash type with 144 bytes (1152 bits) size.
+	#[cfg_attr(feature = "scale-info", derive(TypeInfo))]
+	pub struct H1152(144);
+}
 
 #[cfg(feature = "num-traits")]
 mod num_traits {
@@ -103,6 +113,8 @@ mod serde {
 	impl_fixed_hash_serde!(H384, 48);
 	impl_fixed_hash_serde!(H512, 64);
 	impl_fixed_hash_serde!(H768, 96);
+	impl_fixed_hash_serde!(H1152, 144);
+	impl_fixed_hash_serde!(H896, 112);
 }
 
 #[cfg(feature = "impl-codec")]
@@ -120,6 +132,8 @@ mod codec {
 	impl_fixed_hash_codec!(H384, 48);
 	impl_fixed_hash_codec!(H512, 64);
 	impl_fixed_hash_codec!(H768, 96);
+	impl_fixed_hash_codec!(H896, 112);
+	impl_fixed_hash_codec!(H1152, 144);
 }
 
 #[cfg(feature = "impl-rlp")]
@@ -137,6 +151,8 @@ mod rlp {
 	impl_fixed_hash_rlp!(H384, 48);
 	impl_fixed_hash_rlp!(H512, 64);
 	impl_fixed_hash_rlp!(H768, 96);
+	impl_fixed_hash_rlp!(H896, 112);
+	impl_fixed_hash_rlp!(H1152, 144);
 }
 
 impl_fixed_hash_conversions!(H256, H160);
