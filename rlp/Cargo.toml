@@ -15,7 +15,7 @@ rlp-derive = { version = "0.1", path = "../rlp-derive", optional = true }
 
 [dev-dependencies]
 criterion = "0.4.0"
-hex-literal = "0.3.1"
+hex-literal = "0.4.1"
 primitive-types = { path = "../primitive-types", version = "0.12", features = ["impl-rlp"] }
 
 [features]
