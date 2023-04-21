@@ -885,12 +885,13 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 			.tempdir()
 			.expect("the OS can create tmp dirs");
 		let db = Database::open(&cfg, db_path.path()).expect("can open a db");
+		let statistics = db.get_statistics();
+		assert!(statistics.contains_key("block.cache.hit"));
+		drop(db);
+
 		let mut rocksdb_log = std::fs::File::open(format!("{}/LOG", db_path.path().to_str().unwrap()))
 			.expect("rocksdb creates a LOG file");
 		let mut settings = String::new();
-		let statistics = db.get_statistics();
-		assert!(statistics.contains_key("block.cache.hit"));
-
 		rocksdb_log.read_to_string(&mut settings).unwrap();
 		// Check column count
 		assert!(settings.contains("Options for column family [default]"), "no default col");
