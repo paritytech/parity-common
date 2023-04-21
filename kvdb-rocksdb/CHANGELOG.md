@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.18.0] - 2023-04-21
+- Updated `rocksdb` to 0.20.1. [#743](https://github.com/paritytech/parity-common/pull/743)
+
 ## [0.17.0] - 2022-11-29
 - Removed `parity-util-mem` support. [#696](https://github.com/paritytech/parity-common/pull/696)
 
