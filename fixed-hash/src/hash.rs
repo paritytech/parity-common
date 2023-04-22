@@ -43,6 +43,7 @@ macro_rules! construct_fixed_hash {
 	( $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_bytes:expr ); ) => {
 		#[repr(C)]
 		$(#[$attr])*
+		#[derive(PartialEq, Eq)]
 		$visibility struct $name (pub [u8; $n_bytes]);
 
 		impl From<[u8; $n_bytes]> for $name {
@@ -262,8 +263,6 @@ macro_rules! construct_fixed_hash {
 				ret
 			}
 		}
-
-		impl $crate::core_::cmp::Eq for $name {}
 
 		impl $crate::core_::cmp::PartialOrd for $name {
 			fn partial_cmp(&self, other: &Self) -> Option<$crate::core_::cmp::Ordering> {
@@ -531,13 +530,6 @@ macro_rules! impl_rand_for_fixed_hash {
 #[doc(hidden)]
 macro_rules! impl_cmp_for_fixed_hash {
 	( $name:ident ) => {
-		impl $crate::core_::cmp::PartialEq for $name {
-			#[inline]
-			fn eq(&self, other: &Self) -> bool {
-				self.as_bytes() == other.as_bytes()
-			}
-		}
-
 		impl $crate::core_::cmp::Ord for $name {
 			#[inline]
 			fn cmp(&self, other: &Self) -> $crate::core_::cmp::Ordering {

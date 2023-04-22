@@ -349,6 +349,15 @@ fn display_and_debug() {
 	test_for(0x1000, "0000000000001000", "0000…1000");
 }
 
+#[test]
+fn const_matching_works() {
+	const ONES: H32 = H32::repeat_byte(1);
+	match H32::repeat_byte(0) {
+		ONES => unreachable!(),
+		_ => {},
+	}
+}
+
 mod ops {
 	use super::*;
 
