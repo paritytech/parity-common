@@ -18,6 +18,8 @@ pub mod bounded_btree_set;
 pub mod bounded_vec;
 pub mod weak_bounded_vec;
 
+mod test;
+
 pub use bounded_btree_map::BoundedBTreeMap;
 pub use bounded_btree_set::BoundedBTreeSet;
 pub use bounded_vec::{BoundedSlice, BoundedVec};
