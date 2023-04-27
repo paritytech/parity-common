@@ -58,8 +58,15 @@ impl<T: Default> Get<T> for GetDefault {
 macro_rules! impl_const_get {
 	($name:ident, $t:ty) => {
 		/// Const getter for a basic type.
-		#[cfg_attr(feature = "std", derive(core::fmt::Debug))]
+		#[derive(Default, Clone)]
 		pub struct $name<const T: $t>;
+
+		#[cfg(feature = "std")]
+		impl<const T: $t> core::fmt::Debug for $name<T> {
+			fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
+				fmt.write_str(&format!("{}<{}>", stringify!($name), T))
+			}
+		}
 		#[cfg(not(feature = "std"))]
 		impl<const T: $t> core::fmt::Debug for $name<T> {
 			fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
