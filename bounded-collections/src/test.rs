@@ -33,6 +33,7 @@ fn const_impl_default_clone_debug() {
 }
 
 #[test]
+#[cfg(feature = "std")]
 fn const_debug_fmt() {
 	assert_eq!(format!("{:?}", ConstBool::<true> {}), "ConstBool<true>");
 	assert_eq!(format!("{:?}", ConstBool::<false> {}), "ConstBool<false>");
