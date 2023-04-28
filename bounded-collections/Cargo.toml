@@ -9,7 +9,7 @@ edition = "2021"
 rust-version = "1.60.0"
 
 [dependencies]
-serde = { version = "1.0.101", default-features = false, optional = true, features=["alloc", "derive"] }
+serde = { version = "1.0.160", default-features = false, optional = true, features=["alloc", "derive"] }
 codec = { version = "3.3.0", default-features = false, features = ["max-encoded-len"], package = "parity-scale-codec" }
 scale-info = { version = ">=1.0, <3", features = ["derive"], default-features = false }
 log = { version = "0.4.17", default-features = false }

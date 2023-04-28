@@ -45,10 +45,10 @@ use serde::{
 #[scale_info(skip_type_params(S))]
 pub struct WeakBoundedVec<T, S>(
 	pub(super) Vec<T>,
-	#[cfg_attr(feature = "std", serde(skip_serializing))] PhantomData<S>,
+	#[cfg_attr(feature = "serde", serde(skip_serializing))] PhantomData<S>,
 );
 
-#[cfg(feature = "std")]
+#[cfg(feature = "serde")]
 impl<'de, T, S: Get<u32>> Deserialize<'de> for WeakBoundedVec<T, S>
 where
 	T: Deserialize<'de>,
