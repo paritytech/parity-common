@@ -27,7 +27,7 @@ use core::{
 	ops::{Deref, Index, IndexMut, RangeBounds},
 	slice::SliceIndex,
 };
-#[cfg(feature = "std")]
+#[cfg(feature = "serde")]
 use serde::{
 	de::{Error, SeqAccess, Visitor},
 	Deserialize, Deserializer, Serialize,
@@ -40,10 +40,10 @@ use serde::{
 ///
 /// As the name suggests, the length of the queue is always bounded. All internal operations ensure
 /// this bound is respected.
-#[cfg_attr(feature = "std", derive(Serialize), serde(transparent))]
+#[cfg_attr(feature = "serde", derive(Serialize), serde(transparent))]
 #[derive(Encode, scale_info::TypeInfo)]
 #[scale_info(skip_type_params(S))]
-pub struct BoundedVec<T, S>(pub(super) Vec<T>, #[cfg_attr(feature = "std", serde(skip_serializing))] PhantomData<S>);
+pub struct BoundedVec<T, S>(pub(super) Vec<T>, #[cfg_attr(feature = "serde", serde(skip_serializing))] PhantomData<S>);
 
 /// Create an object through truncation.
 pub trait TruncateFrom<T> {
@@ -51,7 +51,7 @@ pub trait TruncateFrom<T> {
 	fn truncate_from(unbound: T) -> Self;
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "serde")]
 impl<'de, T, S: Get<u32>> Deserialize<'de> for BoundedVec<T, S>
 where
 	T: Deserialize<'de>,
@@ -68,7 +68,7 @@ where
 		{
 			type Value = Vec<T>;
 
-			fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+			fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
 				formatter.write_str("a sequence")
 			}
 
