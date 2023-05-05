@@ -108,7 +108,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p bounded-collections --no-default-features --features='serde'
+          args: -p bounded-collections --no-default-features --features=serde
 
       - name: Test bounded-collections all-features
         uses: actions-rs/cargo@v1
