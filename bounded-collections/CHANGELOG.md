@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
-## [0.2.0] - 2023-05-05
+## [0.1.7] - 2023-05-05
 - Added `serde` feature, which can be enabled for no `std` deployments.
 
 ## [0.1.6] - 2023-04-27
