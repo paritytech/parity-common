@@ -19,9 +19,6 @@ serde_json = "1.0.41"
 
 [features]
 default = ["std"]
-serde = [
-    "dep:serde"
-]
 std = [
     "log/std",
     "codec/std",
