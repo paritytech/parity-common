@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
+## [0.1.6] - 2023-05-05
+- Added `serde` feature, which can be enabled for no `std` deployments.
+
 ## [0.1.5] - 2023-02-13
 - Fixed `Hash` impl (previously it could not be used in practice, because the size bound was required to also implement `Hash`).
 
