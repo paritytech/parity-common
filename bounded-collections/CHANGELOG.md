@@ -4,8 +4,13 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
-## [0.1.6] - 2023-05-05
+## [0.1.7] - 2023-05-05
 - Added `serde` feature, which can be enabled for no `std` deployments.
+
+## [0.1.6] - 2023-04-27
+- Added `Clone` and `Default` derive to the `impl_const_get!` macro and thereby all `Const*` types.
+- Fixed `Debug` impl for `impl_const_get!` and all `Const*` types to also print the value and not just the type name.
+
 
 ## [0.1.5] - 2023-02-13
 - Fixed `Hash` impl (previously it could not be used in practice, because the size bound was required to also implement `Hash`).
