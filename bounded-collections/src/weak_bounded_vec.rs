@@ -27,7 +27,7 @@ use core::{
 	ops::{Deref, Index, IndexMut},
 	slice::SliceIndex,
 };
-#[cfg(feature = "std")]
+#[cfg(feature = "serde")]
 use serde::{
 	de::{Error, SeqAccess, Visitor},
 	Deserialize, Deserializer, Serialize,
@@ -40,15 +40,15 @@ use serde::{
 ///
 /// The length of the vec is not strictly bounded. Decoding a vec with more element that the bound
 /// is accepted, and some method allow to bypass the restriction with warnings.
-#[cfg_attr(feature = "std", derive(Serialize), serde(transparent))]
+#[cfg_attr(feature = "serde", derive(Serialize), serde(transparent))]
 #[derive(Encode, scale_info::TypeInfo)]
 #[scale_info(skip_type_params(S))]
 pub struct WeakBoundedVec<T, S>(
 	pub(super) Vec<T>,
-	#[cfg_attr(feature = "std", serde(skip_serializing))] PhantomData<S>,
+	#[cfg_attr(feature = "serde", serde(skip_serializing))] PhantomData<S>,
 );
 
-#[cfg(feature = "std")]
+#[cfg(feature = "serde")]
 impl<'de, T, S: Get<u32>> Deserialize<'de> for WeakBoundedVec<T, S>
 where
 	T: Deserialize<'de>,
@@ -65,7 +65,7 @@ where
 		{
 			type Value = Vec<T>;
 
-			fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+			fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
 				formatter.write_str("a sequence")
 			}
 
