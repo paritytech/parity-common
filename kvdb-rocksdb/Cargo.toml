@@ -1,6 +1,6 @@
 [package]
 name = "kvdb-rocksdb"
-version = "0.18.0"
+version = "0.19.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 repository = "https://github.com/paritytech/parity-common"
 description = "kvdb implementation backed by RocksDB"
