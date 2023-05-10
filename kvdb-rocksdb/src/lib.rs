@@ -314,7 +314,7 @@ fn generate_block_based_options(config: &DatabaseConfig) -> io::Result<BlockBase
 	if cache_size == 0 {
 		block_opts.disable_cache()
 	} else {
-		let cache = rocksdb::Cache::new_lru_cache(cache_size).map_err(other_io_err)?;
+		let cache = rocksdb::Cache::new_lru_cache(cache_size);
 		block_opts.set_block_cache(&cache);
 		// "index and filter blocks will be stored in block cache, together with all other data blocks."
 		// See: https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB#indexes-and-filter-blocks
