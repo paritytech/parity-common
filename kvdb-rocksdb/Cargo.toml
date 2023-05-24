@@ -33,7 +33,7 @@ version = "0.21"
 
 [dev-dependencies]
 alloc_counter = "0.0.4"
-criterion = "0.4"
+criterion = "0.5"
 ethereum-types = { path = "../ethereum-types" }
 kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.11" }
 rand = "0.8.0"
