@@ -288,9 +288,19 @@ impl<T: Decode, S: Get<u32>> Decode for BoundedVec<T, S> {
 impl<T: Encode + Decode, S: Get<u32>> EncodeLike<Vec<T>> for BoundedVec<T, S> {}
 
 impl<T, S> BoundedVec<T, S> {
+	/// Create `Self` with no items.
+	pub fn new() -> Self {
+		Self(Vec::new(), Default::default())
+	}
+
 	/// Create `Self` from `t` without any checks.
 	fn unchecked_from(t: Vec<T>) -> Self {
 		Self(t, Default::default())
+	}
+
+	/// Exactly the same semantics as `Vec::clear`.
+	pub fn clear(&mut self) {
+		self.0.clear()
 	}
 
 	/// Consume self, and return the inner `Vec`. Henceforth, the `Vec<_>` can be altered in an
@@ -439,19 +449,19 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 	/// If `Self::bound() < index` or `self.len() < index`, then this is also a no-op.
 	///
 	/// Returns `Ok(maybe_removed)` if the item was inserted, where `maybe_removed` is
-	/// `Some(removed)` if an item was removed to make room for the new one. Returns `Err(())` if
-	/// `element` cannot be inserted.
-	pub fn force_insert_keep_right(&mut self, index: usize, mut element: T) -> Result<Option<T>, ()> {
+	/// `Some(removed)` if an item was removed to make room for the new one. Returns `Err(element)`
+	/// if `element` cannot be inserted.
+	pub fn force_insert_keep_right(&mut self, index: usize, mut element: T) -> Result<Option<T>, T> {
 		// Check against panics.
 		if Self::bound() < index || self.len() < index {
-			Err(())
+			Err(element)
 		} else if self.len() < Self::bound() {
 			// Cannot panic since self.len() >= index;
 			self.0.insert(index, element);
 			Ok(None)
 		} else {
 			if index == 0 {
-				return Err(())
+				return Err(element)
 			}
 			core::mem::swap(&mut self[0], &mut element);
 			// `[0..index] cannot panic since self.len() >= index.
@@ -469,16 +479,16 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 	/// If `Self::bound() < index` or `self.len() < index`, then this is also a no-op.
 	///
 	/// Returns `Ok(maybe_removed)` if the item was inserted, where `maybe_removed` is
-	/// `Some(removed)` if an item was removed to make room for the new one. Returns `Err(())` if
-	/// `element` cannot be inserted.
-	pub fn force_insert_keep_left(&mut self, index: usize, element: T) -> Result<Option<T>, ()> {
+	/// `Some(removed)` if an item was removed to make room for the new one. Returns `Err(element)`
+	/// if `element` cannot be inserted.
+	pub fn force_insert_keep_left(&mut self, index: usize, element: T) -> Result<Option<T>, T> {
 		// Check against panics.
 		if Self::bound() < index || self.len() < index || Self::bound() == 0 {
-			return Err(())
+			return Err(element)
 		}
 		// Noop condition.
 		if Self::bound() == index && self.len() <= Self::bound() {
-			return Err(())
+			return Err(element)
 		}
 		let maybe_removed = if self.is_full() {
 			// defensive-only: since we are at capacity, this is a noop.
