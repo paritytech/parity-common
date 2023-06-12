@@ -967,7 +967,7 @@ mod test {
 	#[test]
 	fn force_insert_keep_left_works() {
 		let mut b: BoundedVec<u32, ConstU32<4>> = bounded_vec![];
-		assert_eq!(b.force_insert_keep_left(1, 10), Err(()));
+		assert_eq!(b.force_insert_keep_left(1, 10), Err(10));
 		assert!(b.is_empty());
 
 		assert_eq!(b.force_insert_keep_left(0, 30), Ok(None));
@@ -976,7 +976,7 @@ mod test {
 		assert_eq!(b.force_insert_keep_left(3, 40), Ok(None));
 		assert_eq!(*b, vec![10, 20, 30, 40]);
 		// at capacity.
-		assert_eq!(b.force_insert_keep_left(4, 41), Err(()));
+		assert_eq!(b.force_insert_keep_left(4, 41), Err(41));
 		assert_eq!(*b, vec![10, 20, 30, 40]);
 		assert_eq!(b.force_insert_keep_left(3, 31), Ok(Some(40)));
 		assert_eq!(*b, vec![10, 20, 30, 31]);
@@ -987,14 +987,14 @@ mod test {
 
 		let mut z: BoundedVec<u32, ConstU32<0>> = bounded_vec![];
 		assert!(z.is_empty());
-		assert_eq!(z.force_insert_keep_left(0, 10), Err(()));
+		assert_eq!(z.force_insert_keep_left(0, 10), Err(10));
 		assert!(z.is_empty());
 	}
 
 	#[test]
 	fn force_insert_keep_right_works() {
 		let mut b: BoundedVec<u32, ConstU32<4>> = bounded_vec![];
-		assert_eq!(b.force_insert_keep_right(1, 10), Err(()));
+		assert_eq!(b.force_insert_keep_right(1, 10), Err(10));
 		assert!(b.is_empty());
 
 		assert_eq!(b.force_insert_keep_right(0, 30), Ok(None));
@@ -1004,7 +1004,7 @@ mod test {
 		assert_eq!(*b, vec![10, 20, 30, 40]);
 
 		// at capacity.
-		assert_eq!(b.force_insert_keep_right(0, 0), Err(()));
+		assert_eq!(b.force_insert_keep_right(0, 0), Err(0));
 		assert_eq!(*b, vec![10, 20, 30, 40]);
 		assert_eq!(b.force_insert_keep_right(1, 11), Ok(Some(10)));
 		assert_eq!(*b, vec![11, 20, 30, 40]);
@@ -1013,12 +1013,12 @@ mod test {
 		assert_eq!(b.force_insert_keep_right(4, 41), Ok(Some(20)));
 		assert_eq!(*b, vec![30, 31, 40, 41]);
 
-		assert_eq!(b.force_insert_keep_right(5, 69), Err(()));
+		assert_eq!(b.force_insert_keep_right(5, 69), Err(69));
 		assert_eq!(*b, vec![30, 31, 40, 41]);
 
 		let mut z: BoundedVec<u32, ConstU32<0>> = bounded_vec![];
 		assert!(z.is_empty());
-		assert_eq!(z.force_insert_keep_right(0, 10), Err(()));
+		assert_eq!(z.force_insert_keep_right(0, 10), Err(10));
 		assert!(z.is_empty());
 	}
 
