@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
+## [0.1.8] - 2023-06-11
+- Altered return types of `BoundedVec::force_insert_keep_` functions to return the element in case of error.
+- Added `new` and `clear` to `BoundedVec`.
+
 ## [0.1.7] - 2023-05-05
 - Added `serde` feature, which can be enabled for no `std` deployments.
 
