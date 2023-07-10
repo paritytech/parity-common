@@ -105,13 +105,19 @@ fn rlp_iter() {
 		let rlp = Rlp::new(&data);
 		let mut iter = rlp.iter();
 
+		assert_eq!(iter.len(), 2);
+
 		let cat = iter.next().unwrap();
 		assert!(cat.is_data());
 		assert_eq!(cat.as_raw(), &[0x83, b'c', b'a', b't']);
 
+		assert_eq!(iter.len(), 1);
+
 		let dog = iter.next().unwrap();
 		assert!(dog.is_data());
 		assert_eq!(dog.as_raw(), &[0x83, b'd', b'o', b'g']);
+
+		assert_eq!(iter.len(), 0);
 
 		let none = iter.next();
 		assert!(none.is_none());
