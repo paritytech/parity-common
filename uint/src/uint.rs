@@ -732,7 +732,7 @@ macro_rules! construct_uint {
 				r
 			}
 
-			/// Return specific byte.
+			/// Return specific byte. Byte 0 is the least significant value (ie~ little endian).
 			///
 			/// # Panics
 			///
