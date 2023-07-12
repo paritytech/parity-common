@@ -33,11 +33,34 @@ impl U256 {
 
 	/// Lossy conversion of `U256` to `f64`.
 	pub fn to_f64_lossy(self) -> f64 {
-		let (res, factor) = match self {
-			U256([_, _, 0, 0]) => (self, 1.0),
-			U256([_, _, _, 0]) => (self >> 64, 2.0f64.powi(64)),
-			U256([_, _, _, _]) => (self >> 128, 2.0f64.powi(128)),
-		};
-		(res.low_u128() as f64) * factor
+		// Reference: https://blog.m-ou.se/floats/
+		// Step 1: Get leading zeroes
+		let leading_zeroes = self.leading_zeros();
+		// Step 2: Get msb to be farthest left bit
+		let left_aligned = self << leading_zeroes;
+		// Step 3: Shift msb to fit in lower 53 bits of the first u64 (64-53=11)
+		let quarter_aligned = left_aligned >> 11;
+		let mantissa = quarter_aligned.0[3];
+		// Step 4: For the dropped bits (all bits beyond the 53 most significant
+		// We want to know only 2 things. If the msb of the dropped bits is 1 or 0,
+		// and if any of the other bits are 1. (See blog for explanation)
+		// So we take care to preserve the msb bit, while jumbling the rest of the bits
+		// together so that any 1s will survive. If all 0s, then the result will also be 0.
+		let dropped_bits = quarter_aligned.0[1] | quarter_aligned.0[0] | (left_aligned.0[0] & 0xFFFF_FFFF);
+		let dropped_bits = (dropped_bits & 0x7FFF_FFFF_FFFF_FFFF) | (dropped_bits >> 63);
+		let dropped_bits = quarter_aligned.0[2] | dropped_bits;
+		// Step 5: dropped_bits contains the msb of the original bits and an OR-mixed 63 bits.
+		// If msb of dropped bits is 0, it is mantissa + 0
+		// If msb of dropped bits is 1, it is mantissa + 0 only if mantissa lowest bit is 0
+		// and other bits of the dropped bits are all 0 (which both can be tested with the below all at once)
+		let mantissa = mantissa + ((dropped_bits - (dropped_bits >> 63 & !mantissa)) >> 63);
+		// Step 6: Calculate the exponent
+		// If self is 0, exponent should be 0 (special meaning) and mantissa will end up 0 too
+		// Otherwise, (255 - n) + 1022 so it simplifies to 1277 - n
+		// 1023 and 1022 are the cutoffs for the exponent having the msb next to the decimal point
+		let exponent = if self.is_zero() { 0 } else { 1277 - leading_zeroes as u64 };
+		// Step 7: sign bit is always 0, exponent is shifted into place
+		// Use addition instead of bitwise OR to saturate the exponent if mantissa overflows
+		f64::from_bits((exponent << 52) + mantissa)
 	}
 }
