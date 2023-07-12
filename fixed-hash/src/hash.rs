@@ -258,9 +258,7 @@ macro_rules! construct_fixed_hash {
 		#[cfg_attr(feature = "dev", allow(expl_impl_clone_on_copy))]
 		impl $crate::core_::clone::Clone for $name {
 			fn clone(&self) -> $name {
-				let mut ret = $name::zero();
-				ret.0.copy_from_slice(&self.0);
-				ret
+				*self
 			}
 		}
 
