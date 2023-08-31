@@ -87,10 +87,10 @@ where
 					let mut values = Vec::with_capacity(size);
 
 					while let Some(value) = seq.next_element()? {
-						values.push(value);
-						if values.len() > max {
+						if values.len() >= max {
 							return Err(A::Error::custom("out of bounds"))
 						}
+						values.push(value);
 					}
 
 					Ok(values)
@@ -1188,9 +1188,18 @@ mod test {
 	}
 
 	#[test]
+	fn test_deserializer_bound() {
+		let c: BoundedVec<u32, ConstU32<3>> = serde_json::from_str(r#"[0,1,2]"#).unwrap();
+
+		assert_eq!(c.len(), 3);
+		assert_eq!(c[0], 0);
+		assert_eq!(c[1], 1);
+		assert_eq!(c[2], 2);
+	}
+
+	#[test]
 	fn test_deserializer_failed() {
-		let c: Result<BoundedVec<u32, ConstU32<4>>, serde_json::error::Error> =
-			serde_json::from_str(r#"[0,1,2,3,4,5]"#);
+		let c: Result<BoundedVec<u32, ConstU32<4>>, serde_json::error::Error> = serde_json::from_str(r#"[0,1,2,3,4]"#);
 
 		match c {
 			Err(msg) => assert_eq!(msg.to_string(), "out of bounds at line 1 column 11"),
