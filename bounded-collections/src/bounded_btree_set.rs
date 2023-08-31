@@ -78,10 +78,10 @@ where
 					let mut values = BTreeSet::new();
 
 					while let Some(value) = seq.next_element()? {
-						values.insert(value);
-						if values.len() > max {
+						if values.len() >= max {
 							return Err(A::Error::custom("out of bounds"))
 						}
+						values.insert(value);
 					}
 
 					Ok(values)
@@ -609,9 +609,21 @@ mod test {
 	}
 
 	#[test]
+	fn test_deserializer_bound() {
+		let c: Result<BoundedBTreeSet<u32, ConstU32<3>>, serde_json::error::Error> = serde_json::from_str(r#"[0,1,2]"#);
+		assert!(c.is_ok());
+		let c = c.unwrap();
+
+		assert_eq!(c.len(), 3);
+		assert!(c.contains(&0));
+		assert!(c.contains(&1));
+		assert!(c.contains(&2));
+	}
+
+	#[test]
 	fn test_deserializer_failed() {
 		let c: Result<BoundedBTreeSet<u32, ConstU32<4>>, serde_json::error::Error> =
-			serde_json::from_str(r#"[0,1,2,3,4,5]"#);
+			serde_json::from_str(r#"[0,1,2,3,4]"#);
 
 		match c {
 			Err(msg) => assert_eq!(msg.to_string(), "out of bounds at line 1 column 11"),
