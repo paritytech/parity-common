@@ -13,12 +13,14 @@ serde = { version = "1.0.101", default-features = false, optional = true, featur
 codec = { version = "3.3.0", default-features = false, features = ["max-encoded-len"], package = "parity-scale-codec" }
 scale-info = { version = ">=1.0, <3", features = ["derive"], default-features = false }
 log = { version = "0.4.17", default-features = false }
+schemars = { version = "0.8.13", default-features = true, optional = true }
 
 [dev-dependencies]
 serde_json = "1.0.41"
 
 [features]
 default = ["std"]
+schema = ["schemars", "std"]
 std = [
     "log/std",
     "codec/std",
