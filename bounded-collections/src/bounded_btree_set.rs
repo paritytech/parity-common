@@ -399,7 +399,7 @@ where
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::{alloc::string::ToString as _, ConstU32};
+	use crate::ConstU32;
 	use alloc::{vec, vec::Vec};
 	use codec::CompactLen;
 
@@ -586,48 +586,56 @@ mod test {
 		}
 	}
 
-	#[test]
-	fn test_serializer() {
-		let mut c = BoundedBTreeSet::<u32, ConstU32<6>>::new();
-		c.try_insert(0).unwrap();
-		c.try_insert(1).unwrap();
-		c.try_insert(2).unwrap();
+	#[cfg(feature = "serde")]
+	mod serde {
+		use super::*;
+		use crate::alloc::string::ToString as _;
 
-		assert_eq!(serde_json::json!(&c).to_string(), r#"[0,1,2]"#);
-	}
+		#[test]
+		fn test_serializer() {
+			let mut c = BoundedBTreeSet::<u32, ConstU32<6>>::new();
+			c.try_insert(0).unwrap();
+			c.try_insert(1).unwrap();
+			c.try_insert(2).unwrap();
 
-	#[test]
-	fn test_deserializer() {
-		let c: Result<BoundedBTreeSet<u32, ConstU32<6>>, serde_json::error::Error> = serde_json::from_str(r#"[0,1,2]"#);
-		assert!(c.is_ok());
-		let c = c.unwrap();
+			assert_eq!(serde_json::json!(&c).to_string(), r#"[0,1,2]"#);
+		}
 
-		assert_eq!(c.len(), 3);
-		assert!(c.contains(&0));
-		assert!(c.contains(&1));
-		assert!(c.contains(&2));
-	}
+		#[test]
+		fn test_deserializer() {
+			let c: Result<BoundedBTreeSet<u32, ConstU32<6>>, serde_json::error::Error> =
+				serde_json::from_str(r#"[0,1,2]"#);
+			assert!(c.is_ok());
+			let c = c.unwrap();
 
-	#[test]
-	fn test_deserializer_bound() {
-		let c: Result<BoundedBTreeSet<u32, ConstU32<3>>, serde_json::error::Error> = serde_json::from_str(r#"[0,1,2]"#);
-		assert!(c.is_ok());
-		let c = c.unwrap();
+			assert_eq!(c.len(), 3);
+			assert!(c.contains(&0));
+			assert!(c.contains(&1));
+			assert!(c.contains(&2));
+		}
 
-		assert_eq!(c.len(), 3);
-		assert!(c.contains(&0));
-		assert!(c.contains(&1));
-		assert!(c.contains(&2));
-	}
+		#[test]
+		fn test_deserializer_bound() {
+			let c: Result<BoundedBTreeSet<u32, ConstU32<3>>, serde_json::error::Error> =
+				serde_json::from_str(r#"[0,1,2]"#);
+			assert!(c.is_ok());
+			let c = c.unwrap();
 
-	#[test]
-	fn test_deserializer_failed() {
-		let c: Result<BoundedBTreeSet<u32, ConstU32<4>>, serde_json::error::Error> =
-			serde_json::from_str(r#"[0,1,2,3,4]"#);
+			assert_eq!(c.len(), 3);
+			assert!(c.contains(&0));
+			assert!(c.contains(&1));
+			assert!(c.contains(&2));
+		}
 
-		match c {
-			Err(msg) => assert_eq!(msg.to_string(), "out of bounds at line 1 column 11"),
-			_ => unreachable!("deserializer must raise error"),
+		#[test]
+		fn test_deserializer_failed() {
+			let c: Result<BoundedBTreeSet<u32, ConstU32<4>>, serde_json::error::Error> =
+				serde_json::from_str(r#"[0,1,2,3,4]"#);
+
+			match c {
+				Err(msg) => assert_eq!(msg.to_string(), "out of bounds at line 1 column 11"),
+				_ => unreachable!("deserializer must raise error"),
+			}
 		}
 	}
 }
