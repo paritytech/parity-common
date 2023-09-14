@@ -50,7 +50,7 @@ where
 		D: Deserializer<'de>,
 	{
 		// Create a visitor to visit each element in the sequence
-		struct BTreeSetVisitor<T, S>(std::marker::PhantomData<(T, S)>);
+		struct BTreeSetVisitor<T, S>(PhantomData<(T, S)>);
 
 		impl<'de, T, S> Visitor<'de> for BTreeSetVisitor<T, S>
 		where
@@ -59,7 +59,7 @@ where
 		{
 			type Value = BTreeSet<T>;
 
-			fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+			fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
 				formatter.write_str("a sequence")
 			}
 
@@ -396,10 +396,10 @@ where
 	}
 }
 
-#[cfg(all(test, feature = "std"))]
+#[cfg(test)]
 mod test {
 	use super::*;
-	use crate::ConstU32;
+	use crate::{alloc::string::ToString as _, ConstU32};
 	use alloc::{vec, vec::Vec};
 	use codec::CompactLen;
 
