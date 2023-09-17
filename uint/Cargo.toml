@@ -10,7 +10,7 @@ readme = "README.md"
 edition = "2021"
 rust-version = "1.56.1"
 
-[package.metadata.cross.target.mips64-unknown-linux-gnuabi64]
+[package.metadata.cross.target.mips64-unknown-linux-muslabi64]
 build-std = true
 
 [dependencies]
