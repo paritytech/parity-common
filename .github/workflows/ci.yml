@@ -46,6 +46,7 @@ jobs:
         uses: Swatinem/rust-cache@e207df5d269b42b69c8bc5101da26f7d31feddb4 # v2.6.2
 
       - run: rustup target add wasm32-unknown-unknown
+      - run: rustup target add mips64-unknown-linux-muslabi64
 
       - name: Test no-default-features
         uses: actions-rs/cargo@v1
@@ -122,7 +123,7 @@ jobs:
         with:
           use-cross: true
           command: test
-          args: -p uint --target=mips64-unknown-linux-gnuabi64
+          args: -p uint --target=mips64-unknown-linux-muslabi64
 
   test_windows:
     name: Test Windows
