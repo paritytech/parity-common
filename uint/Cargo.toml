@@ -10,6 +10,9 @@ readme = "README.md"
 edition = "2021"
 rust-version = "1.56.1"
 
+[package.metadata.cross.target.mips64-unknown-linux-gnuabi64]
+build-std = true
+
 [dependencies]
 byteorder = { version = "1.4.2", default-features = false }
 crunchy = { version = "0.2.2", default-features = false }
