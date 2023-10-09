@@ -105,6 +105,8 @@ mod serde {
 	impl_fixed_hash_serde!(H768, 96);
 }
 
+// true that no need std, but need to do no_std alloc than, so simplified for now
+// also no macro, but easy to create
 #[cfg(all(feature = "std", feature = "json-schema"))]
 mod json_schema {
 	use super::*;
