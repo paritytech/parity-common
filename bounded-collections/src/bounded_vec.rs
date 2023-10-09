@@ -43,7 +43,7 @@ use serde::{
 #[cfg_attr(feature = "serde", derive(Serialize), serde(transparent))]
 #[derive(Encode, scale_info::TypeInfo)]
 #[scale_info(skip_type_params(S))]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub struct BoundedVec<T, S>(pub(super) Vec<T>, #[cfg_attr(feature = "serde", serde(skip_serializing))] PhantomData<S>);
 
 /// Create an object through truncation.
