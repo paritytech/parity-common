@@ -16,6 +16,7 @@ impl-codec = { version = "0.6.0", path = "impls/codec", default-features = false
 impl-num-traits = { version = "0.1.0", path = "impls/num-traits", default-features = false, optional = true }
 impl-rlp = { version = "0.3", path = "impls/rlp", default-features = false, optional = true }
 scale-info-crate = { package = "scale-info", version = ">=0.9, <3", features = ["derive"], default-features = false, optional = true }
+schemars = { version = "0.8.13", default-features = true, optional = true }
 
 [dev-dependencies]
 num-traits = "0.2"
@@ -26,6 +27,7 @@ std = ["uint/std", "fixed-hash/std", "impl-codec?/std"]
 byteorder = ["fixed-hash/byteorder"]
 rustc-hex = ["fixed-hash/rustc-hex"]
 serde = ["std", "impl-serde", "impl-serde/std"]
+json-schema = ["dep:schemars"]
 serde_no_std = ["impl-serde"]
 codec = ["impl-codec"]
 scale-info = ["codec", "scale-info-crate"]

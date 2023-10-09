@@ -20,7 +20,7 @@ serde_json = "1.0.41"
 
 [features]
 default = ["std"]
-schema = ["schemars", "std"]
+json-schema = ["dep:schemars"]
 std = [
     "log/std",
     "codec/std",

@@ -105,6 +105,21 @@ mod serde {
 	impl_fixed_hash_serde!(H768, 96);
 }
 
+#[cfg(all(feature = "std", feature = "json-schema"))]
+mod json_schema {
+	use super::*;
+
+	impl schemars::JsonSchema for H160 {
+		fn schema_name() -> String {
+			"0xPrefixedHexString".to_string()
+		}
+
+		fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+			String::json_schema(gen)
+		}
+	}
+}
+
 #[cfg(feature = "impl-codec")]
 mod codec {
 	use super::*;
