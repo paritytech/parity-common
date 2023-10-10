@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
+## [0.1.9] - 2023-10-10
+- Added `serde` support for `BoundedBTreeSet`. [#781](https://github.com/paritytech/parity-common/pull/781)
+
 ## [0.1.8] - 2023-06-11
 - Altered return types of `BoundedVec::force_insert_keep_` functions to return the element in case of error.
 - Added `new` and `clear` to `BoundedVec`.
