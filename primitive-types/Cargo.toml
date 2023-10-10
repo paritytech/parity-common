@@ -1,6 +1,6 @@
 [package]
 name = "primitive-types"
-version = "0.12.1"
+version = "0.12.2"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"

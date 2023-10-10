@@ -6,7 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.12.1] - 2022-20-27
+## [0.12.2] - 2023-10-10
+- Added `schemars` support via `json-schema` feature. [#785](https://github.com/paritytech/parity-common/pull/785)
+
+## [0.12.1] - 2022-10-27
 - Added `H384` and `H768` types. [#684](https://github.com/paritytech/parity-common/pull/684)
 
 ## [0.12.0] - 2022-09-20
