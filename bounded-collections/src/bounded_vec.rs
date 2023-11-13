@@ -638,6 +638,26 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 			Err(element)
 		}
 	}
+
+	/// Exactly the same semantics as [`Vec::rotate_left`], but returns an `Err` (and is a noop) if `mid` is larger then the current length.
+	pub fn try_rotate_left(&mut self, mid: usize) -> Result<(), ()> {
+		if mid > self.len() {
+			return Err(())
+		}
+
+		self.0.rotate_left(mid);
+		Ok(())
+	}
+
+	/// Exactly the same semantics as [`Vec::rotate_right`], but returns an `Err` (and is a noop) if `mid` is larger then the current length.
+	pub fn try_rotate_right(&mut self, mid: usize) -> Result<(), ()> {
+		if mid > self.len() {
+			return Err(())
+		}
+
+		self.0.rotate_right(mid);
+		Ok(())
+	}
 }
 
 impl<T, S> BoundedVec<T, S> {
@@ -1295,6 +1315,44 @@ mod test {
 
 		assert_eq!(bound, &unbound[..]);
 		assert!(bound == &unbound[..]);
+	}
+
+	#[test]
+	fn bounded_vec_try_rotate_left_works() {
+		let o = BoundedVec::<u32, ConstU32<3>>::truncate_from(vec![1, 2, 3]);
+		let mut bound = o.clone();
+
+		bound.try_rotate_left(0).unwrap();
+		assert_eq!(bound, o);
+		bound.try_rotate_left(3).unwrap();
+		assert_eq!(bound, o);
+
+		bound.try_rotate_left(4).unwrap_err();
+		assert_eq!(bound, o);
+
+		bound.try_rotate_left(1).unwrap();
+		assert_eq!(bound, vec![2, 3, 1]);
+		bound.try_rotate_left(2).unwrap();
+		assert_eq!(bound, o);
+	}
+
+	#[test]
+	fn bounded_vec_try_rotate_right_works() {
+		let o = BoundedVec::<u32, ConstU32<3>>::truncate_from(vec![1, 2, 3]);
+		let mut bound = o.clone();
+
+		bound.try_rotate_right(0).unwrap();
+		assert_eq!(bound, o);
+		bound.try_rotate_right(3).unwrap();
+		assert_eq!(bound, o);
+
+		bound.try_rotate_right(4).unwrap_err();
+		assert_eq!(bound, o);
+
+		bound.try_rotate_right(1).unwrap();
+		assert_eq!(bound, vec![3, 1, 2]);
+		bound.try_rotate_right(2).unwrap();
+		assert_eq!(bound, o);
 	}
 
 	// Just a test that structs containing `BoundedVec` and `BoundedSlice` can derive `Hash`. (This was broken when
