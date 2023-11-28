@@ -19,6 +19,8 @@ extern crate alloc;
 
 #[cfg(feature = "fp-conversion")]
 mod fp_conversion;
+#[cfg(feature = "json-schema")]
+mod json_schema;
 
 use core::convert::TryFrom;
 use fixed_hash::{construct_fixed_hash, impl_fixed_hash_conversions};
@@ -106,39 +108,6 @@ mod serde {
 	impl_fixed_hash_serde!(H384, 48);
 	impl_fixed_hash_serde!(H512, 64);
 	impl_fixed_hash_serde!(H768, 96);
-}
-
-
-// TODO: make macro
-#[cfg(feature = "json-schema")]
-mod json_schema {
-	use super::*;
-
-	impl schemars::JsonSchema for H160 {
-		fn schema_name() -> alloc::string::String {
-			use alloc::string::ToString;
-			"0xPrefixedHexString".to_string()
-		}
-		
-		fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
-			use alloc::string::String;
-			// TODO: validate format
-			String::json_schema(gen)
-		}
-	}
-
-	impl schemars::JsonSchema for U256 {
-		fn schema_name() -> alloc::string::String {
-			use alloc::string::ToString;
-			"U256String".to_string()
-		}
-		
-		fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
-			use alloc::string::String;
-			// TODO: validate format
-			String::json_schema(gen)
-		}
-	}
 }
 
 #[cfg(feature = "impl-codec")]
