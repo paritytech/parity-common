@@ -14,6 +14,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
 #[cfg(feature = "fp-conversion")]
 mod fp_conversion;
 
@@ -105,18 +108,34 @@ mod serde {
 	impl_fixed_hash_serde!(H768, 96);
 }
 
-// true that no need std, but need to do no_std alloc than, so simplified for now
-// also no macro, but easy to create
-#[cfg(all(feature = "std", feature = "json-schema"))]
+
+// TODO: make macro
+#[cfg(feature = "json-schema")]
 mod json_schema {
 	use super::*;
 
 	impl schemars::JsonSchema for H160 {
-		fn schema_name() -> String {
+		fn schema_name() -> alloc::string::String {
+			use alloc::string::ToString;
 			"0xPrefixedHexString".to_string()
 		}
-
+		
 		fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+			use alloc::string::String;
+			// TODO: validate format
+			String::json_schema(gen)
+		}
+	}
+
+	impl schemars::JsonSchema for U256 {
+		fn schema_name() -> alloc::string::String {
+			use alloc::string::ToString;
+			"U256String".to_string()
+		}
+		
+		fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+			use alloc::string::String;
+			// TODO: validate format
 			String::json_schema(gen)
 		}
 	}
