@@ -14,7 +14,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(not(feature = "std"))]
+// serde_no_std leads to alloc via impl, json-schema without std requires alloc
+#[cfg(all(not(feature = "std"), any(feature = "serde_no_std", feature = "json-schema")))]
 extern crate alloc;
 
 #[cfg(feature = "fp-conversion")]
