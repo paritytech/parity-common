@@ -29,7 +29,8 @@ rand = { version = "0.8.0", default-features = false, features = ["std_rng"] }
 
 [features]
 default = ["std", "rand", "rustc-hex", "byteorder"]
-std = ["rustc-hex/std", "rand/std", "byteorder/std"]
+std = ["rustc-hex/std", "rand?/std", "byteorder/std"]
+rand = ["dep:rand"]
 
 api-dummy = [] # Feature used by docs.rs to display documentation of hash types
 
