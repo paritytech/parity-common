@@ -14,8 +14,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+// serde_no_std leads to alloc via impl, json-schema without std requires alloc
+#[cfg(all(not(feature = "std"), any(feature = "serde_no_std", feature = "json-schema")))]
+extern crate alloc;
+
 #[cfg(feature = "fp-conversion")]
 mod fp_conversion;
+#[cfg(feature = "json-schema")]
+mod json_schema;
 
 use core::convert::TryFrom;
 use fixed_hash::{construct_fixed_hash, impl_fixed_hash_conversions};
@@ -103,23 +109,6 @@ mod serde {
 	impl_fixed_hash_serde!(H384, 48);
 	impl_fixed_hash_serde!(H512, 64);
 	impl_fixed_hash_serde!(H768, 96);
-}
-
-// true that no need std, but need to do no_std alloc than, so simplified for now
-// also no macro, but easy to create
-#[cfg(all(feature = "std", feature = "json-schema"))]
-mod json_schema {
-	use super::*;
-
-	impl schemars::JsonSchema for H160 {
-		fn schema_name() -> String {
-			"0xPrefixedHexString".to_string()
-		}
-
-		fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
-			String::json_schema(gen)
-		}
-	}
 }
 
 #[cfg(feature = "impl-codec")]
