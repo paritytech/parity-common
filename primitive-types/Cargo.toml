@@ -22,8 +22,9 @@ schemars = { version = ">=0.8.12", default-features = true, optional = true }
 num-traits = "0.2"
 
 [features]
-default = ["std"]
+default = ["std", "rand"]
 std = ["uint/std", "fixed-hash/std", "impl-codec?/std"]
+rand = ["fixed-hash/rand"]
 byteorder = ["fixed-hash/byteorder"]
 rustc-hex = ["fixed-hash/rustc-hex"]
 serde = ["std", "impl-serde", "impl-serde/std"]
