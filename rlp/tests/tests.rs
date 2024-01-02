@@ -22,7 +22,10 @@ fn test_rlp_display() {
 
 #[test]
 fn length_overflow() {
+	#[cfg(target_pointer_width = "64")]
 	let bs = hex!("bfffffffffffffffffffffffe5");
+	#[cfg(target_pointer_width = "32")]
+	let bs = hex!("bbffffffffffffffe5");
 	let rlp = Rlp::new(&bs);
 	let res: Result<u8, DecoderError> = rlp.as_val();
 	assert_eq!(Err(DecoderError::RlpInvalidLength), res);
@@ -593,7 +596,10 @@ fn test_rlp_nested_empty_list_encode() {
 
 #[test]
 fn test_rlp_list_length_overflow() {
+	#[cfg(target_pointer_width = "64")]
 	let data = hex!("ffffffffffffffffff000000");
+	#[cfg(target_pointer_width = "32")]
+	let data = hex!("fbffffffff000000");
 	let rlp = Rlp::new(&data);
 	let as_val: Result<String, DecoderError> = rlp.val_at(0);
 	assert_eq!(Err(DecoderError::RlpIsTooShort), as_val);
