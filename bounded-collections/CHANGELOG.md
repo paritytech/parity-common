@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
-## [0.2.0] - 2023-11-13
+## [0.2.0] - 2024-01-29
 - Added `try_rotate_left` and `try_rotate_right` to `BoundedVec`. [#800](https://github.com/paritytech/parity-common/pull/800)
 
 ## [0.1.9] - 2023-10-10
