@@ -50,6 +50,10 @@ pub use quickcheck;
 #[doc(hidden)]
 pub use arbitrary;
 
+#[cfg(feature = "valuable")]
+#[doc(hidden)]
+pub use valuable;
+
 #[macro_use]
 mod hash;
 
