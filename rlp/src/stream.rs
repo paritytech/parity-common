@@ -186,6 +186,9 @@ impl RlpStream {
 			_ => {
 				// payload is longer than 1 byte only for lists > 55 bytes
 				// by pushing always this 1 byte we may avoid unnecessary shift of data
+				// both cases will need at least 1 byte header, so we push 1 byte
+				// and then, when we know the exactly size of data, the value will be updated
+				// accordingly in `insert_list_payload` method.
 				self.buffer.put_u8(0);
 
 				let position = self.total_written();
