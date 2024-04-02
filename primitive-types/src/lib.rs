@@ -27,7 +27,7 @@ use core::convert::TryFrom;
 use fixed_hash::{construct_fixed_hash, impl_fixed_hash_conversions};
 #[cfg(feature = "scale-info")]
 use scale_info_crate::TypeInfo;
-use uint::{construct_uint, uint_full_mul_reg};
+use uint::{construct_uint, uint_full_mul_reg, Incrementable};
 
 /// Error type for conversion.
 #[derive(Debug, PartialEq, Eq)]

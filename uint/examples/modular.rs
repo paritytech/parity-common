@@ -8,6 +8,7 @@
 
 #[macro_use]
 extern crate uint;
+use uint::Incrementable;
 
 construct_uint! {
 	pub struct U256(4);

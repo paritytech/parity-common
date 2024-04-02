@@ -8,7 +8,7 @@
 
 use core::{convert::TryInto, str::FromStr, u64::MAX};
 use crunchy::unroll;
-use uint::{construct_uint, overflowing, FromDecStrErr};
+use uint::{construct_uint, overflowing, FromDecStrErr, Incrementable};
 
 construct_uint! {
 	pub struct U256(4);
@@ -1192,9 +1192,20 @@ fn bit_assign() {
 	check(U256::MAX, U256::zero());
 }
 
+#[test]
+fn increment() {
+	assert_eq!(U256::from(0).increment(), Some(1.into()));
+	assert_eq!(U256::max_value().increment(), None);
+	assert_eq!(U256::initial_value(), Some(0.into()));
+
+	assert_eq!(U512::from(0).increment(), Some(1.into()));
+	assert_eq!(U512::max_value().increment(), None);
+	assert_eq!(U512::initial_value(), Some(0.into()));
+}
+
 #[cfg(feature = "quickcheck")]
 pub mod laws {
-	use super::construct_uint;
+	use super::{construct_uint, Incrementable};
 	macro_rules! uint_laws {
 		($mod_name:ident, $uint_ty:ident) => {
 			mod $mod_name {

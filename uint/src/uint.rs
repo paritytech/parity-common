@@ -127,6 +127,25 @@ impl From<FromHexError> for FromStrRadixErr {
 	}
 }
 
+/// A trait representing an incrementable type.
+///
+/// The `increment` and `initial_value` functions are fallible.
+/// They should either both return `Some` with a valid value, or `None`.
+pub trait Incrementable
+	where
+		Self: Sized,
+{
+	/// Increments the value.
+	///
+	/// Returns `Some` with the incremented value if it is possible, or `None` if it is not.
+	fn increment(&self) -> Option<Self>;
+
+	/// Returns the initial value.
+	///
+	/// Returns `Some` with the initial value if it is available, or `None` if it is not.
+	fn initial_value() -> Option<Self>;
+}
+
 /// Conversion from decimal string error
 #[derive(Debug, PartialEq, Eq)]
 pub enum FromDecStrErr {
@@ -490,6 +509,16 @@ macro_rules! construct_uint {
 						true => From::from(value as u128),
 						false => { panic!("Unsigned integer can't be created from negative value"); }
 					}
+				}
+			}
+
+			impl Incrementable for $name {
+				fn increment(&self) -> Option<Self> {
+					self.checked_add(Self::one())
+				}
+
+				fn initial_value() -> Option<Self> {
+					Some(Self::zero())
 				}
 			}
 
