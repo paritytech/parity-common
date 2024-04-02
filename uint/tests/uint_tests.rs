@@ -1194,6 +1194,17 @@ fn bit_assign() {
 
 #[test]
 fn increment() {
+	macro_rules! test_incrementable {
+		($($type:ident),+) => {
+			$(
+				assert_eq!($type::from(0 as $type).increment(), Some(1 as $type));
+				assert_eq!($type::max_value().increment(), None);
+				assert_eq!($type::initial_value(), Some(0 as $type));
+			)+
+		};
+	}
+	test_incrementable!(u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
+
 	assert_eq!(U256::from(0).increment(), Some(1.into()));
 	assert_eq!(U256::max_value().increment(), None);
 	assert_eq!(U256::initial_value(), Some(0.into()));

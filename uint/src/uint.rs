@@ -127,6 +127,22 @@ impl From<FromHexError> for FromStrRadixErr {
 	}
 }
 
+macro_rules! impl_incrementable {
+	($($type:ty),+) => {
+		$(
+			impl Incrementable for $type {
+				fn increment(&self) -> Option<Self> {
+					self.checked_add(1)
+				}
+
+				fn initial_value() -> Option<Self> {
+					Some(0)
+				}
+			}
+		)+
+	};
+}
+
 /// A trait representing an incrementable type.
 ///
 /// The `increment` and `initial_value` functions are fallible.
@@ -145,6 +161,10 @@ pub trait Incrementable
 	/// Returns `Some` with the initial value if it is available, or `None` if it is not.
 	fn initial_value() -> Option<Self>;
 }
+
+impl_incrementable!(u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
+
+
 
 /// Conversion from decimal string error
 #[derive(Debug, PartialEq, Eq)]
