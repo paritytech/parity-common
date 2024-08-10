@@ -925,7 +925,7 @@ where
 #[cfg(all(test, feature = "std"))]
 mod test {
 	use super::*;
-	use crate::{bounded_vec, ConstU32, ConstU8};
+	use crate::{bounded_vec, ConstU32};
 	use codec::CompactLen;
 
 	#[test]
@@ -1363,8 +1363,9 @@ mod test {
 		#[derive(Hash)]
 		struct Foo<'a> {
 			bar: u8,
-			slice: BoundedSlice<'a, usize, ConstU8<8>>,
+			slice: BoundedSlice<'a, usize, ConstU32<4>>,
 			map: BoundedVec<String, ConstU32<16>>,
 		}
+		let _foo = Foo { bar: 42, slice: BoundedSlice::truncate_from(&[0, 1][..]), map: BoundedVec::default() };
 	}
 }
