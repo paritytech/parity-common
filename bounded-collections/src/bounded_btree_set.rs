@@ -579,11 +579,12 @@ mod test {
 	#[test]
 	#[cfg(feature = "std")]
 	fn container_can_derive_hash() {
-		#[derive(Hash)]
+		#[derive(Hash, Default)]
 		struct Foo {
 			bar: u8,
 			set: BoundedBTreeSet<String, ConstU32<16>>,
 		}
+		let _foo = Foo::default();
 	}
 
 	#[cfg(feature = "serde")]

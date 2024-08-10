@@ -34,7 +34,10 @@ criterion = "0.5.1"
 num-bigint = "0.4.0"
 
 [target.'cfg(all(unix, target_arch = "x86_64"))'.dev-dependencies]
-rug = { version = "1.6.0", default-features = false, features = ["integer"] }
+rug = { version = "1.6.0", default-features = false, features = [
+    "integer",
+    "std",
+] }
 
 [[bench]]
 name = "bigint"
