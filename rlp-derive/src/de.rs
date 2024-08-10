@@ -121,7 +121,7 @@ fn decodable_field(
 	let list = quotes.list;
 
 	let attributes = &field.attrs;
-	let default = if let Some(attr) = attributes.iter().find(|attr| attr.path.is_ident("rlp")) {
+	let default = if let Some(attr) = attributes.iter().find(|attr| attr.path().is_ident("rlp")) {
 		if *default_attribute_encountered {
 			panic!("only 1 #[rlp(default)] attribute is allowed in a struct")
 		}
