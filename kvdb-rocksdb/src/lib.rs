@@ -905,7 +905,7 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 		assert!(settings.contains(" block_size: 323232"));
 
 		// LRU cache (default column)
-		assert!(settings.contains("block_cache_options:\n    capacity : 8388608"));
+		assert!(settings.contains("block_cache_options:\n    capacity : 115343360"));
 		// LRU cache for non-default columns is ⅓ of memory budget (including default column)
 		let lru_size = (330 * MB) / 3;
 		let needle = format!("block_cache_options:\n    capacity : {}", lru_size);

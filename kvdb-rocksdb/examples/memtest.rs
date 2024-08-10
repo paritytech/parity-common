@@ -24,7 +24,7 @@ use std::sync::{
 	atomic::{AtomicBool, Ordering as AtomicOrdering},
 	Arc,
 };
-use sysinfo::{get_current_pid, ProcessExt, System, SystemExt};
+use sysinfo::{get_current_pid, System};
 
 const COLUMN_COUNT: u32 = 100;
 
