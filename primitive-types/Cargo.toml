@@ -39,6 +39,7 @@ rlp = ["impl-rlp"]
 arbitrary = ["fixed-hash/arbitrary", "uint/arbitrary"]
 fp-conversion = ["std"]
 num-traits = ["impl-num-traits"]
+valuable = ["fixed-hash/valuable"]
 
 [[test]]
 name = "scale_info"

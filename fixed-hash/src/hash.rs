@@ -313,6 +313,7 @@ macro_rules! construct_fixed_hash {
 		impl_rustc_hex_for_fixed_hash!($name);
 		impl_quickcheck_for_fixed_hash!($name);
 		impl_arbitrary_for_fixed_hash!($name);
+		impl_valuable_for_fixed_hash!($name);
 	}
 }
 
@@ -622,6 +623,44 @@ macro_rules! impl_quickcheck_for_fixed_hash {
 			fn arbitrary(g: &mut $crate::quickcheck::Gen) -> Self {
 				let res: [u8; Self::len_bytes()] = $crate::core_::array::from_fn(|_| u8::arbitrary(g));
 				Self::from(res)
+			}
+		}
+	};
+}
+
+// Implementation for disabled valuable crate support.
+//
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `valuable` crate feature in
+// a user crate.
+#[cfg(not(feature = "valuable"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_valuable_for_fixed_hash {
+	( $name:ident ) => {};
+}
+
+// Implementation for enabled valuable crate support.
+//
+// # Note
+//
+// Feature guarded macro definitions instead of feature guarded impl blocks
+// to work around the problems of introducing `valuable` crate feature in
+// a user crate.
+#[cfg(feature = "valuable")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_valuable_for_fixed_hash {
+	( $name:ident ) => {
+		impl $crate::valuable::Valuable for $name {
+			fn as_value(&self) -> $crate::valuable::Value<'_> {
+				$crate::valuable::Value::Listable(&self.0)
+			}
+
+			fn visit(&self, visit: &mut dyn $crate::valuable::Visit) {
+				visit.visit_unnamed_fields(&[$crate::valuable::Value::String(&format!("{:?}", self))])
 			}
 		}
 	};
