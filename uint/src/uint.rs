@@ -743,7 +743,7 @@ macro_rules! construct_uint {
 				(arr[index / 8] >> (((index % 8)) * 8)) as u8
 			}
 
-			/// convert to big-endian bytes.
+			/// Convert to big-endian bytes.
 			#[inline]
 			pub fn to_big_endian(&self)  -> [u8; $n_words * 8] {
 				let mut bytes = [0u8; $n_words * 8];
@@ -761,7 +761,7 @@ macro_rules! construct_uint {
 				}
 			}
 
-			/// convert to little-endian bytes.
+			/// Convert to little-endian bytes.
 			#[inline]
 			pub fn to_little_endian(&self) -> [u8; $n_words * 8] {
 				let mut bytes = [0u8; $n_words * 8];
