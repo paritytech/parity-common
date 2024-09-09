@@ -78,8 +78,7 @@ criterion_group!(
 criterion_main!(bigint);
 
 fn to_biguint(x: U256) -> BigUint {
-	let mut bytes = [0u8; 32];
-	x.to_little_endian(&mut bytes);
+	let mut bytes = x.to_little_endian();
 	BigUint::from_bytes_le(&bytes)
 }
 
@@ -662,8 +661,8 @@ fn from_fixed_array(c: &mut Criterion) {
 		[255, 0, 0, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 121, 0, 0, 0, 0, 0, 213, 0, 0, 0, 0, 0, 0];
 	c.bench_function("from_fixed_array", move |b| {
 		b.iter(|| {
-			let _: U512 = black_box(black_box(ary512).into());
-			let _: U256 = black_box(black_box(ary256).into());
+			let _: U512 = black_box(U512::from_big_endian(black_box(&ary512)));
+			let _: U256 = black_box(U256::from_big_endian(black_box(&ary256)));
 		})
 	});
 }

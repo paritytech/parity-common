@@ -102,8 +102,8 @@ mod tests {
 	#[test]
 	fn fixed_arrays_roundtrip() {
 		let raw: U256 = "7094875209347850239487502394881".into();
-		let array: [u8; 32] = raw.into();
-		let new_raw = array.into();
+		let array: [u8; 32] = raw.to_big_endian();
+		let new_raw = U256::from_big_endian(&array);
 
 		assert_eq!(raw, new_raw);
 	}

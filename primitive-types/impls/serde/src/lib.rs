@@ -32,8 +32,7 @@ macro_rules! impl_uint_serde {
 				S: $crate::serde::Serializer,
 			{
 				let mut slice = [0u8; 2 + 2 * $len * 8];
-				let mut bytes = [0u8; $len * 8];
-				self.to_big_endian(&mut bytes);
+				let bytes = self.to_big_endian();
 				$crate::serialize::serialize_uint(&mut slice, &bytes, serializer)
 			}
 		}
@@ -48,7 +47,7 @@ macro_rules! impl_uint_serde {
 					deserializer,
 					$crate::serialize::ExpectedLen::Between(0, &mut bytes),
 				)?;
-				Ok(bytes[0..wrote].into())
+				Ok(Self::from_big_endian(&bytes[0..wrote]))
 			}
 		}
 	};

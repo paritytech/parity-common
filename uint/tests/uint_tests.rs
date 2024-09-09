@@ -175,18 +175,18 @@ fn uint256_from() {
 	assert_eq!(e, ud);
 
 	// test initialization from bytes
-	let va = U256::from(&[10u8][..]);
+	let va = U256::from_big_endian(&[10u8][..]);
 	assert_eq!(e, va);
 
 	// more tests for initialization from bytes
-	assert_eq!(U256([0x1010, 0, 0, 0]), U256::from(&[0x10u8, 0x10][..]));
-	assert_eq!(U256([0x12f0, 0, 0, 0]), U256::from(&[0x12u8, 0xf0][..]));
-	assert_eq!(U256([0x12f0, 0, 0, 0]), U256::from(&[0, 0x12u8, 0xf0][..]));
-	assert_eq!(U256([0x12f0, 0, 0, 0]), U256::from(&[0, 0, 0, 0, 0, 0, 0, 0x12u8, 0xf0][..]));
-	assert_eq!(U256([0x12f0, 1, 0, 0]), U256::from(&[1, 0, 0, 0, 0, 0, 0, 0x12u8, 0xf0][..]));
+	assert_eq!(U256([0x1010, 0, 0, 0]), U256::from_big_endian(&[0x10u8, 0x10][..]));
+	assert_eq!(U256([0x12f0, 0, 0, 0]), U256::from_big_endian(&[0x12u8, 0xf0][..]));
+	assert_eq!(U256([0x12f0, 0, 0, 0]), U256::from_big_endian(&[0, 0x12u8, 0xf0][..]));
+	assert_eq!(U256([0x12f0, 0, 0, 0]), U256::from_big_endian(&[0, 0, 0, 0, 0, 0, 0, 0x12u8, 0xf0][..]));
+	assert_eq!(U256([0x12f0, 1, 0, 0]), U256::from_big_endian(&[1, 0, 0, 0, 0, 0, 0, 0x12u8, 0xf0][..]));
 	assert_eq!(
 		U256([0x12f0, 1, 0x0910203040506077, 0x8090a0b0c0d0e0f0]),
-		U256::from(
+		U256::from_big_endian(
 			&[
 				0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0, 0x09, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x77, 0, 0,
 				0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0x12u8, 0xf0
@@ -195,7 +195,7 @@ fn uint256_from() {
 	);
 	assert_eq!(
 		U256([0x00192437100019fa, 0x243710, 0, 0]),
-		U256::from(&[0x24u8, 0x37, 0x10, 0, 0x19, 0x24, 0x37, 0x10, 0, 0x19, 0xfa][..])
+		U256::from_big_endian(&[0x24u8, 0x37, 0x10, 0, 0x19, 0x24, 0x37, 0x10, 0, 0x19, 0xfa][..])
 	);
 
 	// test initializtion from string
@@ -273,9 +273,8 @@ fn uint256_try_into_primitives() {
 fn uint256_to() {
 	let hex = "8090a0b0c0d0e0f00910203040506077583a2cf8264910e1436bda32571012f0";
 	let uint = U256::from_str(hex).unwrap();
-	let mut bytes = [0u8; 32];
-	uint.to_big_endian(&mut bytes);
-	let uint2 = U256::from(&bytes[..]);
+	let bytes = uint.to_big_endian();
+	let uint2 = U256::from_big_endian(&bytes[..]);
 	assert_eq!(uint, uint2);
 }
 
@@ -893,7 +892,7 @@ fn big_endian() {
 
 	assert_eq!(source, U256::from(1));
 
-	source.to_big_endian(&mut target);
+	source.write_as_big_endian(&mut target);
 	assert_eq!(
 		vec![
 			0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
@@ -905,7 +904,7 @@ fn big_endian() {
 	let source = U256([512, 0, 0, 0]);
 	let mut target = vec![0u8; 32];
 
-	source.to_big_endian(&mut target);
+	source.write_as_big_endian(&mut target);
 	assert_eq!(
 		vec![
 			0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
@@ -917,7 +916,7 @@ fn big_endian() {
 	let source = U256([0, 512, 0, 0]);
 	let mut target = vec![0u8; 32];
 
-	source.to_big_endian(&mut target);
+	source.write_as_big_endian(&mut target);
 	assert_eq!(
 		vec![
 			0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
@@ -927,7 +926,7 @@ fn big_endian() {
 	);
 
 	let source = U256::from_str("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20").unwrap();
-	source.to_big_endian(&mut target);
+	source.write_as_big_endian(&mut target);
 	assert_eq!(
 		vec![
 			0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12,
@@ -1008,7 +1007,7 @@ fn little_endian() {
 		0xbb, 0xc5, 0x3c, 0x7d, 0x2b, 0x72, 0xe5, 0xf6, 0xa3, 0x1d, 0xca, 0x2c, 0x02, 0x00,
 	];
 	let mut result = [0u8; 32];
-	number.to_little_endian(&mut result);
+	number.write_as_little_endian(&mut result);
 	assert_eq!(expected, result);
 }
 
@@ -1019,11 +1018,11 @@ fn slice_roundtrip() {
 		107, 109, 113, 127,
 	];
 
-	let u256: U256 = (&raw[..]).into();
+	let u256 = U256::from_big_endian(&raw[..]);
 
 	let mut new_raw = [0u8; 32];
 
-	u256.to_big_endian(&mut new_raw);
+	u256.write_as_big_endian(&mut new_raw);
 
 	assert_eq!(&raw, &new_raw);
 }
@@ -1039,7 +1038,7 @@ fn slice_roundtrip_le() {
 
 	let mut new_raw = [0u8; 32];
 
-	u256.to_little_endian(&mut new_raw);
+	u256.write_as_little_endian(&mut new_raw);
 
 	assert_eq!(&raw, &new_raw);
 }
@@ -1055,7 +1054,7 @@ fn slice_roundtrip_le2() {
 
 	let mut new_raw = [0u8; 32];
 
-	u256.to_little_endian(&mut new_raw);
+	u256.write_as_little_endian(&mut new_raw);
 
 	assert_eq!(&raw, &new_raw[..31]);
 }
@@ -1090,17 +1089,17 @@ fn from_big_endian() {
 fn into_fixed_array() {
 	let expected: [u8; 32] =
 		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
-	let ary: [u8; 32] = U256::from(1).into();
+	let ary: [u8; 32] = U256::from(1).to_big_endian();
 	assert_eq!(ary, expected);
 }
 
 #[test]
 fn test_u256_from_fixed_array() {
 	let ary = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 123];
-	let num: U256 = ary.into();
+	let num = U256::from_big_endian(&ary);
 	assert_eq!(num, U256::from(core::u64::MAX) + 1 + 123);
 
-	let a_ref: &U256 = &ary.into();
+	let a_ref = &U256::from_big_endian(&ary);
 	assert_eq!(a_ref, &(U256::from(core::u64::MAX) + 1 + 123));
 }
 
@@ -1108,7 +1107,7 @@ fn test_u256_from_fixed_array() {
 fn test_from_ref_to_fixed_array() {
 	let ary: &[u8; 32] =
 		&[1, 0, 1, 2, 1, 0, 1, 2, 3, 0, 3, 4, 3, 0, 3, 4, 5, 0, 5, 6, 5, 0, 5, 6, 7, 0, 7, 8, 7, 0, 7, 8];
-	let big: U256 = ary.into();
+	let big = U256::from_big_endian(ary);
 	// the numbers are each row of 8 bytes reversed and cast to u64
 	assert_eq!(big, U256([504410889324070664, 360293493601469702, 216176097878868740, 72058702156267778u64]));
 }
@@ -1119,11 +1118,11 @@ fn test_u512_from_fixed_array() {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 123,
 	];
-	let num: U512 = ary.into();
+	let num = U512::from_big_endian(&ary);
 	assert_eq!(num, U512::from(123));
 
-	let a_ref: &U512 = &ary.into();
-	assert_eq!(a_ref, &U512::from(123));
+	let a_ref = U512::from_big_endian(&ary);
+	assert_eq!(a_ref, U512::from(123));
 }
 
 #[test]
@@ -1138,7 +1137,7 @@ fn leading_zeros() {
 fn issue_507_roundtrip() {
 	let mut b32 = <[u8; 32]>::default();
 	let a = U256::from(10);
-	a.to_little_endian(&mut b32);
+	a.write_as_little_endian(&mut b32);
 	let b = U256::from_little_endian(&b32[..]);
 	assert_eq!(a, b);
 }

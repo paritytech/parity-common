@@ -226,7 +226,7 @@ fn encode_u256() {
 		ETestPair::from((U256::from(0x0100_0000_u64), hex!("8401000000"))),
 		ETestPair::from((U256::from(0xffff_ffff_u64), hex!("84ffffffff"))),
 		ETestPair::from((
-			hex!("  8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0").into(),
+			U256::from_big_endian(&hex!("  8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0")),
 			hex!("a08090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
 		)),
 	];
@@ -482,7 +482,7 @@ fn decode_untrusted_u256() {
 		DTestPair::from((U256::from(0x0100_0000_u64), hex!("8401000000"))),
 		DTestPair::from((U256::from(0xffff_ffff_u64), hex!("84ffffffff"))),
 		DTestPair::from((
-			hex!("  8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0").into(),
+			U256::from_big_endian(&hex!("  8090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0")),
 			hex!("a08090a0b0c0d0e0f00910203040506077000000000000000100000000000012f0"),
 		)),
 	];
