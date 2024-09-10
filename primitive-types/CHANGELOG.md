@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+### Breaking
+- Bump uint. [#859](https://github.com/paritytech/parity-common/pull/859)
 
 ## [0.12.2] - 2023-10-10
 - Added `schemars` support via `json-schema` feature. [#785](https://github.com/paritytech/parity-common/pull/785)

@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+### Breaking
+- bump impl-serde. [#859](https://github.com/paritytech/parity-common/pull/859)
 
 ## [0.13.0] - 2022-09-20
 - Updated `fixed-hash` to 0.8. [#680](https://github.com/paritytech/parity-common/pull/680)
