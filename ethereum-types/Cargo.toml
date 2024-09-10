@@ -1,6 +1,6 @@
 [package]
 name = "ethereum-types"
-version = "0.14.1"
+version = "0.15.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
@@ -9,12 +9,12 @@ edition = "2021"
 rust-version = "1.60.0"
 
 [dependencies]
-ethbloom = { path = "../ethbloom", version = "0.13", optional = true, default-features = false }
+ethbloom = { path = "../ethbloom", version = "0.14", optional = true, default-features = false }
 fixed-hash = { path = "../fixed-hash", version = "0.8", default-features = false, features = ["byteorder", "rustc-hex"] }
-uint-crate = { path = "../uint", package = "uint", version = "0.9", default-features = false }
-primitive-types = { path = "../primitive-types", version = "0.12", features = ["byteorder", "rustc-hex"], default-features = false }
-impl-serde = { path = "../primitive-types/impls/serde", version = "0.4.0", default-features = false, optional = true }
-impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.3", default-features = false, optional = true }
+uint-crate = { path = "../uint", package = "uint", version = "0.10", default-features = false }
+primitive-types = { path = "../primitive-types", version = "0.13", features = ["byteorder", "rustc-hex"], default-features = false }
+impl-serde = { path = "../primitive-types/impls/serde", version = "0.5.0", default-features = false, optional = true }
+impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.4", default-features = false, optional = true }
 impl-codec = { version = "0.6.0", path = "../primitive-types/impls/codec", default-features = false, optional = true }
 scale-info = { version = ">=1.0, <3", features = ["derive"], default-features = false, optional = true }
 

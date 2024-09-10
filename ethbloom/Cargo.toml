@@ -1,6 +1,6 @@
 [package]
 name = "ethbloom"
-version = "0.13.0"
+version = "0.14.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 description = "Ethereum bloom filter"
 license = "MIT OR Apache-2.0"
@@ -14,8 +14,8 @@ rust-version = "1.56.1"
 tiny-keccak = { version = "2.0", features = ["keccak"] }
 crunchy = { version = "0.2.2", default-features = false, features = ["limit_256"] }
 fixed-hash = { path = "../fixed-hash", version = "0.8", default-features = false }
-impl-serde = { path = "../primitive-types/impls/serde", version = "0.4", default-features = false, optional = true }
-impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.3", default-features = false, optional = true }
+impl-serde = { path = "../primitive-types/impls/serde", version = "0.5", default-features = false, optional = true }
+impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.4", default-features = false, optional = true }
 impl-codec = { version = "0.6.0", path = "../primitive-types/impls/codec", default-features = false, optional = true }
 scale-info = { version = ">=1.0, <3", features = ["derive"], default-features = false, optional = true }
 

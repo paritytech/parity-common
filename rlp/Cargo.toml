@@ -1,6 +1,6 @@
 [package]
 name = "rlp"
-version = "0.5.2"
+version = "0.6.0"
 description = "Recursive-length prefix encoding, decoding, and compression"
 repository = "https://github.com/paritytech/parity-common"
 license = "MIT OR Apache-2.0"
@@ -16,7 +16,7 @@ rlp-derive = { version = "0.1", path = "../rlp-derive", optional = true }
 [dev-dependencies]
 criterion = "0.5.1"
 hex-literal = "0.4.1"
-primitive-types = { path = "../primitive-types", version = "0.12", features = ["impl-rlp"] }
+primitive-types = { path = "../primitive-types", version = "0.13", features = ["impl-rlp"] }
 
 [features]
 default = ["std"]
