@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 ### Breaking
-- Bump uint. [#859](https://github.com/paritytech/parity-common/pull/859)
+- Updated `uint` to 0.10. [#859](https://github.com/paritytech/parity-common/pull/859)
 
 ## [0.14.1] - 2022-11-29
 - Added `if_ethbloom` conditional macro. [#682](https://github.com/paritytech/parity-common/pull/682)

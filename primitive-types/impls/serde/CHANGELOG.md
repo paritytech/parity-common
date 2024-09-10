@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 ### Breaking
-- Bump uint. [#859](https://github.com/paritytech/parity-common/pull/859)
+- Updated `uint` to 0.10. [#859](https://github.com/paritytech/parity-common/pull/859)
 
 ## [0.4.0] - 2022-09-02
 - Support deserializing H256 et al from bytes or sequences of bytes, too. [#668](https://github.com/paritytech/parity-common/pull/668)

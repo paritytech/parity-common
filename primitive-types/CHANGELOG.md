@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 ### Breaking
-- Bump uint. [#859](https://github.com/paritytech/parity-common/pull/859)
+- Updated `uint` to 0.10. [#859](https://github.com/paritytech/parity-common/pull/859)
 
 ## [0.12.2] - 2023-10-10
 - Added `schemars` support via `json-schema` feature. [#785](https://github.com/paritytech/parity-common/pull/785)
