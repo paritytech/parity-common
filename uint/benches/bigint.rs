@@ -78,7 +78,7 @@ criterion_group!(
 criterion_main!(bigint);
 
 fn to_biguint(x: U256) -> BigUint {
-	let mut bytes = x.to_little_endian();
+	let bytes = x.to_little_endian();
 	BigUint::from_bytes_le(&bytes)
 }
 
