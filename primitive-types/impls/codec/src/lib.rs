@@ -19,8 +19,7 @@ macro_rules! impl_uint_codec {
 	($name: ident, $len: expr) => {
 		impl $crate::codec::Encode for $name {
 			fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
-				let mut bytes = [0u8; $len * 8];
-				self.to_little_endian(&mut bytes);
+				let bytes = self.to_little_endian();
 				bytes.using_encoded(f)
 			}
 		}

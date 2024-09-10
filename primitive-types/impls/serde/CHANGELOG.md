@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
+## [Unreleased]
+### Breaking
+- Updated `uint` to 0.10. [#859](https://github.com/paritytech/parity-common/pull/859)
+
 ## [0.4.0] - 2022-09-02
 - Support deserializing H256 et al from bytes or sequences of bytes, too. [#668](https://github.com/paritytech/parity-common/pull/668)
 - Support deserializing H256 et al from newtype structs containing anything compatible, too. [#672](https://github.com/paritytech/parity-common/pull/672)

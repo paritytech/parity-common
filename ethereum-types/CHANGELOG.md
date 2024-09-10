@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+### Breaking
+- Updated `uint` to 0.10. [#859](https://github.com/paritytech/parity-common/pull/859)
 
 ## [0.14.1] - 2022-11-29
 - Added `if_ethbloom` conditional macro. [#682](https://github.com/paritytech/parity-common/pull/682)

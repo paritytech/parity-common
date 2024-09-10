@@ -74,12 +74,12 @@ macro_rules! impl_uint_conversions {
 
 			fn from_uint(value: &$uint) -> Self {
 				let mut ret = $hash::zero();
-				value.to_big_endian(ret.as_bytes_mut());
+				value.write_as_big_endian(ret.as_bytes_mut());
 				ret
 			}
 
 			fn into_uint(&self) -> $uint {
-				$uint::from(self.as_ref() as &[u8])
+				$uint::from_big_endian(self.as_ref() as &[u8])
 			}
 		}
 	};

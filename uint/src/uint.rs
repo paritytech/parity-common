@@ -743,9 +743,17 @@ macro_rules! construct_uint {
 				(arr[index / 8] >> (((index % 8)) * 8)) as u8
 			}
 
+			/// Convert to big-endian bytes.
+			#[inline]
+			pub fn to_big_endian(&self)  -> [u8; $n_words * 8] {
+				let mut bytes = [0u8; $n_words * 8];
+				self.write_as_big_endian(&mut bytes);
+				bytes
+			}
+
 			/// Write to the slice in big-endian format.
 			#[inline]
-			pub fn to_big_endian(&self, bytes: &mut [u8]) {
+			pub fn write_as_big_endian(&self, bytes: &mut [u8]) {
 				use $crate::byteorder::{ByteOrder, BigEndian};
 				debug_assert!($n_words * 8 == bytes.len());
 				for i in 0..$n_words {
@@ -753,9 +761,16 @@ macro_rules! construct_uint {
 				}
 			}
 
-			/// Write to the slice in little-endian format.
+			/// Convert to little-endian bytes.
 			#[inline]
-			pub fn to_little_endian(&self, bytes: &mut [u8]) {
+			pub fn to_little_endian(&self) -> [u8; $n_words * 8] {
+				let mut bytes = [0u8; $n_words * 8];
+				self.write_as_little_endian(&mut bytes);
+				bytes
+			}
+
+			#[inline]
+			pub fn write_as_little_endian(&self, bytes: &mut [u8]) {
 				use $crate::byteorder::{ByteOrder, LittleEndian};
 				debug_assert!($n_words * 8 == bytes.len());
 				for i in 0..$n_words {
@@ -1307,26 +1322,6 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl $crate::core_::convert::From<$name> for [u8; $n_words * 8] {
-			fn from(number: $name) -> Self {
-				let mut arr = [0u8; $n_words * 8];
-				number.to_big_endian(&mut arr);
-				arr
-			}
-		}
-
-		impl $crate::core_::convert::From<[u8; $n_words * 8]> for $name {
-			fn from(bytes: [u8; $n_words * 8]) -> Self {
-				Self::from(&bytes)
-			}
-		}
-
-		impl<'a> $crate::core_::convert::From<&'a [u8; $n_words * 8]> for $name {
-			fn from(bytes: &[u8; $n_words * 8]) -> Self {
-				Self::from(&bytes[..])
-			}
-		}
-
 		impl $crate::core_::default::Default for $name {
 			fn default() -> Self {
 				$name::zero()
@@ -1359,13 +1354,6 @@ macro_rules! construct_uint {
 		$crate::impl_map_from!($name, i16, i64);
 		$crate::impl_map_from!($name, i32, i64);
 		$crate::impl_map_from!($name, isize, i64);
-
-		// Converts from big endian representation.
-		impl<'a> $crate::core_::convert::From<&'a [u8]> for $name {
-			fn from(bytes: &[u8]) -> $name {
-				Self::from_big_endian(bytes)
-			}
-		}
 
 		$crate::impl_try_from_for_primitive!($name, u8);
 		$crate::impl_try_from_for_primitive!($name, u16);
@@ -1736,8 +1724,7 @@ macro_rules! construct_uint {
 					$crate::hex::decode_to_slice(encoded, out).map_err(Self::Err::from)?;
 				}
 
-				let bytes_ref: &[u8] = &bytes;
-				Ok(From::from(bytes_ref))
+				Ok(Self::from_big_endian(&bytes))
 			}
 		}
 
@@ -1787,7 +1774,7 @@ macro_rules! impl_quickcheck_arbitrary_for_uint {
 					}
 				});
 
-				res.as_ref().into()
+				Self::from_big_endian(res.as_ref())
 			}
 		}
 	};
@@ -1809,7 +1796,7 @@ macro_rules! impl_arbitrary_for_uint {
 			fn arbitrary(u: &mut $crate::arbitrary::Unstructured<'_>) -> $crate::arbitrary::Result<Self> {
 				let mut res = [0u8; $n_bytes];
 				u.fill_buffer(&mut res)?;
-				Ok(Self::from(res))
+				Ok(Self::from_big_endian(&res))
 			}
 		}
 	};
