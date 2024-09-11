@@ -5,7 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
-### Breaking
+
+## [0.5.0] - 2024-09-11
 - Updated `uint` to 0.10. [#859](https://github.com/paritytech/parity-common/pull/859)
 
 ## [0.4.0] - 2022-09-02

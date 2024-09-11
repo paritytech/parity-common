@@ -6,7 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.12.0] - 2022-09-20
+## [0.11.0] - 2024-09-11
+- Updated `primitive-types` to 0.13. [#859](https://github.com/paritytech/parity-common/pull/859)
+
+## [0.10.0] - 2022-09-20
 ### Breaking
 - Updated `parity-util-mem` to 0.12. [#680](https://github.com/paritytech/parity-common/pull/680)
 

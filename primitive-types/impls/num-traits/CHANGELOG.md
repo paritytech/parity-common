@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.2.0] - 2024-09-11
+- Updated `uint` to 0.10. [#859](https://github.com/paritytech/parity-common/pull/859)
+
 ## [0.1.2] - 2023-02-01
 - Added `checked_*` trait impls. [#716](https://github.com/paritytech/parity-common/pull/716)
 - Migrated to 2021 edition, enforcing MSRV of `1.56.1`. [#601](https://github.com/paritytech/parity-common/pull/601)

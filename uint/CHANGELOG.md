@@ -5,7 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
-### Breaking
+
+## [0.10.0] - 2024-09-11
 - Removed From<[u8; n]> conversions, renamed `to_big_endian` / `to_little_endian` to write_as_*, and made them return byte arrays. [#859](https://github.com/paritytech/parity-common/pull/859)
 
 ## [0.9.5] - 2022-11-29
