@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.14.0] - 2024-09-10
+## [0.14.0] - 2024-09-11
 - Updated `impl-serde` to 0.5. [#859](https://github.com/paritytech/parity-common/pull/859)
 
 ## [0.13.0] - 2022-09-20
