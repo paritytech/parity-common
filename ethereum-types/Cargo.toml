@@ -1,6 +1,6 @@
 [package]
 name = "ethereum-types"
-version = "0.15.0"
+version = "0.15.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
@@ -15,7 +15,7 @@ uint-crate = { path = "../uint", package = "uint", version = "0.10", default-fea
 primitive-types = { path = "../primitive-types", version = "0.13", features = ["byteorder", "rustc-hex"], default-features = false }
 impl-serde = { path = "../primitive-types/impls/serde", version = "0.5.0", default-features = false, optional = true }
 impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.4", default-features = false, optional = true }
-impl-codec = { version = "0.6.0", path = "../primitive-types/impls/codec", default-features = false, optional = true }
+impl-codec = { version = "0.7.0", path = "../primitive-types/impls/codec", default-features = false, optional = true }
 scale-info = { version = ">=1.0, <3", features = ["derive"], default-features = false, optional = true }
 
 [dev-dependencies]
