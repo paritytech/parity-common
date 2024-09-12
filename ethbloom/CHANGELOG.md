@@ -6,8 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.14.0] - 2024-09-11
+## [0.14.1] - 2024-09-12
 - Updated `impl-serde` to 0.5. [#859](https://github.com/paritytech/parity-common/pull/859)
+- Updated `impl-codec` to 0.7. [#860](https://github.com/paritytech/parity-common/pull/860)
 
 ## [0.13.0] - 2022-09-20
 - Updated `fixed-hash` to 0.8. [#680](https://github.com/paritytech/parity-common/pull/680)
