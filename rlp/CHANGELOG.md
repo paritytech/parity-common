@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [0.6.1] - 2024-09-11
 - Migrated to 2021 edition, enforcing MSRV of `1.56.1`. [#601](https://github.com/paritytech/parity-common/pull/601)
-- Updated `rlp` to 0.2.0. [#860](https://github.com/paritytech/parity-common/pull/860)
+- Updated `rlp-derive` to 0.2.0. [#860](https://github.com/paritytech/parity-common/pull/860)
 
 ## [0.5.2] - 2022-10-21
 - Add optional `derive` feature. [#613](https://github.com/paritytech/parity-common/pull/613)

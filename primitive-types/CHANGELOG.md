@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.13.0] - 2024-09-11
+## [0.13.1] - 2024-09-12
 - Updated `uint` to 0.10. [#859](https://github.com/paritytech/parity-common/pull/859)
 
 ## [0.12.2] - 2023-10-10

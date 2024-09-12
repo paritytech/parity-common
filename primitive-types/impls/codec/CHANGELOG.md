@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.7.0] - 2024-09-12
+### Breaking
+- Updated to `uint` 0.10. [#860](https://github.com/paritytech/parity-common/pull/860)
+
 ## [0.6.0] - 2022-02-04
 ### Breaking
 - Migrated to 2021 edition, enforcing MSRV of `1.56.1`. [#601](https://github.com/paritytech/parity-common/pull/601)
