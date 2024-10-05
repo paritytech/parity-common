@@ -47,7 +47,6 @@ impl<'de, K, V, S: Get<u32>> Deserialize<'de> for BoundedBTreeMap<K, V, S>
 where
 	K: Deserialize<'de> + Ord,
 	V: Deserialize<'de>,
-	S: Clone,
 {
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
 	where
@@ -60,7 +59,7 @@ where
 		where
 			K: Deserialize<'de> + Ord,
 			V: Deserialize<'de>,
-			S: Get<u32> + Clone,
+			S: Get<u32>,
 		{
 			type Value = BTreeMap<K, V>;
 
