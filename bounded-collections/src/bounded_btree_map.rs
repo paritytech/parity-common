@@ -473,7 +473,7 @@ where
 	}
 }
 
-#[cfg(all(test, feature = "std"))]
+#[cfg(test)]
 mod test {
 	use super::*;
 	use crate::ConstU32;
@@ -493,56 +493,6 @@ mod test {
 		S: Get<u32>,
 	{
 		map_from_keys(keys).try_into().unwrap()
-	}
-
-	#[test]
-	fn test_bounded_btreemap_serializer() {
-		let mut map = BoundedBTreeMap::<u32, u32, ConstU32<6>>::new();
-		map.try_insert(0, 100).unwrap();
-		map.try_insert(1, 101).unwrap();
-		map.try_insert(2, 102).unwrap();
-
-		let serialized = serde_json::to_string(&map).unwrap();
-		assert_eq!(serialized, r#"{"0":100,"1":101,"2":102}"#);
-	}
-
-	#[test]
-	fn test_bounded_btreemap_deserializer() {
-		let json_str = r#"{"0":100,"1":101,"2":102}"#;
-		let map: Result<BoundedBTreeMap<u32, u32, ConstU32<6>>, serde_json::Error> = serde_json::from_str(json_str);
-		assert!(map.is_ok());
-		let map = map.unwrap();
-
-		assert_eq!(map.len(), 3);
-		assert_eq!(map.get(&0), Some(&100));
-		assert_eq!(map.get(&1), Some(&101));
-		assert_eq!(map.get(&2), Some(&102));
-	}
-
-	#[test]
-	fn test_bounded_btreemap_deserializer_bound() {
-		let json_str = r#"{"0":100,"1":101,"2":102}"#;
-		let map: Result<BoundedBTreeMap<u32, u32, ConstU32<3>>, serde_json::Error> = serde_json::from_str(json_str);
-		assert!(map.is_ok());
-		let map = map.unwrap();
-
-		assert_eq!(map.len(), 3);
-		assert_eq!(map.get(&0), Some(&100));
-		assert_eq!(map.get(&1), Some(&101));
-		assert_eq!(map.get(&2), Some(&102));
-	}
-
-	#[test]
-	fn test_bounded_btreemap_deserializer_failed() {
-		let json_str = r#"{"0":100,"1":101,"2":102,"3":103,"4":104}"#;
-		let map: Result<BoundedBTreeMap<u32, u32, ConstU32<4>>, serde_json::Error> = serde_json::from_str(json_str);
-
-		match map {
-			Err(e) => {
-				assert!(e.to_string().contains("map exceeds the size of the bounds"));
-			},
-			_ => unreachable!("deserializer must raise error"),
-		}
 	}
 
 	#[test]
@@ -781,5 +731,55 @@ mod test {
 			map: BoundedBTreeMap<String, usize, ConstU32<16>>,
 		}
 		let _foo = Foo::default();
+	}
+
+	#[test]
+	fn test_bounded_btreemap_serializer() {
+		let mut map = BoundedBTreeMap::<u32, u32, ConstU32<6>>::new();
+		map.try_insert(0, 100).unwrap();
+		map.try_insert(1, 101).unwrap();
+		map.try_insert(2, 102).unwrap();
+
+		let serialized = serde_json::to_string(&map).unwrap();
+		assert_eq!(serialized, r#"{"0":100,"1":101,"2":102}"#);
+	}
+
+	#[test]
+	fn test_bounded_btreemap_deserializer() {
+		let json_str = r#"{"0":100,"1":101,"2":102}"#;
+		let map: Result<BoundedBTreeMap<u32, u32, ConstU32<6>>, serde_json::Error> = serde_json::from_str(json_str);
+		assert!(map.is_ok());
+		let map = map.unwrap();
+
+		assert_eq!(map.len(), 3);
+		assert_eq!(map.get(&0), Some(&100));
+		assert_eq!(map.get(&1), Some(&101));
+		assert_eq!(map.get(&2), Some(&102));
+	}
+
+	#[test]
+	fn test_bounded_btreemap_deserializer_bound() {
+		let json_str = r#"{"0":100,"1":101,"2":102}"#;
+		let map: Result<BoundedBTreeMap<u32, u32, ConstU32<3>>, serde_json::Error> = serde_json::from_str(json_str);
+		assert!(map.is_ok());
+		let map = map.unwrap();
+
+		assert_eq!(map.len(), 3);
+		assert_eq!(map.get(&0), Some(&100));
+		assert_eq!(map.get(&1), Some(&101));
+		assert_eq!(map.get(&2), Some(&102));
+	}
+
+	#[test]
+	fn test_bounded_btreemap_deserializer_failed() {
+		let json_str = r#"{"0":100,"1":101,"2":102,"3":103,"4":104}"#;
+		let map: Result<BoundedBTreeMap<u32, u32, ConstU32<4>>, serde_json::Error> = serde_json::from_str(json_str);
+
+		match map {
+			Err(e) => {
+				assert!(e.to_string().contains("map exceeds the size of the bounds"));
+			},
+			_ => unreachable!("deserializer must raise error"),
+		}
 	}
 }
