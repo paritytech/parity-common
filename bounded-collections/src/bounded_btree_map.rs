@@ -72,10 +72,7 @@ where
 				A: MapAccess<'de>,
 			{
 				let size = map.size_hint().unwrap_or(0);
-				let max = match usize::try_from(S::get()) {
-					Ok(n) => n,
-					Err(_) => return Err(A::Error::custom("can't convert to usize")),
-				};
+				let max = S::get() as usize;
 				if size > max {
 					Err(A::Error::custom("map exceeds the size of the bounds"))
 				} else {
