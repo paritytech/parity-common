@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
-## [0.2.1] - 2024-10-05
+## [0.2.1] - 2024-10-07
 - Added `serde` support for `BoundedBTreeMap`. [#870](https://github.com/paritytech/parity-common/pull/870)
 
 ## [0.2.0] - 2024-01-29
