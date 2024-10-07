@@ -732,6 +732,7 @@ mod test {
 	#[cfg(feature = "serde")]
 	mod serde {
 		use super::*;
+		use crate::alloc::string::ToString as _;
 
 		#[test]
 		fn test_bounded_btreemap_serializer() {
