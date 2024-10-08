@@ -39,7 +39,7 @@ construct_fixed_hash!{
 
 ## Features
 
-By default this is an standard library depending crate.  
+By default this is an standard library depending crate.
 For a `#[no_std]` environment use it as follows:
 
 ```
@@ -52,17 +52,12 @@ fixed-hash = { version = "0.3", default-features = false }
 	- Using this feature enables the following features
 		- `rustc-hex/std`
 		- `rand/std`
-		- `byteorder/std`
-    - Enabled by default.
-- `libc`: Use `libc` for implementations of `PartialEq` and `Ord`.
     - Enabled by default.
 - `rand`: Provide API based on the `rand` crate.
     - Enabled by default.
-- `byteorder`: Provide API based on the `byteorder` crate.
-    - Enabled by default.
 - `quickcheck`: Provide `quickcheck` implementation for hash types.
     - Disabled by default.
-- `api-dummy`: Generate a dummy hash type for API documentation.
-    - Enabled by default at `docs.rs`
 - `arbitrary`: Allow for creation of a hash from random unstructured input.
     - Disabled by default.
+- `api-dummy`: Generate a dummy hash type for API documentation.
+	- Enabled by default at `docs.rs`
