@@ -8,7 +8,7 @@ documentation = "https://docs.rs/ethbloom"
 homepage = "https://github.com/paritytech/parity-common"
 repository = "https://github.com/paritytech/parity-common"
 edition = "2021"
-rust-version = "1.56.1"
+rust-version = "1.64.0"
 
 [dependencies]
 tiny-keccak = { version = "2.0", features = ["keccak"] }
@@ -25,10 +25,9 @@ rand = "0.8.0"
 hex-literal = "0.4.1"
 
 [features]
-default = ["std", "rlp", "serialize", "rustc-hex"]
+default = ["std", "rlp", "serialize"]
 std = ["fixed-hash/std", "crunchy/std"]
 serialize = ["impl-serde"]
-rustc-hex = ["fixed-hash/rustc-hex"]
 arbitrary = ["fixed-hash/arbitrary"]
 rlp = ["impl-rlp"]
 codec = ["impl-codec", "scale-info"]

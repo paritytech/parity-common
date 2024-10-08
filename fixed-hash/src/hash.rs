@@ -310,16 +310,16 @@ macro_rules! construct_fixed_hash {
 			}
 		}
 
-		impl_bit_ops_for_fixed_hash!($name, BitOr, bitor, BitOrAssign, bitor_assign, |, |=);
-		impl_bit_ops_for_fixed_hash!($name, BitAnd, bitand, BitAndAssign, bitand_assign, &, &=);
-		impl_bit_ops_for_fixed_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
+		$crate::impl_bit_ops_for_fixed_hash!($name, BitOr, bitor, BitOrAssign, bitor_assign, |, |=);
+		$crate::impl_bit_ops_for_fixed_hash!($name, BitAnd, bitand, BitAndAssign, bitand_assign, &, &=);
+		$crate::impl_bit_ops_for_fixed_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
 
-		impl_byteorder_for_fixed_hash!($name);
+		$crate::impl_byteorder_for_fixed_hash!($name);
+		$crate::impl_from_str_for_fixed_hash!($name);
 
-		impl_rand_for_fixed_hash!($name);
-		impl_rustc_hex_for_fixed_hash!($name);
-		impl_quickcheck_for_fixed_hash!($name);
-		impl_arbitrary_for_fixed_hash!($name);
+		$crate::impl_rand_for_fixed_hash!($name);
+		$crate::impl_quickcheck_for_fixed_hash!($name);
+		$crate::impl_arbitrary_for_fixed_hash!($name);
 	}
 }
 
@@ -474,6 +474,32 @@ macro_rules! impl_byteorder_for_fixed_hash {
 	};
 }
 
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_from_str_for_fixed_hash {
+	( $name:ident ) => {
+		impl $crate::core_::str::FromStr for $name {
+			type Err = $crate::const_hex::FromHexError;
+
+			/// Creates a hash type instance from the given string.
+			///
+			/// # Note
+			///
+			/// The given input string is interpreted in big endian.
+			///
+			/// # Errors
+			///
+			/// - When encountering invalid non hex-digits
+			/// - Upon empty string input or invalid input length in general
+			fn from_str(input: &str) -> $crate::core_::result::Result<$name, $crate::const_hex::FromHexError> {
+				let mut result = Self::zero();
+				$crate::const_hex::decode_to_slice(input, result.as_bytes_mut())?;
+				Ok(result)
+			}
+		}
+	};
+}
+
 // Implementation for disabled rand crate support.
 //
 // # Note
@@ -544,61 +570,6 @@ macro_rules! impl_rand_for_fixed_hash {
 				let mut hash = Self::zero();
 				hash.randomize();
 				hash
-			}
-		}
-	};
-}
-
-// Implementation for disabled rustc-hex crate support.
-//
-// # Note
-//
-// Feature guarded macro definitions instead of feature guarded impl blocks
-// to work around the problems of introducing `rustc-hex` crate feature in
-// a user crate.
-#[cfg(not(feature = "rustc-hex"))]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_rustc_hex_for_fixed_hash {
-	( $name:ident ) => {};
-}
-
-// Implementation for enabled rustc-hex crate support.
-//
-// # Note
-//
-// Feature guarded macro definitions instead of feature guarded impl blocks
-// to work around the problems of introducing `rustc-hex` crate feature in
-// a user crate.
-#[cfg(feature = "rustc-hex")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_rustc_hex_for_fixed_hash {
-	( $name:ident ) => {
-		impl $crate::core_::str::FromStr for $name {
-			type Err = $crate::rustc_hex::FromHexError;
-
-			/// Creates a hash type instance from the given string.
-			///
-			/// # Note
-			///
-			/// The given input string is interpreted in big endian.
-			///
-			/// # Errors
-			///
-			/// - When encountering invalid non hex-digits
-			/// - Upon empty string input or invalid input length in general
-			fn from_str(input: &str) -> $crate::core_::result::Result<$name, $crate::rustc_hex::FromHexError> {
-				let input = input.strip_prefix("0x").unwrap_or(input);
-				let mut iter = $crate::rustc_hex::FromHexIter::new(input);
-				let mut result = Self::zero();
-				for byte in result.as_mut() {
-					*byte = iter.next().ok_or(Self::Err::InvalidHexLength)??;
-				}
-				if iter.next().is_some() {
-					return Err(Self::Err::InvalidHexLength)
-				}
-				Ok(result)
 			}
 		}
 	};

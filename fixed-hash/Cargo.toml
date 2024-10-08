@@ -9,26 +9,30 @@ description = "Macros to define custom fixed-size hash types"
 documentation = "https://docs.rs/fixed-hash/"
 readme = "README.md"
 edition = "2021"
-rust-version = "1.60"
+rust-version = "1.64.0"
 
 [package.metadata.docs.rs]
-features = ["quickcheck", "api-dummy"]
+features = ["arbitrary", "quickcheck", "api-dummy"]
 
 [dependencies]
-quickcheck = { version = "1", optional = true }
-rand = { version = "0.8.0", optional = true, default-features = false }
-rustc-hex = { version = "2.0.1", optional = true, default-features = false }
+const-hex = { version = "1.13", default-features = false }
+rand = { version = "0.8.0", default-features = false, optional = true }
 static_assertions = "1.0.0"
+
 arbitrary = { version = "1.0", optional = true }
+quickcheck = { version = "1", optional = true }
 
 [dev-dependencies]
-rand_xorshift = "0.3.0"
 criterion = "0.5.1"
 rand = { version = "0.8.0", default-features = false, features = ["std_rng"] }
+rand_xorshift = "0.3.0"
 
 [features]
-default = ["std", "rand", "rustc-hex"]
-std = ["rustc-hex/std", "rand?/std"]
+default = ["std", "rand"]
+std = ["const-hex/std", "rand?/std"]
+rand = ["dep:rand"]
+arbitrary = ["dep:arbitrary"]
+quickcheck = ["dep:quickcheck"]
 
 api-dummy = [] # Feature used by docs.rs to display documentation of hash types
 
