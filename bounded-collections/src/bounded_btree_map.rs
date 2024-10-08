@@ -21,6 +21,11 @@ use crate::{Get, TryCollect};
 use alloc::collections::BTreeMap;
 use codec::{Compact, Decode, Encode, MaxEncodedLen};
 use core::{borrow::Borrow, marker::PhantomData, ops::Deref};
+#[cfg(feature = "serde")]
+use serde::{
+	de::{Error, MapAccess, Visitor},
+	Deserialize, Deserializer, Serialize,
+};
 
 /// A bounded map based on a B-Tree.
 ///
@@ -29,9 +34,70 @@ use core::{borrow::Borrow, marker::PhantomData, ops::Deref};
 ///
 /// Unlike a standard `BTreeMap`, there is an enforced upper limit to the number of items in the
 /// map. All internal operations ensure this bound is respected.
+#[cfg_attr(feature = "serde", derive(Serialize), serde(transparent))]
 #[derive(Encode, scale_info::TypeInfo)]
 #[scale_info(skip_type_params(S))]
-pub struct BoundedBTreeMap<K, V, S>(BTreeMap<K, V>, PhantomData<S>);
+pub struct BoundedBTreeMap<K, V, S>(
+	BTreeMap<K, V>,
+	#[cfg_attr(feature = "serde", serde(skip_serializing))] PhantomData<S>,
+);
+
+#[cfg(feature = "serde")]
+impl<'de, K, V, S: Get<u32>> Deserialize<'de> for BoundedBTreeMap<K, V, S>
+where
+	K: Deserialize<'de> + Ord,
+	V: Deserialize<'de>,
+{
+	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+	where
+		D: Deserializer<'de>,
+	{
+		// Create a visitor to visit each element in the map
+		struct BTreeMapVisitor<K, V, S>(PhantomData<(K, V, S)>);
+
+		impl<'de, K, V, S> Visitor<'de> for BTreeMapVisitor<K, V, S>
+		where
+			K: Deserialize<'de> + Ord,
+			V: Deserialize<'de>,
+			S: Get<u32>,
+		{
+			type Value = BTreeMap<K, V>;
+
+			fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+				formatter.write_str("a map")
+			}
+
+			fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+			where
+				A: MapAccess<'de>,
+			{
+				let size = map.size_hint().unwrap_or(0);
+				let max = S::get() as usize;
+				if size > max {
+					Err(A::Error::custom("map exceeds the size of the bounds"))
+				} else {
+					let mut values = BTreeMap::new();
+
+					while let Some(key) = map.next_key()? {
+						if values.len() >= max {
+							return Err(A::Error::custom("map exceeds the size of the bounds"));
+						}
+						let value = map.next_value()?;
+						values.insert(key, value);
+					}
+
+					Ok(values)
+				}
+			}
+		}
+
+		let visitor: BTreeMapVisitor<K, V, S> = BTreeMapVisitor(PhantomData);
+		deserializer.deserialize_map(visitor).map(|v| {
+			BoundedBTreeMap::<K, V, S>::try_from(v)
+				.map_err(|_| Error::custom("failed to create a BoundedBTreeMap from the provided map"))
+		})?
+	}
+}
 
 impl<K, V, S> Decode for BoundedBTreeMap<K, V, S>
 where
@@ -44,7 +110,7 @@ where
 		// the len is too big.
 		let len: u32 = <Compact<u32>>::decode(input)?.into();
 		if len > S::get() {
-			return Err("BoundedBTreeMap exceeds its limit".into())
+			return Err("BoundedBTreeMap exceeds its limit".into());
 		}
 		input.descend_ref()?;
 		let inner = Result::from_iter((0..len).map(|_| Decode::decode(input)))?;
@@ -661,5 +727,61 @@ mod test {
 			map: BoundedBTreeMap<String, usize, ConstU32<16>>,
 		}
 		let _foo = Foo::default();
+	}
+
+	#[cfg(feature = "serde")]
+	mod serde {
+		use super::*;
+		use crate::alloc::string::ToString;
+
+		#[test]
+		fn test_bounded_btreemap_serializer() {
+			let mut map = BoundedBTreeMap::<u32, u32, ConstU32<6>>::new();
+			map.try_insert(0, 100).unwrap();
+			map.try_insert(1, 101).unwrap();
+			map.try_insert(2, 102).unwrap();
+
+			let serialized = serde_json::to_string(&map).unwrap();
+			assert_eq!(serialized, r#"{"0":100,"1":101,"2":102}"#);
+		}
+
+		#[test]
+		fn test_bounded_btreemap_deserializer() {
+			let json_str = r#"{"0":100,"1":101,"2":102}"#;
+			let map: Result<BoundedBTreeMap<u32, u32, ConstU32<6>>, serde_json::Error> = serde_json::from_str(json_str);
+			assert!(map.is_ok());
+			let map = map.unwrap();
+
+			assert_eq!(map.len(), 3);
+			assert_eq!(map.get(&0), Some(&100));
+			assert_eq!(map.get(&1), Some(&101));
+			assert_eq!(map.get(&2), Some(&102));
+		}
+
+		#[test]
+		fn test_bounded_btreemap_deserializer_bound() {
+			let json_str = r#"{"0":100,"1":101,"2":102}"#;
+			let map: Result<BoundedBTreeMap<u32, u32, ConstU32<3>>, serde_json::Error> = serde_json::from_str(json_str);
+			assert!(map.is_ok());
+			let map = map.unwrap();
+
+			assert_eq!(map.len(), 3);
+			assert_eq!(map.get(&0), Some(&100));
+			assert_eq!(map.get(&1), Some(&101));
+			assert_eq!(map.get(&2), Some(&102));
+		}
+
+		#[test]
+		fn test_bounded_btreemap_deserializer_failed() {
+			let json_str = r#"{"0":100,"1":101,"2":102,"3":103,"4":104}"#;
+			let map: Result<BoundedBTreeMap<u32, u32, ConstU32<4>>, serde_json::Error> = serde_json::from_str(json_str);
+
+			match map {
+				Err(e) => {
+					assert!(e.to_string().contains("map exceeds the size of the bounds"));
+				},
+				_ => unreachable!("deserializer must raise error"),
+			}
+		}
 	}
 }

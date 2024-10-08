@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
+## [0.2.1] - 2024-10-08
+- Added `serde` support for `BoundedBTreeMap`. [#870](https://github.com/paritytech/parity-common/pull/870)
+
 ## [0.2.0] - 2024-01-29
 - Added `try_rotate_left` and `try_rotate_right` to `BoundedVec`. [#800](https://github.com/paritytech/parity-common/pull/800)
 
