@@ -327,6 +327,7 @@ fn from_h256_to_h160_lossy() {
 }
 
 #[test]
+#[cfg(feature = "std")]
 fn display_and_debug() {
 	fn test_for(x: u64, hex: &'static str, display: &'static str) {
 		let hash = H64::from_low_u64_be(x);
