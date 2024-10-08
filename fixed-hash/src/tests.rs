@@ -155,7 +155,6 @@ mod is_zero {
 	}
 }
 
-#[cfg(feature = "byteorder")]
 mod to_low_u64 {
 	use super::*;
 
@@ -195,7 +194,6 @@ mod to_low_u64 {
 	}
 }
 
-#[cfg(feature = "byteorder")]
 mod from_low_u64 {
 	use super::*;
 
@@ -328,7 +326,6 @@ fn from_h256_to_h160_lossy() {
 	assert_eq!(h160, expected);
 }
 
-#[cfg(all(feature = "std", feature = "byteorder"))]
 #[test]
 fn display_and_debug() {
 	fn test_for(x: u64, hex: &'static str, display: &'static str) {

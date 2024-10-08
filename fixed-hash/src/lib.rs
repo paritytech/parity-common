@@ -30,10 +30,6 @@ pub use static_assertions;
 #[doc(hidden)]
 pub use static_assertions::const_assert;
 
-#[cfg(feature = "byteorder")]
-#[doc(hidden)]
-pub use byteorder;
-
 #[cfg(feature = "rustc-hex")]
 #[doc(hidden)]
 pub use rustc_hex;
