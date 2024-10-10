@@ -262,8 +262,23 @@ macro_rules! construct_fixed_hash {
 		}
 
 		impl $crate::core_::cmp::PartialOrd for $name {
+			#[inline]
 			fn partial_cmp(&self, other: &Self) -> Option<$crate::core_::cmp::Ordering> {
-				Some(self.cmp(other))
+				self.as_bytes().partial_cmp(other.as_bytes())
+			}
+		}
+
+		impl $crate::core_::cmp::Ord for $name {
+			#[inline]
+			fn cmp(&self, other: &Self) -> $crate::core_::cmp::Ordering {
+				self.as_bytes().cmp(other.as_bytes())
+			}
+		}
+
+		impl $crate::core_::default::Default for $name {
+			#[inline]
+			fn default() -> Self {
+				Self::zero()
 			}
 		}
 
@@ -295,53 +310,71 @@ macro_rules! construct_fixed_hash {
 			}
 		}
 
-		impl $crate::core_::default::Default for $name {
-			#[inline]
-			fn default() -> Self {
-				Self::zero()
-			}
-		}
-
-		impl_ops_for_hash!($name, BitOr, bitor, BitOrAssign, bitor_assign, |, |=);
-		impl_ops_for_hash!($name, BitAnd, bitand, BitAndAssign, bitand_assign, &, &=);
-		impl_ops_for_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
+		impl_bit_ops_for_fixed_hash!($name, BitOr, bitor, BitOrAssign, bitor_assign, |, |=);
+		impl_bit_ops_for_fixed_hash!($name, BitAnd, bitand, BitAndAssign, bitand_assign, &, &=);
+		impl_bit_ops_for_fixed_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
 
 		impl_byteorder_for_fixed_hash!($name);
+
 		impl_rand_for_fixed_hash!($name);
-		impl_cmp_for_fixed_hash!($name);
 		impl_rustc_hex_for_fixed_hash!($name);
 		impl_quickcheck_for_fixed_hash!($name);
 		impl_arbitrary_for_fixed_hash!($name);
 	}
 }
 
-// Implementation for disabled byteorder crate support.
-//
-// # Note
-//
-// Feature guarded macro definitions instead of feature guarded impl blocks
-// to work around the problems of introducing `byteorder` crate feature in
-// a user crate.
-#[cfg(not(feature = "byteorder"))]
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_byteorder_for_fixed_hash {
-	( $name:ident ) => {};
+macro_rules! impl_bit_ops_for_fixed_hash {
+	(
+		$impl_for:ident,
+		$ops_trait_name:ident,
+		$ops_fn_name:ident,
+		$ops_assign_trait_name:ident,
+		$ops_assign_fn_name:ident,
+		$ops_tok:tt,
+		$ops_assign_tok:tt
+	) => {
+		impl<'r> $crate::core_::ops::$ops_assign_trait_name<&'r $impl_for> for $impl_for {
+			fn $ops_assign_fn_name(&mut self, rhs: &'r $impl_for) {
+				for (lhs, rhs) in self.as_bytes_mut().iter_mut().zip(rhs.as_bytes()) {
+					*lhs $ops_assign_tok rhs;
+				}
+			}
+		}
+
+		impl $crate::core_::ops::$ops_assign_trait_name<$impl_for> for $impl_for {
+			#[inline]
+			fn $ops_assign_fn_name(&mut self, rhs: $impl_for) {
+				*self $ops_assign_tok &rhs;
+			}
+		}
+
+		impl<'l, 'r> $crate::core_::ops::$ops_trait_name<&'r $impl_for> for &'l $impl_for {
+			type Output = $impl_for;
+
+			fn $ops_fn_name(self, rhs: &'r $impl_for) -> Self::Output {
+				let mut ret = self.clone();
+				ret $ops_assign_tok rhs;
+				ret
+			}
+		}
+
+		impl $crate::core_::ops::$ops_trait_name<$impl_for> for $impl_for {
+			type Output = $impl_for;
+
+			#[inline]
+			fn $ops_fn_name(self, rhs: Self) -> Self::Output {
+				&self $ops_tok &rhs
+			}
+		}
+	};
 }
 
-// Implementation for enabled byteorder crate support.
-//
-// # Note
-//
-// Feature guarded macro definitions instead of feature guarded impl blocks
-// to work around the problems of introducing `byteorder` crate feature in
-// a user crate.
-#[cfg(feature = "byteorder")]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_byteorder_for_fixed_hash {
 	( $name:ident ) => {
-		/// Utilities using the `byteorder` crate.
 		impl $name {
 			/// Returns the least significant `n` bytes as slice.
 			///
@@ -354,14 +387,11 @@ macro_rules! impl_byteorder_for_fixed_hash {
 				&self[(Self::len_bytes() - n)..]
 			}
 
-			fn to_low_u64_with_byteorder<B>(&self) -> u64
-			where
-				B: $crate::byteorder::ByteOrder,
-			{
+			fn to_low_u64_with_fn(&self, from_bytes: fn([u8; 8]) -> u64) -> u64 {
 				let mut buf = [0x0; 8];
 				let capped = $crate::core_::cmp::min(Self::len_bytes(), 8);
 				buf[(8 - capped)..].copy_from_slice(self.least_significant_bytes(capped));
-				B::read_u64(&buf)
+				from_bytes(buf)
 			}
 
 			/// Returns the lowest 8 bytes interpreted as big-endian.
@@ -372,7 +402,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 			/// are interpreted as being zero.
 			#[inline]
 			pub fn to_low_u64_be(&self) -> u64 {
-				self.to_low_u64_with_byteorder::<$crate::byteorder::BigEndian>()
+				self.to_low_u64_with_fn(u64::from_be_bytes)
 			}
 
 			/// Returns the lowest 8 bytes interpreted as little-endian.
@@ -383,7 +413,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 			/// are interpreted as being zero.
 			#[inline]
 			pub fn to_low_u64_le(&self) -> u64 {
-				self.to_low_u64_with_byteorder::<$crate::byteorder::LittleEndian>()
+				self.to_low_u64_with_fn(u64::from_le_bytes)
 			}
 
 			/// Returns the lowest 8 bytes interpreted as native-endian.
@@ -394,15 +424,11 @@ macro_rules! impl_byteorder_for_fixed_hash {
 			/// are interpreted as being zero.
 			#[inline]
 			pub fn to_low_u64_ne(&self) -> u64 {
-				self.to_low_u64_with_byteorder::<$crate::byteorder::NativeEndian>()
+				self.to_low_u64_with_fn(u64::from_ne_bytes)
 			}
 
-			fn from_low_u64_with_byteorder<B>(val: u64) -> Self
-			where
-				B: $crate::byteorder::ByteOrder,
-			{
-				let mut buf = [0x0; 8];
-				B::write_u64(&mut buf, val);
+			fn from_low_u64_with_fn(val: u64, to_bytes: fn(u64) -> [u8; 8]) -> Self {
+				let buf = to_bytes(val);
 				let capped = $crate::core_::cmp::min(Self::len_bytes(), 8);
 				let mut bytes = [0x0; $crate::core_::mem::size_of::<Self>()];
 				bytes[(Self::len_bytes() - capped)..].copy_from_slice(&buf[..capped]);
@@ -418,7 +444,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 			///   if the hash type has less than 8 bytes.
 			#[inline]
 			pub fn from_low_u64_be(val: u64) -> Self {
-				Self::from_low_u64_with_byteorder::<$crate::byteorder::BigEndian>(val)
+				Self::from_low_u64_with_fn(val, u64::to_be_bytes)
 			}
 
 			/// Creates a new hash type from the given `u64` value.
@@ -430,7 +456,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 			///   if the hash type has less than 8 bytes.
 			#[inline]
 			pub fn from_low_u64_le(val: u64) -> Self {
-				Self::from_low_u64_with_byteorder::<$crate::byteorder::LittleEndian>(val)
+				Self::from_low_u64_with_fn(val, u64::to_le_bytes)
 			}
 
 			/// Creates a new hash type from the given `u64` value.
@@ -442,7 +468,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 			///   if the hash type has less than 8 bytes.
 			#[inline]
 			pub fn from_low_u64_ne(val: u64) -> Self {
-				Self::from_low_u64_with_byteorder::<$crate::byteorder::NativeEndian>(val)
+				Self::from_low_u64_with_fn(val, u64::to_ne_bytes)
 			}
 		}
 	};
@@ -518,19 +544,6 @@ macro_rules! impl_rand_for_fixed_hash {
 				let mut hash = Self::zero();
 				hash.randomize();
 				hash
-			}
-		}
-	};
-}
-
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_cmp_for_fixed_hash {
-	( $name:ident ) => {
-		impl $crate::core_::cmp::Ord for $name {
-			#[inline]
-			fn cmp(&self, other: &Self) -> $crate::core_::cmp::Ordering {
-				self.as_bytes().cmp(other.as_bytes())
 			}
 		}
 	};
@@ -657,54 +670,6 @@ macro_rules! impl_arbitrary_for_fixed_hash {
 				let mut res = Self::zero();
 				u.fill_buffer(&mut res.0)?;
 				Ok(Self::from(res))
-			}
-		}
-	};
-}
-
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_ops_for_hash {
-	(
-		$impl_for:ident,
-		$ops_trait_name:ident,
-		$ops_fn_name:ident,
-		$ops_assign_trait_name:ident,
-		$ops_assign_fn_name:ident,
-		$ops_tok:tt,
-		$ops_assign_tok:tt
-	) => {
-		impl<'r> $crate::core_::ops::$ops_assign_trait_name<&'r $impl_for> for $impl_for {
-			fn $ops_assign_fn_name(&mut self, rhs: &'r $impl_for) {
-				for (lhs, rhs) in self.as_bytes_mut().iter_mut().zip(rhs.as_bytes()) {
-					*lhs $ops_assign_tok rhs;
-				}
-			}
-		}
-
-		impl $crate::core_::ops::$ops_assign_trait_name<$impl_for> for $impl_for {
-			#[inline]
-			fn $ops_assign_fn_name(&mut self, rhs: $impl_for) {
-				*self $ops_assign_tok &rhs;
-			}
-		}
-
-		impl<'l, 'r> $crate::core_::ops::$ops_trait_name<&'r $impl_for> for &'l $impl_for {
-			type Output = $impl_for;
-
-			fn $ops_fn_name(self, rhs: &'r $impl_for) -> Self::Output {
-				let mut ret = self.clone();
-				ret $ops_assign_tok rhs;
-				ret
-			}
-		}
-
-		impl $crate::core_::ops::$ops_trait_name<$impl_for> for $impl_for {
-			type Output = $impl_for;
-
-			#[inline]
-			fn $ops_fn_name(self, rhs: Self) -> Self::Output {
-				&self $ops_tok &rhs
 			}
 		}
 	};
