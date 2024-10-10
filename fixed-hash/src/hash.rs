@@ -209,6 +209,8 @@ macro_rules! construct_fixed_hash {
 			}
 		}
 
+		$crate::impl_to_from_low_u64_for_fixed_hash!($name);
+
 		impl $crate::core_::fmt::Debug for $name {
 			fn fmt(&self, f: &mut $crate::core_::fmt::Formatter) -> $crate::core_::fmt::Result {
 				$crate::core_::write!(f, "{:#x}", self)
@@ -288,6 +290,26 @@ macro_rules! construct_fixed_hash {
 			}
 		}
 
+		impl $crate::core_::str::FromStr for $name {
+			type Err = $crate::const_hex::FromHexError;
+
+			/// Creates a hash type instance from the given string.
+			///
+			/// # Note
+			///
+			/// The given input string is interpreted in big endian.
+			///
+			/// # Errors
+			///
+			/// - When encountering invalid non hex-digits
+			/// - Upon empty string input or invalid input length in general
+			fn from_str(input: &str) -> $crate::core_::result::Result<$name, $crate::const_hex::FromHexError> {
+				let mut result = Self::zero();
+				$crate::const_hex::decode_to_slice(input, result.as_bytes_mut())?;
+				Ok(result)
+			}
+		}
+
 		impl<I> $crate::core_::ops::Index<I> for $name
 		where
 			I: $crate::core_::slice::SliceIndex<[u8]>
@@ -313,9 +335,6 @@ macro_rules! construct_fixed_hash {
 		$crate::impl_bit_ops_for_fixed_hash!($name, BitOr, bitor, BitOrAssign, bitor_assign, |, |=);
 		$crate::impl_bit_ops_for_fixed_hash!($name, BitAnd, bitand, BitAndAssign, bitand_assign, &, &=);
 		$crate::impl_bit_ops_for_fixed_hash!($name, BitXor, bitxor, BitXorAssign, bitxor_assign, ^, ^=);
-
-		$crate::impl_byteorder_for_fixed_hash!($name);
-		$crate::impl_from_str_for_fixed_hash!($name);
 
 		$crate::impl_rand_for_fixed_hash!($name);
 		$crate::impl_quickcheck_for_fixed_hash!($name);
@@ -373,7 +392,7 @@ macro_rules! impl_bit_ops_for_fixed_hash {
 
 #[macro_export]
 #[doc(hidden)]
-macro_rules! impl_byteorder_for_fixed_hash {
+macro_rules! impl_to_from_low_u64_for_fixed_hash {
 	( $name:ident ) => {
 		impl $name {
 			/// Returns the least significant `n` bytes as slice.
@@ -469,32 +488,6 @@ macro_rules! impl_byteorder_for_fixed_hash {
 			#[inline]
 			pub fn from_low_u64_ne(val: u64) -> Self {
 				Self::from_low_u64_with_fn(val, u64::to_ne_bytes)
-			}
-		}
-	};
-}
-
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_from_str_for_fixed_hash {
-	( $name:ident ) => {
-		impl $crate::core_::str::FromStr for $name {
-			type Err = $crate::const_hex::FromHexError;
-
-			/// Creates a hash type instance from the given string.
-			///
-			/// # Note
-			///
-			/// The given input string is interpreted in big endian.
-			///
-			/// # Errors
-			///
-			/// - When encountering invalid non hex-digits
-			/// - Upon empty string input or invalid input length in general
-			fn from_str(input: &str) -> $crate::core_::result::Result<$name, $crate::const_hex::FromHexError> {
-				let mut result = Self::zero();
-				$crate::const_hex::decode_to_slice(input, result.as_bytes_mut())?;
-				Ok(result)
 			}
 		}
 	};
