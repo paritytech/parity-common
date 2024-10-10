@@ -6,11 +6,11 @@ repository = "https://github.com/paritytech/parity-common"
 license = "MIT OR Apache-2.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2021"
-rust-version = "1.56.1"
+rust-version = "1.64.0"
 
 [dependencies]
 bytes = { version = "1", default-features = false }
-rustc-hex = { version = "2.0.1", default-features = false }
+const-hex = { version = "1.13", default-features = false, features = ["alloc"] }
 rlp-derive = { version = "0.2", path = "../rlp-derive", optional = true }
 
 [dev-dependencies]
@@ -20,7 +20,7 @@ primitive-types = { path = "../primitive-types", version = "0.13", features = ["
 
 [features]
 default = ["std"]
-std = ["bytes/std", "rustc-hex/std"]
+std = ["bytes/std", "const-hex/std"]
 derive = ["rlp-derive"]
 
 [[bench]]
