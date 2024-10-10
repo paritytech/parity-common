@@ -235,6 +235,33 @@ mod from_low_u64 {
 	}
 }
 
+mod from_str {
+	use super::*;
+
+	#[test]
+	fn valid() {
+		assert_eq!(
+			"0123456789ABCDEF".parse::<H64>().unwrap(),
+			H64::from([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF])
+		)
+	}
+
+	#[test]
+	fn empty_str() {
+		assert!("".parse::<H64>().is_err())
+	}
+
+	#[test]
+	fn invalid_digits() {
+		assert!("Hello, World!".parse::<H64>().is_err())
+	}
+
+	#[test]
+	fn too_many_digits() {
+		assert!("0123456789ABCDEF0".parse::<H64>().is_err())
+	}
+}
+
 #[cfg(feature = "rand")]
 mod rand {
 	use super::*;
@@ -244,39 +271,6 @@ mod rand {
 	fn random() {
 		let mut rng = StdRng::seed_from_u64(123);
 		assert_eq!(H32::random_using(&mut rng), H32::from([0xeb, 0x96, 0xaf, 0x1c]));
-	}
-}
-
-#[cfg(feature = "rustc-hex")]
-mod from_str {
-	use super::*;
-
-	#[test]
-	fn valid() {
-		use crate::core_::str::FromStr;
-
-		assert_eq!(
-			H64::from_str("0123456789ABCDEF").unwrap(),
-			H64::from([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF])
-		)
-	}
-
-	#[test]
-	fn empty_str() {
-		use crate::core_::str::FromStr;
-		assert!(H64::from_str("").is_err())
-	}
-
-	#[test]
-	fn invalid_digits() {
-		use crate::core_::str::FromStr;
-		assert!(H64::from_str("Hello, World!").is_err())
-	}
-
-	#[test]
-	fn too_many_digits() {
-		use crate::core_::str::FromStr;
-		assert!(H64::from_str("0123456789ABCDEF0").is_err())
 	}
 }
 

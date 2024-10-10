@@ -50,7 +50,6 @@ fixed-hash = { version = "0.3", default-features = false }
 
 - `std`: Use the standard library instead of the core library.
 	- Using this feature enables the following features
-		- `rustc-hex/std`
 		- `rand/std`
     - Enabled by default.
 - `rand`: Provide API based on the `rand` crate.

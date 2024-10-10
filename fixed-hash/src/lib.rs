@@ -30,9 +30,8 @@ pub use static_assertions;
 #[doc(hidden)]
 pub use static_assertions::const_assert;
 
-#[cfg(feature = "rustc-hex")]
 #[doc(hidden)]
-pub use rustc_hex;
+pub use const_hex;
 
 #[cfg(feature = "rand")]
 #[doc(hidden)]
