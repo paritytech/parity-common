@@ -28,7 +28,6 @@ jsonschema = { version = "0.17", default-features = false }
 default = ["std", "rand"]
 std = ["uint/std", "fixed-hash/std", "impl-codec?/std"]
 rand = ["fixed-hash/rand"]
-byteorder = ["fixed-hash/byteorder"]
 rustc-hex = ["fixed-hash/rustc-hex"]
 serde = ["std", "impl-serde", "impl-serde/std"]
 json-schema = ["dep:schemars"]
