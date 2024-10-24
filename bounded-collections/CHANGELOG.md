@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
+## [Unreleased]
+- Added `ConstInt` and `ConstUint` types. [#878](https://github.com/paritytech/parity-common/pull/878)
+
 ## [0.2.1] - 2024-10-08
 - Added `serde` support for `BoundedBTreeMap`. [#870](https://github.com/paritytech/parity-common/pull/870)
 
