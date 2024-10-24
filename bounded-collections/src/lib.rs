@@ -16,6 +16,7 @@ pub extern crate alloc;
 pub mod bounded_btree_map;
 pub mod bounded_btree_set;
 pub mod bounded_vec;
+mod const_int;
 pub mod weak_bounded_vec;
 
 mod test;
@@ -23,6 +24,7 @@ mod test;
 pub use bounded_btree_map::BoundedBTreeMap;
 pub use bounded_btree_set::BoundedBTreeSet;
 pub use bounded_vec::{BoundedSlice, BoundedVec};
+pub use const_int::{ConstInt, ConstUint};
 pub use weak_bounded_vec::WeakBoundedVec;
 
 /// A trait for querying a single value from a type defined in the trait.
