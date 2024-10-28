@@ -16,7 +16,7 @@ pub extern crate alloc;
 pub mod bounded_btree_map;
 pub mod bounded_btree_set;
 pub mod bounded_vec;
-mod const_int;
+pub mod const_int;
 pub mod weak_bounded_vec;
 
 mod test;

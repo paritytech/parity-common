@@ -8,43 +8,47 @@
 
 use crate::{Get, TypedGet};
 
+// Numbers which have constant upper and lower bounds.
 trait ConstBounded<T> {
 	const MIN: T;
 	const MAX: T;
 }
 
 macro_rules! impl_const_bounded {
-	($t:ty, $type:ty) => {
-		impl ConstBounded<$type> for $t {
-			const MIN: $type = <$t>::MIN as $type;
-			const MAX: $type = <$t>::MAX as $type;
+	($bound:ty, $t:ty) => {
+		impl ConstBounded<$bound> for $t {
+			const MIN: $bound = <$t>::MIN as $bound;
+			const MAX: $bound = <$t>::MAX as $bound;
 		}
 	};
 }
 
-impl_const_bounded!(u8, u128);
-impl_const_bounded!(u16, u128);
-impl_const_bounded!(u32, u128);
-impl_const_bounded!(u64, u128);
+impl_const_bounded!(u128, u8);
+impl_const_bounded!(u128, u16);
+impl_const_bounded!(u128, u32);
+impl_const_bounded!(u128, u64);
 impl_const_bounded!(u128, u128);
-impl_const_bounded!(usize, u128);
+impl_const_bounded!(u128, usize);
 
-impl_const_bounded!(i8, i128);
-impl_const_bounded!(i16, i128);
-impl_const_bounded!(i32, i128);
-impl_const_bounded!(i64, i128);
+impl_const_bounded!(i128, i8);
+impl_const_bounded!(i128, i16);
+impl_const_bounded!(i128, i32);
+impl_const_bounded!(i128, i64);
 impl_const_bounded!(i128, i128);
 
-struct CheckOverflowU128<const N: u128, T: ConstBounded<u128>>(T);
+// Check whether a number is within the bounds of a type.
+struct CheckOverflow<T>(core::marker::PhantomData<T>);
 
-impl<const N: u128, T: ConstBounded<u128>> CheckOverflowU128<N, T> {
-	const ASSERTION: () = assert!(N <= T::MAX && N >= T::MIN);
+impl CheckOverflow<u128> {
+	const fn check<T: ConstBounded<u128>, const N: u128>() {
+		assert!(N <= T::MAX && N >= T::MIN)
+	}
 }
 
-struct CheckOverflowI128<const N: i128, T: ConstBounded<i128>>(T);
-
-impl<const N: i128, T: ConstBounded<i128>> CheckOverflowI128<N, T> {
-	const ASSERTION: () = assert!(N <= T::MAX && N >= T::MIN);
+impl CheckOverflow<i128> {
+	const fn check<T: ConstBounded<i128>, const N: i128>() {
+		assert!(N <= T::MAX && N >= T::MIN)
+	}
 }
 
 /// Const getter for unsigned integers.
@@ -96,34 +100,34 @@ impl<const N: i128> TypedGet for ConstInt<N> {
 }
 
 macro_rules! impl_const_int {
-	($type:ident, $value:ty, $overflow:ident, $t:ty) => {
-		impl<const N: $value> Get<$t> for $type<N> {
-			fn get() -> $t {
-				let _ = $overflow::<N, $t>::ASSERTION;
-				N as $t
+	($t:ident, $bound:ty, $target:ty) => {
+		impl<const N: $bound> Get<$target> for $t<N> {
+			fn get() -> $target {
+				let _ = <CheckOverflow<$bound>>::check::<$target, N>();
+				N as $target
 			}
 		}
-		impl<const N: $value> Get<Option<$t>> for $type<N> {
-			fn get() -> Option<$t> {
-				let _ = $overflow::<N, $t>::ASSERTION;
-				Some(N as $t)
+		impl<const N: $bound> Get<Option<$target>> for $t<N> {
+			fn get() -> Option<$target> {
+				let _ = <CheckOverflow<$bound>>::check::<$target, N>();
+				Some(N as $target)
 			}
 		}
 	};
 }
 
-impl_const_int!(ConstUint, u128, CheckOverflowU128, u8);
-impl_const_int!(ConstUint, u128, CheckOverflowU128, u16);
-impl_const_int!(ConstUint, u128, CheckOverflowU128, u32);
-impl_const_int!(ConstUint, u128, CheckOverflowU128, u64);
-impl_const_int!(ConstUint, u128, CheckOverflowU128, u128);
-impl_const_int!(ConstUint, u128, CheckOverflowU128, usize);
+impl_const_int!(ConstUint, u128, u8);
+impl_const_int!(ConstUint, u128, u16);
+impl_const_int!(ConstUint, u128, u32);
+impl_const_int!(ConstUint, u128, u64);
+impl_const_int!(ConstUint, u128, u128);
+impl_const_int!(ConstUint, u128, usize);
 
-impl_const_int!(ConstInt, i128, CheckOverflowI128, i8);
-impl_const_int!(ConstInt, i128, CheckOverflowI128, i16);
-impl_const_int!(ConstInt, i128, CheckOverflowI128, i32);
-impl_const_int!(ConstInt, i128, CheckOverflowI128, i64);
-impl_const_int!(ConstInt, i128, CheckOverflowI128, i128);
+impl_const_int!(ConstInt, i128, i8);
+impl_const_int!(ConstInt, i128, i16);
+impl_const_int!(ConstInt, i128, i32);
+impl_const_int!(ConstInt, i128, i64);
+impl_const_int!(ConstInt, i128, i128);
 
 #[cfg(test)]
 mod tests {
