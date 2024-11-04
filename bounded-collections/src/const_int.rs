@@ -52,6 +52,13 @@ impl<T: ConstBounded<i128>, const N: i128> CheckOverflowI128<T, N> {
 }
 
 /// Const getter for unsigned integers.
+///
+/// # Compile-time checks
+///
+/// ```compile_fail
+/// # use bounded_collections::{ConstUint, Get};
+/// let _ = <ConstUint<256> as Get<u8>>::get();
+/// ```
 #[derive(Default, Clone)]
 pub struct ConstUint<const N: u128>;
 
