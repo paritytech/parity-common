@@ -62,16 +62,9 @@ impl<T: ConstBounded<i128>, const N: i128> CheckOverflowI128<T, N> {
 #[derive(Default, Clone)]
 pub struct ConstUint<const N: u128>;
 
-#[cfg(feature = "std")]
-impl<const N: u128> std::fmt::Debug for ConstUint<N> {
-	fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-		fmt.write_str(&format!("{}<{}>", stringify!(ConstUint), N))
-	}
-}
-#[cfg(not(feature = "std"))]
 impl<const N: u128> core::fmt::Debug for ConstUint<N> {
 	fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
-		fmt.write_str("<wasm:stripped>")
+		fmt.write_str(&alloc::format!("ConstUint<{}>", N))
 	}
 }
 
@@ -86,16 +79,9 @@ impl<const N: u128> TypedGet for ConstUint<N> {
 #[derive(Default, Clone)]
 pub struct ConstInt<const N: i128>;
 
-#[cfg(feature = "std")]
-impl<const N: i128> std::fmt::Debug for ConstInt<N> {
-	fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-		fmt.write_str(&format!("{}<{}>", stringify!(ConstInt), N))
-	}
-}
-#[cfg(not(feature = "std"))]
 impl<const N: i128> core::fmt::Debug for ConstInt<N> {
 	fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
-		fmt.write_str("<wasm:stripped>")
+		fmt.write_str(&alloc::format!("ConstInt<{}>", N))
 	}
 }
 
