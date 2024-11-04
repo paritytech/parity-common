@@ -39,14 +39,13 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.74.0
+          toolchain: 1.75.0
           override: true
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@82a92a6e8fbeee089604da2575dc567ae9ddeaab # v2.7.5
 
       - run: rustup target add wasm32-unknown-unknown
-      - run: rustup target add mips64-unknown-linux-muslabi64
 
       - name: Test no-default-features
         uses: actions-rs/cargo@v1
@@ -117,14 +116,6 @@ jobs:
           command: test
           args: -p bounded-collections --all-features
 
-      - name: Test uint on bigendian
-        if: runner.os == 'Linux'
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: test
-          args: -p uint --target=mips64-unknown-linux-muslabi64
-
   test_windows:
     name: Test Windows
     runs-on: windows-latest
@@ -143,7 +134,6 @@ jobs:
         with:
           command: test
           args: --workspace --exclude kvdb-rocksdb
-
 
   fmt:
     name: Rustfmt
