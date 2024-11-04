@@ -39,7 +39,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.74.0
+          toolchain: 1.75.0
           override: true
 
       - name: Rust Cache
@@ -143,7 +143,6 @@ jobs:
         with:
           command: test
           args: --workspace --exclude kvdb-rocksdb
-
 
   fmt:
     name: Rustfmt
