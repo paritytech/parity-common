@@ -7,6 +7,7 @@
 // except according to those terms.
 
 use crate::{Get, TypedGet};
+use core::marker::PhantomData;
 
 // Numbers which have constant upper and lower bounds.
 trait ConstBounded<T> {
@@ -36,19 +37,18 @@ impl_const_bounded!(i128, i32);
 impl_const_bounded!(i128, i64);
 impl_const_bounded!(i128, i128);
 
-// Check whether a number is within the bounds of a type.
-struct CheckOverflow<T>(core::marker::PhantomData<T>);
+// Check whether a unsigned integer is within the bounds of a type.
+struct CheckOverflowU128<T: ConstBounded<u128>, const N: u128>(PhantomData<T>);
 
-impl CheckOverflow<u128> {
-	const fn check<T: ConstBounded<u128>, const N: u128>() {
-		assert!(N <= T::MAX && N >= T::MIN)
-	}
+impl<T: ConstBounded<u128>, const N: u128> CheckOverflowU128<T, N> {
+	const ASSERTION: () = assert!(N >= T::MIN && N <= T::MAX);
 }
 
-impl CheckOverflow<i128> {
-	const fn check<T: ConstBounded<i128>, const N: i128>() {
-		assert!(N <= T::MAX && N >= T::MIN)
-	}
+// Check whether an integer is within the bounds of a type.
+struct CheckOverflowI128<T: ConstBounded<i128>, const N: i128>(PhantomData<T>);
+
+impl<T: ConstBounded<i128>, const N: i128> CheckOverflowI128<T, N> {
+	const ASSERTION: () = assert!(N >= T::MIN && N <= T::MAX);
 }
 
 /// Const getter for unsigned integers.
@@ -100,34 +100,34 @@ impl<const N: i128> TypedGet for ConstInt<N> {
 }
 
 macro_rules! impl_const_int {
-	($t:ident, $bound:ty, $target:ty) => {
+	($t:ident, $check:ident, $bound:ty, $target:ty) => {
 		impl<const N: $bound> Get<$target> for $t<N> {
 			fn get() -> $target {
-				let _ = <CheckOverflow<$bound>>::check::<$target, N>();
+				let _ = <$check<$target, N>>::ASSERTION;
 				N as $target
 			}
 		}
 		impl<const N: $bound> Get<Option<$target>> for $t<N> {
 			fn get() -> Option<$target> {
-				let _ = <CheckOverflow<$bound>>::check::<$target, N>();
+				let _ = <$check<$target, N>>::ASSERTION;
 				Some(N as $target)
 			}
 		}
 	};
 }
 
-impl_const_int!(ConstUint, u128, u8);
-impl_const_int!(ConstUint, u128, u16);
-impl_const_int!(ConstUint, u128, u32);
-impl_const_int!(ConstUint, u128, u64);
-impl_const_int!(ConstUint, u128, u128);
-impl_const_int!(ConstUint, u128, usize);
+impl_const_int!(ConstUint, CheckOverflowU128, u128, u8);
+impl_const_int!(ConstUint, CheckOverflowU128, u128, u16);
+impl_const_int!(ConstUint, CheckOverflowU128, u128, u32);
+impl_const_int!(ConstUint, CheckOverflowU128, u128, u64);
+impl_const_int!(ConstUint, CheckOverflowU128, u128, u128);
+impl_const_int!(ConstUint, CheckOverflowU128, u128, usize);
 
-impl_const_int!(ConstInt, i128, i8);
-impl_const_int!(ConstInt, i128, i16);
-impl_const_int!(ConstInt, i128, i32);
-impl_const_int!(ConstInt, i128, i64);
-impl_const_int!(ConstInt, i128, i128);
+impl_const_int!(ConstInt, CheckOverflowI128, i128, i8);
+impl_const_int!(ConstInt, CheckOverflowI128, i128, i16);
+impl_const_int!(ConstInt, CheckOverflowI128, i128, i32);
+impl_const_int!(ConstInt, CheckOverflowI128, i128, i64);
+impl_const_int!(ConstInt, CheckOverflowI128, i128, i128);
 
 #[cfg(test)]
 mod tests {
