@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
-## [Unreleased]
+## [0.2.2] - 2024-11-08
 - Added `ConstInt` and `ConstUint` types. [#878](https://github.com/paritytech/parity-common/pull/878)
 
 ## [0.2.1] - 2024-10-08
