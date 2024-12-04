@@ -24,7 +24,7 @@ The format is based on [Keep a Changelog].
 
 ## [0.9.2] - 2022-01-28
 - Migrated to 2021 edition, enforcing MSRV of `1.56.1`. [#601](https://github.com/paritytech/parity-common/pull/601)
-- Display formatting support. [#603](ttps://github.com/paritytech/parity-common/pull/603)
+- Display formatting support. [#603](https://github.com/paritytech/parity-common/pull/603)
 
 ## [0.9.1] - 2021-06-30
 - Added `integer_sqrt` method. [#554](https://github.com/paritytech/parity-common/pull/554)
