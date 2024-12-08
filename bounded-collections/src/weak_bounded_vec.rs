@@ -226,7 +226,7 @@ impl<T, S: Get<u32>> WeakBoundedVec<T, S> {
 		}
 	}
 
-	/// Returns true of this collection is full.
+	/// Returns true if this collection is full.
 	pub fn is_full(&self) -> bool {
 		self.len() >= Self::bound()
 	}
