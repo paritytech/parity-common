@@ -271,6 +271,11 @@ where
 				.collect::<Result<BTreeMap<_, _>, _>>()?,
 		))
 	}
+
+	/// Returns true if this map is full.
+	pub fn is_full(&self) -> bool {
+		self.len() >= Self::bound()
+	}
 }
 
 impl<K, V, S> Default for BoundedBTreeMap<K, V, S>
@@ -783,5 +788,17 @@ mod test {
 				_ => unreachable!("deserializer must raise error"),
 			}
 		}
+	}
+
+	#[test]
+	fn is_full_works() {
+		let mut bounded = boundedmap_from_keys::<u32, ConstU32<4>>(&[1, 2, 3]);
+		assert!(!bounded.is_full());
+		bounded.try_insert(0, ()).unwrap();
+		assert_eq!(*bounded, map_from_keys(&[1, 0, 2, 3]));
+
+		assert!(bounded.is_full());
+		assert!(bounded.try_insert(9, ()).is_err());
+		assert_eq!(*bounded, map_from_keys(&[1, 0, 2, 3]));
 	}
 }
