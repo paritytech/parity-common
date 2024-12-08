@@ -207,6 +207,11 @@ where
 	{
 		self.0.take(value)
 	}
+
+	/// Returns true if this set is full.
+	pub fn is_full(&self) -> bool {
+		self.len() >= Self::bound()
+	}
 }
 
 impl<T, S> Default for BoundedBTreeSet<T, S>
@@ -585,6 +590,18 @@ mod test {
 			set: BoundedBTreeSet<String, ConstU32<16>>,
 		}
 		let _foo = Foo::default();
+	}
+
+	#[test]
+	fn is_full_works() {
+		let mut bounded = boundedset_from_keys::<u32, ConstU32<4>>(&[1, 2, 3]);
+		assert!(!bounded.is_full());
+		bounded.try_insert(0).unwrap();
+		assert_eq!(*bounded, set_from_keys(&[1, 0, 2, 3]));
+
+		assert!(bounded.is_full());
+		assert!(bounded.try_insert(9).is_err());
+		assert_eq!(*bounded, set_from_keys(&[1, 0, 2, 3]));
 	}
 
 	#[cfg(feature = "serde")]
