@@ -437,7 +437,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 		S::get() as usize
 	}
 
-	/// Returns true of this collection is full.
+	/// Returns true if this collection is full.
 	pub fn is_full(&self) -> bool {
 		self.len() >= Self::bound()
 	}
@@ -1367,5 +1367,17 @@ mod test {
 			map: BoundedVec<String, ConstU32<16>>,
 		}
 		let _foo = Foo { bar: 42, slice: BoundedSlice::truncate_from(&[0, 1][..]), map: BoundedVec::default() };
+	}
+
+	#[test]
+	fn is_full_works() {
+		let mut bounded: BoundedVec<u32, ConstU32<4>> = bounded_vec![1, 2, 3];
+		assert!(!bounded.is_full());
+		bounded.try_insert(1, 0).unwrap();
+		assert_eq!(*bounded, vec![1, 0, 2, 3]);
+
+		assert!(bounded.is_full());
+		assert!(bounded.try_insert(0, 9).is_err());
+		assert_eq!(*bounded, vec![1, 0, 2, 3]);
 	}
 }
