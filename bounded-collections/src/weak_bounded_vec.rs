@@ -119,6 +119,11 @@ impl<T: Decode, S: Get<u32>> Decode for WeakBoundedVec<T, S> {
 }
 
 impl<T, S> WeakBoundedVec<T, S> {
+	/// Create `Self` with no items.
+	pub fn new() -> Self {
+		Self(Vec::new(), Default::default())
+	}
+
 	/// Create `Self` from `t` without any checks.
 	fn unchecked_from(t: Vec<T>) -> Self {
 		Self(t, Default::default())
