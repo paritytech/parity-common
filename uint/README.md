@@ -62,7 +62,7 @@ cargo bench
 
 see fuzz [README.md](fuzz/README.md)
 
-## Crate Features
+## Create Features
 
 - `std`: Use Rust's standard library.
 	- Enables `byteorder/std`, `rustc-hex/std`
