@@ -7,7 +7,7 @@ homepage = "https://github.com/paritytech/parity-common"
 repository = "https://github.com/paritytech/parity-common"
 description = "Primitive types shared by Ethereum and Substrate"
 edition = "2021"
-rust-version = "1.60.0"
+rust-version = "1.79.0"
 
 [dependencies]
 fixed-hash = { version = "0.8", path = "../fixed-hash", default-features = false }
