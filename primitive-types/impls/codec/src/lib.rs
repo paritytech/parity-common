@@ -32,6 +32,8 @@ macro_rules! impl_uint_codec {
 			}
 		}
 
+		impl $crate::codec::DecodeWithMemTracking for $name {}
+
 		impl $crate::codec::MaxEncodedLen for $name {
 			fn max_encoded_len() -> usize {
 				::core::mem::size_of::<$name>()
@@ -57,6 +59,8 @@ macro_rules! impl_fixed_hash_codec {
 				<[u8; $len] as $crate::codec::Decode>::decode(input).map($name)
 			}
 		}
+
+		impl $crate::codec::DecodeWithMemTracking for $name {}
 
 		impl $crate::codec::MaxEncodedLen for $name {
 			fn max_encoded_len() -> usize {
