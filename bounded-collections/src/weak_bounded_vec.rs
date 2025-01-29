@@ -21,7 +21,7 @@
 use super::{BoundedSlice, BoundedVec};
 use crate::Get;
 use alloc::vec::Vec;
-use codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::{
 	marker::PhantomData,
 	ops::{Deref, Index, IndexMut},
@@ -117,6 +117,8 @@ impl<T: Decode, S: Get<u32>> Decode for WeakBoundedVec<T, S> {
 		Vec::<T>::skip(input)
 	}
 }
+
+impl<T: DecodeWithMemTracking, S: Get<u32>> DecodeWithMemTracking for WeakBoundedVec<T, S> {}
 
 impl<T, S> WeakBoundedVec<T, S> {
 	/// Create `Self` from `t` without any checks.

@@ -21,7 +21,7 @@
 use super::WeakBoundedVec;
 use crate::{Get, TryCollect};
 use alloc::vec::Vec;
-use codec::{decode_vec_with_len, Compact, Decode, Encode, EncodeLike, MaxEncodedLen};
+use codec::{decode_vec_with_len, Compact, Decode, DecodeWithMemTracking, Encode, EncodeLike, MaxEncodedLen};
 use core::{
 	marker::PhantomData,
 	ops::{Deref, Index, IndexMut, RangeBounds},
@@ -284,6 +284,8 @@ impl<T: Decode, S: Get<u32>> Decode for BoundedVec<T, S> {
 		Vec::<T>::skip(input)
 	}
 }
+
+impl<T: DecodeWithMemTracking, S: Get<u32>> DecodeWithMemTracking for BoundedVec<T, S> {}
 
 // `BoundedVec`s encode to something which will always decode as a `Vec`.
 impl<T: Encode + Decode, S: Get<u32>> EncodeLike<Vec<T>> for BoundedVec<T, S> {}
