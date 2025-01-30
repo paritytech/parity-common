@@ -10,7 +10,7 @@ rust-version = "1.79.0"
 
 [dependencies]
 serde = { version = "1.0.101", default-features = false, optional = true, features=["alloc", "derive"] }
-codec = { version = "3.7.2", default-features = false, features = ["max-encoded-len"], package = "parity-scale-codec" }
+codec = { version = "3.7.3", default-features = false, features = ["max-encoded-len"], package = "parity-scale-codec" }
 scale-info = { version = ">=1.0, <3", features = ["derive"], default-features = false }
 log = { version = "0.4.17", default-features = false }
 schemars = { version = ">=0.8.12", default-features = true, optional = true }
