@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+- Added missing trait impls. [#898](https://github.com/paritytech/parity-common/pull/898)
 
 ## [0.2.0] - 2024-09-11
 - Updated `uint` to 0.10. [#859](https://github.com/paritytech/parity-common/pull/859)
