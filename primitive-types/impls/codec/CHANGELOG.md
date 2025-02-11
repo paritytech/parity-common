@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.7.1] - 2025-02-11
+- Implement `DecodeWithMemTracking` for some structs [#897](https://github.com/paritytech/parity-common/pull/897)
+
 ## [0.7.0] - 2024-09-12
 ### Breaking
 - Updated to `uint` 0.10. [#860](https://github.com/paritytech/parity-common/pull/860)
