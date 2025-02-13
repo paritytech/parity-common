@@ -1,3 +1,10 @@
+[workspace.package]
+authors = ["Parity Technologies <admin@parity.io>"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/paritytech/parity-common"
+repository = "https://github.com/paritytech/parity-common"
+
 [workspace]
 resolver = "2"
 members = [

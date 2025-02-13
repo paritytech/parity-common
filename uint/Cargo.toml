@@ -1,14 +1,13 @@
 [package]
-description = "Large fixed-size integer arithmetic"
-homepage = "http://parity.io"
-repository = "https://github.com/paritytech/parity-common"
-license = "MIT OR Apache-2.0"
 name = "uint"
 version = "0.10.0"
-authors = ["Parity Technologies <admin@parity.io>"]
+description = "Large fixed-size integer arithmetic"
 readme = "README.md"
-edition = "2021"
-rust-version = "1.56.1"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
 byteorder = { version = "1.4.2", default-features = false }

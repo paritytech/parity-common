@@ -1,14 +1,12 @@
 [package]
 name = "ethbloom"
 version = "0.14.1"
-authors = ["Parity Technologies <admin@parity.io>"]
 description = "Ethereum bloom filter"
-license = "MIT OR Apache-2.0"
-documentation = "https://docs.rs/ethbloom"
-homepage = "https://github.com/paritytech/parity-common"
-repository = "https://github.com/paritytech/parity-common"
-edition = "2021"
-rust-version = "1.56.1"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
 tiny-keccak = { version = "2.0", features = ["keccak"] }

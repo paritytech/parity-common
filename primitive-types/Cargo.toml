@@ -1,13 +1,12 @@
 [package]
 name = "primitive-types"
 version = "0.13.1"
-authors = ["Parity Technologies <admin@parity.io>"]
-license = "MIT OR Apache-2.0"
-homepage = "https://github.com/paritytech/parity-common"
-repository = "https://github.com/paritytech/parity-common"
 description = "Primitive types shared by Ethereum and Substrate"
-edition = "2021"
-rust-version = "1.79.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
 fixed-hash = { version = "0.8", path = "../fixed-hash", default-features = false }

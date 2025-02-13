@@ -2,11 +2,12 @@
 name = "rlp"
 version = "0.6.1"
 description = "Recursive-length prefix encoding, decoding, and compression"
-repository = "https://github.com/paritytech/parity-common"
-license = "MIT OR Apache-2.0"
-authors = ["Parity Technologies <admin@parity.io>"]
-edition = "2021"
-rust-version = "1.56.1"
+readme = "README.md"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
 bytes = { version = "1", default-features = false }

@@ -1,12 +1,12 @@
 [package]
 name = "rlp-derive"
 version = "0.2.0"
-authors = ["Parity Technologies <admin@parity.io>"]
-license = "MIT OR Apache-2.0"
 description = "Derive macro for #[derive(RlpEncodable, RlpDecodable)]"
-homepage = "http://parity.io"
-edition = "2021"
-rust-version = "1.56.1"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [lib]
 proc-macro = true

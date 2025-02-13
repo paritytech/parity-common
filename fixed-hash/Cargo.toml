@@ -1,15 +1,13 @@
 [package]
 name = "fixed-hash"
 version = "0.8.0"
-authors = ["Parity Technologies <admin@parity.io>"]
-license = "MIT OR Apache-2.0"
-homepage = "https://github.com/paritytech/parity-common"
-repository = "https://github.com/paritytech/parity-common"
 description = "Macros to define custom fixed-size hash types"
-documentation = "https://docs.rs/fixed-hash/"
 readme = "README.md"
-edition = "2021"
-rust-version = "1.60"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [package.metadata.docs.rs]
 features = ["quickcheck", "api-dummy"]
