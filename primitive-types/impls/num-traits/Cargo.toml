@@ -9,6 +9,6 @@ edition = "2021"
 rust-version = "1.56.1"
 
 [dependencies]
-num-traits = { version = "0.2", default-features = false }
-integer-sqrt = "0.1"
-uint = { version = "0.10.0", path = "../../../uint", default-features = false }
+num-traits = { workspace = true }
+integer-sqrt = { workspace = true }
+uint = { workspace = true }

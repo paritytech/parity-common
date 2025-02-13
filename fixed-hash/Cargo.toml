@@ -13,16 +13,16 @@ repository.workspace = true
 features = ["quickcheck", "api-dummy"]
 
 [dependencies]
-quickcheck = { version = "1", optional = true }
-rand = { version = "0.8.0", optional = true, default-features = false }
-rustc-hex = { version = "2.0.1", optional = true, default-features = false }
-static_assertions = "1.0.0"
-arbitrary = { version = "1.0", optional = true }
+quickcheck = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
+rustc-hex = { workspace = true, optional = true }
+static_assertions = { workspace = true }
+arbitrary = { workspace = true, optional = true }
 
 [dev-dependencies]
-rand_xorshift = "0.3.0"
-criterion = "0.5.1"
-rand = { version = "0.8.0", default-features = false, features = ["std_rng"] }
+rand_xorshift = { workspace = true }
+criterion = { workspace = true }
+rand = { workspace = true, default-features = false, features = ["std_rng"] }
 
 [features]
 default = ["std", "rand", "rustc-hex"]

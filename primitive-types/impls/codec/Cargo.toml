@@ -9,8 +9,8 @@ edition = "2021"
 rust-version = "1.56.1"
 
 [dependencies]
-parity-scale-codec = { version = "3.7.4", default-features = false, features = ["max-encoded-len"] }
+codec = { workspace = true, features = ["max-encoded-len"] }
 
 [features]
 default = ["std"]
-std = ["parity-scale-codec/std"]
+std = ["codec/std"]

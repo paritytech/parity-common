@@ -9,4 +9,4 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-kvdb = { path = "../kvdb", version = "0.13" }
+kvdb = { workspace = true }

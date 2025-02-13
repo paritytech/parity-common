@@ -9,18 +9,18 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-tiny-keccak = { version = "2.0", features = ["keccak"] }
-crunchy = { version = "0.2.2", default-features = false, features = ["limit_256"] }
-fixed-hash = { path = "../fixed-hash", version = "0.8", default-features = false }
-impl-serde = { path = "../primitive-types/impls/serde", version = "0.5", default-features = false, optional = true }
-impl-rlp = { path = "../primitive-types/impls/rlp", version = "0.4", default-features = false, optional = true }
-impl-codec = { version = "0.7.0", path = "../primitive-types/impls/codec", default-features = false, optional = true }
-scale-info = { version = ">=1.0, <3", features = ["derive"], default-features = false, optional = true }
+tiny-keccak = { workspace = true, features = ["keccak"] }
+crunchy = { workspace = true, features = ["limit_256"] }
+fixed-hash = { workspace = true }
+impl-serde = { workspace = true, optional = true }
+impl-rlp = { workspace = true, optional = true }
+impl-codec = { workspace = true, optional = true }
+scale-info = { workspace = true, features = ["derive"], optional = true }
 
 [dev-dependencies]
-criterion = "0.5.1"
-rand = "0.8.0"
-hex-literal = "0.4.1"
+criterion = { workspace = true }
+rand = { workspace = true, default-features = true }
+hex-literal = { workspace = true }
 
 [features]
 default = ["std", "rlp", "serialize", "rustc-hex"]

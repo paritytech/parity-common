@@ -11,7 +11,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[doc(hidden)]
-pub use parity_scale_codec as codec;
+pub use codec;
 
 /// Add Parity Codec serialization support to an integer created by `construct_uint!`.
 #[macro_export]
