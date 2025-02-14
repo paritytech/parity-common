@@ -3,6 +3,7 @@ name = "rlp"
 version = "0.6.1"
 description = "Recursive-length prefix encoding, decoding, and compression"
 readme = "README.md"
+rust-version = "1.56.1"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true

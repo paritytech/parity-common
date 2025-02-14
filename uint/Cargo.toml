@@ -3,6 +3,7 @@ name = "uint"
 version = "0.10.0"
 description = "Large fixed-size integer arithmetic"
 readme = "README.md"
+rust-version = "1.56.1"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true

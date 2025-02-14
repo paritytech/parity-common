@@ -2,6 +2,7 @@
 name = "ethbloom"
 version = "0.14.1"
 description = "Ethereum bloom filter"
+rust-version = "1.56.1"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true

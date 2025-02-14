@@ -3,6 +3,7 @@ name = "keccak-hash"
 version = "0.11.0"
 description = "`keccak-hash` is a set of utility functions to facilitate working with Keccak hashes (256/512 bits long)."
 readme = "README.md"
+rust-version = "1.56.1"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true

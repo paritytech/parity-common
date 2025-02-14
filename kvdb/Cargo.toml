@@ -2,6 +2,7 @@
 name = "kvdb"
 version = "0.13.0"
 description = "Generic key-value trait"
+rust-version = "1.56.1"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true

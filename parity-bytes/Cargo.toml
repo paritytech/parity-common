@@ -3,6 +3,7 @@ name = "parity-bytes"
 version = "0.1.2"
 description = "byte utilities for Parity"
 readme = "README.md"
+rust-version = "1.56.1"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true

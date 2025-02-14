@@ -1,7 +1,8 @@
 [package]
 name = "kvdb-memorydb"
 version = "0.13.0"
-description = "A key-value in-memory database that implements the  `KeyValueDB` trait"
+description = "A key-value in-memory database that implements the `KeyValueDB` trait"
+rust-version = "1.56.1"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
