@@ -14,7 +14,6 @@ name = "bench_read_perf"
 harness = false
 
 [dependencies]
-smallvec = { workspace = true }
 kvdb = { workspace = true }
 num_cpus = { workspace = true }
 parking_lot = { workspace = true }

@@ -21,7 +21,6 @@ static_assertions = { workspace = true }
 arbitrary = { workspace = true, optional = true }
 
 [dev-dependencies]
-rand_xorshift = { workspace = true }
 criterion = { workspace = true }
 rand = { workspace = true, default-features = false, features = ["std_rng"] }
 
