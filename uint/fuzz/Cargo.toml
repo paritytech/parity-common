@@ -1,22 +1,23 @@
 [package]
 name = "uint-fuzz"
 description = "Fuzzers for uint algorithms"
+readme = "README.md"
 publish = false
 version = "0.1.0"
-authors = ["Parity Technologies <admin@parity.io>"]
-edition = "2021"
 rust-version = "1.56.1"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [package.metadata]
 cargo-fuzz = true
 
 [dependencies]
-uint = { path = ".." }
-libfuzzer-sys = { git = "https://github.com/rust-fuzz/libfuzzer-sys.git" }
-rug = { version = "1.4", default-features = false, features = ["integer"] }
-
-[workspace]
-members = ["."]
+uint = { workspace = true, default-features = true }
+libfuzzer-sys = { workspace = true }
+rug = { workspace = true, default-features = true, features = ["integer"] }
 
 [[bin]]
 name = "div_mod"

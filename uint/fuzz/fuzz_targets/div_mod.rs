@@ -12,7 +12,6 @@ use libfuzzer_sys::fuzz_target;
 use uint::*;
 use rug::{Integer, integer::Order};
 
-
 construct_uint! {
 	pub struct U512(8);
 }
