@@ -72,7 +72,7 @@ uint-crate = { path = "./uint", package = "uint", default-features = false }
 primitive-types = { path = "./primitive-types", default-features = false }
 impl-codec = { path = "./primitive-types/impls/codec", default-features = false }
 impl-num-traits = { path = "./primitive-types/impls/num-traits", default-features = false }
-impl-rlp = { path = "./primitive-types/impls/rlp", version = "0.4", default-features = false }
+impl-rlp = { path = "./primitive-types/impls/rlp", default-features = false }
 impl-serde = { path = "./primitive-types/impls/serde", default-features = false }
 kvdb = { path = "./kvdb" }
 kvdb-shared-tests = { path = "./kvdb-shared-tests" }
