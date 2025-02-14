@@ -1,28 +1,28 @@
 [package]
 name = "primitive-types"
 version = "0.13.1"
-authors = ["Parity Technologies <admin@parity.io>"]
-license = "MIT OR Apache-2.0"
-homepage = "https://github.com/paritytech/parity-common"
-repository = "https://github.com/paritytech/parity-common"
 description = "Primitive types shared by Ethereum and Substrate"
-edition = "2021"
 rust-version = "1.79.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
-fixed-hash = { version = "0.8", path = "../fixed-hash", default-features = false }
-uint = { version = "0.10.0", path = "../uint", default-features = false }
-impl-serde = { version = "0.5.0", path = "impls/serde", default-features = false, optional = true }
-impl-codec = { version = "0.7.0", path = "impls/codec", default-features = false, optional = true }
-impl-num-traits = { version = "0.2.0", path = "impls/num-traits", default-features = false, optional = true }
-impl-rlp = { version = "0.4", path = "impls/rlp", default-features = false, optional = true }
-scale-info-crate = { package = "scale-info", version = ">=0.9, <3", features = ["derive"], default-features = false, optional = true }
-schemars = { version = ">=0.8.12", default-features = true, optional = true }
+fixed-hash = { workspace = true }
+uint = { workspace = true }
+impl-serde = { workspace = true, optional = true }
+impl-codec = { workspace = true, optional = true }
+impl-num-traits = { workspace = true, optional = true }
+impl-rlp = { workspace = true, optional = true }
+scale-info = { workspace = true, features = ["derive"], optional = true }
+schemars = { workspace = true, optional = true }
 
 [dev-dependencies]
-num-traits = "0.2"
-serde_json = { version = "1.0", default-features = false }
-jsonschema = { version = "0.23", default-features = false }
+num-traits = { workspace = true }
+serde_json = { workspace = true }
+jsonschema = { workspace = true }
 
 [features]
 default = ["std", "rand"]
@@ -33,7 +33,7 @@ serde = ["std", "impl-serde", "impl-serde/std"]
 json-schema = ["dep:schemars"]
 serde_no_std = ["impl-serde"]
 codec = ["impl-codec"]
-scale-info = ["codec", "scale-info-crate"]
+scale-info = ["codec", "dep:scale-info"]
 rlp = ["impl-rlp"]
 arbitrary = ["fixed-hash/arbitrary", "uint/arbitrary"]
 fp-conversion = ["std"]

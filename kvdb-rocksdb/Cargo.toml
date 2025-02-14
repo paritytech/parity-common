@@ -1,44 +1,41 @@
 [package]
 name = "kvdb-rocksdb"
 version = "0.19.0"
-authors = ["Parity Technologies <admin@parity.io>"]
-repository = "https://github.com/paritytech/parity-common"
 description = "kvdb implementation backed by RocksDB"
-license = "MIT OR Apache-2.0"
-edition = "2021"
 rust-version = "1.56.1"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [[bench]]
 name = "bench_read_perf"
 harness = false
 
 [dependencies]
-smallvec = "1.0.0"
-kvdb = { path = "../kvdb", version = "0.13" }
-num_cpus = "1.10.1"
-parking_lot = "0.12.0"
-regex = "1.3.1"
+smallvec = { workspace = true }
+kvdb = { workspace = true }
+num_cpus = { workspace = true }
+parking_lot = { workspace = true }
+regex = { workspace = true }
 
 # OpenBSD and MSVC are unteested and shouldn't enable jemalloc:
 # https://github.com/tikv/jemallocator/blob/52de4257fab3e770f73d5174c12a095b49572fba/jemalloc-sys/build.rs#L26-L27
-[target.'cfg(any(target_os = "openbsd", target_env = "msvc"))'.dependencies.rocksdb]
-default-features = false
-features = ["snappy"]
-version = "0.22.0"
+[target.'cfg(any(target_os = "openbsd", target_env = "msvc"))'.dependencies]
+rocksdb = { workspace = true, features = ["snappy"] }
 
-[target.'cfg(not(any(target_os = "openbsd", target_env = "msvc")))'.dependencies.rocksdb]
-default-features = false
-features = ["snappy", "jemalloc"]
-version = "0.22.0"
+[target.'cfg(not(any(target_os = "openbsd", target_env = "msvc")))'.dependencies]
+rocksdb = { workspace = true, features = ["snappy", "jemalloc"] }
 
 [dev-dependencies]
-alloc_counter = "0.0.4"
-criterion = "0.5"
-ethereum-types = { path = "../ethereum-types", features = ["rand"] }
-kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.11" }
-rand = "0.8.0"
-tempfile = "3.1.0"
-keccak-hash = { path = "../keccak-hash" }
-sysinfo = "0.30.13"
-ctrlc = "3.1.4"
-chrono = "0.4"
+alloc_counter = { workspace = true }
+criterion = { workspace = true }
+ethereum-types = { workspace = true, features = ["rand"] }
+kvdb-shared-tests = { workspace = true }
+rand = { workspace = true, default-features = true }
+tempfile = { workspace = true }
+keccak-hash = { workspace = true }
+sysinfo = { workspace = true }
+ctrlc = { workspace = true }
+chrono = { workspace = true }

@@ -2,20 +2,21 @@
 name = "keccak-hash"
 version = "0.11.0"
 description = "`keccak-hash` is a set of utility functions to facilitate working with Keccak hashes (256/512 bits long)."
-authors = ["Parity Technologies <admin@parity.io>"]
-repository = "https://github.com/paritytech/parity-common"
 readme = "README.md"
-license = "MIT OR Apache-2.0"
-edition = "2021"
 rust-version = "1.56.1"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
-tiny-keccak = { version = "2.0", features = ["keccak"] }
-primitive-types = { path = "../primitive-types", version = "0.13", default-features = false }
+tiny-keccak = { workspace = true, features = ["keccak"] }
+primitive-types = { workspace = true }
 
 [dev-dependencies]
-tempfile = "3.1.0"
-criterion = "0.5.1"
+tempfile = { workspace = true }
+criterion = { workspace = true }
 
 [features]
 default = ["std"]

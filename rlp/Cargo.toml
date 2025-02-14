@@ -2,21 +2,23 @@
 name = "rlp"
 version = "0.6.1"
 description = "Recursive-length prefix encoding, decoding, and compression"
-repository = "https://github.com/paritytech/parity-common"
-license = "MIT OR Apache-2.0"
-authors = ["Parity Technologies <admin@parity.io>"]
-edition = "2021"
+readme = "README.md"
 rust-version = "1.56.1"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
-bytes = { version = "1", default-features = false }
-rustc-hex = { version = "2.0.1", default-features = false }
-rlp-derive = { version = "0.2", path = "../rlp-derive", optional = true }
+bytes = { workspace = true }
+rustc-hex = { workspace = true }
+rlp-derive = { workspace = true, optional = true }
 
 [dev-dependencies]
-criterion = "0.5.1"
-hex-literal = "0.4.1"
-primitive-types = { path = "../primitive-types", version = "0.13", features = ["impl-rlp"] }
+criterion = { workspace = true }
+hex-literal = { workspace = true }
+primitive-types = { workspace = true, default-features = true, features = ["impl-rlp"] }
 
 [features]
 default = ["std"]

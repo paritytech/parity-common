@@ -1,19 +1,20 @@
 [package]
 name = "kvdb-memorydb"
 version = "0.13.0"
-authors = ["Parity Technologies <admin@parity.io>"]
-repository = "https://github.com/paritytech/parity-common"
-description = "A key-value in-memory database that implements the  `KeyValueDB` trait"
-license = "MIT OR Apache-2.0"
-edition = "2021"
+description = "A key-value in-memory database that implements the `KeyValueDB` trait"
 rust-version = "1.56.1"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
-parking_lot = "0.12.0"
-kvdb = { version = "0.13", path = "../kvdb" }
+parking_lot = { workspace = true }
+kvdb = { workspace = true }
 
 [dev-dependencies]
-kvdb-shared-tests = { path = "../kvdb-shared-tests", version = "0.11" }
+kvdb-shared-tests = { workspace = true }
 
 [features]
 default = []
