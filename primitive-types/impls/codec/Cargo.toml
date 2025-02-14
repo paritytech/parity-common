@@ -1,12 +1,13 @@
 [package]
 name = "impl-codec"
 version = "0.7.1"
-authors = ["Parity Technologies <admin@parity.io>"]
-license = "MIT OR Apache-2.0"
-homepage = "https://github.com/paritytech/parity-common"
 description = "Parity Codec serialization support for uint and fixed hash."
-edition = "2021"
 rust-version = "1.56.1"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
 codec = { workspace = true, features = ["max-encoded-len"] }
