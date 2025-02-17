@@ -46,9 +46,9 @@ mod tests {
 	fn hex_encoded_20_bytes() {
 		let schema = H160::json_schema(&mut schemars::gen::SchemaGenerator::default());
 		let schema_json = serde_json::to_value(&schema).unwrap();
-		let schema = jsonschema::JSONSchema::options()
+		let schema = jsonschema::Validator::options()
 			.with_draft(Draft::Draft7)
-			.compile(&schema_json)
+			.build(&schema_json)
 			.unwrap();
 		let value = serde_json::to_value("0x55086adeca661185c437d92b9818e6eda6d0d047").unwrap();
 		assert!(schema.validate(&value).is_ok());
@@ -63,9 +63,9 @@ mod tests {
 	fn u256() {
 		let schema = U256::json_schema(&mut schemars::gen::SchemaGenerator::default());
 		let schema_json = serde_json::to_value(&schema).unwrap();
-		let schema = jsonschema::JSONSchema::options()
+		let schema = jsonschema::Validator::options()
 			.with_draft(Draft::Draft7)
-			.compile(&schema_json)
+			.build(&schema_json)
 			.unwrap();
 		let addr = serde_json::to_value("42").unwrap();
 		assert!(schema.validate(&addr).is_ok());
