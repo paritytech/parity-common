@@ -18,6 +18,8 @@ jobs:
           toolchain: stable
           override: true
 
+      - run: sudo apt-get install libclang-dev
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@82a92a6e8fbeee089604da2575dc567ae9ddeaab # v2.7.5
 
@@ -41,6 +43,13 @@ jobs:
           profile: minimal
           toolchain: 1.79.0
           override: true
+
+      - name: Install Clang (Ubuntu)
+        if: ${{ runner.os == 'Linux' }}
+        run: sudo apt-get install libclang-dev
+      - name: Workaround macOS Clang
+        if: ${{ runner.os == 'macOS' }}
+        run: brew link llvm@15
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@82a92a6e8fbeee089604da2575dc567ae9ddeaab # v2.7.5
