@@ -19,7 +19,7 @@
 
 use crate::{Get, TryCollect};
 use alloc::collections::BTreeMap;
-use codec::{Compact, Decode, Encode, MaxEncodedLen};
+use codec::{Compact, Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::{borrow::Borrow, marker::PhantomData, ops::Deref};
 #[cfg(feature = "serde")]
 use serde::{
@@ -121,6 +121,14 @@ where
 	fn skip<I: codec::Input>(input: &mut I) -> Result<(), codec::Error> {
 		BTreeMap::<K, V>::skip(input)
 	}
+}
+
+impl<K, V, S> DecodeWithMemTracking for BoundedBTreeMap<K, V, S>
+where
+	K: DecodeWithMemTracking + Ord,
+	V: DecodeWithMemTracking,
+	S: Get<u32>,
+{
 }
 
 impl<K, V, S> BoundedBTreeMap<K, V, S>
