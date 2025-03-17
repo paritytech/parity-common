@@ -113,6 +113,7 @@ where
 			return Err("BoundedBTreeMap exceeds its limit".into());
 		}
 		input.descend_ref()?;
+		input.on_before_alloc_mem(codec::mem_size_of_btree::<(K, V)>(len))?;
 		let inner = Result::from_iter((0..len).map(|_| Decode::decode(input)))?;
 		input.ascend_ref();
 		Ok(Self(inner, PhantomData))
@@ -128,6 +129,7 @@ where
 	K: DecodeWithMemTracking + Ord,
 	V: DecodeWithMemTracking,
 	S: Get<u32>,
+	BoundedBTreeMap<K, V, S>: Decode,
 {
 }
 
