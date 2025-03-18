@@ -99,6 +99,39 @@ where
 	}
 }
 
+// Struct which allows prepending the compact after reading from an input.
+struct PrependCompactInput<'a, I> {
+	compact: Compact<u32>,
+	read: u32,
+	inner: &'a mut I,
+}
+
+impl<'a, I: codec::Input> codec::Input for PrependCompactInput<'a, I> {
+	fn remaining_len(&mut self) -> Result<Option<usize>, codec::Error> {
+		// Add the remaining length of the compact, if any to the inner.
+		let remaining_compact = self.compact.encode().len().saturating_sub(self.read as usize);
+		Ok(self.inner.remaining_len()?.map(|len| len + remaining_compact))
+	}
+
+	fn read(&mut self, into: &mut [u8]) -> Result<(), codec::Error> {
+		if into.is_empty() {
+			return Ok(());
+		}
+
+		let compact_bytes = self.compact.encode();
+		let remaining_compact = compact_bytes.len().saturating_sub(self.read as usize);
+
+		if remaining_compact == 0 {
+			return self.inner.read(into);
+		}
+
+		let to_read = into.len().min(remaining_compact);
+		into[..to_read].copy_from_slice(&compact_bytes[self.read as usize..][..to_read]);
+		self.read += to_read as u32;
+		Ok(())
+	}
+}
+
 impl<K, V, S> Decode for BoundedBTreeMap<K, V, S>
 where
 	K: Decode + Ord,
@@ -106,16 +139,13 @@ where
 	S: Get<u32>,
 {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		// Same as the underlying implementation for `Decode` on `BTreeMap`, except we fail early if
-		// the len is too big.
-		let len: u32 = <Compact<u32>>::decode(input)?.into();
-		if len > S::get() {
+		// Fail early if the len is too big. This is a compact u32 which we will later put back.
+		let compact = <Compact<u32>>::decode(input)?;
+		if compact.0 > S::get() {
 			return Err("BoundedBTreeMap exceeds its limit".into());
 		}
-		input.descend_ref()?;
-		input.on_before_alloc_mem(codec::mem_size_of_btree::<(K, V)>(len))?;
-		let inner = Result::from_iter((0..len).map(|_| Decode::decode(input)))?;
-		input.ascend_ref();
+		// Reconstruct the original input by prepending the length we just read, then delegate the decoding to BTreeMap.
+		let inner = BTreeMap::decode(&mut PrependCompactInput { compact, read: 0, inner: input })?;
 		Ok(Self(inner, PhantomData))
 	}
 
@@ -512,6 +542,14 @@ mod test {
 		let m = map_from_keys(&[1, 2, 3, 4, 5, 6]);
 
 		assert_eq!(b.encode(), m.encode());
+	}
+
+	#[test]
+	fn encode_then_decode_gives_original_map() {
+		let b = boundedmap_from_keys::<u32, ConstU32<7>>(&[1, 2, 3, 4, 5, 6]);
+		let b_encode_decode = BoundedBTreeMap::<u32, (), ConstU32<7>>::decode(&mut &b.encode()[..]).unwrap();
+
+		assert_eq!(b_encode_decode, b);
 	}
 
 	#[test]
