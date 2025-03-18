@@ -101,15 +101,15 @@ where
 
 // Struct which allows prepending the compact after reading from an input.
 struct PrependCompactInput<'a, I> {
-	compact: Compact<u32>,
-	read: u32,
+	encoded_len: &'a [u8],
+	read: usize,
 	inner: &'a mut I,
 }
 
 impl<'a, I: codec::Input> codec::Input for PrependCompactInput<'a, I> {
 	fn remaining_len(&mut self) -> Result<Option<usize>, codec::Error> {
 		// Add the remaining length of the compact, if any to the inner.
-		let remaining_compact = self.compact.encode().len().saturating_sub(self.read as usize);
+		let remaining_compact = self.encoded_len.len().saturating_sub(self.read);
 		Ok(self.inner.remaining_len()?.map(|len| len + remaining_compact))
 	}
 
@@ -118,16 +118,15 @@ impl<'a, I: codec::Input> codec::Input for PrependCompactInput<'a, I> {
 			return Ok(());
 		}
 
-		let compact_bytes = self.compact.encode();
-		let remaining_compact = compact_bytes.len().saturating_sub(self.read as usize);
+		let remaining_compact = self.encoded_len.len().saturating_sub(self.read);
 
 		if remaining_compact == 0 {
 			return self.inner.read(into);
 		}
 
 		let to_read = into.len().min(remaining_compact);
-		into[..to_read].copy_from_slice(&compact_bytes[self.read as usize..][..to_read]);
-		self.read += to_read as u32;
+		into[..to_read].copy_from_slice(&self.encoded_len[self.read..][..to_read]);
+		self.read += to_read ;
 		Ok(())
 	}
 }
