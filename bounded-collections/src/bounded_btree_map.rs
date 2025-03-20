@@ -19,7 +19,7 @@
 
 use crate::{Get, TryCollect};
 use alloc::collections::BTreeMap;
-use codec::{Compact, Decode, Encode, MaxEncodedLen};
+use codec::{Compact, Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::{borrow::Borrow, marker::PhantomData, ops::Deref};
 #[cfg(feature = "serde")]
 use serde::{
@@ -99,6 +99,44 @@ where
 	}
 }
 
+// Struct which allows prepending the compact after reading from an input.
+pub(crate) struct PrependCompactInput<'a, I> {
+	encoded_len: &'a [u8],
+	read: usize,
+	inner: &'a mut I,
+}
+
+impl<'a, I: codec::Input> codec::Input for PrependCompactInput<'a, I> {
+	fn remaining_len(&mut self) -> Result<Option<usize>, codec::Error> {
+		let remaining_compact = self.encoded_len.len().saturating_sub(self.read);
+		Ok(self.inner.remaining_len()?.map(|len| len.saturating_add(remaining_compact)))
+	}
+
+	fn read(&mut self, into: &mut [u8]) -> Result<(), codec::Error> {
+		if into.is_empty() {
+			return Ok(());
+		}
+
+		let remaining_compact = self.encoded_len.len().saturating_sub(self.read);
+		if remaining_compact > 0 {
+			let to_read = into.len().min(remaining_compact);
+			into[..to_read].copy_from_slice(&self.encoded_len[self.read..][..to_read]);
+			self.read += to_read;
+
+			if to_read < into.len() {
+				// Buffer not full, keep reading the inner.
+				self.inner.read(&mut into[to_read..])
+			} else {
+				// Buffer was filled by the compact.
+				Ok(())
+			}
+		} else {
+			// Prepended compact has been read, just read from inner.
+			self.inner.read(into)
+		}
+	}
+}
+
 impl<K, V, S> Decode for BoundedBTreeMap<K, V, S>
 where
 	K: Decode + Ord,
@@ -106,21 +144,32 @@ where
 	S: Get<u32>,
 {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		// Same as the underlying implementation for `Decode` on `BTreeMap`, except we fail early if
-		// the len is too big.
-		let len: u32 = <Compact<u32>>::decode(input)?.into();
-		if len > S::get() {
+		// Fail early if the len is too big. This is a compact u32 which we will later put back.
+		let compact = <Compact<u32>>::decode(input)?;
+		if compact.0 > S::get() {
 			return Err("BoundedBTreeMap exceeds its limit".into());
 		}
-		input.descend_ref()?;
-		let inner = Result::from_iter((0..len).map(|_| Decode::decode(input)))?;
-		input.ascend_ref();
+		// Reconstruct the original input by prepending the length we just read, then delegate the decoding to BTreeMap.
+		let inner = BTreeMap::decode(&mut PrependCompactInput {
+			encoded_len: compact.encode().as_ref(),
+			read: 0,
+			inner: input,
+		})?;
 		Ok(Self(inner, PhantomData))
 	}
 
 	fn skip<I: codec::Input>(input: &mut I) -> Result<(), codec::Error> {
 		BTreeMap::<K, V>::skip(input)
 	}
+}
+
+impl<K, V, S> DecodeWithMemTracking for BoundedBTreeMap<K, V, S>
+where
+	K: DecodeWithMemTracking + Ord,
+	V: DecodeWithMemTracking,
+	S: Get<u32>,
+	BoundedBTreeMap<K, V, S>: Decode,
+{
 }
 
 impl<K, V, S> BoundedBTreeMap<K, V, S>
@@ -479,7 +528,7 @@ mod test {
 	use super::*;
 	use crate::ConstU32;
 	use alloc::{vec, vec::Vec};
-	use codec::CompactLen;
+	use codec::{CompactLen, Input};
 
 	fn map_from_keys<K>(keys: &[K]) -> BTreeMap<K, ()>
 	where
@@ -502,6 +551,14 @@ mod test {
 		let m = map_from_keys(&[1, 2, 3, 4, 5, 6]);
 
 		assert_eq!(b.encode(), m.encode());
+	}
+
+	#[test]
+	fn encode_then_decode_gives_original_map() {
+		let b = boundedmap_from_keys::<u32, ConstU32<7>>(&[1, 2, 3, 4, 5, 6]);
+		let b_encode_decode = BoundedBTreeMap::<u32, (), ConstU32<7>>::decode(&mut &b.encode()[..]).unwrap();
+
+		assert_eq!(b_encode_decode, b);
 	}
 
 	#[test]
@@ -719,6 +776,57 @@ mod test {
 			[1, 2, 3, 4].into_iter().map(|k| (k, (k as u16) * 100)).try_collect().unwrap();
 
 		assert_eq!(Ok(b2), b1.try_map(|(_, v)| (v as u16).checked_mul(100_u16).ok_or("overflow")));
+	}
+
+	#[test]
+	fn prepend_compact_input_works() {
+		let encoded_len = Compact(3u32).encode();
+		let inner = [2, 3, 4];
+		let mut input = PrependCompactInput { encoded_len: encoded_len.as_ref(), read: 0, inner: &mut &inner[..] };
+		assert_eq!(input.remaining_len(), Ok(Some(4)));
+
+		// Passing an empty buffer should leave input unchanged.
+		let mut empty_buf = [];
+		assert_eq!(input.read(&mut empty_buf), Ok(()));
+		assert_eq!(input.remaining_len(), Ok(Some(4)));
+		assert_eq!(input.read, 0);
+
+		// Passing a correctly-sized buffer will read correctly.
+		let mut buf = [0; 4];
+		assert_eq!(input.read(&mut buf), Ok(()));
+		assert_eq!(buf[0], encoded_len[0]);
+		assert_eq!(buf[1..], inner[..]);
+		// And the bookkeeping agrees.
+		assert_eq!(input.remaining_len(), Ok(Some(0)));
+		assert_eq!(input.read, encoded_len.len());
+
+		// And we can't read more.
+		assert!(input.read(&mut buf).is_err());
+	}
+
+	#[test]
+	fn prepend_compact_input_incremental_read_works() {
+		let encoded_len = Compact(3u32).encode();
+		let inner = [2, 3, 4];
+		let mut input = PrependCompactInput { encoded_len: encoded_len.as_ref(), read: 0, inner: &mut &inner[..] };
+		assert_eq!(input.remaining_len(), Ok(Some(4)));
+
+		// Compact is first byte - ensure that it fills the buffer when it's more than one.
+		let mut buf = [0u8; 2];
+		assert_eq!(input.read(&mut buf), Ok(()));
+		assert_eq!(buf[0], encoded_len[0]);
+		assert_eq!(buf[1], inner[0]);
+		assert_eq!(input.remaining_len(), Ok(Some(2)));
+		assert_eq!(input.read, encoded_len.len());
+
+		// Check the last two bytes are read correctly.
+		assert_eq!(input.read(&mut buf), Ok(()));
+		assert_eq!(buf[..], inner[1..]);
+		assert_eq!(input.remaining_len(), Ok(Some(0)));
+		assert_eq!(input.read, encoded_len.len());
+
+		// And we can't read more.
+		assert!(input.read(&mut buf).is_err());
 	}
 
 	// Just a test that structs containing `BoundedBTreeMap` can derive `Hash`. (This was broken

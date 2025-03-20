@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
+## [0.2.4] - 2025-03-20
+- Implement DecodeWithMemTracking for BoundedBTreeMap [#906](https://github.com/paritytech/parity-common/pull/906)
+
 ## [0.2.3] - 2025-02-11
 - Implement DecodeWithMemTracking for some structs [#897](https://github.com/paritytech/parity-common/pull/897)
 

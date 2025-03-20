@@ -1,6 +1,6 @@
 [package]
 name = "bounded-collections"
-version = "0.2.3"
+version = "0.2.4"
 description = "Bounded types and their supporting traits"
 readme = "README.md"
 rust-version = "1.79.0"
