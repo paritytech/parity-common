@@ -45,15 +45,14 @@ pub trait Get<T> {
 	fn get() -> T;
 }
 
-pub struct GetInto<Inner>(core::marker::PhantomData<Inner>);
+pub struct GetInto<Inner, I, R>(core::marker::PhantomData<(Inner, I, R)>);
 
-impl<Inner, I, R> Get<R> for GetInto<Inner>
+impl<Inner, I, R> Get<R> for GetInto<Inner, I, R>
 where
     Inner: Get<I>,
     I: Into<R>,
 {
     fn get() -> R {
-        // Get I from Inner, then convert to R
         Inner::get().into()
     }
 }
