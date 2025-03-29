@@ -45,6 +45,19 @@ pub trait Get<T> {
 	fn get() -> T;
 }
 
+pub struct GetInto<Inner>(core::marker::PhantomData<Inner>);
+
+impl<Inner, I, R> Get<R> for GetInto<Inner>
+where
+    Inner: Get<I>,
+    I: Into<R>,
+{
+    fn get() -> R {
+        // Get I from Inner, then convert to R
+        Inner::get().into()
+    }
+}
+
 impl<T: Default> Get<T> for () {
 	fn get() -> T {
 		T::default()
