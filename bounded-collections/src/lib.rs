@@ -45,6 +45,20 @@ pub trait Get<T> {
 	fn get() -> T;
 }
 
+/// Converts [`Get<I>`] to [`Get<R>`] using [`Into`].
+///
+/// Acts as a type-safe bridge between `Get` implementations where `I: Into<R>`.
+///
+/// - `Inner`: The [`Get<I>`] implementation
+/// - `I`: Source type to convert from
+/// - `R`: Target type to convert into
+///
+/// # Example
+/// ```
+/// struct MyGetter;
+/// impl Get<u16> for MyGetter { fn get() -> u16 { 42 } }
+/// assert_eq!(GetInto::<MyGetter, u16, u32>::get(), 42u32);
+/// ```
 pub struct GetInto<Inner, I, R>(core::marker::PhantomData<(Inner, I, R)>);
 
 impl<Inner, I, R> Get<R> for GetInto<Inner, I, R>
@@ -52,6 +66,9 @@ where
     Inner: Get<I>,
     I: Into<R>,
 {
+	/// Returns the converted value by:
+    /// 1. Getting the inner value of type `I` 
+    /// 2. Converting it to type `R` using [`Into`]
     fn get() -> R {
         Inner::get().into()
     }
