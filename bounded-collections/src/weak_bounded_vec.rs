@@ -445,7 +445,7 @@ where
 	fn max_encoded_len() -> usize {
 		// WeakBoundedVec<T, S> encodes like Vec<T> which encodes like [T], which is a compact u32
 		// plus each item in the slice:
-		// See: https://docs.substrate.io/reference/scale-codec/
+		// See: https://docs.polkadot.com/polkadot-protocol/basics/data-encoding/#scale-codec-libraries
 		codec::Compact(S::get())
 			.encoded_size()
 			.saturating_add(Self::bound().saturating_mul(T::max_encoded_len()))
