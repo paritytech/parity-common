@@ -51,56 +51,35 @@ impl<T: Default> Get<T> for () {
 	}
 }
 
-/// Provides type conversion for [`Get<T>`] implementations using [`Into`]
+/// Converts [`Get<I>`] to [`Get<R>`] using [`Into`].
 ///
-/// This extension trait enables ergonomic conversion of values obtained through
-/// the [`Get<T>`] trait to different types via Rust's standard [`Into`] conversion.
+/// Acts as a type-safe bridge between `Get` implementations where `I: Into<R>`.
 ///
-/// # Usage Pattern
-/// The trait serves two primary purposes:
-/// 1. Add conversion capabilities to existing [`Get<T>`] implementations
-/// 2. Enable method chaining for type conversions
+/// - `Inner`: The [`Get<I>`] implementation
+/// - `I`: Source type to convert from
+/// - `R`: Target type to convert into
 ///
-/// # Type Parameters
-/// - `T`: Source type being converted from (inferred from [`Get<T>`] implementation)
-/// - `I`: Target type being converted into (must be specified explicitly)
-/// # Examples
+/// # Example
 /// ```
 /// use bounded_collections::Get;
 /// use bounded_collections::GetInto;
 ///
-/// struct Foo;
-/// impl Get<u32> for Foo {
-/// 	fn get() -> u32 { 42 }
-/// }
-/// struct Bar;
-/// impl Get<u16> for Bar {
-///    fn get() -> u16 { 42 }
-/// }
-/// fn main() {
-/// let x: u32 = Bar::get_into();
-/// }
+/// struct MyGetter;
+/// impl Get<u16> for MyGetter { fn get() -> u16 { 42 } }
+/// assert_eq!(GetInto::<MyGetter, u16, u32>::get(), 42u32);
 /// ```
-pub trait GetInto<T, I> {
-	/// Converts the [`Get<T>`] output to type `I` using [`Into`]
-	///
-	/// This method performs two operations in sequence:
-	/// 1. Retrieves the value using [`Get<T>::get`]
-	/// 2. Converts the result to type `I` using [`Into::into`]
-	///
-	/// # Note on Type Inference
-	/// The source type `T` is inferred from the [`Get<T>`] implementation,
-	/// while the target type `I` must be explicitly specified.
-	fn get_into() -> I;
-}
+pub struct GetInto<Inner, I, R>(core::marker::PhantomData<(Inner, I, R)>);
 
-impl<G, T, I> GetInto<T, I> for G
+impl<Inner, I, R> Get<R> for GetInto<Inner, I, R>
 where
-	G: Get<T>,
-	T: Into<I>,
+	Inner: Get<I>,
+	I: Into<R>,
 {
-	fn get_into() -> I {
-		G::get().into()
+	/// Returns the converted value by:
+	/// 1. Getting the inner value of type `I`
+	/// 2. Converting it to type `R` using [`Into`]
+	fn get() -> R {
+		Inner::get().into()
 	}
 }
 
