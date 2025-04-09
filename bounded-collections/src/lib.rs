@@ -51,6 +51,38 @@ impl<T: Default> Get<T> for () {
 	}
 }
 
+/// Converts [`Get<I>`] to [`Get<R>`] using [`Into`].
+///
+/// Acts as a type-safe bridge between `Get` implementations where `I: Into<R>`.
+///
+/// - `Inner`: The [`Get<I>`] implementation
+/// - `I`: Source type to convert from
+///
+/// # Example
+/// ```
+/// use bounded_collections::Get;
+/// use bounded_collections::GetInto;
+///
+/// struct MyGetter;
+/// impl Get<u16> for MyGetter { fn get() -> u16 { 42 } }
+/// let foo: u32 = GetInto::<MyGetter, u16>::get();
+/// assert_eq!(foo, 42u32); // <--- infered as u32
+/// ```
+pub struct GetInto<Inner, I>(core::marker::PhantomData<(Inner, I)>);
+
+impl<Inner, I, R> Get<R> for GetInto<Inner, I>
+where
+	Inner: Get<I>,
+	I: Into<R>,
+{
+	/// Returns the converted value by:
+	/// 1. Getting the inner value of type `I`
+	/// 2. Converting it to type `R` using [`Into`]
+	fn get() -> R {
+		Inner::get().into()
+	}
+}
+
 /// Implement Get by returning Default for any type that implements Default.
 pub struct GetDefault;
 impl<T: Default> Get<T> for GetDefault {
