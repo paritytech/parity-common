@@ -57,7 +57,6 @@ impl<T: Default> Get<T> for () {
 ///
 /// - `Inner`: The [`Get<I>`] implementation
 /// - `I`: Source type to convert from
-/// - `R`: Target type to convert into
 ///
 /// # Example
 /// ```
@@ -66,11 +65,12 @@ impl<T: Default> Get<T> for () {
 ///
 /// struct MyGetter;
 /// impl Get<u16> for MyGetter { fn get() -> u16 { 42 } }
-/// assert_eq!(GetInto::<MyGetter, u16, u32>::get(), 42u32);
+/// let foo: u32 = GetInto::<MyGetter, u16>::get();
+/// assert_eq!(foo, 42u32); // <--- infered as u32
 /// ```
-pub struct GetInto<Inner, I, R>(core::marker::PhantomData<(Inner, I, R)>);
+pub struct GetInto<Inner, I>(core::marker::PhantomData<(Inner, I)>);
 
-impl<Inner, I, R> Get<R> for GetInto<Inner, I, R>
+impl<Inner, I, R> Get<R> for GetInto<Inner, I>
 where
 	Inner: Get<I>,
 	I: Into<R>,
