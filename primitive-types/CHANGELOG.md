@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+### Breaking
+- removed `byteorder` feature [#872](https://github.com/paritytech/parity-common/pull/872)
 
 ## [0.13.1] - 2024-09-12
 - Updated `uint` to 0.10. [#859](https://github.com/paritytech/parity-common/pull/859)
