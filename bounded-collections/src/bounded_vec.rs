@@ -21,7 +21,6 @@
 use super::WeakBoundedVec;
 use crate::{Get, TryCollect};
 use alloc::vec::Vec;
-use codec::{decode_vec_with_len, Compact, Decode, DecodeWithMemTracking, Encode, EncodeLike, MaxEncodedLen};
 use core::{
 	marker::PhantomData,
 	ops::{Deref, Index, IndexMut, RangeBounds},
@@ -41,8 +40,9 @@ use serde::{
 /// As the name suggests, the length of the queue is always bounded. All internal operations ensure
 /// this bound is respected.
 #[cfg_attr(feature = "serde", derive(Serialize), serde(transparent))]
-#[derive(Encode, scale_info::TypeInfo)]
-#[scale_info(skip_type_params(S))]
+#[cfg_attr(feature = "jam-codec", derive(jam_codec::Encode))]
+#[cfg_attr(feature = "scale-codec", derive(scale_codec::Encode, scale_info::TypeInfo))]
+#[cfg_attr(feature = "scale-codec", scale_info(skip_type_params(S)))]
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub struct BoundedVec<T, S>(pub(super) Vec<T>, #[cfg_attr(feature = "serde", serde(skip_serializing))] PhantomData<S>);
 
@@ -53,70 +53,69 @@ pub trait TruncateFrom<T> {
 }
 
 #[cfg(feature = "serde")]
-impl<'de, T, S: Get<u32>> Deserialize<'de> for BoundedVec<T, S>
-where
-	T: Deserialize<'de>,
-{
-	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+mod serde_impl {
+	use super::*;
+
+	impl<'de, T, S: Get<u32>> Deserialize<'de> for BoundedVec<T, S>
 	where
-		D: Deserializer<'de>,
+		T: Deserialize<'de>,
 	{
-		struct VecVisitor<T, S: Get<u32>>(PhantomData<(T, S)>);
-
-		impl<'de, T, S: Get<u32>> Visitor<'de> for VecVisitor<T, S>
+		fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
 		where
-			T: Deserialize<'de>,
+			D: Deserializer<'de>,
 		{
-			type Value = Vec<T>;
+			struct VecVisitor<T, S: Get<u32>>(PhantomData<(T, S)>);
 
-			fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
-				formatter.write_str("a sequence")
-			}
-
-			fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+			impl<'de, T, S: Get<u32>> Visitor<'de> for VecVisitor<T, S>
 			where
-				A: SeqAccess<'de>,
+				T: Deserialize<'de>,
 			{
-				let size = seq.size_hint().unwrap_or(0);
-				let max = match usize::try_from(S::get()) {
-					Ok(n) => n,
-					Err(_) => return Err(A::Error::custom("can't convert to usize")),
-				};
-				if size > max {
-					Err(A::Error::custom("out of bounds"))
-				} else {
-					let mut values = Vec::with_capacity(size);
+				type Value = Vec<T>;
 
-					while let Some(value) = seq.next_element()? {
-						if values.len() >= max {
-							return Err(A::Error::custom("out of bounds"))
+				fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
+					formatter.write_str("a sequence")
+				}
+
+				fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+				where
+					A: SeqAccess<'de>,
+				{
+					let size = seq.size_hint().unwrap_or(0);
+					let max = match usize::try_from(S::get()) {
+						Ok(n) => n,
+						Err(_) => return Err(A::Error::custom("can't convert to usize")),
+					};
+					if size > max {
+						Err(A::Error::custom("out of bounds"))
+					} else {
+						let mut values = Vec::with_capacity(size);
+
+						while let Some(value) = seq.next_element()? {
+							if values.len() >= max {
+								return Err(A::Error::custom("out of bounds"));
+							}
+							values.push(value);
 						}
-						values.push(value);
-					}
 
-					Ok(values)
+						Ok(values)
+					}
 				}
 			}
-		}
 
-		let visitor: VecVisitor<T, S> = VecVisitor(PhantomData);
-		deserializer
-			.deserialize_seq(visitor)
-			.map(|v| BoundedVec::<T, S>::try_from(v).map_err(|_| Error::custom("out of bounds")))?
+			let visitor: VecVisitor<T, S> = VecVisitor(PhantomData);
+			deserializer
+				.deserialize_seq(visitor)
+				.map(|v| BoundedVec::<T, S>::try_from(v).map_err(|_| Error::custom("out of bounds")))?
+		}
 	}
 }
 
 /// A bounded slice.
 ///
 /// Similar to a `BoundedVec`, but not owned and cannot be decoded.
-#[derive(Encode, scale_info::TypeInfo)]
+#[cfg_attr(feature = "scale-codec", derive(scale_codec::Encode, scale_info::TypeInfo))]
+#[cfg_attr(feature = "jam-codec", derive(jam_codec::Encode))]
 pub struct BoundedSlice<'a, T, S>(pub(super) &'a [T], PhantomData<S>);
-
-// `BoundedSlice`s encode to something which will always decode into a `BoundedVec`,
-// `WeakBoundedVec`, or a `Vec`.
-impl<'a, T: Encode + Decode, S: Get<u32>> EncodeLike<BoundedVec<T, S>> for BoundedSlice<'a, T, S> {}
-impl<'a, T: Encode + Decode, S: Get<u32>> EncodeLike<WeakBoundedVec<T, S>> for BoundedSlice<'a, T, S> {}
-impl<'a, T: Encode + Decode, S: Get<u32>> EncodeLike<Vec<T>> for BoundedSlice<'a, T, S> {}
 
 impl<'a, T, BoundSelf, BoundRhs> PartialEq<BoundedSlice<'a, T, BoundRhs>> for BoundedSlice<'a, T, BoundSelf>
 where
@@ -267,28 +266,6 @@ impl<'a, T, S: Get<u32>> BoundedSlice<'a, T, S> {
 		Self(&s[0..(s.len().min(S::get() as usize))], PhantomData)
 	}
 }
-
-impl<T: Decode, S: Get<u32>> Decode for BoundedVec<T, S> {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		// Same as the underlying implementation for `Decode` on `Vec`, except we fail early if the
-		// len is too big.
-		let len: u32 = <Compact<u32>>::decode(input)?.into();
-		if len > S::get() {
-			return Err("BoundedVec exceeds its limit".into())
-		}
-		let inner = decode_vec_with_len(input, len as usize)?;
-		Ok(Self(inner, PhantomData))
-	}
-
-	fn skip<I: codec::Input>(input: &mut I) -> Result<(), codec::Error> {
-		Vec::<T>::skip(input)
-	}
-}
-
-impl<T: DecodeWithMemTracking, S: Get<u32>> DecodeWithMemTracking for BoundedVec<T, S> {}
-
-// `BoundedVec`s encode to something which will always decode as a `Vec`.
-impl<T: Encode + Decode, S: Get<u32>> EncodeLike<Vec<T>> for BoundedVec<T, S> {}
 
 impl<T, S> BoundedVec<T, S> {
 	/// Create `Self` with no items.
@@ -798,14 +775,6 @@ impl<'a, T, S> core::iter::IntoIterator for &'a mut BoundedVec<T, S> {
 	}
 }
 
-impl<T, S> codec::DecodeLength for BoundedVec<T, S> {
-	fn len(self_encoded: &[u8]) -> Result<usize, codec::Error> {
-		// `BoundedVec<T, _>` stored just a `Vec<T>`, thus the length is at the beginning in
-		// `Compact` form, and same implementation as `Vec<T>` can be used.
-		<Vec<T> as codec::DecodeLength>::len(self_encoded)
-	}
-}
-
 impl<T, BoundSelf, BoundRhs> PartialEq<BoundedVec<T, BoundRhs>> for BoundedVec<T, BoundSelf>
 where
 	T: PartialEq,
@@ -892,22 +861,6 @@ impl<T: Ord, Bound: Get<u32>> Ord for BoundedVec<T, Bound> {
 	}
 }
 
-impl<T, S> MaxEncodedLen for BoundedVec<T, S>
-where
-	T: MaxEncodedLen,
-	S: Get<u32>,
-	BoundedVec<T, S>: Encode,
-{
-	fn max_encoded_len() -> usize {
-		// BoundedVec<T, S> encodes like Vec<T> which encodes like [T], which is a compact u32
-		// plus each item in the slice:
-		// See: https://docs.substrate.io/reference/scale-codec/
-		codec::Compact(S::get())
-			.encoded_size()
-			.saturating_add(Self::bound().saturating_mul(T::max_encoded_len()))
-	}
-}
-
 impl<I, T, Bound> TryCollect<BoundedVec<T, Bound>> for I
 where
 	I: ExactSizeIterator + Iterator<Item = T>,
@@ -924,13 +877,90 @@ where
 	}
 }
 
+macro_rules! codec_impl {
+	($codec:ident) => {
+		use super::*;
+
+		use $codec::{
+			decode_vec_with_len, Compact, Decode, DecodeLength, DecodeWithMemTracking, Encode, EncodeLike, Error,
+			Input, MaxEncodedLen,
+		};
+
+		impl<T: Decode, S: Get<u32>> Decode for BoundedVec<T, S> {
+			fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
+				// Same as the underlying implementation for `Decode` on `Vec`, except we fail early if the
+				// len is too big.
+				let len: u32 = <Compact<u32>>::decode(input)?.into();
+				if len > S::get() {
+					return Err("BoundedVec exceeds its limit".into());
+				}
+				let inner = decode_vec_with_len(input, len as usize)?;
+				Ok(Self(inner, PhantomData))
+			}
+
+			fn skip<I: Input>(input: &mut I) -> Result<(), Error> {
+				Vec::<T>::skip(input)
+			}
+		}
+
+		impl<T: DecodeWithMemTracking, S: Get<u32>> DecodeWithMemTracking for BoundedVec<T, S> {}
+
+		// `BoundedVec`s encode to something which will always decode as a `Vec`.
+		impl<T: Encode + Decode, S: Get<u32>> EncodeLike<Vec<T>> for BoundedVec<T, S> {}
+
+		impl<T, S> MaxEncodedLen for BoundedVec<T, S>
+		where
+			T: MaxEncodedLen,
+			S: Get<u32>,
+			BoundedVec<T, S>: Encode,
+		{
+			fn max_encoded_len() -> usize {
+				// BoundedVec<T, S> encodes like Vec<T> which encodes like [T], which is a compact u32
+				// plus each item in the slice:
+				// See: https://docs.substrate.io/reference/scale-codec/
+				Compact(S::get())
+					.encoded_size()
+					.saturating_add(Self::bound().saturating_mul(T::max_encoded_len()))
+			}
+		}
+
+		impl<T, S> DecodeLength for BoundedVec<T, S> {
+			fn len(self_encoded: &[u8]) -> Result<usize, Error> {
+				// `BoundedVec<T, _>` stored just a `Vec<T>`, thus the length is at the beginning in
+				// `Compact` form, and same implementation as `Vec<T>` can be used.
+				<Vec<T> as DecodeLength>::len(self_encoded)
+			}
+		}
+
+		// `BoundedSlice`s encode to something which will always decode into a `BoundedVec`,
+		// `WeakBoundedVec`, or a `Vec`.
+		impl<'a, T: Encode + Decode, S: Get<u32>> EncodeLike<BoundedVec<T, S>> for BoundedSlice<'a, T, S> {}
+
+		impl<'a, T: Encode + Decode, S: Get<u32>> EncodeLike<WeakBoundedVec<T, S>> for BoundedSlice<'a, T, S> {}
+
+		impl<'a, T: Encode + Decode, S: Get<u32>> EncodeLike<Vec<T>> for BoundedSlice<'a, T, S> {}
+	};
+}
+
+#[cfg(feature = "scale-codec")]
+mod scale_codec_impl {
+	codec_impl!(scale_codec);
+}
+
+#[cfg(feature = "jam-codec")]
+mod jam_codec_impl {
+	codec_impl!(jam_codec);
+}
+
 #[cfg(all(test, feature = "std"))]
 mod test {
 	use super::*;
 	use crate::{bounded_vec, ConstU32};
-	use codec::CompactLen;
+	#[cfg(feature = "scale-codec")]
+	use scale_codec::{Compact, CompactLen, Decode, Encode};
 
 	#[test]
+	#[cfg(feature = "scale-codec")]
 	fn encoding_same_as_unbounded_vec() {
 		let b: BoundedVec<u32, ConstU32<6>> = bounded_vec![0, 1, 2, 3, 4, 5];
 		let v: Vec<u32> = vec![0, 1, 2, 3, 4, 5];
@@ -1126,6 +1156,7 @@ mod test {
 	}
 
 	#[test]
+	#[cfg(feature = "scale-codec")]
 	fn too_big_vec_fail_to_decode() {
 		let v: Vec<u32> = vec![1, 2, 3, 4, 5];
 		assert_eq!(
@@ -1135,6 +1166,7 @@ mod test {
 	}
 
 	#[test]
+	#[cfg(feature = "scale-codec")]
 	fn dont_consume_more_data_than_bounded_len() {
 		let v: Vec<u32> = vec![1, 2, 3, 4, 5];
 		let data = v.encode();

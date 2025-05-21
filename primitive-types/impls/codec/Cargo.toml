@@ -10,8 +10,8 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-codec = { workspace = true, features = ["max-encoded-len"] }
+scale-codec = { workspace = true, features = ["max-encoded-len"] }
 
 [features]
 default = ["std"]
-std = ["codec/std"]
+std = ["scale-codec/std"]
