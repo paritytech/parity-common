@@ -14,9 +14,9 @@ repository.workspace = true
 serde = { workspace = true, features = ["alloc", "derive"], optional = true }
 scale-codec = { workspace = true, default-features = false, features = ["max-encoded-len"], optional = true }
 scale-info = { workspace = true, features = ["derive"], optional = true }
+jam-codec = { workspace = true, features = ["derive","max-encoded-len"], optional = true }
 log = { workspace = true }
 schemars = { workspace = true, optional = true }
-jam-codec = { version = "0.1.0", default-features = false, features = ["derive","max-encoded-len"], optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
