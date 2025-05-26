@@ -21,7 +21,6 @@
 use super::{BoundedSlice, BoundedVec};
 use crate::Get;
 use alloc::vec::Vec;
-use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::{
 	marker::PhantomData,
 	ops::{Deref, Index, IndexMut},
@@ -41,8 +40,9 @@ use serde::{
 /// The length of the vec is not strictly bounded. Decoding a vec with more element that the bound
 /// is accepted, and some method allow to bypass the restriction with warnings.
 #[cfg_attr(feature = "serde", derive(Serialize), serde(transparent))]
-#[derive(Encode, scale_info::TypeInfo)]
-#[scale_info(skip_type_params(S))]
+#[cfg_attr(feature = "scale-codec", derive(scale_codec::Encode, scale_info::TypeInfo))]
+#[cfg_attr(feature = "scale-codec", scale_info(skip_type_params(S)))]
+#[cfg_attr(feature = "jam-codec", derive(jam_codec::Encode))]
 pub struct WeakBoundedVec<T, S>(
 	pub(super) Vec<T>,
 	#[cfg_attr(feature = "serde", serde(skip_serializing))] PhantomData<S>,
@@ -106,19 +106,6 @@ where
 			.map(|v| WeakBoundedVec::<T, S>::try_from(v).map_err(|_| Error::custom("out of bounds")))?
 	}
 }
-
-impl<T: Decode, S: Get<u32>> Decode for WeakBoundedVec<T, S> {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let inner = Vec::<T>::decode(input)?;
-		Ok(Self::force_from(inner, Some("decode")))
-	}
-
-	fn skip<I: codec::Input>(input: &mut I) -> Result<(), codec::Error> {
-		Vec::<T>::skip(input)
-	}
-}
-
-impl<T: DecodeWithMemTracking, S: Get<u32>> DecodeWithMemTracking for WeakBoundedVec<T, S> {}
 
 impl<T, S> WeakBoundedVec<T, S> {
 	/// Create `Self` from `t` without any checks.
@@ -348,14 +335,6 @@ impl<'a, T, S> core::iter::IntoIterator for &'a mut WeakBoundedVec<T, S> {
 	}
 }
 
-impl<T, S> codec::DecodeLength for WeakBoundedVec<T, S> {
-	fn len(self_encoded: &[u8]) -> Result<usize, codec::Error> {
-		// `WeakBoundedVec<T, _>` stored just a `Vec<T>`, thus the length is at the beginning in
-		// `Compact` form, and same implementation as `Vec<T>` can be used.
-		<Vec<T> as codec::DecodeLength>::len(self_encoded)
-	}
-}
-
 impl<T, BoundSelf, BoundRhs> PartialEq<WeakBoundedVec<T, BoundRhs>> for WeakBoundedVec<T, BoundSelf>
 where
 	T: PartialEq,
@@ -436,20 +415,59 @@ impl<T: Ord, S: Get<u32>> Ord for WeakBoundedVec<T, S> {
 	}
 }
 
-impl<T, S> MaxEncodedLen for WeakBoundedVec<T, S>
-where
-	T: MaxEncodedLen,
-	S: Get<u32>,
-	WeakBoundedVec<T, S>: Encode,
-{
-	fn max_encoded_len() -> usize {
-		// WeakBoundedVec<T, S> encodes like Vec<T> which encodes like [T], which is a compact u32
-		// plus each item in the slice:
-		// See: https://docs.polkadot.com/polkadot-protocol/basics/data-encoding/#scale-codec-libraries
-		codec::Compact(S::get())
-			.encoded_size()
-			.saturating_add(Self::bound().saturating_mul(T::max_encoded_len()))
-	}
+#[cfg(any(feature = "scale-codec", feature = "jam-codec"))]
+macro_rules! codec_impl {
+	($codec:ident) => {
+		use super::*;
+		use $codec::{Compact, Decode, DecodeLength, DecodeWithMemTracking, Encode, Error, Input, MaxEncodedLen};
+
+		impl<T, S> MaxEncodedLen for WeakBoundedVec<T, S>
+		where
+			T: MaxEncodedLen,
+			S: Get<u32>,
+			WeakBoundedVec<T, S>: Encode,
+		{
+			fn max_encoded_len() -> usize {
+				// WeakBoundedVec<T, S> encodes like Vec<T> which encodes like [T], which is a compact u32
+				// plus each item in the slice:
+				// See: https://docs.polkadot.com/polkadot-protocol/basics/data-encoding/#scale-codec-libraries
+				Compact(S::get())
+					.encoded_size()
+					.saturating_add(Self::bound().saturating_mul(T::max_encoded_len()))
+			}
+		}
+
+		impl<T: Decode, S: Get<u32>> Decode for WeakBoundedVec<T, S> {
+			fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
+				let inner = Vec::<T>::decode(input)?;
+				Ok(Self::force_from(inner, Some("decode")))
+			}
+
+			fn skip<I: Input>(input: &mut I) -> Result<(), Error> {
+				Vec::<T>::skip(input)
+			}
+		}
+
+		impl<T: DecodeWithMemTracking, S: Get<u32>> DecodeWithMemTracking for WeakBoundedVec<T, S> {}
+
+		impl<T, S> DecodeLength for WeakBoundedVec<T, S> {
+			fn len(self_encoded: &[u8]) -> Result<usize, Error> {
+				// `WeakBoundedVec<T, _>` stored just a `Vec<T>`, thus the length is at the beginning in
+				// `Compact` form, and same implementation as `Vec<T>` can be used.
+				<Vec<T> as DecodeLength>::len(self_encoded)
+			}
+		}
+	};
+}
+
+#[cfg(feature = "scale-codec")]
+mod scale_impl {
+	codec_impl!(scale_codec);
+}
+
+#[cfg(feature = "jam-codec")]
+mod jam_impl {
+	codec_impl!(jam_codec);
 }
 
 #[cfg(test)]
@@ -457,6 +475,8 @@ mod test {
 	use super::*;
 	use crate::ConstU32;
 	use alloc::vec;
+	#[cfg(feature = "scale-codec")]
+	use scale_codec::{Decode, Encode};
 
 	#[test]
 	fn bound_returns_correct_value() {
@@ -519,6 +539,7 @@ mod test {
 	}
 
 	#[test]
+	#[cfg(feature = "scale-codec")]
 	fn too_big_succeed_to_decode() {
 		let v: Vec<u32> = vec![1, 2, 3, 4, 5];
 		let w = WeakBoundedVec::<u32, ConstU32<4>>::decode(&mut &v.encode()[..]).unwrap();

@@ -19,7 +19,6 @@
 
 use crate::{Get, TryCollect};
 use alloc::collections::BTreeSet;
-use codec::{Compact, Decode, Encode, MaxEncodedLen};
 use core::{borrow::Borrow, marker::PhantomData, ops::Deref};
 #[cfg(feature = "serde")]
 use serde::{
@@ -35,8 +34,9 @@ use serde::{
 /// Unlike a standard `BTreeSet`, there is an enforced upper limit to the number of items in the
 /// set. All internal operations ensure this bound is respected.
 #[cfg_attr(feature = "serde", derive(Serialize), serde(transparent))]
-#[derive(Encode, scale_info::TypeInfo)]
-#[scale_info(skip_type_params(S))]
+#[cfg_attr(feature = "scale-codec", derive(scale_codec::Encode, scale_info::TypeInfo))]
+#[cfg_attr(feature = "scale-codec", scale_info(skip_type_params(S)))]
+#[cfg_attr(feature = "jam-codec", derive(jam_codec::Encode))]
 pub struct BoundedBTreeSet<T, S>(BTreeSet<T>, #[cfg_attr(feature = "serde", serde(skip_serializing))] PhantomData<S>);
 
 #[cfg(feature = "serde")]
@@ -79,7 +79,7 @@ where
 
 					while let Some(value) = seq.next_element()? {
 						if values.len() >= max {
-							return Err(A::Error::custom("out of bounds"))
+							return Err(A::Error::custom("out of bounds"));
 						}
 						values.insert(value);
 					}
@@ -93,29 +93,6 @@ where
 		deserializer
 			.deserialize_seq(visitor)
 			.map(|v| BoundedBTreeSet::<T, S>::try_from(v).map_err(|_| Error::custom("out of bounds")))?
-	}
-}
-
-impl<T, S> Decode for BoundedBTreeSet<T, S>
-where
-	T: Decode + Ord,
-	S: Get<u32>,
-{
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		// Same as the underlying implementation for `Decode` on `BTreeSet`, except we fail early if
-		// the len is too big.
-		let len: u32 = <Compact<u32>>::decode(input)?.into();
-		if len > S::get() {
-			return Err("BoundedBTreeSet exceeds its limit".into())
-		}
-		input.descend_ref()?;
-		let inner = Result::from_iter((0..len).map(|_| Decode::decode(input)))?;
-		input.ascend_ref();
-		Ok(Self(inner, PhantomData))
-	}
-
-	fn skip<I: codec::Input>(input: &mut I) -> Result<(), codec::Error> {
-		BTreeSet::<T>::skip(input)
 	}
 }
 
@@ -318,18 +295,6 @@ impl<'a, T, S> IntoIterator for &'a BoundedBTreeSet<T, S> {
 	}
 }
 
-impl<T, S> MaxEncodedLen for BoundedBTreeSet<T, S>
-where
-	T: MaxEncodedLen,
-	S: Get<u32>,
-{
-	fn max_encoded_len() -> usize {
-		Self::bound()
-			.saturating_mul(T::max_encoded_len())
-			.saturating_add(codec::Compact(S::get()).encoded_size())
-	}
-}
-
 impl<T, S> Deref for BoundedBTreeSet<T, S>
 where
 	T: Ord,
@@ -373,17 +338,6 @@ where
 	}
 }
 
-impl<T, S> codec::DecodeLength for BoundedBTreeSet<T, S> {
-	fn len(self_encoded: &[u8]) -> Result<usize, codec::Error> {
-		// `BoundedBTreeSet<T, S>` is stored just a `BTreeSet<T>`, which is stored as a
-		// `Compact<u32>` with its length followed by an iteration of its items. We can just use
-		// the underlying implementation.
-		<BTreeSet<T> as codec::DecodeLength>::len(self_encoded)
-	}
-}
-
-impl<T, S> codec::EncodeLike<BTreeSet<T>> for BoundedBTreeSet<T, S> where BTreeSet<T>: Encode {}
-
 impl<I, T, Bound> TryCollect<BoundedBTreeSet<T, Bound>> for I
 where
 	T: Ord,
@@ -401,12 +355,76 @@ where
 	}
 }
 
+#[cfg(any(feature = "scale-codec", feature = "jam-codec"))]
+macro_rules! codec_impl {
+	($codec:ident) => {
+		use super::*;
+		use $codec::{Compact, Decode, DecodeLength, Encode, EncodeLike, Error, Input, MaxEncodedLen};
+		impl<T, S> Decode for BoundedBTreeSet<T, S>
+		where
+			T: Decode + Ord,
+			S: Get<u32>,
+		{
+			fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
+				// Same as the underlying implementation for `Decode` on `BTreeSet`, except we fail early if
+				// the len is too big.
+				let len: u32 = <Compact<u32>>::decode(input)?.into();
+				if len > S::get() {
+					return Err("BoundedBTreeSet exceeds its limit".into());
+				}
+				input.descend_ref()?;
+				let inner = Result::from_iter((0..len).map(|_| Decode::decode(input)))?;
+				input.ascend_ref();
+				Ok(Self(inner, PhantomData))
+			}
+
+			fn skip<I: Input>(input: &mut I) -> Result<(), Error> {
+				BTreeSet::<T>::skip(input)
+			}
+		}
+
+		impl<T, S> MaxEncodedLen for BoundedBTreeSet<T, S>
+		where
+			T: MaxEncodedLen,
+			S: Get<u32>,
+		{
+			fn max_encoded_len() -> usize {
+				Self::bound()
+					.saturating_mul(T::max_encoded_len())
+					.saturating_add(Compact(S::get()).encoded_size())
+			}
+		}
+
+		impl<T, S> DecodeLength for BoundedBTreeSet<T, S> {
+			fn len(self_encoded: &[u8]) -> Result<usize, Error> {
+				// `BoundedBTreeSet<T, S>` is stored just a `BTreeSet<T>`, which is stored as a
+				// `Compact<u32>` with its length followed by an iteration of its items. We can just use
+				// the underlying implementation.
+				<BTreeSet<T> as DecodeLength>::len(self_encoded)
+			}
+		}
+
+		impl<T, S> EncodeLike<BTreeSet<T>> for BoundedBTreeSet<T, S> where BTreeSet<T>: Encode {}
+	};
+}
+
+#[cfg(feature = "scale-codec")]
+mod scale_codec_impl {
+	codec_impl!(scale_codec);
+}
+
+#[cfg(feature = "jam-codec")]
+mod jam_codec_impl {
+	codec_impl!(jam_codec);
+}
+
 #[cfg(test)]
 mod test {
 	use super::*;
 	use crate::ConstU32;
 	use alloc::{vec, vec::Vec};
-	use codec::CompactLen;
+	#[cfg(feature = "scale-codec")]
+	use scale_codec::{Compact, CompactLen, Decode, Encode};
 
 	fn set_from_keys<T>(keys: &[T]) -> BTreeSet<T>
 	where
@@ -424,6 +442,7 @@ mod test {
 	}
 
 	#[test]
+	#[cfg(feature = "scale-codec")]
 	fn encoding_same_as_unbounded_set() {
 		let b = boundedset_from_keys::<u32, ConstU32<7>>(&[1, 2, 3, 4, 5, 6]);
 		let m = set_from_keys(&[1, 2, 3, 4, 5, 6]);
@@ -473,6 +492,7 @@ mod test {
 	}
 
 	#[test]
+	#[cfg(feature = "scale-codec")]
 	fn too_big_fail_to_decode() {
 		let v: Vec<u32> = vec![1, 2, 3, 4, 5];
 		assert_eq!(
@@ -482,6 +502,7 @@ mod test {
 	}
 
 	#[test]
+	#[cfg(feature = "scale-codec")]
 	fn dont_consume_more_data_than_bounded_len() {
 		let s = set_from_keys(&[1, 2, 3, 4, 5, 6]);
 		let data = s.encode();

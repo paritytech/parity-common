@@ -1,6 +1,6 @@
 [package]
 name = "bounded-collections"
-version = "0.2.4"
+version = "0.3.0"
 description = "Bounded types and their supporting traits"
 readme = "README.md"
 rust-version = "1.79.0"
@@ -12,8 +12,9 @@ repository.workspace = true
 
 [dependencies]
 serde = { workspace = true, features = ["alloc", "derive"], optional = true }
-codec = { workspace = true, features = ["max-encoded-len"] }
-scale-info = { workspace = true, features = ["derive"] }
+scale-codec = { workspace = true, default-features = false, features = ["max-encoded-len"], optional = true }
+scale-info = { workspace = true, features = ["derive"], optional = true }
+jam-codec = { workspace = true, features = ["derive","max-encoded-len"], optional = true }
 log = { workspace = true }
 schemars = { workspace = true, optional = true }
 
@@ -25,7 +26,9 @@ default = ["std"]
 json-schema = ["dep:schemars"]
 std = [
     "log/std",
-    "codec/std",
+    "jam-codec/std",
+    "scale-codec/std",
     "scale-info/std",
     "serde/std",
 ]
+scale-codec = [ "scale-info" ]
