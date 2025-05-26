@@ -34,7 +34,8 @@ use serde::{
 /// Unlike a standard `BTreeSet`, there is an enforced upper limit to the number of items in the
 /// set. All internal operations ensure this bound is respected.
 #[cfg_attr(feature = "serde", derive(Serialize), serde(transparent))]
-#[cfg_attr(feature = "scale-codec", derive(scale_codec::Encode, scale_info::TypeInfo), scale_info(skip_type_params(S)))]
+#[cfg_attr(feature = "scale-codec", derive(scale_codec::Encode, scale_info::TypeInfo))]
+#[cfg_attr(feature = "scale-codec", scale_info(skip_type_params(S)))]
 #[cfg_attr(feature = "jam-codec", derive(jam_codec::Encode))]
 pub struct BoundedBTreeSet<T, S>(BTreeSet<T>, #[cfg_attr(feature = "serde", serde(skip_serializing))] PhantomData<S>);
 
@@ -441,6 +442,7 @@ mod test {
 	}
 
 	#[test]
+	#[cfg(feature = "scale-codec")]
 	fn encoding_same_as_unbounded_set() {
 		let b = boundedset_from_keys::<u32, ConstU32<7>>(&[1, 2, 3, 4, 5, 6]);
 		let m = set_from_keys(&[1, 2, 3, 4, 5, 6]);
@@ -490,6 +492,7 @@ mod test {
 	}
 
 	#[test]
+	#[cfg(feature = "scale-codec")]
 	fn too_big_fail_to_decode() {
 		let v: Vec<u32> = vec![1, 2, 3, 4, 5];
 		assert_eq!(
@@ -499,6 +502,7 @@ mod test {
 	}
 
 	#[test]
+	#[cfg(feature = "scale-codec")]
 	fn dont_consume_more_data_than_bounded_len() {
 		let s = set_from_keys(&[1, 2, 3, 4, 5, 6]);
 		let data = s.encode();
