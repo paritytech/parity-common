@@ -426,6 +426,7 @@ where
 	}
 }
 
+#[cfg(any(feature = "scale-codec", feature = "jam-codec"))]
 macro_rules! codec_impl {
 	($codec:ident) => {
 		use super::*;
