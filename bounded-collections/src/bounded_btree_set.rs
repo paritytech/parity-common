@@ -359,7 +359,9 @@ where
 macro_rules! codec_impl {
 	($codec:ident) => {
 		use super::*;
-		use $codec::{Compact, Decode, DecodeLength, Encode, EncodeLike, Error, Input, MaxEncodedLen};
+		use $codec::{
+			Compact, Decode, DecodeLength, DecodeWithMemTracking, Encode, EncodeLike, Error, Input, MaxEncodedLen,
+		};
 		impl<T, S> Decode for BoundedBTreeSet<T, S>
 		where
 			T: Decode + Ord,
@@ -405,6 +407,13 @@ macro_rules! codec_impl {
 		}
 
 		impl<T, S> EncodeLike<BTreeSet<T>> for BoundedBTreeSet<T, S> where BTreeSet<T>: Encode {}
+
+		impl<T, S> DecodeWithMemTracking for BoundedBTreeSet<T, S>
+		where
+			T: Decode + Ord,
+			S: Get<u32>,
+		{
+		}
 	};
 }
 
