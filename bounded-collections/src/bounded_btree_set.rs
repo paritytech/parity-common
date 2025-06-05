@@ -359,47 +359,10 @@ where
 macro_rules! codec_impl {
 	($codec:ident) => {
 		use super::*;
+		use crate::codec_utils::PrependCompactInput;
 		use $codec::{
 			Compact, Decode, DecodeLength, DecodeWithMemTracking, Encode, EncodeLike, Error, Input, MaxEncodedLen,
 		};
-
-		// Struct which allows prepending the compact after reading from an input.
-		pub(crate) struct PrependCompactInput<'a, I> {
-			pub encoded_len: &'a [u8],
-			pub read: usize,
-			pub inner: &'a mut I,
-		}
-
-		impl<'a, I: Input> Input for PrependCompactInput<'a, I> {
-			fn remaining_len(&mut self) -> Result<Option<usize>, Error> {
-				let remaining_compact = self.encoded_len.len().saturating_sub(self.read);
-				Ok(self.inner.remaining_len()?.map(|len| len.saturating_add(remaining_compact)))
-			}
-
-			fn read(&mut self, into: &mut [u8]) -> Result<(), Error> {
-				if into.is_empty() {
-					return Ok(());
-				}
-
-				let remaining_compact = self.encoded_len.len().saturating_sub(self.read);
-				if remaining_compact > 0 {
-					let to_read = into.len().min(remaining_compact);
-					into[..to_read].copy_from_slice(&self.encoded_len[self.read..][..to_read]);
-					self.read += to_read;
-
-					if to_read < into.len() {
-						// Buffer not full, keep reading the inner.
-						self.inner.read(&mut into[to_read..])
-					} else {
-						// Buffer was filled by the compact.
-						Ok(())
-					}
-				} else {
-					// Prepended compact has been read, just read from inner.
-					self.inner.read(into)
-				}
-			}
-		}
 
 		impl<T, S> Decode for BoundedBTreeSet<T, S>
 		where
