@@ -443,13 +443,13 @@ macro_rules! codec_impl {
 		{
 			fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 				// Fail early if the len is too big. This is a compact u32 which we will later put back.
-				let compact = <Compact<u32>>::decode(input)?;
-				if compact.0 > S::get() {
+				let len = <Compact<u32>>::decode(input)?;
+				if len.0 > S::get() {
 					return Err("BoundedBTreeMap exceeds its limit".into());
 				}
 				// Reconstruct the original input by prepending the length we just read, then delegate the decoding to BTreeMap.
 				let inner = BTreeMap::decode(&mut PrependCompactInput {
-					encoded_len: compact.encode().as_ref(),
+					encoded_len: len.encode().as_ref(),
 					read: 0,
 					inner: input,
 				})?;
