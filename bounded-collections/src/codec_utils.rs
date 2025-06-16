@@ -146,8 +146,8 @@ mod tests {
 	}
 
 	// Generate tests for each available codec
-    #[cfg(feature = "scale-codec")]
+	#[cfg(feature = "scale-codec")]
 	codec_tests!(scale_codec, scale_codec_impl);
-    #[cfg(feature = "jam-codec")]
+	#[cfg(feature = "jam-codec")]
 	codec_tests!(jam_codec, jam_codec_impl);
 }
