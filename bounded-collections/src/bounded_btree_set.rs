@@ -359,22 +359,28 @@ where
 macro_rules! codec_impl {
 	($codec:ident) => {
 		use super::*;
-		use $codec::{Compact, Decode, DecodeLength, Encode, EncodeLike, Error, Input, MaxEncodedLen};
+		use crate::codec_utils::PrependCompactInput;
+		use $codec::{
+			Compact, Decode, DecodeLength, DecodeWithMemTracking, Encode, EncodeLike, Error, Input, MaxEncodedLen,
+		};
+
 		impl<T, S> Decode for BoundedBTreeSet<T, S>
 		where
 			T: Decode + Ord,
 			S: Get<u32>,
 		{
 			fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
-				// Same as the underlying implementation for `Decode` on `BTreeSet`, except we fail early if
-				// the len is too big.
-				let len: u32 = <Compact<u32>>::decode(input)?.into();
-				if len > S::get() {
+				// Fail early if the len is too big. This is a compact u32 which we will later put back.
+				let len = <Compact<u32>>::decode(input)?;
+				if len.0 > S::get() {
 					return Err("BoundedBTreeSet exceeds its limit".into());
 				}
-				input.descend_ref()?;
-				let inner = Result::from_iter((0..len).map(|_| Decode::decode(input)))?;
-				input.ascend_ref();
+				// Reconstruct the original input by prepending the length we just read, then delegate the decoding to BTreeMap.
+				let inner = BTreeSet::decode(&mut PrependCompactInput {
+					encoded_len: len.encode().as_ref(),
+					read: 0,
+					inner: input,
+				})?;
 				Ok(Self(inner, PhantomData))
 			}
 
@@ -405,6 +411,13 @@ macro_rules! codec_impl {
 		}
 
 		impl<T, S> EncodeLike<BTreeSet<T>> for BoundedBTreeSet<T, S> where BTreeSet<T>: Encode {}
+
+		impl<T, S> DecodeWithMemTracking for BoundedBTreeSet<T, S>
+		where
+			T: Decode + Ord,
+			S: Get<u32>,
+		{
+		}
 	};
 }
 
