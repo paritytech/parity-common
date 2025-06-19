@@ -53,7 +53,10 @@ mod tests {
 			.build(&schema_json)
 			.unwrap();
 		let value = serde_json::to_value("0x55086adeca661185c437d92b9818e6eda6d0d047").unwrap();
-		schema.validate(&value).map_err(|e| e.into_iter().map(|e| e.to_string()).collect::<Vec<_>>()).unwrap();
+		schema
+			.validate(&value)
+			.map_err(|e| e.into_iter().map(|e| e.to_string()).collect::<Vec<_>>())
+			.unwrap();
 		let value = serde_json::to_value("0X0E9C8DA9FD4BDD3281879D9E328D8D74D02558CC").unwrap();
 		assert!(schema.validate(&value).is_ok());
 
