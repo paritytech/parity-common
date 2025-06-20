@@ -474,6 +474,7 @@ fn uint256_overflowing_pow() {
 		(U256::from_str("8000000000000000000000000000000000000000000000000000000000000000").unwrap(), false)
 	);
 	assert_eq!(U256::from(2).overflowing_pow(U256::from(0x100)), (U256::zero(), true));
+	assert_eq!(U256::from(3154237118_u64).overflowing_pow(U256::from(2)), (U256::from(9949211796568945924_u128), false))
 }
 
 #[test]
@@ -1314,7 +1315,7 @@ pub mod laws {
 
 				quickcheck! {
 					fn pow_mul(x: $uint_ty) -> TestResult {
-						if x.overflowing_pow($uint_ty::from(2)).1 || x.overflowing_pow($uint_ty::from(3)).1 {
+						if x.overflowing_pow($uint_ty::from(2)).1 {
 							// On overflow `checked_pow` should return `None`.
 							assert_eq!(x.checked_pow($uint_ty::from(2)), None);
 							assert_eq!(x.checked_pow($uint_ty::from(3)), None);
