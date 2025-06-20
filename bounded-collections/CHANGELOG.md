@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
+## [0.3.1] - 2025-06-20
+- Implement `DecodeWithMemTracking` for `BoundedBTreeSet` [#915](https://github.com/paritytech/parity-common/pull/915)
+
 ## [0.3.0] - 2025-05-21
 - Jam codec support [#914](https://github.com/paritytech/parity-common/pull/914)
 
