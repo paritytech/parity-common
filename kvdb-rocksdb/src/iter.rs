@@ -39,7 +39,7 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 
 	fn iter(self, col: u32, read_opts: ReadOptions) -> Self::Iterator {
 		match self.cf(col as usize) {
-			Ok(cf) => EitherIter::A(KvdbAdapter(self.db.iterator_cf_opt(cf, read_opts, IteratorMode::Start))),
+			Ok(cf) => EitherIter::A(KvdbAdapter(self.db.iterator_cf_opt(&cf, read_opts, IteratorMode::Start))),
 			Err(e) => EitherIter::B(std::iter::once(Err(e))),
 		}
 	}
@@ -47,7 +47,7 @@ impl<'a> IterationHandler for &'a DBAndColumns {
 	fn iter_with_prefix(self, col: u32, prefix: &[u8], read_opts: ReadOptions) -> Self::Iterator {
 		match self.cf(col as usize) {
 			Ok(cf) => EitherIter::A(KvdbAdapter(self.db.iterator_cf_opt(
-				cf,
+				&cf,
 				read_opts,
 				IteratorMode::From(prefix, Direction::Forward),
 			))),
