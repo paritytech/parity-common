@@ -31,4 +31,4 @@ std = [
     "scale-info/std",
     "serde/std",
 ]
-scale-codec = [ "scale-info" ]
+scale-codec = [ "dep:scale-codec", "scale-info" ]
