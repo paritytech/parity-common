@@ -27,7 +27,7 @@ members = [
 [workspace.dependencies]
 serde_json = "1.0.41"
 criterion = "0.6.0"
-rand = { version = "0.8.0", default-features = false }
+rand = { version = "0.9.1", default-features = false }
 hex-literal = "1.0.0"
 scale-info = { version = ">=1.0, <3", default-features = false }
 quickcheck = "1"
