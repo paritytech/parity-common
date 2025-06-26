@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
-## [0.3.2] - 2025-06-23
+## [0.3.2] - 2025-06-26
 - fix(bounded-collections): Fix scale-codec feature config [#925](https://github.com/paritytech/parity-common/pull/925)
 
 ## [0.3.1] - 2025-06-20
