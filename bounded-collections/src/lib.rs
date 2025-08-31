@@ -322,3 +322,44 @@ macro_rules! bounded_btree_map {
 		}
 	};
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_const_u8() {
+		const VAL: u8 = 42;
+		type MyConst = ConstU8<42>;
+
+		// Test basic gets traits
+		assert_eq!(<MyConst as Get<u8>>::get(), VAL);
+		assert_eq!(<MyConst as Get<Option<u8>>>::get(), Some(VAL));
+		assert_eq!(<MyConst as TypedGet>::get(), VAL);
+
+		// Test getting larger types
+		assert_eq!(<MyConst as Get<u16>>::get(), VAL as u16);
+		assert_eq!(<MyConst as Get<u32>>::get(), VAL as u32);
+		assert_eq!(<MyConst as Get<u64>>::get(), VAL as u64);
+		assert_eq!(<MyConst as Get<u128>>::get(), VAL as u128);
+		assert_eq!(<MyConst as Get<i64>>::get(), VAL as i64);
+		assert_eq!(<MyConst as Get<i128>>::get(), VAL as i128);
+		assert_eq!(<MyConst as Get<Option<u32>>>::get(), Some(VAL as u32));
+	}
+
+	#[test]
+	fn test_const_i32() {
+		const VAL: i32 = -100_000;
+		type MyConst = ConstI32<VAL>;
+
+		// Test basic ge traits
+		assert_eq!(<MyConst as Get<i32>>::get(), VAL);
+		assert_eq!(<MyConst as Get<Option<i32>>>::get(), Some(VAL));
+		assert_eq!(<MyConst as TypedGet>::get(), VAL);
+
+		// Test getting larger types
+		assert_eq!(<MyConst as Get<i64>>::get(), VAL as i64);
+		assert_eq!(<MyConst as Get<i128>>::get(), VAL as i128);
+		assert_eq!(<MyConst as Get<Option<i64>>>::get(), Some(VAL as i64));
+	}
+}
