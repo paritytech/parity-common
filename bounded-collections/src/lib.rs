@@ -362,4 +362,13 @@ mod tests {
 		assert_eq!(<MyConst as Get<i128>>::get(), VAL as i128);
 		assert_eq!(<MyConst as Get<Option<i64>>>::get(), Some(VAL as i64));
 	}
+
+	#[test]
+	fn use_u8_with_bounded_vec() {
+		// Show that we can use `ConstU8` for `BoundedVec`.
+		let mut bounded = BoundedVec::<u8, ConstU8<10>>::new();
+		(0..10u8).for_each(|i| bounded.try_push(i).unwrap());
+		assert!(bounded.is_full());
+		assert!(bounded.try_push(10).is_err());
+	}
 }
