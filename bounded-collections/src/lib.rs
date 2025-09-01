@@ -93,7 +93,7 @@ impl<T: Default> Get<T> for GetDefault {
 }
 
 macro_rules! impl_const_get {
-	($name:ident, $t:ty, get_into: [$($larger:ty),*]) => {
+	($name:ident, $t:ty) => {
 		/// Const getter for a basic type.
 		#[derive(Default, Clone)]
 		pub struct $name<const T: $t>;
@@ -110,14 +110,9 @@ macro_rules! impl_const_get {
 				fmt.write_str("<wasm:stripped>")
 			}
 		}
-		impl<const T: $t> Get<$t> for $name<T> {
-			fn get() -> $t {
-				T
-			}
-		}
-		impl<const T: $t> Get<Option<$t>> for $name<T> {
-			fn get() -> Option<$t> {
-				Some(T)
+		impl<R: From<$t>, const T: $t> Get<R> for $name<T> {
+			fn get() -> R {
+				R::from(T)
 			}
 		}
 		impl<const T: $t> TypedGet for $name<T> {
@@ -126,34 +121,20 @@ macro_rules! impl_const_get {
 				T
 			}
 		}
-
-		// Allow smaller types to provide `Get` for larger types.
-		$(
-			impl<const T: $t> Get<$larger> for $name<T> {
-				fn get() -> $larger {
-					<$larger>::from(T)
-				}
-			}
-			impl<const T: $t> Get<Option<$larger>> for $name<T> {
-				fn get() -> Option<$larger> {
-					Some(<$larger>::from(T))
-				}
-			}
-		)*
 	};
 }
 
-impl_const_get!(ConstBool, bool, get_into: []);
-impl_const_get!(ConstU8, u8, get_into: [u16, u32, u64, u128, i16, i32, i64, i128]);
-impl_const_get!(ConstU16, u16, get_into: [u32, u64, u128, i32, i64, i128]);
-impl_const_get!(ConstU32, u32, get_into: [u64, u128, i64, i128]);
-impl_const_get!(ConstU64, u64, get_into: [u128, i128]);
-impl_const_get!(ConstU128, u128, get_into: []);
-impl_const_get!(ConstI8, i8, get_into: [i16, i32, i64, i128]);
-impl_const_get!(ConstI16, i16, get_into: [i32, i64, i128]);
-impl_const_get!(ConstI32, i32, get_into: [i64, i128]);
-impl_const_get!(ConstI64, i64, get_into: [i128]);
-impl_const_get!(ConstI128, i128, get_into: []);
+impl_const_get!(ConstBool, bool);
+impl_const_get!(ConstU8, u8);
+impl_const_get!(ConstU16, u16);
+impl_const_get!(ConstU32, u32);
+impl_const_get!(ConstU64, u64);
+impl_const_get!(ConstU128, u128);
+impl_const_get!(ConstI8, i8);
+impl_const_get!(ConstI16, i16);
+impl_const_get!(ConstI32, i32);
+impl_const_get!(ConstI64, i64);
+impl_const_get!(ConstI128, i128);
 
 /// Try and collect into a collection `C`.
 pub trait TryCollect<C> {
@@ -344,7 +325,6 @@ mod tests {
 		assert_eq!(<MyConst as Get<u128>>::get(), VAL as u128);
 		assert_eq!(<MyConst as Get<i64>>::get(), VAL as i64);
 		assert_eq!(<MyConst as Get<i128>>::get(), VAL as i128);
-		assert_eq!(<MyConst as Get<Option<u32>>>::get(), Some(VAL as u32));
 	}
 
 	#[test]
@@ -360,7 +340,6 @@ mod tests {
 		// Test getting larger types
 		assert_eq!(<MyConst as Get<i64>>::get(), VAL as i64);
 		assert_eq!(<MyConst as Get<i128>>::get(), VAL as i128);
-		assert_eq!(<MyConst as Get<Option<i64>>>::get(), Some(VAL as i64));
 	}
 
 	#[test]
