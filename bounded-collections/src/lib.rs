@@ -110,14 +110,9 @@ macro_rules! impl_const_get {
 				fmt.write_str("<wasm:stripped>")
 			}
 		}
-		impl<const T: $t> Get<$t> for $name<T> {
-			fn get() -> $t {
-				T
-			}
-		}
-		impl<const T: $t> Get<Option<$t>> for $name<T> {
-			fn get() -> Option<$t> {
-				Some(T)
+		impl<R: From<$t>, const T: $t> Get<R> for $name<T> {
+			fn get() -> R {
+				R::from(T)
 			}
 		}
 		impl<const T: $t> TypedGet for $name<T> {
@@ -307,4 +302,52 @@ macro_rules! bounded_btree_map {
 			).unwrap()
 		}
 	};
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_const_u8() {
+		const VAL: u8 = 42;
+		type MyConst = ConstU8<42>;
+
+		// Test basic gets traits
+		assert_eq!(<MyConst as Get<u8>>::get(), VAL);
+		assert_eq!(<MyConst as Get<Option<u8>>>::get(), Some(VAL));
+		assert_eq!(<MyConst as TypedGet>::get(), VAL);
+
+		// Test getting larger types
+		assert_eq!(<MyConst as Get<u16>>::get(), VAL as u16);
+		assert_eq!(<MyConst as Get<u32>>::get(), VAL as u32);
+		assert_eq!(<MyConst as Get<u64>>::get(), VAL as u64);
+		assert_eq!(<MyConst as Get<u128>>::get(), VAL as u128);
+		assert_eq!(<MyConst as Get<i64>>::get(), VAL as i64);
+		assert_eq!(<MyConst as Get<i128>>::get(), VAL as i128);
+	}
+
+	#[test]
+	fn test_const_i32() {
+		const VAL: i32 = -100_000;
+		type MyConst = ConstI32<VAL>;
+
+		// Test basic ge traits
+		assert_eq!(<MyConst as Get<i32>>::get(), VAL);
+		assert_eq!(<MyConst as Get<Option<i32>>>::get(), Some(VAL));
+		assert_eq!(<MyConst as TypedGet>::get(), VAL);
+
+		// Test getting larger types
+		assert_eq!(<MyConst as Get<i64>>::get(), VAL as i64);
+		assert_eq!(<MyConst as Get<i128>>::get(), VAL as i128);
+	}
+
+	#[test]
+	fn use_u8_with_bounded_vec() {
+		// Show that we can use `ConstU8` for `BoundedVec`.
+		let mut bounded = BoundedVec::<u8, ConstU8<10>>::new();
+		(0..10u8).for_each(|i| bounded.try_push(i).unwrap());
+		assert!(bounded.is_full());
+		assert!(bounded.try_push(10).is_err());
+	}
 }
