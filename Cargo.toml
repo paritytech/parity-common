@@ -74,7 +74,7 @@ impl-codec = { path = "./primitive-types/impls/codec", default-features = false 
 impl-num-traits = { path = "./primitive-types/impls/num-traits", default-features = false }
 impl-rlp = { path = "./primitive-types/impls/rlp", default-features = false }
 impl-serde = { path = "./primitive-types/impls/serde", default-features = false }
-kvdb = { path = "./kvdb" }
+kvdb = { path = "./kvdb", version = "0.13" }
 kvdb-shared-tests = { path = "./kvdb-shared-tests" }
 keccak-hash = { path = "./keccak-hash" }
 rlp = { path = "./rlp" }
