@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.20.0] - 2025-09-03
+- Updated `rocksdb` to 0.24. [#935](https://github.com/paritytech/parity-common/pull/935)
+
 ## [0.19.0] - 2023-05-10
 - Updated `rocksdb` to 0.21. [#750](https://github.com/paritytech/parity-common/pull/750)
 
