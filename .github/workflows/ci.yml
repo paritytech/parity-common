@@ -49,7 +49,9 @@ jobs:
         run: sudo apt-get install libclang-dev
       - name: Workaround macOS Clang
         if: ${{ runner.os == 'macOS' }}
-        run: brew link llvm@15
+        run: | 
+          brew install llvm@20
+          brew link llvm@20
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
