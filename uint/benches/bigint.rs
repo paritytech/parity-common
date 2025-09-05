@@ -30,10 +30,10 @@ impl U256 {
 	}
 }
 
-use criterion::{black_box, Bencher, BenchmarkId, Criterion};
+use criterion::{Bencher, BenchmarkId, Criterion};
 use num_bigint::BigUint;
 use rug::{integer::Order, Integer};
-use std::str::FromStr;
+use std::{str::FromStr, hint::black_box};
 
 criterion_group!(
 	bigint,
