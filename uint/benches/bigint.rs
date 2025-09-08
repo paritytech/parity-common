@@ -33,7 +33,7 @@ impl U256 {
 use criterion::{Bencher, BenchmarkId, Criterion};
 use num_bigint::BigUint;
 use rug::{integer::Order, Integer};
-use std::{str::FromStr, hint::black_box};
+use std::{hint::black_box, str::FromStr};
 
 criterion_group!(
 	bigint,
