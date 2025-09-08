@@ -50,6 +50,7 @@ jobs:
       - name: Workaround macOS Clang
         if: ${{ runner.os == 'macOS' }}
         run: | 
+          brew install llvm@15
           brew link llvm@15
 
       - name: Rust Cache
