@@ -26,9 +26,10 @@ use std::{
 };
 
 use alloc_counter::{count_alloc, AllocCounterSystem};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use ethereum_types::H256;
 use rand::{distributions::Uniform, seq::SliceRandom, Rng};
+use std::hint::black_box;
 
 use kvdb_rocksdb::{Database, DatabaseConfig};
 

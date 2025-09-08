@@ -6,8 +6,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use keccak_hash::keccak;
+use std::hint::black_box;
 
 criterion_group!(keccak_256, keccak_256_with_empty_input, keccak_256_with_typical_input, keccak_256_with_large_input,);
 criterion_main!(keccak_256);

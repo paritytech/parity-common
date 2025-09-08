@@ -641,7 +641,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 
 impl<T, S> BoundedVec<T, S> {
 	/// Return a [`BoundedSlice`] with the content and bound of [`Self`].
-	pub fn as_bounded_slice(&self) -> BoundedSlice<T, S> {
+	pub fn as_bounded_slice(&self) -> BoundedSlice<'_, T, S> {
 		BoundedSlice(&self.0[..], PhantomData::default())
 	}
 }

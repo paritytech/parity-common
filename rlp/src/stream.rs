@@ -324,7 +324,7 @@ impl RlpStream {
 		self.finished_list = should_finish;
 	}
 
-	pub fn encoder(&mut self) -> BasicEncoder {
+	pub fn encoder(&mut self) -> BasicEncoder<'_> {
 		BasicEncoder::new(self, self.start_pos)
 	}
 

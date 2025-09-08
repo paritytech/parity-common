@@ -12,9 +12,10 @@
 //! cargo bench
 //! ```
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use impl_serde::impl_uint_serde;
 use serde_derive::{Deserialize, Serialize};
+use std::hint::black_box;
 use uint::*;
 
 mod input;

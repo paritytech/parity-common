@@ -297,7 +297,7 @@ impl<'a> Rlp<'a> {
 		self.at(index)?.as_list()
 	}
 
-	pub fn decoder(&self) -> BasicDecoder {
+	pub fn decoder(&self) -> BasicDecoder<'_> {
 		BasicDecoder::new(self.bytes)
 	}
 
