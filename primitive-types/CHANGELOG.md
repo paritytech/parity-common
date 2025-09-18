@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+## [0.14.0] - 2025-09-18
+- Fixed `scale-info` representation of `U256` and `U128` [#939](https://github.com/paritytech/parity-common/pull/939)
+
 ### Breaking
 - removed `byteorder` feature [#872](https://github.com/paritytech/parity-common/pull/872)
 
