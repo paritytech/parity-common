@@ -13,11 +13,7 @@ use scale_info::{build::Fields, Path, Type, TypeInfo};
 
 #[test]
 fn u256_scale_info() {
-	let r#type = Type::builder()
-		.path(Path::new("U256", "primitive_types"))
-		.composite(Fields::unnamed().field(|f| f.ty::<[u64; 4]>().type_name("[u64; 4]")));
-
-	assert_eq!(U256::type_info(), r#type.into());
+	assert_eq!(U256::type_info(), scale_info::TypeDefPrimitive::U256.into());
 }
 
 #[test]

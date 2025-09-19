@@ -38,12 +38,10 @@ pub enum Error {
 
 construct_uint! {
 	/// 128-bit unsigned integer.
-	#[cfg_attr(feature = "scale-info", derive(TypeInfo))]
 	pub struct U128(2);
 }
 construct_uint! {
 	/// 256-bit unsigned integer.
-	#[cfg_attr(feature = "scale-info", derive(TypeInfo))]
 	pub struct U256(4);
 }
 construct_uint! {
@@ -82,6 +80,27 @@ construct_fixed_hash! {
 	/// Fixed-size uninterpreted hash type with 96 bytes (768 bits) size.
 	#[cfg_attr(feature = "scale-info", derive(TypeInfo))]
 	pub struct H768(96);
+}
+
+#[cfg(feature = "scale-info")]
+mod scale_info_impl {
+	use super::*;
+
+	impl scale_info::TypeInfo for U256 {
+		type Identity = Self;
+
+		fn type_info() -> scale_info::Type {
+			scale_info::TypeDefPrimitive::U256.into()
+		}
+	}
+
+	impl scale_info::TypeInfo for U128 {
+		type Identity = Self;
+
+		fn type_info() -> scale_info::Type {
+			scale_info::TypeDefPrimitive::U128.into()
+		}
+	}
 }
 
 #[cfg(feature = "num-traits")]
