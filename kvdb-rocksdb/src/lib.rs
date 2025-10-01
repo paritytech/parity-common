@@ -17,7 +17,7 @@ use std::{
 };
 
 use rocksdb::{
-	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Options, ReadOptions, WriteBatch, WriteOptions, DB,
+	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, DBRawIterator, Options, ReadOptions, WriteBatch, WriteOptions, DB
 };
 
 use kvdb::{DBKeyValue, DBOp, DBTransaction, DBValue, KeyValueDB};
@@ -578,6 +578,10 @@ impl Database {
 	/// Calling this as primary will return an error.
 	pub fn try_catch_up_with_primary(&self) -> io::Result<()> {
 		self.inner.db.try_catch_up_with_primary().map_err(other_io_err)
+	}
+
+	pub fn raw_iter(&self, col: u32) -> io::Result<DBRawIterator<'_>> {
+		Ok(self.inner.db.raw_iterator_cf(self.inner.cf(col as usize)?))
 	}
 }
 
