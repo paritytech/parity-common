@@ -17,8 +17,10 @@ use std::{
 };
 
 use rocksdb::{
-	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, DBRawIterator, Options, ReadOptions, WriteBatch, WriteOptions, DB
+	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Options, ReadOptions, WriteBatch, WriteOptions, DB,
 };
+
+pub use rocksdb::DBRawIterator;
 
 use kvdb::{DBKeyValue, DBOp, DBTransaction, DBValue, KeyValueDB};
 
