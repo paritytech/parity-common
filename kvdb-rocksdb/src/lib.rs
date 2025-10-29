@@ -145,17 +145,39 @@ impl CompactionProfile {
 	}
 }
 
+trait Comparator<'a>: Send + Sync + Fn(&[u8], &[u8]) -> cmp::Ordering {
+	fn clone_self(&self) -> Box<dyn Comparator<'a> + 'a>;
+}
+
+impl<'a, T: Send + Sync + Fn(&[u8], &[u8]) -> cmp::Ordering + Clone + 'a> Comparator<'a> for T {
+	fn clone_self(&self) -> Box<dyn Comparator<'a> + 'a> {
+		Box::new(self.clone())
+	}
+}
+
+impl<'a> Clone for Box<dyn Comparator<'a> + 'a> {
+	fn clone(&self) -> Box<dyn Comparator<'a> + 'a> {
+		self.clone_self()
+	}
+}
+
+#[derive(Clone, Default)]
+pub struct ColumnConfig {
+	/// Memory budget (in MiB) used for setting block cache size and
+	/// write buffer size for each column including the default one.
+	/// If the memory budget of a column is not specified,
+	/// `DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB` is used for that column.
+	pub memory_budget: Option<MiB>,
+
+	pub comparator: Option<Box<dyn Comparator<'static>>>,
+}
+
 /// Database configuration
 #[derive(Clone)]
 #[non_exhaustive]
 pub struct DatabaseConfig {
 	/// Max number of open files.
 	pub max_open_files: i32,
-	/// Memory budget (in MiB) used for setting block cache size and
-	/// write buffer size for each column including the default one.
-	/// If the memory budget of a column is not specified,
-	/// `DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB` is used for that column.
-	pub memory_budget: HashMap<u32, MiB>,
 	/// Compaction profile.
 	pub compaction: CompactionProfile,
 	/// Set number of columns.
@@ -163,7 +185,7 @@ pub struct DatabaseConfig {
 	/// # Safety
 	///
 	/// The number of columns must not be zero.
-	pub columns: u32,
+	pub columns: Vec<ColumnConfig>,
 	/// Specify the maximum number of info/debug log files to be kept.
 	pub keep_log_file_num: i32,
 	/// Enable native RocksDB statistics.
@@ -198,22 +220,22 @@ impl DatabaseConfig {
 	/// # Safety
 	///
 	/// The number of `columns` must not be zero.
-	pub fn with_columns(columns: u32) -> Self {
-		assert!(columns > 0, "the number of columns must not be zero");
+	pub fn with_columns(columns: Vec<ColumnConfig>) -> Self {
+		assert!(columns.len() > 0, "the number of columns must not be zero");
 
 		Self { columns, ..Default::default() }
 	}
 
 	/// Returns the total memory budget in bytes.
 	pub fn memory_budget(&self) -> MiB {
-		(0..self.columns)
-			.map(|i| self.memory_budget.get(&i).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
+		self.columns.iter()
+			.map(|i| i.memory_budget.unwrap_or(DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
 			.sum()
 	}
 
 	/// Returns the memory budget of the specified column in bytes.
 	fn memory_budget_for_col(&self, col: u32) -> MiB {
-		self.memory_budget.get(&col).unwrap_or(&DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
+		self.columns[col as usize].memory_budget.unwrap_or(DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
 	}
 
 	// Get column family configuration with the given block based options.
@@ -226,6 +248,9 @@ impl DatabaseConfig {
 		opts.optimize_level_style_compaction(column_mem_budget);
 		opts.set_target_file_size_base(self.compaction.initial_file_size);
 		opts.set_compression_per_level(&[]);
+		if let Some(comparator) = &self.columns[col as usize].comparator {
+			opts.set_comparator(&format!("column_{col}_comparator"), comparator.clone());
+		}
 
 		opts
 	}
@@ -235,9 +260,8 @@ impl Default for DatabaseConfig {
 	fn default() -> DatabaseConfig {
 		DatabaseConfig {
 			max_open_files: 512,
-			memory_budget: HashMap::new(),
 			compaction: CompactionProfile::default(),
-			columns: 1,
+			columns: vec![ColumnConfig::default()],
 			keep_log_file_num: 1,
 			enable_statistics: false,
 			secondary: None,
@@ -336,12 +360,12 @@ impl Database {
 	///
 	/// The number of `config.columns` must not be zero.
 	pub fn open<P: AsRef<Path>>(config: &DatabaseConfig, path: P) -> io::Result<Database> {
-		assert!(config.columns > 0, "the number of columns must not be zero");
+		assert!(config.columns.len() > 0, "the number of columns must not be zero");
 
 		let opts = generate_options(config);
 		let block_opts = generate_block_based_options(config)?;
 
-		let column_names: Vec<_> = (0..config.columns).map(|c| format!("col{}", c)).collect();
+		let column_names: Vec<_> = (0..config.columns.len()).map(|c| format!("col{}", c)).collect();
 		let write_opts = WriteOptions::default();
 		let read_opts = generate_read_options();
 
@@ -371,8 +395,8 @@ impl Database {
 		column_names: &[&str],
 		block_opts: &BlockBasedOptions,
 	) -> io::Result<rocksdb::DB> {
-		let cf_descriptors: Vec<_> = (0..config.columns)
-			.map(|i| ColumnFamilyDescriptor::new(column_names[i as usize], config.column_config(&block_opts, i)))
+		let cf_descriptors: Vec<_> = (0..config.columns.len())
+			.map(|i| ColumnFamilyDescriptor::new(column_names[i as usize], config.column_config(&block_opts, i as u32)))
 			.collect();
 
 		let db = match DB::open_cf_descriptors(&opts, path.as_ref(), cf_descriptors) {
