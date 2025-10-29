@@ -145,7 +145,7 @@ impl CompactionProfile {
 	}
 }
 
-trait Comparator<'a>: Send + Sync + Fn(&[u8], &[u8]) -> cmp::Ordering {
+pub trait Comparator<'a>: Send + Sync + Fn(&[u8], &[u8]) -> cmp::Ordering {
 	fn clone_self(&self) -> Box<dyn Comparator<'a> + 'a>;
 }
 
