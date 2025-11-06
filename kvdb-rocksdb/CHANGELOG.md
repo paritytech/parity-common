@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.20.1] - 2025-11-07
+- Force compact the DB on startup and on heavy writes. [#949](https://github.com/paritytech/parity-common/pull/949)
+
 ## [0.20.0] - 2025-09-03
 - Updated `rocksdb` to 0.24. [#935](https://github.com/paritytech/parity-common/pull/935)
 
