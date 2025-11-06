@@ -26,9 +26,9 @@ default = ["std"]
 json-schema = ["dep:schemars"]
 std = [
     "log/std",
-    "jam-codec/std",
-    "scale-codec/std",
-    "scale-info/std",
-    "serde/std",
+    "jam-codec?/std",
+    "scale-codec?/std",
+    "scale-info?/std",
+    "serde?/std",
 ]
 scale-codec = [ "dep:scale-codec", "scale-info" ]
