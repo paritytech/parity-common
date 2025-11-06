@@ -368,7 +368,7 @@ impl Database {
 		// After opening the DB, we want to compact it.
 		//
 		// This just in case the node crashed before to ensure the db stays fast.
-		db.force_compaction();
+		db.force_compaction()?;
 
 		Ok(db)
 	}
@@ -481,7 +481,7 @@ impl Database {
 		if stats_total_bytes > self.config.compaction.initial_file_size as usize &&
 			self.last_compaction.lock().elapsed() > Duration::from_secs(60)
 		{
-			self.force_compaction();
+			self.force_compaction()?;
 
 			*self.last_compaction.lock() = Instant::now();
 		}
@@ -607,12 +607,20 @@ impl Database {
 	}
 
 	/// Force compacting the entire db.
-	fn force_compaction(&self) {
+	fn force_compaction(&self) -> io::Result<()> {
 		let mut compact_options = CompactOptions::default();
 		compact_options.set_bottommost_level_compaction(rocksdb::BottommostLevelCompaction::Force);
-		self.inner
-			.db
-			.compact_range_opt(None::<Vec<u8>>, None::<Vec<u8>>, &compact_options);
+
+		// Don't ask me why we can not just use `compact_range_opt`...
+		// But we are forced to trigger compaction on every column. Actually we only need this for the `STATE` column,
+		// but we don't know which one this is here. So, we just iterate all of them.
+		for col in 0..self.inner.column_names.len() {
+			self.inner
+				.db
+				.compact_range_cf_opt(self.inner.cf(col)?, None::<Vec<u8>>, None::<Vec<u8>>, &compact_options);
+		}
+
+		Ok(())
 	}
 }
 
