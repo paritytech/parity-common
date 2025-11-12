@@ -151,7 +151,7 @@ pub trait Comparator<'a>: Send + Sync + Fn(&[u8], &[u8]) -> cmp::Ordering {
 
 impl<'a, T: Send + Sync + Fn(&[u8], &[u8]) -> cmp::Ordering + Clone + 'a> Comparator<'a> for T {
 	fn clone_self(&self) -> Box<dyn Comparator<'a> + 'a> {
-		Box::new(self.clone())
+		Box::new(T::clone(self))
 	}
 }
 
