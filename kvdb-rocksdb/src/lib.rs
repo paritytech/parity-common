@@ -145,19 +145,17 @@ impl CompactionProfile {
 	}
 }
 
-pub trait Comparator<'a>: Send + Sync + Fn(&[u8], &[u8]) -> cmp::Ordering {
-	fn clone_self(&self) -> Box<dyn Comparator<'a> + 'a>;
+pub trait Comparator<'a>: Send + Sync {
+	fn get_fn(&self) -> Box<dyn Fn(&[u8], &[u8]) -> cmp::Ordering + 'a>;
 }
 
-impl<'a, T: Send + Sync + Fn(&[u8], &[u8]) -> cmp::Ordering + Clone + 'a> Comparator<'a> for T {
-	fn clone_self(&self) -> Box<dyn Comparator<'a> + 'a> {
-		Box::new(T::clone(self))
-	}
+pub struct ComparatorWrapper<T> {
+	cmp: T,
 }
 
-impl<'a> Clone for Box<dyn Comparator<'a> + 'a> {
-	fn clone(&self) -> Box<dyn Comparator<'a> + 'a> {
-		self.clone_self()
+impl<T: 'static + Send + Sync + Clone + Fn(&[u8], &[u8]) -> cmp::Ordering> Comparator<'static> for ComparatorWrapper<T> {
+	fn get_fn(&self) -> Box<dyn Fn(&[u8], &[u8]) -> cmp::Ordering + 'static> {
+		Box::new(self.cmp.clone())
 	}
 }
 
@@ -169,7 +167,7 @@ pub struct ColumnConfig {
 	/// `DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB` is used for that column.
 	pub memory_budget: Option<MiB>,
 
-	pub comparator: Option<Box<dyn Comparator<'static>>>,
+	pub comparator: Option<std::sync::Arc<dyn Comparator<'static>>>,
 }
 
 /// Database configuration
@@ -249,7 +247,7 @@ impl DatabaseConfig {
 		opts.set_target_file_size_base(self.compaction.initial_file_size);
 		opts.set_compression_per_level(&[]);
 		if let Some(comparator) = &self.columns[col as usize].comparator {
-			opts.set_comparator(&format!("column_{col}_comparator"), comparator.clone());
+			opts.set_comparator(&format!("column_{col}_comparator"), comparator.get_fn());
 		}
 
 		opts
