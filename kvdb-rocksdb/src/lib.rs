@@ -153,6 +153,12 @@ pub struct ComparatorWrapper<T> {
 	cmp: T,
 }
 
+impl<T> ComparatorWrapper<T> {
+	pub fn new(cmp: T) -> Self {
+		Self { cmp }
+	}
+}
+
 impl<T: 'static + Send + Sync + Clone + Fn(&[u8], &[u8]) -> cmp::Ordering> Comparator<'static> for ComparatorWrapper<T> {
 	fn get_fn(&self) -> Box<dyn Fn(&[u8], &[u8]) -> cmp::Ordering + 'static> {
 		Box::new(self.cmp.clone())
