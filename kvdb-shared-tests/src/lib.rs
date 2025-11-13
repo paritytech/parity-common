@@ -165,7 +165,7 @@ pub fn test_io_stats(db: &dyn KeyValueDB) -> io::Result<()> {
 	batch.delete(1, key1);
 	batch.delete(2, key1);
 
-	// transaction is not commited yet
+	// transaction is not committed yet
 	assert_eq!(db.io_stats(IoStatsKind::SincePrevious).writes, 0);
 
 	db.write(batch)?;

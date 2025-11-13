@@ -198,7 +198,7 @@ fn uint256_from() {
 		U256::from_big_endian(&[0x24u8, 0x37, 0x10, 0, 0x19, 0x24, 0x37, 0x10, 0, 0x19, 0xfa][..])
 	);
 
-	// test initializtion from string
+	// test initialization from string
 	let sa = U256::from_str("0a").unwrap();
 	let sa2 = U256::from_str("0x0a").unwrap();
 	assert_eq!(sa2, sa);

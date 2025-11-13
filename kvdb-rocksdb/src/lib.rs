@@ -410,7 +410,7 @@ impl Database {
 	}
 
 	/// Internal api to open a database in secondary mode.
-	/// Secondary database needs a seperate path to store its own logs.
+	/// Secondary database needs a separate path to store its own logs.
 	fn open_secondary<P: AsRef<Path>>(
 		opts: &Options,
 		path: P,
@@ -586,7 +586,7 @@ impl Database {
 	/// the primary by reading as much from the logs as possible.
 	///
 	/// Guaranteed to have changes up to the the time that `try_catch_up_with_primary` is called
-	/// if it finishes succesfully.
+	/// if it finishes successfully.
 	///
 	/// Blocks until the MANIFEST file and any state changes in the corresponding Write-Ahead-Logs
 	/// are applied to the secondary instance. If the manifest files are very large

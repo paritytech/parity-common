@@ -67,7 +67,7 @@ impl<T: Default> Get<T> for () {
 /// struct MyGetter;
 /// impl Get<u16> for MyGetter { fn get() -> u16 { 42 } }
 /// let foo: u32 = GetInto::<MyGetter, u16>::get();
-/// assert_eq!(foo, 42u32); // <--- infered as u32
+/// assert_eq!(foo, 42u32); // <--- inferred as u32
 /// ```
 pub struct GetInto<Inner, I>(core::marker::PhantomData<(Inner, I)>);
 
@@ -157,7 +157,7 @@ pub trait TryCollect<C> {
 /// - Declare the parameter type without `const` to have more freedom when creating the value.
 ///
 /// NOTE: A more substantial version of this macro is available in `frame_support` crate which
-/// allows mutable and persistant variants.
+/// allows mutable and persistent variants.
 ///
 /// # Examples
 ///

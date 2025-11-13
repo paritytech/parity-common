@@ -67,7 +67,7 @@ impl RlpStream {
 		self.buffer.len() - self.start_pos
 	}
 
-	/// Apends null to the end of stream, chainable.
+	/// Appends null to the end of stream, chainable.
 	///
 	/// ```
 	/// use rlp::RlpStream;
@@ -413,7 +413,7 @@ impl<'a> BasicEncoder<'a> {
 					self.buffer.extend(value);
 				}
 			},
-			// (prefix + length of length), followed by the length, followd by the string
+			// (prefix + length of length), followed by the length, followed by the string
 			len => {
 				self.buffer.put_u8(0);
 				let position = self.total_written();
