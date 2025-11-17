@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.20.2] - 2025-11-17
+- kvdb-rocksdb: Make snappy and jemalloc configurable features [#950](https://github.com/paritytech/parity-common/pull/950)
+
 ## [0.20.1] - 2025-11-07
 - Force compact the DB on startup and on heavy writes. [#949](https://github.com/paritytech/parity-common/pull/949)
 

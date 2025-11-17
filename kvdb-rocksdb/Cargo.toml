@@ -1,6 +1,6 @@
 [package]
 name = "kvdb-rocksdb"
-version = "0.20.1"
+version = "0.20.2"
 description = "kvdb implementation backed by RocksDB"
 rust-version = "1.71.1"
 authors.workspace = true
