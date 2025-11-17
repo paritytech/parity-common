@@ -32,14 +32,6 @@ use std::fs::File;
 #[cfg(target_os = "linux")]
 use std::process::Command;
 
-// OpenBSD and MSVC are untested and shouldn't enable jemalloc
-// https://github.com/tikv/jemallocator/blob/52de4257fab3e770f73d5174c12a095b49572fba/
-#[cfg(all(
-	feature = "jemalloc",
-	any(target_os = "openbsd", target_env = "msvc")
-))]
-compile_error!("OpenBSD and MSVC are untested and shouldn't enable jemalloc");
-
 fn other_io_err<E>(e: E) -> io::Error
 where
 	E: Into<Box<dyn error::Error + Send + Sync>>,
