@@ -18,7 +18,7 @@ kvdb = { workspace = true }
 num_cpus = { workspace = true }
 parking_lot = { workspace = true }
 regex = { workspace = true }
-rocksdb = { workspace = true, default-features = false }
+rocksdb = { workspace = true, default-features = false, features = ["snappy"] }
 
 [dev-dependencies]
 alloc_counter = { workspace = true }
@@ -33,7 +33,5 @@ ctrlc = { workspace = true }
 chrono = { workspace = true }
 
 [features]
-default  = ["snappy", "jemalloc"]
-snappy   = ["rocksdb/snappy"]
+default  = []
 jemalloc = ["rocksdb/jemalloc"]
-x-shadow = ["snappy"]

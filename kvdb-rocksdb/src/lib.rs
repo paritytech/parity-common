@@ -32,10 +32,6 @@ use std::fs::File;
 #[cfg(target_os = "linux")]
 use std::process::Command;
 
-// Features 'x-shadow' and 'jemalloc' are mutually exclusive. Build kvdb-rocksdb with `default-features = false, features = ["x-shadow"]`.
-#[cfg(all(feature = "x-shadow", feature = "jemalloc"))]
-compile_error!("Features 'x-shadow' and 'jemalloc' are mutually exclusive");
-
 // OpenBSD and MSVC are untested and shouldn't enable jemalloc
 // https://github.com/tikv/jemallocator/blob/52de4257fab3e770f73d5174c12a095b49572fba/
 #[cfg(all(
