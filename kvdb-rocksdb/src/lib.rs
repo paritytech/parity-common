@@ -14,10 +14,13 @@ use std::{
 	collections::HashMap,
 	error, io,
 	path::{Path, PathBuf},
+	time::{Duration, Instant},
 };
 
+use parking_lot::Mutex;
 use rocksdb::{
-	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Options, ReadOptions, WriteBatch, WriteOptions, DB,
+	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, CompactOptions, Options, ReadOptions, WriteBatch,
+	WriteOptions, DB,
 };
 
 pub use rocksdb::DBRawIterator;
@@ -302,6 +305,7 @@ pub struct Database {
 	read_opts: ReadOptions,
 	block_opts: BlockBasedOptions,
 	stats: stats::RunningDbStats,
+	last_compaction: Mutex<Instant>,
 }
 
 /// Generate the options for RocksDB, based on the given `DatabaseConfig`.
@@ -384,7 +388,7 @@ impl Database {
 			Self::open_primary(&opts, path.as_ref(), config, column_names.as_slice(), &block_opts)?
 		};
 
-		Ok(Database {
+		let db = Database {
 			inner: DBAndColumns { db, column_names },
 			config: config.clone(),
 			opts,
@@ -392,7 +396,15 @@ impl Database {
 			write_opts,
 			block_opts,
 			stats: stats::RunningDbStats::new(),
-		})
+			last_compaction: Mutex::new(Instant::now()),
+		};
+
+		// After opening the DB, we want to compact it.
+		//
+		// This just in case the node crashed before to ensure the db stays fast.
+		db.force_compaction()?;
+
+		Ok(db)
 	}
 
 	/// Internal api to open a database in primary mode.
@@ -494,7 +506,21 @@ impl Database {
 		}
 		self.stats.tally_bytes_written(stats_total_bytes as u64);
 
-		cfs.db.write_opt(batch, &self.write_opts).map_err(other_io_err)
+		let res = cfs.db.write_opt(batch, &self.write_opts).map_err(other_io_err)?;
+
+		// If we have written more data than what we want to have stored in a `sst` file, we force compaction.
+		// We also ensure that we only compact once per minute.
+		//
+		// Otherwise, rocksdb read performance is going down, after e.g. a warp sync.
+		if stats_total_bytes > self.config.compaction.initial_file_size as usize &&
+			self.last_compaction.lock().elapsed() > Duration::from_secs(60)
+		{
+			self.force_compaction()?;
+
+			*self.last_compaction.lock() = Instant::now();
+		}
+
+		Ok(res)
 	}
 
 	/// Get value by key.
@@ -618,6 +644,23 @@ impl Database {
 	/// in Iterator trait
 	pub fn raw_iter(&self, col: u32) -> io::Result<DBRawIterator<'_>> {
 		Ok(self.inner.db.raw_iterator_cf(self.inner.cf(col as usize)?))
+  }
+  
+	/// Force compacting the entire db.
+	fn force_compaction(&self) -> io::Result<()> {
+		let mut compact_options = CompactOptions::default();
+		compact_options.set_bottommost_level_compaction(rocksdb::BottommostLevelCompaction::Force);
+
+		// Don't ask me why we can not just use `compact_range_opt`...
+		// But we are forced to trigger compaction on every column. Actually we only need this for the `STATE` column,
+		// but we don't know which one this is here. So, we just iterate all of them.
+		for col in 0..self.inner.column_names.len() {
+			self.inner
+				.db
+				.compact_range_cf_opt(self.inner.cf(col)?, None::<Vec<u8>>, None::<Vec<u8>>, &compact_options);
+		}
+
+		Ok(())
 	}
 }
 

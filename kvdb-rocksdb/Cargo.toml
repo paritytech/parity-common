@@ -1,6 +1,6 @@
 [package]
 name = "kvdb-rocksdb"
-version = "0.20.0"
+version = "0.20.2"
 description = "kvdb implementation backed by RocksDB"
 rust-version = "1.71.1"
 authors.workspace = true
@@ -18,14 +18,7 @@ kvdb = { workspace = true }
 num_cpus = { workspace = true }
 parking_lot = { workspace = true }
 regex = { workspace = true }
-
-# OpenBSD and MSVC are unteested and shouldn't enable jemalloc:
-# https://github.com/tikv/jemallocator/blob/52de4257fab3e770f73d5174c12a095b49572fba/jemalloc-sys/build.rs#L26-L27
-[target.'cfg(any(target_os = "openbsd", target_env = "msvc"))'.dependencies]
-rocksdb = { workspace = true, features = ["snappy"] }
-
-[target.'cfg(not(any(target_os = "openbsd", target_env = "msvc")))'.dependencies]
-rocksdb = { workspace = true, features = ["snappy", "jemalloc"] }
+rocksdb = { workspace = true, default-features = false, features = ["snappy"] }
 
 [dev-dependencies]
 alloc_counter = { workspace = true }
@@ -38,3 +31,7 @@ keccak-hash = { workspace = true }
 sysinfo = { workspace = true }
 ctrlc = { workspace = true }
 chrono = { workspace = true }
+
+[features]
+default  = []
+jemalloc = ["rocksdb/jemalloc"]

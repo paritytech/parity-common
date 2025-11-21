@@ -265,6 +265,14 @@ impl<'a, T, S: Get<u32>> BoundedSlice<'a, T, S> {
 	pub fn truncate_from(s: &'a [T]) -> Self {
 		Self(&s[0..(s.len().min(S::get() as usize))], PhantomData)
 	}
+
+	/// Copies `self` into a new `BoundedVec`.
+	pub fn to_bounded_vec(self) -> BoundedVec<T, S>
+	where
+		T: Clone,
+	{
+		BoundedVec(self.0.to_vec(), PhantomData)
+	}
 }
 
 impl<T, S> BoundedVec<T, S> {
@@ -681,6 +689,19 @@ impl<T, S: Get<u32>> TryFrom<Vec<T>> for BoundedVec<T, S> {
 			Ok(Self::unchecked_from(t))
 		} else {
 			Err(t)
+		}
+	}
+}
+
+impl<'a, T: Clone, S: Get<u32>> TryFrom<&'a [T]> for BoundedVec<T, S> {
+	type Error = ();
+
+	fn try_from(t: &'a [T]) -> Result<Self, Self::Error> {
+		if t.len() <= Self::bound() {
+			// explicit check just above
+			Ok(Self::unchecked_from(t.to_vec()))
+		} else {
+			Err(())
 		}
 	}
 }
