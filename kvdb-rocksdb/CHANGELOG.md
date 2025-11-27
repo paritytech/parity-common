@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog].
 ## [Unreleased]
 
 ## [0.20.2] - 2025-11-28
-- Do not force compact on startup of a node [#951](https://github.com/paritytech/parity-common/pull/951)
+- Do not force compact rocksdb on startup of a node [#958](https://github.com/paritytech/parity-common/pull/958)
 - Make snappy and jemalloc configurable features [#950](https://github.com/paritytech/parity-common/pull/950)
 
 ## [0.20.1] - 2025-11-07
