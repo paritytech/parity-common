@@ -354,7 +354,7 @@ impl Database {
 			Self::open_primary(&opts, path.as_ref(), config, column_names.as_slice(), &block_opts)?
 		};
 
-		let db = Database {
+		Ok(Database {
 			inner: DBAndColumns { db, column_names },
 			config: config.clone(),
 			opts,
@@ -363,14 +363,7 @@ impl Database {
 			block_opts,
 			stats: stats::RunningDbStats::new(),
 			last_compaction: Mutex::new(Instant::now()),
-		};
-
-		// After opening the DB, we want to compact it.
-		//
-		// This just in case the node crashed before to ensure the db stays fast.
-		db.force_compaction()?;
-
-		Ok(db)
+		})
 	}
 
 	/// Internal api to open a database in primary mode.
