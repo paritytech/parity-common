@@ -14,7 +14,6 @@ use std::{
 	collections::HashMap,
 	error, io,
 	path::{Path, PathBuf},
-	time::{Duration, Instant},
 };
 
 use parking_lot::Mutex;
@@ -271,7 +270,6 @@ pub struct Database {
 	read_opts: ReadOptions,
 	block_opts: BlockBasedOptions,
 	stats: stats::RunningDbStats,
-	last_compaction: Mutex<Instant>,
 }
 
 /// Generate the options for RocksDB, based on the given `DatabaseConfig`.
@@ -362,7 +360,6 @@ impl Database {
 			write_opts,
 			block_opts,
 			stats: stats::RunningDbStats::new(),
-			last_compaction: Mutex::new(Instant::now()),
 		})
 	}
 
@@ -465,21 +462,7 @@ impl Database {
 		}
 		self.stats.tally_bytes_written(stats_total_bytes as u64);
 
-		let res = cfs.db.write_opt(batch, &self.write_opts).map_err(other_io_err)?;
-
-		// If we have written more data than what we want to have stored in a `sst` file, we force compaction.
-		// We also ensure that we only compact once per minute.
-		//
-		// Otherwise, rocksdb read performance is going down, after e.g. a warp sync.
-		if stats_total_bytes > self.config.compaction.initial_file_size as usize &&
-			self.last_compaction.lock().elapsed() > Duration::from_secs(60)
-		{
-			self.force_compaction()?;
-
-			*self.last_compaction.lock() = Instant::now();
-		}
-
-		Ok(res)
+		cfs.db.write_opt(batch, &self.write_opts).map_err(other_io_err)
 	}
 
 	/// Get value by key.
@@ -599,25 +582,23 @@ impl Database {
 		self.inner.db.try_catch_up_with_primary().map_err(other_io_err)
 	}
 
-	/// Force compacting the entire db.
-	fn force_compaction(&self) -> io::Result<()> {
+	/// Force compacting a single column.
+	///
+	/// After compaction of the column, this may lead to better read performance.
+	pub fn force_compaction(&self, col: u32) -> io::Result<()> {
 		let mut compact_options = CompactOptions::default();
 		compact_options.set_bottommost_level_compaction(rocksdb::BottommostLevelCompaction::Force);
-
-		// Don't ask me why we can not just use `compact_range_opt`...
-		// But we are forced to trigger compaction on every column. Actually we only need this for the `STATE` column,
-		// but we don't know which one this is here. So, we just iterate all of them.
-		for col in 0..self.inner.column_names.len() {
-			self.inner
-				.db
-				.compact_range_cf_opt(self.inner.cf(col)?, None::<Vec<u8>>, None::<Vec<u8>>, &compact_options);
-		}
-
+		self.inner.db.compact_range_cf_opt(
+			self.inner.cf(col as usize)?,
+			None::<Vec<u8>>,
+			None::<Vec<u8>>,
+			&compact_options,
+		);
 		Ok(())
 	}
 }
 
-// duplicate declaration of methods here to avoid trait import in certain existing cases
+// Duplicate declaration of methods here to avoid trait import in certain existing cases
 // at time of addition.
 impl KeyValueDB for Database {
 	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
