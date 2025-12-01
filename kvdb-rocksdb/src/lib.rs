@@ -16,7 +16,6 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use parking_lot::Mutex;
 use rocksdb::{
 	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, CompactOptions, Options, ReadOptions, WriteBatch,
 	WriteOptions, DB,
@@ -582,10 +581,10 @@ impl Database {
 		self.inner.db.try_catch_up_with_primary().map_err(other_io_err)
 	}
 
-	/// Force compacting a single column.
+	/// Force compact a single column.
 	///
 	/// After compaction of the column, this may lead to better read performance.
-	pub fn force_compaction(&self, col: u32) -> io::Result<()> {
+	pub fn force_compact(&self, col: u32) -> io::Result<()> {
 		let mut compact_options = CompactOptions::default();
 		compact_options.set_bottommost_level_compaction(rocksdb::BottommostLevelCompaction::Force);
 		self.inner.db.compact_range_cf_opt(
