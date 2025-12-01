@@ -6,7 +6,8 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [0.20.2] - 2025-11-17
+## [0.21.0] - 2025-12-01
+- Expose function `force_compact` to forcefully compact columns [#958](https://github.com/paritytech/parity-common/pull/958)
 - Make snappy and jemalloc configurable features [#950](https://github.com/paritytech/parity-common/pull/950)
 
 ## [0.20.1] - 2025-11-07
