@@ -17,7 +17,8 @@ use std::{
 };
 
 use rocksdb::{
-	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, Options, ReadOptions, WriteBatch, WriteOptions, DB,
+	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, CompactOptions, Options, ReadOptions, WriteBatch,
+	WriteOptions, DB,
 };
 
 pub use rocksdb::DBRawIterator;
@@ -613,9 +614,24 @@ impl Database {
 	pub fn raw_iter(&self, col: u32) -> io::Result<DBRawIterator<'_>> {
 		Ok(self.inner.db.raw_iterator_cf(self.inner.cf(col as usize)?))
 	}
+	
+	/// Force compact a single column.
+	///
+	/// After compaction of the column, this may lead to better read performance.
+	pub fn force_compact(&self, col: u32) -> io::Result<()> {
+		let mut compact_options = CompactOptions::default();
+		compact_options.set_bottommost_level_compaction(rocksdb::BottommostLevelCompaction::Force);
+		self.inner.db.compact_range_cf_opt(
+			self.inner.cf(col as usize)?,
+			None::<Vec<u8>>,
+			None::<Vec<u8>>,
+			&compact_options,
+		);
+		Ok(())
+	}
 }
 
-// duplicate declaration of methods here to avoid trait import in certain existing cases
+// Duplicate declaration of methods here to avoid trait import in certain existing cases
 // at time of addition.
 impl KeyValueDB for Database {
 	fn get(&self, col: u32, key: &[u8]) -> io::Result<Option<DBValue>> {
