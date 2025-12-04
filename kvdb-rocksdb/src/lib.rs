@@ -146,10 +146,13 @@ impl CompactionProfile {
 	}
 }
 
+/// Custom comparison function for row ordering
 pub trait Comparator<'a>: Send + Sync {
 	fn get_fn(&self) -> Box<dyn Fn(&[u8], &[u8]) -> cmp::Ordering + 'a>;
 }
 
+/// A wrapper to allow the comparator to be both cloneable and convertible into Box<dyn Fn>,
+/// which is required by RocksDb
 pub struct ComparatorWrapper<T> {
 	cmp: T,
 }
@@ -174,6 +177,7 @@ pub struct ColumnConfig {
 	/// `DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB` is used for that column.
 	pub memory_budget: Option<MiB>,
 
+	/// Custom comparison function for row ordering
 	pub comparator: Option<std::sync::Arc<dyn Comparator<'static>>>,
 }
 
@@ -185,7 +189,7 @@ pub struct DatabaseConfig {
 	pub max_open_files: i32,
 	/// Compaction profile.
 	pub compaction: CompactionProfile,
-	/// Set number of columns.
+	/// Configuration for column spaces.
 	///
 	/// # Safety
 	///
