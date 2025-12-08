@@ -596,8 +596,13 @@ impl Database {
 		Ok(())
 	}
 
+	/// Add a new column family with default config to the DB.
+	pub fn add_column(&mut self) -> io::Result<()> {
+		self.add_column_with_config(Default::default())
+	}
+
 	/// Add a new column family to the DB.
-	pub fn add_column(&mut self, cfg: ColumnConfig) -> io::Result<()> {
+	pub fn add_column_with_config(&mut self, cfg: ColumnConfig) -> io::Result<()> {
 		let DBAndColumns { ref mut db, ref mut column_names } = self.inner;
 		let col = column_names.len() as u32;
 		let name = format!("col{}", col);
@@ -859,7 +864,7 @@ mod tests {
 			assert_eq!(db.num_columns(), 1);
 
 			for i in 2..=5 {
-				db.add_column(Default::default()).unwrap();
+				db.add_column().unwrap();
 				assert_eq!(db.num_columns(), i);
 			}
 		}
