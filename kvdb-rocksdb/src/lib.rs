@@ -163,7 +163,9 @@ impl<T> ComparatorWrapper<T> {
 	}
 }
 
-impl<T: 'static + Send + Sync + Clone + Fn(&[u8], &[u8]) -> cmp::Ordering> Comparator<'static> for ComparatorWrapper<T> {
+impl<T: 'static + Send + Sync + Clone + Fn(&[u8], &[u8]) -> cmp::Ordering> Comparator<'static>
+	for ComparatorWrapper<T>
+{
 	fn get_fn(&self) -> Box<dyn Fn(&[u8], &[u8]) -> cmp::Ordering + 'static> {
 		Box::new(self.cmp.clone())
 	}
@@ -177,7 +179,12 @@ pub struct ColumnConfig {
 	/// `DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB` is used for that column.
 	pub memory_budget: Option<MiB>,
 
-	/// Custom comparison function for row ordering
+	/// Custom comparison function for row ordering.
+	/// Pass `None` to use the default lexicographic ordering.
+	///
+	/// The client must ensure that the comparator supplied here has the same
+	/// name and orders keys *exactly* the same as the comparator provided to
+	/// previous open calls on the same DB.
 	pub comparator: Option<std::sync::Arc<dyn Comparator<'static>>>,
 }
 
@@ -223,13 +230,25 @@ pub struct DatabaseConfig {
 }
 
 impl DatabaseConfig {
+	/// Create new `DatabaseConfig` with default parameters and specified number of columns with default configuration.
+	/// Note that cache sizes must be explicitly set.
+	///
+	/// # Safety
+	///
+	/// The number of `columns` must not be zero.
+	pub fn with_columns(columns: u32) -> Self {
+		assert!(columns > 0, "the number of columns must not be zero");
+
+		Self { columns: (0..columns).map(|_| ColumnConfig::default()).collect(), ..Default::default() }
+	}
+
 	/// Create new `DatabaseConfig` with default parameters and specified set of columns.
 	/// Note that cache sizes must be explicitly set.
 	///
 	/// # Safety
 	///
 	/// The number of `columns` must not be zero.
-	pub fn with_columns(columns: Vec<ColumnConfig>) -> Self {
+	pub fn with_configured_columns(columns: Vec<ColumnConfig>) -> Self {
 		assert!(columns.len() > 0, "the number of columns must not be zero");
 
 		Self { columns, ..Default::default() }
@@ -237,14 +256,20 @@ impl DatabaseConfig {
 
 	/// Returns the total memory budget in bytes.
 	pub fn memory_budget(&self) -> MiB {
-		self.columns.iter()
-			.map(|i| i.memory_budget.unwrap_or(DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
+		self.columns
+			.iter()
+			.map(|cfg| cfg.memory_budget.unwrap_or(DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB)
 			.sum()
 	}
 
 	/// Returns the memory budget of the specified column in bytes.
 	fn memory_budget_for_col(&self, col: u32) -> MiB {
-		self.columns[col as usize].memory_budget.unwrap_or(DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB) * MB
+		let budget_mb = if let Some(cfg) = self.columns.get(col as usize) {
+			cfg.memory_budget.unwrap_or(DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB)
+		} else {
+			DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB
+		};
+		budget_mb * MB
 	}
 
 	// Get column family configuration with the given block based options.
@@ -572,10 +597,11 @@ impl Database {
 	}
 
 	/// Add a new column family to the DB.
-	pub fn add_column(&mut self) -> io::Result<()> {
+	pub fn add_column(&mut self, cfg: ColumnConfig) -> io::Result<()> {
 		let DBAndColumns { ref mut db, ref mut column_names } = self.inner;
 		let col = column_names.len() as u32;
 		let name = format!("col{}", col);
+		self.config.columns.push(cfg);
 		let col_config = self.config.column_config(&self.block_opts, col as u32);
 		let _ = db.create_cf(&name, &col_config).map_err(other_io_err)?;
 		column_names.push(name);
@@ -618,7 +644,7 @@ impl Database {
 	pub fn raw_iter(&self, col: u32) -> io::Result<DBRawIterator<'_>> {
 		Ok(self.inner.db.raw_iterator_cf(self.inner.cf(col as usize)?))
 	}
-	
+
 	/// Force compact a single column.
 	///
 	/// After compaction of the column, this may lead to better read performance.
@@ -816,7 +842,7 @@ mod tests {
 	#[test]
 	#[should_panic]
 	fn open_db_with_zero_columns() {
-		let cfg = DatabaseConfig { columns: 0, ..Default::default() };
+		let cfg = DatabaseConfig { columns: vec![], ..Default::default() };
 		let _db = Database::open(&cfg, "");
 	}
 
@@ -833,7 +859,7 @@ mod tests {
 			assert_eq!(db.num_columns(), 1);
 
 			for i in 2..=5 {
-				db.add_column().unwrap();
+				db.add_column(Default::default()).unwrap();
 				assert_eq!(db.num_columns(), i);
 			}
 		}
@@ -887,7 +913,7 @@ mod tests {
 	#[test]
 	fn default_memory_budget() {
 		let c = DatabaseConfig::default();
-		assert_eq!(c.columns, 1);
+		assert_eq!(c.columns.len(), 1);
 		assert_eq!(c.memory_budget(), DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB * MB, "total memory budget is default");
 		assert_eq!(
 			c.memory_budget_for_col(0),
@@ -903,8 +929,13 @@ mod tests {
 
 	#[test]
 	fn memory_budget() {
-		let mut c = DatabaseConfig::with_columns(3);
-		c.memory_budget = [(0, 10), (1, 15), (2, 20)].iter().cloned().collect();
+		let c = DatabaseConfig::with_configured_columns(
+			[10, 15, 20]
+				.iter()
+				.cloned()
+				.map(|n| ColumnConfig { memory_budget: Some(n), ..Default::default() })
+				.collect(),
+		);
 		assert_eq!(c.memory_budget(), 45 * MB, "total budget is the sum of the column budget");
 	}
 
@@ -928,11 +959,19 @@ rocksdb.db.get.micros P50 : 2.000000 P95 : 3.000000 P99 : 4.000000 P100 : 5.0000
 	#[test]
 	fn rocksdb_settings() {
 		const NUM_COLS: usize = 2;
-		let mut cfg = DatabaseConfig { enable_statistics: true, ..DatabaseConfig::with_columns(NUM_COLS as u32) };
+		let mut cfg = DatabaseConfig {
+			enable_statistics: true,
+			..DatabaseConfig::with_configured_columns(
+				[30, 300]
+					.iter()
+					.cloned()
+					.map(|n| ColumnConfig { memory_budget: Some(n), ..Default::default() })
+					.collect(),
+			)
+		};
 		cfg.max_open_files = 123; // is capped by the OS fd limit (typically 1024)
 		cfg.compaction.block_size = 323232;
 		cfg.compaction.initial_file_size = 102030;
-		cfg.memory_budget = [(0, 30), (1, 300)].iter().cloned().collect();
 
 		let db_path = TempfileBuilder::new()
 			.prefix("config_test")

@@ -101,7 +101,7 @@ fn main() {
 	let mut config = DatabaseConfig::with_columns(COLUMN_COUNT);
 
 	for c in 0..=COLUMN_COUNT {
-		config.memory_budget.insert(c, mb_per_col);
+		config.columns[c as usize].memory_budget = Some(mb_per_col);
 	}
 	let dir = tempfile::Builder::new().prefix("rocksdb-example").tempdir().unwrap();
 
