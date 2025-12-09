@@ -157,8 +157,8 @@ pub struct ColumnConfig {
 	/// Custom comparison function for row ordering.
 	/// Pass `None` to use the default lexicographic ordering.
 	///
-	/// The client must ensure that the comparator supplied here has the same
-	/// name and orders keys *exactly* the same as the comparator provided to
+	/// The client must ensure that the comparator supplied here
+	/// orders keys *exactly* the same as the comparator provided to
 	/// previous open calls on the same DB.
 	pub comparator: Option<fn(&[u8], &[u8]) -> cmp::Ordering>,
 }
@@ -239,11 +239,11 @@ impl DatabaseConfig {
 
 	/// Returns the memory budget of the specified column in bytes.
 	fn memory_budget_for_col(&self, col: u32) -> MiB {
-		let budget_mb = if let Some(cfg) = self.columns.get(col as usize) {
-			cfg.memory_budget.unwrap_or(DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB)
-		} else {
-			DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB
-		};
+		let budget_mb = self
+			.columns
+			.get(col as usize)
+			.and_then(|cfg| cfg.memory_budget)
+			.unwrap_or(DB_DEFAULT_COLUMN_MEMORY_BUDGET_MB);
 		budget_mb * MB
 	}
 
