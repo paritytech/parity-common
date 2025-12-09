@@ -146,31 +146,6 @@ impl CompactionProfile {
 	}
 }
 
-/// Custom comparison function for row ordering
-pub trait Comparator<'a>: Send + Sync {
-	fn get_fn(&self) -> Box<dyn Fn(&[u8], &[u8]) -> cmp::Ordering + 'a>;
-}
-
-/// A wrapper to allow the comparator to be both cloneable and convertible into Box<dyn Fn>,
-/// which is required by RocksDb
-pub struct ComparatorWrapper<T> {
-	cmp: T,
-}
-
-impl<T> ComparatorWrapper<T> {
-	pub fn new(cmp: T) -> Self {
-		Self { cmp }
-	}
-}
-
-impl<T: 'static + Send + Sync + Clone + Fn(&[u8], &[u8]) -> cmp::Ordering> Comparator<'static>
-	for ComparatorWrapper<T>
-{
-	fn get_fn(&self) -> Box<dyn Fn(&[u8], &[u8]) -> cmp::Ordering + 'static> {
-		Box::new(self.cmp.clone())
-	}
-}
-
 #[derive(Clone, Default)]
 pub struct ColumnConfig {
 	/// Memory budget (in MiB) used for setting block cache size and
@@ -185,7 +160,7 @@ pub struct ColumnConfig {
 	/// The client must ensure that the comparator supplied here has the same
 	/// name and orders keys *exactly* the same as the comparator provided to
 	/// previous open calls on the same DB.
-	pub comparator: Option<std::sync::Arc<dyn Comparator<'static>>>,
+	pub comparator: Option<fn(&[u8], &[u8]) -> cmp::Ordering>,
 }
 
 /// Database configuration
@@ -282,8 +257,8 @@ impl DatabaseConfig {
 		opts.optimize_level_style_compaction(column_mem_budget);
 		opts.set_target_file_size_base(self.compaction.initial_file_size);
 		opts.set_compression_per_level(&[]);
-		if let Some(comparator) = &self.columns[col as usize].comparator {
-			opts.set_comparator(&format!("column_{col}_comparator"), comparator.get_fn());
+		if let Some(comparator) = self.columns[col as usize].comparator {
+			opts.set_comparator(&format!("column_{col}_comparator"), Box::new(comparator));
 		}
 
 		opts
