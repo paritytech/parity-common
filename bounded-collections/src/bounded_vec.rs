@@ -1248,12 +1248,14 @@ mod test {
 		assert_eq!(*b, vec![1, 2, 3]);
 	}
 
+	#[cfg(feature = "serde")]
 	#[test]
 	fn test_serializer() {
 		let c: BoundedVec<u32, ConstU32<6>> = bounded_vec![0, 1, 2];
 		assert_eq!(serde_json::json!(&c).to_string(), r#"[0,1,2]"#);
 	}
 
+	#[cfg(feature = "serde")]
 	#[test]
 	fn test_deserializer() {
 		let c: BoundedVec<u32, ConstU32<6>> = serde_json::from_str(r#"[0,1,2]"#).unwrap();
@@ -1264,6 +1266,7 @@ mod test {
 		assert_eq!(c[2], 2);
 	}
 
+	#[cfg(feature = "serde")]
 	#[test]
 	fn test_deserializer_bound() {
 		let c: BoundedVec<u32, ConstU32<3>> = serde_json::from_str(r#"[0,1,2]"#).unwrap();
@@ -1274,6 +1277,7 @@ mod test {
 		assert_eq!(c[2], 2);
 	}
 
+	#[cfg(feature = "serde")]
 	#[test]
 	fn test_deserializer_failed() {
 		let c: Result<BoundedVec<u32, ConstU32<4>>, serde_json::error::Error> = serde_json::from_str(r#"[0,1,2,3,4]"#);
