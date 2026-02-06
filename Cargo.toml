@@ -61,7 +61,7 @@ byteorder = { version = "1.4.2", default-features = false }
 hex = { version = "0.4", default-features = false }
 num-bigint = "0.4.0"
 rug = { version = "1.6.0", default-features = false }
-jsonschema = { version = "0.40", default-features = false }
+jsonschema = { version = "0.41", default-features = false }
 serde_derive = "1.0.101"
 
 ethbloom = { path = "./ethbloom", default-features = false }
