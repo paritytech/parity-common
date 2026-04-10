@@ -98,8 +98,16 @@ macro_rules! impl_const_get {
 		#[derive(Default, Clone)]
 		pub struct $name<const T: $t>;
 
+		#[cfg(feature = "std")]
 		impl<const T: $t> core::fmt::Debug for $name<T> {
 			fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
+				fmt.write_str(&format!("{}<{}>", stringify!($name), T))
+			}
+		}
+		#[cfg(not(feature = "std"))]
+		impl<const T: $t> core::fmt::Debug for $name<T> {
+			fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
+				fmt.write_str("<wasm:stripped>")
 				fmt.write_str(&alloc::format!("{}<{}>", stringify!($name), T))
 			}
 		}

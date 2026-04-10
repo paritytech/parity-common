@@ -4,6 +4,12 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
 
+## [unreleased]
+- add `Hash` implementation on some collection even in no-std environment
+  [#975](https://github.com/paritytech/parity-common/pull/975)
+- make `bounded_vec!` and `bounded_btree_map!` macro available in no-std environment
+  [#975](https://github.com/paritytech/parity-common/pull/975)
+
 ## [0.3.2] - 2025-06-26
 - fix(bounded-collections): Fix scale-codec feature config [#925](https://github.com/paritytech/parity-common/pull/925)
 
