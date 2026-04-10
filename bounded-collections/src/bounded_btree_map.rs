@@ -152,7 +152,7 @@ where
 	/// [`Self::try_from`].
 	pub fn try_mutate(mut self, mut mutate: impl FnMut(&mut BTreeMap<K, V>)) -> Option<Self> {
 		mutate(&mut self.0);
-		(self.0.len() <= Self::bound()).then(move || self)
+		(self.0.len() <= Self::bound()).then_some(self)
 	}
 
 	/// Clears the map, removing all elements.
@@ -243,7 +243,7 @@ where
 		Ok(BoundedBTreeMap::<K, T, S>::unchecked_from(
 			self.0
 				.into_iter()
-				.map(|(k, v)| (f((&k, v)).map(|t| (k, t))))
+				.map(|(k, v)| f((&k, v)).map(|t| (k, t)))
 				.collect::<Result<BTreeMap<_, _>, _>>()?,
 		))
 	}
@@ -285,9 +285,8 @@ where
 
 // Custom implementation of `Hash` since deriving it would require all generic bounds to also
 // implement it.
-#[cfg(feature = "std")]
-impl<K: std::hash::Hash, V: std::hash::Hash, S> std::hash::Hash for BoundedBTreeMap<K, V, S> {
-	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+impl<K: core::hash::Hash, V: core::hash::Hash, S> core::hash::Hash for BoundedBTreeMap<K, V, S> {
+	fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
 		self.0.hash(state);
 	}
 }
@@ -769,12 +768,11 @@ mod test {
 	// Just a test that structs containing `BoundedBTreeMap` can derive `Hash`. (This was broken
 	// when it was deriving `Hash`).
 	#[test]
-	#[cfg(feature = "std")]
 	fn container_can_derive_hash() {
 		#[derive(Hash, Default)]
 		struct Foo {
 			bar: u8,
-			map: BoundedBTreeMap<String, usize, ConstU32<16>>,
+			map: BoundedBTreeMap<alloc::string::String, usize, ConstU32<16>>,
 		}
 		let _foo = Foo::default();
 	}

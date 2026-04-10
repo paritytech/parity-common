@@ -98,16 +98,9 @@ macro_rules! impl_const_get {
 		#[derive(Default, Clone)]
 		pub struct $name<const T: $t>;
 
-		#[cfg(feature = "std")]
 		impl<const T: $t> core::fmt::Debug for $name<T> {
 			fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
-				fmt.write_str(&format!("{}<{}>", stringify!($name), T))
-			}
-		}
-		#[cfg(not(feature = "std"))]
-		impl<const T: $t> core::fmt::Debug for $name<T> {
-			fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
-				fmt.write_str("<wasm:stripped>")
+				fmt.write_str(&alloc::format!("{}<{}>", stringify!($name), T))
 			}
 		}
 		impl<R: From<$t>, const T: $t> Get<R> for $name<T> {
@@ -272,7 +265,6 @@ macro_rules! parameter_types {
 /// Will not handle any errors and just panic if the given literals cannot fit in the corresponding
 /// bounded vec type. Thus, this is only suitable for testing and non-consensus code.
 #[macro_export]
-#[cfg(feature = "std")]
 macro_rules! bounded_vec {
 	($ ($values:expr),* $(,)?) => {
 		{
@@ -293,7 +285,6 @@ macro_rules! bounded_vec {
 /// Will not handle any errors and just panic if the given literals cannot fit in the corresponding
 /// bounded vec type. Thus, this is only suitable for testing and non-consensus code.
 #[macro_export]
-#[cfg(feature = "std")]
 macro_rules! bounded_btree_map {
 	($ ( $key:expr => $value:expr ),* $(,)?) => {
 		{

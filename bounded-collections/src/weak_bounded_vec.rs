@@ -182,7 +182,7 @@ impl<T, S: Get<u32>> WeakBoundedVec<T, S> {
 	/// [`Self::try_from`].
 	pub fn try_mutate(mut self, mut mutate: impl FnMut(&mut Vec<T>)) -> Option<Self> {
 		mutate(&mut self.0);
-		(self.0.len() <= Self::bound()).then(move || self)
+		(self.0.len() <= Self::bound()).then_some(self)
 	}
 
 	/// Exactly the same semantics as [`Vec::insert`], but returns an `Err` (and is a noop) if the
@@ -405,7 +405,7 @@ where
 	BoundRhs: Get<u32>,
 {
 	fn partial_cmp(&self, other: &BoundedSlice<'a, T, BoundRhs>) -> Option<core::cmp::Ordering> {
-		(&*self.0).partial_cmp(other.0)
+		(*self.0).partial_cmp(other.0)
 	}
 }
 

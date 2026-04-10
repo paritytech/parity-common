@@ -187,7 +187,7 @@ where
 
 impl<'a, T: Ord, Bound: Get<u32>> Ord for BoundedSlice<'a, T, Bound> {
 	fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-		self.0.cmp(&other.0)
+		self.0.cmp(other.0)
 	}
 }
 
@@ -244,9 +244,8 @@ impl<'a, T, S> Deref for BoundedSlice<'a, T, S> {
 
 // Custom implementation of `Hash` since deriving it would require all generic bounds to also
 // implement it.
-#[cfg(feature = "std")]
-impl<'a, T: std::hash::Hash, S> std::hash::Hash for BoundedSlice<'a, T, S> {
-	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+impl<'a, T: core::hash::Hash, S> core::hash::Hash for BoundedSlice<'a, T, S> {
+	fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
 		self.0.hash(state);
 	}
 }
@@ -547,7 +546,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 	/// Infallible, but if the bound is zero, then it's a no-op.
 	pub fn force_push(&mut self, element: T) {
 		if Self::bound() > 0 {
-			self.0.truncate(Self::bound() as usize - 1);
+			self.0.truncate(Self::bound() - 1);
 			self.0.push(element);
 		}
 	}
@@ -593,7 +592,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 	/// [`Self::try_from`].
 	pub fn try_mutate(mut self, mut mutate: impl FnMut(&mut Vec<T>)) -> Option<Self> {
 		mutate(&mut self.0);
-		(self.0.len() <= Self::bound()).then(move || self)
+		(self.0.len() <= Self::bound()).then_some(self)
 	}
 
 	/// Exactly the same semantics as [`Vec::insert`], but returns an `Err` (and is a noop) if the
@@ -650,7 +649,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 impl<T, S> BoundedVec<T, S> {
 	/// Return a [`BoundedSlice`] with the content and bound of [`Self`].
 	pub fn as_bounded_slice(&self) -> BoundedSlice<'_, T, S> {
-		BoundedSlice(&self.0[..], PhantomData::default())
+		BoundedSlice(&self.0[..], PhantomData)
 	}
 }
 
@@ -714,9 +713,8 @@ impl<T, S: Get<u32>> TruncateFrom<Vec<T>> for BoundedVec<T, S> {
 
 // Custom implementation of `Hash` since deriving it would require all generic bounds to also
 // implement it.
-#[cfg(feature = "std")]
-impl<T: std::hash::Hash, S> std::hash::Hash for BoundedVec<T, S> {
-	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+impl<T: core::hash::Hash, S> core::hash::Hash for BoundedVec<T, S> {
+	fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
 		self.0.hash(state);
 	}
 }
@@ -872,7 +870,7 @@ where
 	BoundRhs: Get<u32>,
 {
 	fn partial_cmp(&self, other: &BoundedSlice<'a, T, BoundRhs>) -> Option<core::cmp::Ordering> {
-		(&*self.0).partial_cmp(other.0)
+		(*self.0).partial_cmp(other.0)
 	}
 }
 

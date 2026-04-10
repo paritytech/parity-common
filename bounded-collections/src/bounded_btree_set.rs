@@ -141,7 +141,7 @@ where
 	/// [`Self::try_from`].
 	pub fn try_mutate(mut self, mut mutate: impl FnMut(&mut BTreeSet<T>)) -> Option<Self> {
 		mutate(&mut self.0);
-		(self.0.len() <= Self::bound()).then(move || self)
+		(self.0.len() <= Self::bound()).then_some(self)
 	}
 
 	/// Clears the set, removing all elements.
@@ -222,9 +222,8 @@ where
 
 // Custom implementation of `Hash` since deriving it would require all generic bounds to also
 // implement it.
-#[cfg(feature = "std")]
-impl<T: std::hash::Hash, S> std::hash::Hash for BoundedBTreeSet<T, S> {
-	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+impl<T: core::hash::Hash, S> core::hash::Hash for BoundedBTreeSet<T, S> {
+	fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
 		self.0.hash(state);
 	}
 }
@@ -616,12 +615,11 @@ mod test {
 	// Just a test that structs containing `BoundedBTreeSet` can derive `Hash`. (This was broken
 	// when it was deriving `Hash`).
 	#[test]
-	#[cfg(feature = "std")]
 	fn container_can_derive_hash() {
 		#[derive(Hash, Default)]
 		struct Foo {
 			bar: u8,
-			set: BoundedBTreeSet<String, ConstU32<16>>,
+			set: BoundedBTreeSet<alloc::string::String, ConstU32<16>>,
 		}
 		let _foo = Foo::default();
 	}
