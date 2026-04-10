@@ -11,8 +11,8 @@
 #![cfg(test)]
 
 use crate::*;
-use core::fmt::Debug;
 use alloc::format;
+use core::fmt::Debug;
 
 #[test]
 #[allow(path_statements)]

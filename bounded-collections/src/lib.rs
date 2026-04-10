@@ -108,7 +108,6 @@ macro_rules! impl_const_get {
 		impl<const T: $t> core::fmt::Debug for $name<T> {
 			fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
 				fmt.write_str("<wasm:stripped>")
-				fmt.write_str(&alloc::format!("{}<{}>", stringify!($name), T))
 			}
 		}
 		impl<R: From<$t>, const T: $t> Get<R> for $name<T> {
