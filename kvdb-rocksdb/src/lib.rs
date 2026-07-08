@@ -17,8 +17,8 @@ use std::{
 };
 
 use rocksdb::{
-	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, CompactOptions, Options, ReadOptions, WriteBatch,
-	WriteOptions, DB,
+	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, CompactOptions, DBPath, Options, ReadOptions,
+	WriteBatch, WriteOptions, DB,
 };
 
 pub use rocksdb::DBRawIterator;
@@ -161,6 +161,13 @@ pub struct ColumnConfig {
 	/// orders keys *exactly* the same as the comparator provided to
 	/// previous open calls on the same DB.
 	pub comparator: Option<fn(&[u8], &[u8]) -> cmp::Ordering>,
+
+	/// Directory for this column family's SST files. When set, the column's data is placed on
+	/// this path instead of the main database directory, so a large cold column can live on a
+	/// separate (cheaper) volume. `None` keeps it in the main directory.
+	///
+	/// Only affects where *new* SST files are written; it does not move data already on disk.
+	pub path: Option<PathBuf>,
 }
 
 /// Database configuration
@@ -248,7 +255,7 @@ impl DatabaseConfig {
 	}
 
 	// Get column family configuration with the given block based options.
-	fn column_config(&self, block_opts: &BlockBasedOptions, col: u32) -> Options {
+	fn column_config(&self, block_opts: &BlockBasedOptions, col: u32) -> io::Result<Options> {
 		let column_mem_budget = self.memory_budget_for_col(col);
 		let mut opts = Options::default();
 
@@ -260,8 +267,14 @@ impl DatabaseConfig {
 		if let Some(comparator) = self.columns[col as usize].comparator {
 			opts.set_comparator(&format!("column_{col}_comparator"), Box::new(comparator));
 		}
+		// Place this column family's SST files on a dedicated directory when configured. A single
+		// path with a huge target size pins the whole column there: RocksDB never spills elsewhere,
+		// and `cf_paths` overrides `db_paths` for this column only.
+		if let Some(path) = &self.columns[col as usize].path {
+			opts.set_cf_paths(&[DBPath::new(path, u64::MAX).map_err(other_io_err)?]);
+		}
 
-		opts
+		Ok(opts)
 	}
 }
 
@@ -404,9 +417,14 @@ impl Database {
 		column_names: &[&str],
 		block_opts: &BlockBasedOptions,
 	) -> io::Result<rocksdb::DB> {
-		let cf_descriptors: Vec<_> = (0..config.columns.len())
-			.map(|i| ColumnFamilyDescriptor::new(column_names[i as usize], config.column_config(&block_opts, i as u32)))
-			.collect();
+		let cf_descriptors = (0..config.columns.len())
+			.map(|i| {
+				Ok(ColumnFamilyDescriptor::new(
+					column_names[i as usize],
+					config.column_config(block_opts, i as u32)?,
+				))
+			})
+			.collect::<io::Result<Vec<_>>>()?;
 
 		let db = match DB::open_cf_descriptors(&opts, path.as_ref(), cf_descriptors) {
 			Err(_) => {
@@ -415,7 +433,7 @@ impl Database {
 					Ok(mut db) => {
 						for (i, name) in column_names.iter().enumerate() {
 							let _ = db
-								.create_cf(name, &config.column_config(&block_opts, i as u32))
+								.create_cf(name, &config.column_config(block_opts, i as u32)?)
 								.map_err(other_io_err)?;
 						}
 						Ok(db)
@@ -582,7 +600,7 @@ impl Database {
 		let col = column_names.len() as u32;
 		let name = format!("col{}", col);
 		self.config.columns.push(cfg);
-		let col_config = self.config.column_config(&self.block_opts, col as u32);
+		let col_config = self.config.column_config(&self.block_opts, col as u32)?;
 		let _ = db.create_cf(&name, &col_config).map_err(other_io_err)?;
 		column_names.push(name);
 		Ok(())
