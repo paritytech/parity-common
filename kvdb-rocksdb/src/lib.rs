@@ -17,8 +17,8 @@ use std::{
 };
 
 use rocksdb::{
-	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, CompactOptions, DBPath, Options, ReadOptions,
-	WriteBatch, WriteOptions, DB,
+	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, CompactOptions, DBPath, Options, ReadOptions, WriteBatch,
+	WriteOptions, DB,
 };
 
 pub use rocksdb::DBRawIterator;
@@ -419,10 +419,7 @@ impl Database {
 	) -> io::Result<rocksdb::DB> {
 		let cf_descriptors = (0..config.columns.len())
 			.map(|i| {
-				Ok(ColumnFamilyDescriptor::new(
-					column_names[i as usize],
-					config.column_config(block_opts, i as u32)?,
-				))
+				Ok(ColumnFamilyDescriptor::new(column_names[i as usize], config.column_config(block_opts, i as u32)?))
 			})
 			.collect::<io::Result<Vec<_>>>()?;
 
