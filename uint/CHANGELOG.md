@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-08-08
+- Fix trailing semicolon in expression macro bodies. [#980](https://github.com/paritytech/parity-common/pull/980)
+
 ## [0.10.0] - 2024-09-11
 - Removed From<[u8; n]> conversions, renamed `to_big_endian` / `to_little_endian` to write_as_*, and made them return byte arrays. [#859](https://github.com/paritytech/parity-common/pull/859)
 

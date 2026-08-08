@@ -1,6 +1,6 @@
 [package]
 name = "uint"
-version = "0.10.0"
+version = "0.10.1"
 description = "Large fixed-size integer arithmetic"
 readme = "README.md"
 rust-version = "1.56.1"
