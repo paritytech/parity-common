@@ -243,7 +243,7 @@ where
 		Ok(BoundedBTreeMap::<K, T, S>::unchecked_from(
 			self.0
 				.into_iter()
-				.map(|(k, v)| (f((&k, v)).map(|t| (k, t))))
+				.map(|(k, v)| f((&k, v)).map(|t| (k, t)))
 				.collect::<Result<BTreeMap<_, _>, _>>()?,
 		))
 	}

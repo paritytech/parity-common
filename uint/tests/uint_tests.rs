@@ -7,7 +7,6 @@
 // except according to those terms.
 
 use core::{convert::TryInto, str::FromStr, u64::MAX};
-use crunchy::unroll;
 use uint::{construct_uint, overflowing, FromDecStrErr};
 
 construct_uint! {

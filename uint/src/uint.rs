@@ -938,10 +938,10 @@ macro_rules! construct_uint {
 				(q, remainder)
 			}
 
-			// Returns the least number of words needed to represent the nonzero number
+			/// Returns the least number of words needed to represent a number with width `bits`.
 			fn words(bits: usize) -> usize {
 				debug_assert!(bits > 0);
-				1 + (bits - 1) / Self::WORD_BITS
+				bits.div_ceil(Self::WORD_BITS)
 			}
 
 			/// Returns a pair `(self / other, self % other)`.
