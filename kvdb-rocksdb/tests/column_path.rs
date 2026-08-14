@@ -109,10 +109,7 @@ fn reopen_without_override_does_not_silently_serve_data() {
 		},
 		Ok(db) => {
 			let sample = db.get(COLD_COL, &0u32.to_le_bytes()).unwrap();
-			assert!(
-				sample.is_none(),
-				"reopen without override silently served cold-column data; placement suspect"
-			);
+			assert!(sample.is_none(), "reopen without override silently served cold-column data; placement suspect");
 			panic!("reopen without override succeeded with an empty cold column: silent data hole");
 		},
 	}
