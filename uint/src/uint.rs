@@ -10,7 +10,7 @@
 
 // Rust Bitcoin Library
 // Written in 2014 by
-//	   Andrew Poelstra <apoelstra@wpsoftware.net>
+// 	   Andrew Poelstra <apoelstra@wpsoftware.net>
 //
 // To the extent possible under law, the author(s) have dedicated all
 // copyright and related and neighboring rights to this software to
@@ -199,7 +199,7 @@ macro_rules! impl_try_from_for_primitive {
 			#[inline]
 			fn try_from(u: $from) -> $crate::core_::result::Result<$to, &'static str> {
 				let $from(arr) = u;
-				if !u.fits_word() || arr[0] > <$to>::max_value() as u64 {
+				if !u.fits_word() || arr[0] > <$to>::MAX as u64 {
 					Err(concat!("integer overflow when casting to ", stringify!($to)))
 				} else {
 					Ok(arr[0] as $to)
@@ -219,7 +219,7 @@ macro_rules! uint_overflowing_binop {
 
 		let mut ret = [0u64; $n_words];
 		let mut carry = 0u64;
-		$crate::static_assertions::const_assert!(core::isize::MAX as usize / core::mem::size_of::<u64>() > $n_words);
+		$crate::static_assertions::const_assert!(isize::MAX as usize / core::mem::size_of::<u64>() > $n_words);
 
 		// `unroll!` is recursive, but doesn’t use `$crate::unroll`, so we need to ensure that it
 		// is in scope unqualified.
@@ -541,7 +541,7 @@ macro_rules! construct_uint {
 				fn try_from(u: $name) -> $crate::core_::result::Result<i128, &'static str> {
 					let err_str = "integer overflow when casting to i128";
 					let i = u128::try_from(u).map_err(|_| err_str)?;
-					if i > i128::max_value() as u128 {
+					if i > i128::MAX as u128 {
 						Err(err_str)
 					} else {
 						Ok(i as i128)
@@ -573,7 +573,7 @@ macro_rules! construct_uint {
 		impl $name {
 			const WORD_BITS: usize = 64;
 			/// Maximum value.
-			pub const MAX: $name = $name([u64::max_value(); $n_words]);
+			pub const MAX: $name = $name([u64::MAX; $n_words]);
 
 			/// Converts a string slice in a given base to an integer. Only supports radixes of 10
 			/// and 16.
@@ -629,7 +629,7 @@ macro_rules! construct_uint {
 			#[inline]
 			pub fn as_u32(&self) -> u32 {
 				let &$name(ref arr) = self;
-				if !self.fits_word() ||  arr[0] > u32::max_value() as u64 {
+				if !self.fits_word() ||  arr[0] > u32::MAX as u64 {
 					panic!("Integer overflow when casting to u32")
 				}
 				self.as_u64() as u32
@@ -639,7 +639,7 @@ macro_rules! construct_uint {
 			///
 			/// # Panics
 			///
-			/// Panics if the number is larger than u64::max_value().
+			/// Panics if the number is larger than u64::MAX.
 			#[inline]
 			pub fn as_u64(&self) -> u64 {
 				let &$name(ref arr) = self;
@@ -653,11 +653,11 @@ macro_rules! construct_uint {
 			///
 			/// # Panics
 			///
-			/// Panics if the number is larger than usize::max_value().
+			/// Panics if the number is larger than usize::MAX.
 			#[inline]
 			pub fn as_usize(&self) -> usize {
 				let &$name(ref arr) = self;
-				if !self.fits_word() || arr[0] > usize::max_value() as u64 {
+				if !self.fits_word() || arr[0] > usize::MAX as u64 {
 					panic!("Integer overflow when casting to usize")
 				}
 				arr[0] as usize
@@ -904,7 +904,7 @@ macro_rules! construct_uint {
 						q_hat
 					} else {
 						// here q_hat >= q_j >= q_hat - 1
-						u64::max_value()
+						u64::MAX
 					};
 
 					// ex. 20:

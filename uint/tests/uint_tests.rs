@@ -6,9 +6,11 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use core::{convert::TryInto, str::FromStr, u64::MAX};
+use core::{convert::TryInto, str::FromStr};
 use crunchy::unroll;
 use uint::{construct_uint, overflowing, FromDecStrErr};
+
+const MAX: u64 = u64::MAX;
 
 construct_uint! {
 	pub struct U256(4);
@@ -108,12 +110,12 @@ fn max_value() {
 
 #[test]
 fn u128_conversions() {
-	let mut a = U256::from(u128::max_value());
-	assert_eq!(a.low_u128(), u128::max_value());
+	let mut a = U256::from(u128::MAX);
+	assert_eq!(a.low_u128(), u128::MAX);
 	a += 2u128.into();
 	assert_eq!(a.low_u128(), 1u128);
 	a -= 3u128.into();
-	assert_eq!(a.low_u128(), u128::max_value() - 1);
+	assert_eq!(a.low_u128(), u128::MAX - 1);
 }
 
 #[test]
@@ -249,7 +251,7 @@ fn uint256_try_into_primitives() {
 	macro_rules! try_into_primitive_err {
 		($small: ty, $big: ty) => {
 			assert_eq!(
-				U256::from(<$small>::max_value() as $big + 1).try_into() as Result<$small, _>,
+				U256::from(<$small>::MAX as $big + 1).try_into() as Result<$small, _>,
 				Err(concat!("integer overflow when casting to ", stringify!($small)))
 			);
 		};
@@ -311,8 +313,8 @@ fn uint256_bits_test() {
 	assert_eq!(U256::from(0x01ffu64).byte(0), 0xff);
 	assert_eq!(U256::from(0x01ffu64).byte(1), 0x1);
 	assert_eq!(U256([0u64, 0xfc, 0, 0]).byte(8), 0xfc);
-	assert_eq!(U256([0u64, 0, 0, u64::max_value()]).byte(31), 0xff);
-	assert_eq!(U256([0u64, 0, 0, (u64::max_value() >> 8) + 1]).byte(31), 0x01);
+	assert_eq!(U256([0u64, 0, 0, u64::MAX]).byte(31), 0xff);
+	assert_eq!(U256([0u64, 0, 0, (u64::MAX >> 8) + 1]).byte(31), 0x01);
 }
 
 #[test]
@@ -966,8 +968,8 @@ fn u256_multi_muls2() {
 	let (result, _) = U256([2, 0, 0, 0]).overflowing_mul(U256([0, 5, 0, 0]));
 	assert_eq!(U256([0, 10, 0, 0]), result);
 
-	let (result, _) = U256([1, 0, 0, 0]).overflowing_mul(U256([0, 0, 0, u64::max_value()]));
-	assert_eq!(U256([0, 0, 0, u64::max_value()]), result);
+	let (result, _) = U256([1, 0, 0, 0]).overflowing_mul(U256([0, 0, 0, u64::MAX]));
+	assert_eq!(U256([0, 0, 0, u64::MAX]), result);
 
 	let x1: U256 = "0000000000000000000000000000000000000000000000000000012365124623".into();
 	let x2sqr_right: U256 = "000000000000000000000000000000000000000000014baeef72e0378e2328c9".into();
@@ -1098,10 +1100,10 @@ fn into_fixed_array() {
 fn test_u256_from_fixed_array() {
 	let ary = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 123];
 	let num = U256::from_big_endian(&ary);
-	assert_eq!(num, U256::from(core::u64::MAX) + 1 + 123);
+	assert_eq!(num, U256::from(u64::MAX) + 1 + 123);
 
 	let a_ref = &U256::from_big_endian(&ary);
-	assert_eq!(a_ref, &(U256::from(core::u64::MAX) + 1 + 123));
+	assert_eq!(a_ref, &(U256::from(u64::MAX) + 1 + 123));
 }
 
 #[test]

@@ -99,7 +99,7 @@ fn from_gmp(x: Integer) -> U512 {
 
 fn u128_div(c: &mut Criterion) {
 	let mut group = c.benchmark_group("u128_div");
-	for input in [(0u64, u64::max_value(), 100u64), (u64::max_value(), u64::max_value(), 99), (42, 42, 100500)] {
+	for input in [(0u64, u64::MAX, 100u64), (u64::MAX, u64::MAX, 99), (42, 42, 100500)] {
 		group.bench_with_input(BenchmarkId::from_parameter(input.2), &input, |b, (x, y, z)| {
 			b.iter(|| {
 				let x = black_box(u128::from(*x) << 64 + u128::from(*y));
@@ -112,7 +112,7 @@ fn u128_div(c: &mut Criterion) {
 
 fn u256_add(c: &mut Criterion) {
 	let mut group = c.benchmark_group("u256_add");
-	for input in [(0u64, 1u64), (u64::max_value(), 1), (42, 100500)] {
+	for input in [(0u64, 1u64), (u64::MAX, 1), (42, 100500)] {
 		group.bench_with_input(BenchmarkId::from_parameter(input.0), &input, |b, (x, y)| {
 			b.iter(|| {
 				let x = U256::from(*x);
@@ -141,7 +141,7 @@ fn u256_mul(c: &mut Criterion) {
 	let mut group = c.benchmark_group("u256_mul");
 	for input in [
 		(U256::MAX, 1u64),
-		(U256::from(3), u64::max_value()),
+		(U256::from(3), u64::MAX),
 		(U256::from_dec_str("21674844646682989462120101885968193938394323990565507610662749").unwrap(), 173),
 	] {
 		group.bench_with_input(BenchmarkId::from_parameter(input.1), &input, |b, (x, y)| {
@@ -158,8 +158,8 @@ fn u512_div_mod(c: &mut Criterion) {
 	let mut group = c.benchmark_group("u512_div_mod");
 	for input in [
 		(U512::MAX, U512::from(1u64)),
-		(U512::from(u64::max_value()), U512::from(u32::max_value())),
-		(U512::from(u64::max_value()), U512::from(u64::max_value() - 1)),
+		(U512::from(u64::MAX), U512::from(u32::MAX)),
+		(U512::from(u64::MAX), U512::from(u64::MAX - 1)),
 		(
 			U512::from_dec_str("3759751734479964094783137206182536765532905409829204647089173492").unwrap(),
 			U512::from_dec_str("21674844646682989462120101885968193938394323990565507610662749").unwrap(),
@@ -195,7 +195,7 @@ fn u512_div_mod(c: &mut Criterion) {
 
 fn u256_mul_full(c: &mut Criterion) {
 	let mut group = c.benchmark_group("hex_to_bytes");
-	for input in [(U256::from(42), 1u64), (U256::from(3), u64::max_value())] {
+	for input in [(U256::from(42), 1u64), (U256::from(3), u64::MAX)] {
 		group.bench_with_input(BenchmarkId::from_parameter(input.1), &input, |b, (x, y)| {
 			b.iter(|| {
 				let y = *y;
@@ -217,7 +217,7 @@ fn u256_rem(c: &mut Criterion) {
 	let mut group = c.benchmark_group("u256_rem");
 	for input in [
 		(U256::MAX, U256::from(1u64)),
-		(U256::from(u64::max_value()), U256::from(u64::from(u32::max_value()) + 1)),
+		(U256::from(u64::MAX), U256::from(u64::from(u32::MAX) + 1)),
 		(
 			U256([12767554894655550452, 16333049135534778834, 140317443000293558, 598963]),
 			U256([2096410819092764509, 8483673822214032535, 36306297304129857, 3453]),
@@ -250,7 +250,7 @@ fn u256_integer_sqrt(c: &mut Criterion) {
 fn u512_pairs() -> Vec<(U512, U512)> {
 	vec![
 		(U512::from(1u64), U512::from(0u64)),
-		(U512::from(u64::max_value()), U512::from(u64::from(u32::max_value()) + 1)),
+		(U512::from(u64::MAX), U512::from(u64::from(u32::MAX) + 1)),
 		(
 			U512([12767554894655550452, 16333049135534778834, 140317443000293558, 598963, 0, 0, 0, 0]),
 			U512([0, 0, 0, 0, 2096410819092764509, 8483673822214032535, 36306297304129857, 3453]),
@@ -405,7 +405,7 @@ fn mulmod_u512_vs_biguint_vs_gmp(c: &mut Criterion) {
 	let mods = vec![
 		U256::from(1u64),
 		U256::from(10_000_001u64),
-		U256::from(u64::max_value()),
+		U256::from(u64::MAX),
 		U256::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF1").unwrap(),
 	];
 	let mut group = c.benchmark_group("mulmod u512 vs biguint vs gmp");
@@ -448,7 +448,7 @@ fn bench_u512_mulmod(b: &mut Bencher, z: U256) {
 // NOTE: uses native `u128` and does not measure this crates performance,
 // but might be interesting as a comparison.
 fn u128_mul(c: &mut Criterion) {
-	c.bench_function("u128_mul", |b| b.iter(|| black_box(12345u128 * u128::from(u64::max_value()))));
+	c.bench_function("u128_mul", |b| b.iter(|| black_box(12345u128 * u128::from(u64::MAX))));
 }
 
 fn u256_bit_and(c: &mut Criterion) {
