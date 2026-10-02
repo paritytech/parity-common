@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-10-02
+- Fix deprecation warnings in Rust 1.99. [#982](https://github.com/paritytech/parity-common/pull/982)
+
 ## [0.10.1] - 2026-08-08
 - Fix trailing semicolon in expression macro bodies. [#980](https://github.com/paritytech/parity-common/pull/980)
 
