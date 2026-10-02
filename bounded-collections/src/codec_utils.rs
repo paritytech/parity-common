@@ -38,7 +38,10 @@ macro_rules! impl_prepend_compact_input {
 		impl<'a, I: Input> Input for PrependCompactInput<'a, I> {
 			fn remaining_len(&mut self) -> Result<Option<usize>, Error> {
 				let remaining_compact = self.encoded_len.len().saturating_sub(self.read);
-				Ok(self.inner.remaining_len()?.map(|len| len.saturating_add(remaining_compact)))
+				Ok(self
+					.inner
+					.remaining_len()?
+					.map(|len| len.saturating_add(remaining_compact)))
 			}
 
 			fn read(&mut self, into: &mut [u8]) -> Result<(), Error> {
