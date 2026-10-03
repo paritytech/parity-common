@@ -24,7 +24,7 @@ use std::sync::{
 	atomic::{AtomicBool, Ordering as AtomicOrdering},
 	Arc,
 };
-use sysinfo::{get_current_pid, System};
+use sysinfo::{get_current_pid, ProcessesToUpdate, System};
 
 const COLUMN_COUNT: u32 = 100;
 
@@ -68,10 +68,10 @@ fn proc_memory_usage() -> u64 {
 	let mut sys = System::new();
 	let self_pid = get_current_pid().ok();
 	let memory = if let Some(self_pid) = self_pid {
-		if sys.refresh_process(self_pid) {
+		if sys.refresh_processes(ProcessesToUpdate::Some(&[self_pid]), false) > 0 {
 			let proc = sys
 				.process(self_pid)
-				.expect("Above refresh_process succeeds, this should be Some(), qed");
+				.expect("Above refresh_processes succeeds, this should be Some(), qed");
 			proc.memory()
 		} else {
 			0
